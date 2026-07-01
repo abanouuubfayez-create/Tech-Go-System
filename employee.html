@@ -1,0 +1,352 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>بوابة الموظف · تيك جو</title>
+<link rel="stylesheet" href="styles.css">
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
+<script src="firebase-config.js"></script>
+<script src="auth.js"></script>
+<script src="app.js"></script>
+<style>
+.emp-body{margin:0}
+.emp-nav{display:flex;gap:6px;padding:0 20px;background:var(--w);border-bottom:1px solid var(--bd2);flex-wrap:wrap}
+.emp-tab{padding:12px 16px;font-size:12px;font-weight:700;color:var(--tx3);cursor:pointer;border-bottom:2px solid transparent}
+.emp-tab.a{color:var(--nv);border-bottom-color:var(--gd)}
+.emp-ct{padding:20px 24px;max-width:900px;margin:0 auto}
+.emp-pg{display:none}
+.emp-pg.a{display:block}
+</style>
+</head>
+<body class="emp-body">
+
+<iframe id="empPrintFrame" style="position:fixed;top:-9999px;left:-9999px;width:0;height:0;border:0" title="طباعة"></iframe>
+
+<div class="emp-topbar">
+  <div class="who">👋 أهلاً، <span id="empWhoName">...</span><small id="empWhoRole"></small></div>
+  <button class="bt bt-o" onclick="tgLogout()">🚪 تسجيل الخروج</button>
+</div>
+
+<div class="emp-nav">
+  <div class="emp-tab a" data-pg="proj" onclick="empGo('proj',this)">📁 مشاريعي</div>
+  <div class="emp-tab" data-pg="wkr" onclick="empGo('wkr',this)">📆 تقاريري الأسبوعية</div>
+  <div class="emp-tab" data-pg="ach" onclick="empGo('ach',this)">🏆 إنجازاتي</div>
+  <div class="emp-tab" data-pg="req" onclick="empGo('req',this)">📨 طلباتي</div>
+</div>
+
+<div class="emp-ct">
+
+  <!-- مشاريعي -->
+  <div class="emp-pg a" id="epg-proj">
+    <div class="set-hint" style="margin-bottom:14px">المشاريع المُسندة إليك — حدّث نسبة تقدّمك وحالتك أولاً بأول ليراها المدير.</div>
+    <div id="myProjectsList"><div class="empty-hint">⏳ جارٍ التحميل...</div></div>
+  </div>
+
+  <!-- تقاريري الأسبوعية -->
+  <div class="emp-pg" id="epg-wkr">
+    <div class="set-sec">
+      <div class="set-sec-title">➕ إضافة تقرير أسبوعي</div>
+      <div class="set-hint">اكتب ملخصاً بالمهام اللي أنجزتها هذا الأسبوع، والتقدم في مشاريعك، وأي معوقات واجهتك.</div>
+      <div class="fr fr2" style="margin-top:8px">
+        <div class="fg"><label>بداية الأسبوع (يوم السبت أو الاثنين)</label><input type="date" id="wkrStart"></div>
+        <div class="fg"></div>
+      </div>
+      <div class="fg fg-full"><label>ملخص الأسبوع</label><textarea id="wkrContent" rows="4" placeholder="المهام المنجزة هذا الأسبوع، نسبة التقدم، أي معوقات أو ملاحظات..."></textarea></div>
+      <button class="bt bt-p" onclick="submitWeeklyReport()">📆 إرسال التقرير</button>
+      <div id="wkrMsg" style="font-size:11px;margin-top:6px"></div>
+    </div>
+    <div class="set-sec-title" style="margin:16px 0 8px">🗂 سجل تقاريري الأسبوعية</div>
+    <div id="myWkrList"><div class="empty-hint">⏳ جارٍ التحميل...</div></div>
+  </div>
+
+  <!-- إنجازاتي -->
+  <div class="emp-pg" id="epg-ach">
+    <div class="set-sec">
+      <div class="set-sec-title">➕ إضافة إنجاز جديد</div>
+      <div class="fr fr3" style="margin-top:8px">
+        <div class="fg" style="grid-column:span 1"><label>عنوان الإنجاز</label><input type="text" id="achTitle"></div>
+        <div class="fg"><label>التاريخ</label><input type="date" id="achDate"></div>
+        <div class="fg"><label></label><button class="bt bt-p" style="margin-top:auto" onclick="addAchievement()">➕ إضافة</button></div>
+      </div>
+      <div class="fg fg-full" style="margin-top:6px"><label>وصف مختصر (اختياري)</label><textarea id="achDesc" rows="2"></textarea></div>
+      <div id="achMsg" style="font-size:11px;margin-top:4px"></div>
+    </div>
+    <div class="set-sec-title" style="margin:16px 0 8px">📜 سجل إنجازاتي</div>
+    <div id="myAchList"><div class="empty-hint">⏳ جارٍ التحميل...</div></div>
+  </div>
+
+  <!-- طلباتي -->
+  <div class="emp-pg" id="epg-req">
+    <div class="set-sec">
+      <div class="set-sec-title">➕ تقديم طلب جديد</div>
+      <div class="fr fr2" style="margin-top:8px">
+        <div class="fg"><label>نوع الطلب</label>
+          <select id="reqType">
+            <option>إجازة</option><option>إذن حضور / انصراف</option><option>غياب</option><option>أخرى</option>
+          </select>
+        </div>
+        <div class="fg"></div>
+      </div>
+      <div class="fr fr2">
+        <div class="fg"><label>من تاريخ (اختياري)</label><input type="date" id="reqFrom"></div>
+        <div class="fg"><label>إلى تاريخ (اختياري)</label><input type="date" id="reqTo"></div>
+      </div>
+      <div class="fg fg-full"><label>تفاصيل الطلب</label><textarea id="reqDetails" rows="3"></textarea></div>
+      <button class="bt bt-p" onclick="submitRequest()">📨 إرسال الطلب</button>
+      <div id="reqMsg" style="font-size:11px;margin-top:6px"></div>
+    </div>
+    <div class="set-sec-title" style="margin:16px 0 8px">📋 سجل طلباتي</div>
+    <div id="myReqList"><div class="empty-hint">⏳ جارٍ التحميل...</div></div>
+  </div>
+
+</div>
+
+<script>
+function empGo(id,el){
+    document.querySelectorAll('.emp-tab').forEach(function(t){t.classList.remove('a');});
+    document.querySelectorAll('.emp-pg').forEach(function(p){p.classList.remove('a');});
+    if(el)el.classList.add('a');
+    document.getElementById('epg-'+id).classList.add('a');
+}
+function esc(s){return (s||'').toString().replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
+
+// ── طباعة مستندات الموظف بنفس تنسيق النظام (خطاب رسمي FL) ─────────────
+// يعتمد على الدوال المشتركة H()/FT()/SC()/escH()/LOGO_URI الموجودة في app.js
+DCODES.wkr='WKR'; DCODES.ach='ACH'; DCODES.req='REQ';
+function empLine(lbl,val){
+    return '<div class="FL-line"><span class="FL-line-lbl">'+lbl+'</span>'+
+           '<input type="text" class="FL-line-val" readonly value="'+escH(val||'')+'"></div>';
+}
+function empBlock(val){
+    return '<textarea class="FL-textbody" rows="8" readonly>'+escH(val||'')+'</textarea>';
+}
+function printDoc(bodyHtml){
+    var ifr=document.getElementById('empPrintFrame');
+    var doc=ifr.contentWindow.document;
+    doc.open();
+    doc.write('<!DOCTYPE html><html lang="ar" dir="rtl"><head><meta charset="UTF-8">'+
+        '<link rel="stylesheet" href="styles.css"></head><body>'+bodyHtml+'</body></html>');
+    doc.close();
+    upCNIn(ifr.contentWindow.document);
+    setTimeout(function(){
+        ifr.contentWindow.focus();
+        ifr.contentWindow.print();
+    },300);
+}
+function upCNIn(doc){ doc.querySelectorAll('.dcn').forEach(function(e){e.innerText=CN;}); }
+
+function printWeeklyReport(r){
+    var h=H('تقرير أسبوعي','تقرير أداء أسبوعي مُرسل من الموظف','WEEKLY WORK REPORT','wkr');
+    h+=SC('١','بيانات الموظف');
+    h+=empLine('اسم الموظف',TG_USER.name);
+    h+=empLine('البريد الإلكتروني',TG_USER.email);
+    h+=empLine('بداية الأسبوع',r.weekStart);
+    h+=SC('٢','ملخص الأسبوع');
+    h+=empBlock(r.content);
+    h+=FT(['نسخة للموظف','نسخة للإدارة']);
+    printDoc(h);
+}
+function printAchievement(a){
+    var h=H('توثيق إنجاز','إنجاز مُسجّل من الموظف','ACHIEVEMENT RECORD','ach');
+    h+=SC('١','بيانات الموظف');
+    h+=empLine('اسم الموظف',TG_USER.name);
+    h+=empLine('عنوان الإنجاز',a.title);
+    h+=empLine('التاريخ',a.date);
+    h+=SC('٢','وصف الإنجاز');
+    h+=empBlock(a.description);
+    h+=FT(['نسخة للموظف','نسخة للإدارة']);
+    printDoc(h);
+}
+function printRequest(r){
+    var h=H('طلب موظف','طلب مُقدَّم من الموظف','EMPLOYEE REQUEST','req');
+    h+=SC('١','بيانات الطلب');
+    h+=empLine('اسم الموظف',TG_USER.name);
+    h+=empLine('نوع الطلب',r.type);
+    h+=empLine('الحالة', r.status==='approved'?'موافق عليه':(r.status==='rejected'?'مرفوض':'قيد المراجعة'));
+    if(r.fromDate) h+=empLine('من تاريخ',r.fromDate);
+    if(r.toDate) h+=empLine('إلى تاريخ',r.toDate);
+    h+=SC('٢','تفاصيل الطلب');
+    h+=empBlock(r.details);
+    h+=FT(['نسخة للموظف','نسخة للإدارة']);
+    printDoc(h);
+}
+function badgeReq(s){
+    if(s==='approved')return '<span class="badge badge-approved">موافق عليه</span>';
+    if(s==='rejected')return '<span class="badge badge-rejected">مرفوض</span>';
+    return '<span class="badge badge-pending">قيد المراجعة</span>';
+}
+function badgeStatus(s){
+    if(s==='مكتمل')return 'badge-done';
+    if(s==='جاري العمل')return 'badge-progress';
+    return '';
+}
+
+// ── مشاريعي ─────────────────────────────────────────────────────────
+function loadMyProjects(){
+    var box=document.getElementById('myProjectsList');
+    db.collection('projects').where('assignees','array-contains',TG_USER.uid).get().then(function(snap){
+        if(snap.empty){ box.innerHTML='<div class="empty-hint">لا توجد مشاريع مُسندة إليك حالياً.</div>'; return; }
+        var h='';
+        snap.forEach(function(doc){
+            var p=doc.data(); var id=doc.id;
+            var pm=(p.progressMap&&p.progressMap[TG_USER.uid])||{progress:0,status:'لم يبدأ',note:''};
+            h+='<div class="pj-row" style="margin-bottom:14px">'+
+               '<div class="pj-t" style="font-size:13px">'+esc(p.title||'بدون عنوان')+'</div>'+
+               (p.description?'<div class="pj-meta">'+esc(p.description)+'</div>':'')+
+               '<div class="pj-bar"><div class="pj-bar-in" style="width:'+(pm.progress||0)+'%"></div></div>'+
+               '<div class="fr fr3" style="margin-top:10px">'+
+               '<div class="fg"><label>نسبة التقدم % <span id="pv_'+id+'">'+(pm.progress||0)+'</span></label>'+
+               '<input type="range" min="0" max="100" value="'+(pm.progress||0)+'" oninput="document.getElementById(\'pv_'+id+'\').textContent=this.value" id="pr_'+id+'"></div>'+
+               '<div class="fg"><label>الحالة</label><select id="ps_'+id+'">'+
+               ['لم يبدأ','جاري العمل','مكتمل'].map(function(s){return '<option'+(pm.status===s?' selected':'')+'>'+s+'</option>';}).join('')+
+               '</select></div>'+
+               '<div class="fg"><label>ملاحظة (اختياري)</label><input type="text" id="pn_'+id+'" value="'+esc(pm.note||'')+'"></div>'+
+               '</div>'+
+               '<button class="bt bt-p" style="margin-top:8px" onclick="saveProjectProgress(\''+id+'\')">💾 حفظ التحديث</button>'+
+               '<span id="pmsg_'+id+'" style="font-size:10.5px;margin-right:8px"></span>'+
+               '</div>';
+        });
+        box.innerHTML=h;
+    }).catch(function(err){ box.innerHTML='<div class="empty-hint" style="color:var(--no)">تعذر تحميل المشاريع: '+esc(err.message)+'</div>'; });
+}
+function saveProjectProgress(id){
+    var progress=parseInt(document.getElementById('pr_'+id).value,10)||0;
+    var status=document.getElementById('ps_'+id).value;
+    var note=document.getElementById('pn_'+id).value||'';
+    var msg=document.getElementById('pmsg_'+id);
+    var field={}; field['progressMap.'+TG_USER.uid]={progress:progress,status:status,note:note,updatedAt:firebase.firestore.FieldValue.serverTimestamp()};
+    db.collection('projects').doc(id).update(field).then(function(){
+        msg.style.color='var(--ok)'; msg.textContent='✅ تم الحفظ';
+        setTimeout(function(){msg.textContent='';},2500);
+    }).catch(function(err){ msg.style.color='var(--no)'; msg.textContent='❌ '+err.message; });
+}
+
+// ── إنجازاتي ────────────────────────────────────────────────────────
+function loadMyAchievements(){
+    var box=document.getElementById('myAchList');
+    db.collection('achievements').where('uid','==',TG_USER.uid).get().then(function(snap){
+        if(snap.empty){ box.innerHTML='<div class="empty-hint">لا توجد إنجازات مسجّلة بعد.</div>'; return; }
+        var rows=[]; snap.forEach(function(d){rows.push(d.data());});
+        rows.sort(function(a,b){return (a.date<b.date)?1:-1;});
+        window._achCache=rows;
+        var h='';
+        rows.forEach(function(a,i){
+            h+='<div class="ac-row"><div class="ac-t">'+esc(a.title)+
+               ' <button class="bt bt-o" style="padding:2px 8px;font-size:10px;margin-right:8px" onclick="printAchievement(window._achCache['+i+'])">🖨 طباعة</button></div>'+
+               (a.description?'<div class="ac-meta">'+esc(a.description)+'</div>':'')+
+               (a.date?'<div class="ac-meta">📅 '+esc(a.date)+'</div>':'')+'</div>';
+        });
+        box.innerHTML=h;
+    }).catch(function(err){ box.innerHTML='<div class="empty-hint" style="color:var(--no)">تعذر التحميل: '+esc(err.message)+'</div>'; });
+}
+function addAchievement(){
+    var title=(document.getElementById('achTitle').value||'').trim();
+    var date=document.getElementById('achDate').value||new Date().toISOString().split('T')[0];
+    var desc=(document.getElementById('achDesc').value||'').trim();
+    var msg=document.getElementById('achMsg');
+    if(!title){ msg.style.color='var(--no)'; msg.textContent='من فضلك اكتب عنوان الإنجاز.'; return; }
+    db.collection('achievements').add({
+        uid:TG_USER.uid, title:title, description:desc, date:date,
+        createdAt:firebase.firestore.FieldValue.serverTimestamp()
+    }).then(function(){
+        msg.style.color='var(--ok)'; msg.textContent='✅ تمت الإضافة';
+        document.getElementById('achTitle').value=''; document.getElementById('achDesc').value='';
+        loadMyAchievements();
+    }).catch(function(err){ msg.style.color='var(--no)'; msg.textContent='❌ '+err.message; });
+}
+
+// ── طلباتي ──────────────────────────────────────────────────────────
+function loadMyRequests(){
+    var box=document.getElementById('myReqList');
+    db.collection('requests').where('uid','==',TG_USER.uid).get().then(function(snap){
+        if(snap.empty){ box.innerHTML='<div class="empty-hint">لا توجد طلبات بعد.</div>'; return; }
+        var rows=[]; snap.forEach(function(d){rows.push(d.data());});
+        rows.sort(function(a,b){
+            var am=(a.createdAt&&a.createdAt.toMillis)?a.createdAt.toMillis():0;
+            var bm=(b.createdAt&&b.createdAt.toMillis)?b.createdAt.toMillis():0;
+            return bm-am;
+        });
+        window._reqCache=rows;
+        var h='';
+        rows.forEach(function(r,i){
+            h+='<div class="rq-row"><div class="rq-t">'+esc(r.type||'طلب')+' '+badgeReq(r.status)+
+               ' <button class="bt bt-o" style="padding:2px 8px;font-size:10px;margin-right:8px" onclick="printRequest(window._reqCache['+i+'])">🖨 طباعة</button></div>'+
+               (r.details?'<div class="pj-meta">'+esc(r.details)+'</div>':'')+
+               (r.fromDate?('<div class="pj-meta">من '+esc(r.fromDate)+(r.toDate?(' إلى '+esc(r.toDate)):'')+'</div>'):'')+
+               '</div>';
+        });
+        box.innerHTML=h;
+    }).catch(function(err){ box.innerHTML='<div class="empty-hint" style="color:var(--no)">تعذر التحميل: '+esc(err.message)+'</div>'; });
+}
+function submitRequest(){
+    var type=document.getElementById('reqType').value;
+    var details=(document.getElementById('reqDetails').value||'').trim();
+    var from=document.getElementById('reqFrom').value||'';
+    var to=document.getElementById('reqTo').value||'';
+    var msg=document.getElementById('reqMsg');
+    if(!details){ msg.style.color='var(--no)'; msg.textContent='من فضلك اكتب تفاصيل الطلب.'; return; }
+    db.collection('requests').add({
+        uid:TG_USER.uid, type:type, details:details, fromDate:from, toDate:to,
+        status:'pending', createdAt:firebase.firestore.FieldValue.serverTimestamp()
+    }).then(function(){
+        msg.style.color='var(--ok)'; msg.textContent='✅ تم إرسال الطلب';
+        document.getElementById('reqDetails').value='';
+        loadMyRequests();
+    }).catch(function(err){ msg.style.color='var(--no)'; msg.textContent='❌ '+err.message; });
+}
+
+// ── تقاريري الأسبوعية ───────────────────────────────────────────────
+function mondayOf(d){
+    var dt=new Date(d);
+    var day=dt.getDay(); // 0=Sun...6=Sat
+    var diff=(day===0)?-6:(1-day); // رجّع لأقرب اثنين
+    dt.setDate(dt.getDate()+diff);
+    return dt.toISOString().split('T')[0];
+}
+function loadMyWeeklyReports(){
+    var box=document.getElementById('myWkrList');
+    db.collection('weeklyReports').where('uid','==',TG_USER.uid).get().then(function(snap){
+        if(snap.empty){ box.innerHTML='<div class="empty-hint">لا توجد تقارير أسبوعية مُرسلة بعد.</div>'; return; }
+        var rows=[]; snap.forEach(function(d){rows.push(d.data());});
+        rows.sort(function(a,b){return (a.weekStart<b.weekStart)?1:-1;});
+        window._wkrCache=rows;
+        var h='';
+        rows.forEach(function(r,i){
+            h+='<div class="ac-row"><div class="ac-t">📆 أسبوع '+esc(r.weekStart||'')+
+               ' <button class="bt bt-o" style="padding:2px 8px;font-size:10px;margin-right:8px" onclick="printWeeklyReport(window._wkrCache['+i+'])">🖨 طباعة</button></div>'+
+               (r.content?'<div class="ac-meta">'+esc(r.content)+'</div>':'')+'</div>';
+        });
+        box.innerHTML=h;
+    }).catch(function(err){ box.innerHTML='<div class="empty-hint" style="color:var(--no)">تعذر التحميل: '+esc(err.message)+'</div>'; });
+}
+function submitWeeklyReport(){
+    var weekStart=document.getElementById('wkrStart').value||mondayOf(new Date());
+    var content=(document.getElementById('wkrContent').value||'').trim();
+    var msg=document.getElementById('wkrMsg');
+    if(!content){ msg.style.color='var(--no)'; msg.textContent='من فضلك اكتب ملخص الأسبوع.'; return; }
+    db.collection('weeklyReports').add({
+        uid:TG_USER.uid, weekStart:weekStart, content:content,
+        createdAt:firebase.firestore.FieldValue.serverTimestamp()
+    }).then(function(){
+        msg.style.color='var(--ok)'; msg.textContent='✅ تم إرسال التقرير';
+        document.getElementById('wkrContent').value='';
+        loadMyWeeklyReports();
+    }).catch(function(err){ msg.style.color='var(--no)'; msg.textContent='❌ '+err.message; });
+}
+document.getElementById('wkrStart').value=mondayOf(new Date());
+
+// ── حماية الصفحة: لازم تسجيل دخول بصلاحية موظف ──────────────────
+tgRequireAuth('employee', function(u){
+    document.getElementById('empWhoName').textContent=u.name;
+    document.getElementById('empWhoRole').textContent='بوابة الموظف · '+u.email;
+    loadMyProjects();
+    loadMyWeeklyReports();
+    loadMyAchievements();
+    loadMyRequests();
+});
+</script>
+</body>
+</html>

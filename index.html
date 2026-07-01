@@ -1,0 +1,289 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="color-scheme" content="light">
+<title>نظام إدارة شركة تيك جو</title>
+<link rel="stylesheet" href="styles.css">
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
+<script src="firebase-config.js"></script>
+<script src="auth.js"></script>
+</head>
+<body>
+<button class="mtg" onclick="document.getElementById('sb').classList.toggle('opn')">☰</button>
+
+<!-- ترويسة وتذييل الطباعة (مخفية على الشاشة) -->
+<div class="print-header" aria-hidden="true">
+    <span class="ph-r">TECH-GO · شركة تيك جو</span>
+    <span class="ph-l" id="phTitle">نظام الإدارة الشامل</span>
+</div>
+<div class="print-footer" aria-hidden="true">
+    <span class="pf-r">وثيقة سرية · شركة تيك جو</span>
+    <span class="pf-l">TECH-GO · نظام الإدارة الشامل</span>
+</div>
+<aside class="S" id="sb">
+<div class="S-h">
+    <div class="logo"><span>TECH - GO</span><small>تيك – جو</small></div>
+    <div class="sub">نظام الإدارة الشامل</div>
+</div>
+<nav class="S-n">
+    <div class="S-s">الرئيسية</div>
+    <div class="S-i a" onclick="go('dash',this)"><span class="ic">🏠</span> لوحة التحكم</div>
+    <div class="S-s">نماذج الموظفين</div>
+    <div class="S-i" onclick="go('emp',this)"><span class="ic">👤</span> ملف بيانات الموظف</div>
+    <div class="S-i" onclick="go('leave',this)"><span class="ic">🏖</span> طلب إجازة</div>
+    <div class="S-i" onclick="go('perm',this)"><span class="ic">🕐</span> إذن حضور / انصراف</div>
+    <div class="S-i" onclick="go('delay',this)"><span class="ic">⏰</span> التماس تعديل الحضور <span class="S-b">جديد</span></div>
+    <div class="S-s">السجلات</div>
+    <div class="S-i" onclick="go('la',this)"><span class="ic">📅</span> سجل الإجازة السنوية</div>
+    <div class="S-i" onclick="go('lb',this)"><span class="ic">⚡</span> سجل الإجازة العارضة</div>
+    <div class="S-i" onclick="go('lc',this)"><span class="ic">🎉</span> سجل الأعياد</div>
+    <div class="S-i" onclick="go('ld',this)"><span class="ic">❌</span> سجل الغياب بالخصم</div>
+    <div class="S-s">نماذج إدارية</div>
+    <div class="S-i" onclick="go('gen',this)" style="border-right:2px solid var(--gd)"><span class="ic">✉️</span> خطاب إداري عام <span class="S-b">جديد</span></div>
+    <div class="S-i" onclick="go('notice',this)"><span class="ic">👁</span> نموذج لفت نظر <span class="S-b">جديد</span></div>
+    <div class="S-i" onclick="go('warn',this)"><span class="ic">⚠️</span> خطاب إنذار</div>
+    <div class="S-i" onclick="go('inv',this)"><span class="ic">🔍</span> محضر تحقيق</div>
+    <div class="S-i" onclick="go('exp',this)"><span class="ic">📜</span> شهادة خبرة</div>
+    <div class="S-i" onclick="go('clr',this)"><span class="ic">✅</span> إخلاء طرف</div>
+    <div class="S-i" onclick="go('res',this)"><span class="ic">🚪</span> طلب استقالة <span class="S-b">جديد</span></div>
+    <div class="S-i" onclick="go('promo',this)"><span class="ic">📈</span> قرار ترقية <span class="S-b">جديد</span></div>
+    <div class="S-i" onclick="go('raise',this)"><span class="ic">💹</span> زيادة راتب / علاوة <span class="S-b">جديد</span></div>
+    <div class="S-i" onclick="go('contract',this)"><span class="ic">📄</span> عقد عمل <span class="S-b">جديد</span></div>
+    <div class="S-i" onclick="go('task',this)"><span class="ic">📋</span> تكليف بمهمة</div>
+    <div class="S-i" onclick="go('proj',this)"><span class="ic">📁</span> إدارة المشروع <span class="S-b">جديد</span></div>
+    <div class="S-i" onclick="go('sal',this)"><span class="ic">💰</span> شهادة راتب</div>
+    <div class="S-s">المالية</div>
+    <div class="S-i" onclick="go('mexp',this)"><span class="ic">💵</span> شيت المصروفات الشهري <span class="S-b">جديد</span></div>
+    <div class="S-s">الأنظمة</div>
+    <div class="S-i" onclick="go('att',this)"><span class="ic">⏱</span> الحضور والانصراف</div>
+    <div class="S-i" onclick="go('comp',this)"><span class="ic">📝</span> الشكاوى والمقترحات</div>
+    <div class="S-s">متابعة الأداء</div>
+    <div class="S-i" onclick="go('pmgmt',this)" style="border-right:2px solid var(--gd)"><span class="ic">📁</span> إدارة المشاريع <span class="S-b">جديد</span></div>
+    <div class="S-i" onclick="go('staff',this)" style="border-right:2px solid var(--gd)"><span class="ic">👥</span> متابعة الموظفين <span class="S-b">جديد</span></div>
+    <div class="S-s">الإعدادات</div>
+    <div class="S-i" onclick="go('set',this)"><span class="ic">⚙️</span> تخصيص النظام</div>
+    <div class="S-i" onclick="tgLogout()"><span class="ic">🚪</span> تسجيل الخروج</div>
+</nav>
+<div id="sbUser" style="padding:10px 16px 16px;font-size:10px;color:rgba(255,255,255,.5);border-top:1px solid rgba(255,255,255,.07)"></div>
+</aside>
+<div class="M">
+<div class="TB"><div class="t" id="pT">لوحة التحكم</div><div class="ac np"><button class="bt bt-o" onclick="openPrintPreview()">🖨 معاينة وطباعة</button></div></div>
+<div class="CT">
+<div class="pg a" id="pg-dash">
+<div class="DG">
+<div class="DC" onclick="go('emp')"><div class="di">👤</div><div class="dt2">ملف بيانات الموظف</div><div class="dd">البيانات الشخصية · الوظيفية · ساعات العمل</div></div>
+<div class="DC" onclick="go('leave')"><div class="di">🏖</div><div class="dt2">طلب إجازة</div><div class="dd">سنوية · عارضة · الموافقات والرصيد</div></div>
+<div class="DC" onclick="go('perm')"><div class="di">🕐</div><div class="dt2">إذن حضور / انصراف</div><div class="dd">تأخير · مغادرة مبكرة · توقيعات</div></div>
+<div class="DC" onclick="go('delay')" style="border:2px solid var(--gd)"><div class="di">⏰</div><div class="dt2">التماس تعديل الحضور</div><div class="dd">طلب تعديل موعد الحضور الرسمي بصفة دائمة</div></div>
+<div class="DC" onclick="go('la')"><div class="di">📅</div><div class="dt2">سجل الإجازة السنوية</div><div class="dd">ملحق أ — الرصيد والمستخدم</div></div>
+<div class="DC" onclick="go('lb')"><div class="di">⚡</div><div class="dt2">سجل الإجازة العارضة</div><div class="dd">ملحق ب — حد ٧ أيام</div></div>
+<div class="DC" onclick="go('lc')"><div class="di">🎉</div><div class="dt2">سجل الأعياد</div><div class="dd">ملحق ج — العطل الرسمية</div></div>
+<div class="DC" onclick="go('ld')"><div class="di">❌</div><div class="dt2">سجل الغياب بالخصم</div><div class="dd">ملحق د — م.١٣٠</div></div>
+<div class="DC" onclick="go('gen')" style="border:2px solid var(--gd)"><div class="di">✉️</div><div class="dt2">خطاب إداري عام</div><div class="dd">قالب رسمي قابل للتخصيص لأي موضوع</div></div>
+<div class="DC" onclick="go('notice')" style="border:2px solid var(--gd)"><div class="di">👁</div><div class="dt2">نموذج لفت نظر</div><div class="dd">إنذار رسمي وفق اللائحة التنظيمية</div></div>
+<div class="DC" onclick="go('warn')"><div class="di">⚠️</div><div class="dt2">خطاب إنذار</div><div class="dd">أول · ثانٍ · نهائي</div></div>
+<div class="DC" onclick="go('inv')"><div class="di">🔍</div><div class="dt2">محضر تحقيق</div><div class="dd">توثيق ومجريات</div></div>
+<div class="DC" onclick="go('exp')"><div class="di">📜</div><div class="dt2">شهادة خبرة</div><div class="dd">شهادة رسمية</div></div>
+<div class="DC" onclick="go('clr')"><div class="di">✅</div><div class="dt2">إخلاء طرف</div><div class="dd">براءة ذمة</div></div>
+<div class="DC" onclick="go('res')" style="border:2px solid var(--gd)"><div class="di">🚪</div><div class="dt2">طلب استقالة</div><div class="dd">إشعار إنهاء الخدمة والإقرار</div></div>
+<div class="DC" onclick="go('promo')" style="border:2px solid var(--gd)"><div class="di">📈</div><div class="dt2">قرار ترقية</div><div class="dd">تعديل المسمى الوظيفي والدرجة</div></div>
+<div class="DC" onclick="go('raise')" style="border:2px solid var(--gd)"><div class="di">💹</div><div class="dt2">زيادة راتب / علاوة</div><div class="dd">دورية · استثنائية · تقديرية</div></div>
+<div class="DC" onclick="go('contract')" style="border:2px solid var(--gd)"><div class="di">📄</div><div class="dt2">عقد عمل</div><div class="dd">اتفاقية توظيف بين الطرفين</div></div>
+<div class="DC" onclick="go('task')"><div class="di">📋</div><div class="dt2">تكليف بمهمة</div><div class="dd">مهام ومواعيد</div></div>
+<div class="DC" onclick="go('proj')" style="border:2px solid var(--gd)"><div class="di">📁</div><div class="dt2">نموذج إدارة المشروع</div><div class="dd">متابعة المشاريع والمهام والفريق</div></div>
+<div class="DC" onclick="go('sal')"><div class="di">💰</div><div class="dt2">شهادة راتب</div><div class="dd">مفردات المرتب</div></div>
+<div class="DC" onclick="go('mexp')" style="border:2px solid var(--gd)"><div class="di">💵</div><div class="dt2">شيت المصروفات الشهري</div><div class="dd">مسلسل · صارف · بند · مبلغ · إجمالي تلقائي</div></div>
+<div class="DC" onclick="go('att')"><div class="di">⏱</div><div class="dt2">الحضور والانصراف</div><div class="dd">نظام متكامل</div></div>
+<div class="DC" onclick="go('pmgmt')" style="border:2px solid var(--gd)"><div class="di">📁</div><div class="dt2">إدارة المشاريع</div><div class="dd">إنشاء مشاريع وتعيين الموظفين المسؤولين عنها</div></div>
+<div class="DC" onclick="go('staff')" style="border:2px solid var(--gd)"><div class="di">👥</div><div class="dt2">متابعة الموظفين</div><div class="dd">حسابات الدخول، المشاريع، الإنجازات، الطلبات</div></div>
+<div class="DC" onclick="go('comp')"><div class="di">📝</div><div class="dt2">شكاوى ومقترحات</div><div class="dd">بسرية تامة</div></div>
+</div>
+</div>
+<div class="pg" id="pg-emp"></div><div class="pg" id="pg-leave"></div><div class="pg" id="pg-perm"></div><div class="pg" id="pg-delay"></div>
+<div class="pg" id="pg-la"></div><div class="pg" id="pg-lb"></div><div class="pg" id="pg-lc"></div><div class="pg" id="pg-ld"></div>
+<div class="pg" id="pg-notice"></div><div class="pg" id="pg-gen"></div><div class="pg" id="pg-warn"></div><div class="pg" id="pg-inv"></div>
+<div class="pg" id="pg-exp"></div><div class="pg" id="pg-clr"></div><div class="pg" id="pg-task"></div><div class="pg" id="pg-sal"></div>
+<div class="pg" id="pg-res"></div><div class="pg" id="pg-promo"></div><div class="pg" id="pg-raise"></div><div class="pg" id="pg-contract"></div>
+<div class="pg" id="pg-att"></div><div class="pg" id="pg-comp"></div><div class="pg" id="pg-set"></div><div class="pg" id="pg-proj"></div><div class="pg" id="pg-mexp"></div>
+<div class="pg" id="pg-staff"></div><div class="pg" id="pg-pmgmt"></div>
+</div>
+</div>
+<datalist id="tgEmpDL"></datalist>
+<script src="app.js"></script>
+<script>
+  // ── معاينة الطباعة المحسّنة ──────────────────
+  function openPrintPreview() {
+    var t = document.getElementById('pT');
+    var ph = document.getElementById('phTitle');
+    if (t && ph) {
+      var label = t.textContent.trim();
+      var activePg = document.querySelector('.pg.a');
+      var numFld = activePg ? activePg.querySelector('.doc-num-fld') : null;
+      if (numFld && numFld.value) label += ' · ' + numFld.value;
+      ph.textContent = label;
+    }
+
+    var bar = document.getElementById('ppBar');
+    if (!bar) {
+      bar = document.createElement('div');
+      bar.id = 'ppBar';
+      bar.className = 'np';
+      bar.style.cssText = 'position:fixed;top:12px;left:12px;z-index:99999;display:flex;gap:8px;background:#1b2a4a;color:#fff;padding:10px 14px;border-radius:8px;box-shadow:0 8px 24px rgba(0,0,0,.25);font-family:Cairo,sans-serif;direction:rtl;align-items:center;flex-wrap:wrap';
+      var savedPaper = localStorage.getItem('tg_paper_size') || 'A4';
+      var paperOpts = ['A4', 'Legal', 'Letter'].map(function (sz) {
+        return '<option value="' + sz + '"' + (sz === savedPaper ? ' selected' : '') + '>' + sz + '</option>';
+      }).join('');
+      bar.innerHTML =
+        '<span style="font-weight:800;font-size:13px">🖨 جاهز للطباعة</span>' +
+        '<label style="font-size:11px;display:flex;align-items:center;gap:4px;cursor:pointer"><input type="checkbox" id="ppBw" onchange="toggleBwPrint(this.checked)"> أبيض/أسود</label>' +
+        '<label style="font-size:11px;display:flex;align-items:center;gap:4px;cursor:pointer"><input type="checkbox" id="ppKeepData" onchange="togglePrintKeepData(this.checked)"' + (PRINT_KEEP_DATA ? ' checked' : '') + '> اطبع البيانات المكتوبة</label>' +
+        '<label style="font-size:11px;display:flex;align-items:center;gap:4px;cursor:pointer">حجم الورق <select id="ppPaperSize" onchange="setPaperSize(this.value)" style="font-family:inherit;font-size:11px;border-radius:4px;border:none;padding:2px 4px">' + paperOpts + '</select></label>' +
+        '<button onclick="doPrintNow()" style="background:#c9a227;color:#1b2a4a;border:0;padding:6px 14px;border-radius:4px;font-weight:800;cursor:pointer;font-family:inherit">طباعة / حفظ PDF</button>' +
+        '<button onclick="closePrintPreview()" style="background:transparent;color:#fff;border:1px solid rgba(255,255,255,.4);padding:6px 12px;border-radius:4px;cursor:pointer;font-family:inherit">إغلاق</button>';
+      document.body.appendChild(bar);
+      if (savedPaper !== 'A4') setPaperSize(savedPaper);
+    } else {
+      var kd = document.getElementById('ppKeepData'); if (kd) kd.checked = PRINT_KEEP_DATA;
+    }
+    bar.style.display = 'flex';
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }
+  function closePrintPreview() {
+    var b = document.getElementById('ppBar'); if (b) b.style.display = 'none';
+    document.documentElement.classList.remove('bw-print');
+    var cb = document.getElementById('ppBw'); if (cb) cb.checked = false;
+  }
+  function toggleBwPrint(on) {
+    document.documentElement.classList.toggle('bw-print', !!on);
+  }
+
+  // ── اختيار حجم الورق (A4 / Legal / Letter) — يتحكم في @page ديناميكياً ──
+  function setPaperSize(sz) {
+    var st = document.getElementById('paperSizeStyle');
+    if (!st) { st = document.createElement('style'); st.id = 'paperSizeStyle'; document.head.appendChild(st); }
+    st.textContent = (sz && sz !== 'A4') ? ('@page { size: ' + sz + ' portrait; }') : '';
+    localStorage.setItem('tg_paper_size', sz || 'A4');
+  }
+
+  // ── خيار: هل تُطبع البيانات المكتوبة في الحقول أم تُفرَّغ للتعبئة اليدوية؟ ──
+  // هذا الخيار يشمل أيضاً خانات الإجمالي المحسوبة تلقائياً (المصروفات، الراتب، تقرير الحضور)
+  var PRINT_KEEP_DATA = (localStorage.getItem('tg_print_keep_data') === '1');
+  document.documentElement.classList.toggle('print-keep-data', PRINT_KEEP_DATA);
+  function togglePrintKeepData(on) {
+    PRINT_KEEP_DATA = !!on;
+    localStorage.setItem('tg_print_keep_data', PRINT_KEEP_DATA ? '1' : '0');
+    document.documentElement.classList.toggle('print-keep-data', PRINT_KEEP_DATA);
+    var att = document.getElementById('attF');
+    if (att && att.contentWindow && att.contentWindow.syncPrintKeepData) {
+      try { att.contentWindow.syncPrintKeepData(PRINT_KEEP_DATA); } catch (e) {}
+    }
+  }
+  function doPrintNow() {
+    var att = document.getElementById('attF');
+    var attPg = document.getElementById('pg-att');
+    if (att && attPg && attPg.classList.contains('a')) {
+      try { att.contentWindow.focus(); att.contentWindow.print(); return; } catch (e) {}
+    }
+    window.print();
+  }
+
+  // إخفاء شريط المعاينة فعلياً قبل إرسال الطباعة + استعادة حقول التاريخ
+  // الحقول التي تُفرَّغ عند الطباعة لتصبح جاهزة للتعبئة اليدوية بالقلم —
+  // باستثناء رقم المستند (مرجع رسمي من النظام) والحقول القابلة للقراءة فقط (المجاميع المحسوبة)
+  var PRINT_CLEAR_SELECTOR =
+      'input[type="text"]:not(.doc-num-fld), input[type="tel"], input[type="email"], ' +
+      'input[type="number"], input[type="month"], input[type="time"], ' +
+      'textarea';
+
+  window.addEventListener('beforeprint', function () {
+    var b = document.getElementById('ppBar'); if (b) b.style.display = 'none';
+    var now = new Date();
+    var stamp = 'طُبع بتاريخ ' + now.toLocaleDateString('ar-EG') + ' — ' + now.toLocaleTimeString('ar-EG', { hour: '2-digit', minute: '2-digit' });
+    document.querySelectorAll('.FL-foot-ts').forEach(function (el) { el.textContent = stamp; });
+
+    // مرجع المستند في التذييل — نفس رقم المستند لتأكيد ترابط صفحات المستند الواحد
+    document.querySelectorAll('.FL').forEach(function (fl) {
+      var numFld = fl.querySelector('.doc-num-fld');
+      var ref = fl.querySelector('.FL-foot-ref');
+      if (ref) ref.textContent = (numFld && numFld.value) ? ('مرجع: ' + numFld.value) : '';
+    });
+
+    // ختم الحالة (موافق/مرفوض/قيد المراجعة) فوق المستندات التي بها حالة طلب
+    document.querySelectorAll('.stg').forEach(function (stg) {
+      var active = stg.querySelector('.stb.a');
+      var fl = stg.closest('.FL');
+      if (!fl || !active) return;
+      var st = fl.querySelector('.print-stamp');
+      if (!st) { st = document.createElement('div'); st.className = 'print-stamp'; fl.appendChild(st); }
+      st.classList.remove('st-ok', 'st-no', 'st-pn');
+      if (active.classList.contains('ok')) { st.classList.add('st-ok'); st.textContent = '✓ معتمد'; }
+      else if (active.classList.contains('no')) { st.classList.add('st-no'); st.textContent = '✗ مرفوض'; }
+      else { st.classList.add('st-pn'); st.textContent = '⏳ قيد المراجعة'; }
+    });
+
+    // تمييز صفوف الجداول المكتوب فيها بيانات فعلياً عن الصفوف الفارغة (السجلات والملاحق الطويلة)
+    document.querySelectorAll('.dt tr').forEach(function (tr) {
+      var inputs = tr.querySelectorAll('input');
+      if (!inputs.length) { tr.classList.remove('row-filled'); return; }
+      var hasValue = Array.prototype.some.call(inputs, function (inp) { return (inp.value || '').trim() !== ''; });
+      tr.classList.toggle('row-filled', hasValue);
+    });
+
+    if (PRINT_KEEP_DATA) return; // المستخدم اختار طباعة البيانات المكتوبة كما هي — بدون تفريغ
+    document.querySelectorAll('input[type="date"]').forEach(function (el) {
+      el._pv = el.value;
+      el.type = 'text';
+      el.value = '';
+    });
+    // إخفاء النصوص والاختيارات الافتراضية (غير المُدخلة فعلياً من المستخدم) عند الطباعة
+    document.querySelectorAll('input.tpl-default, textarea.tpl-default').forEach(function (el) {
+      el._tpv = el.value;
+      el.value = '';
+    });
+    document.querySelectorAll('input.tpl-default-radio').forEach(function (el) {
+      el._tpc = el.checked;
+      if (el.checked) el.checked = false;
+    });
+    // تفريغ باقي الحقول (الاسم، الملاحظات، أرقام الهواتف...) لتُطبع بيضاء فارغة للكتابة اليدوية
+    document.querySelectorAll(PRINT_CLEAR_SELECTOR).forEach(function (el) {
+      if (el.readOnly || el.disabled) return;
+      if (el._bpv !== undefined) return; // تم التعامل معه بالفعل (tpl-default)
+      el._bpv = el.value;
+      el.value = '';
+    });
+  });
+  window.addEventListener('afterprint', function () {
+    document.querySelectorAll('.FL-foot-ts').forEach(function (el) { el.textContent = ''; });
+    document.querySelectorAll('.FL-foot-ref').forEach(function (el) { el.textContent = ''; });
+    document.querySelectorAll('input[type="date"]').forEach(function (el) {
+      if (el._pv !== undefined) {
+        el.type = 'date';
+        el.value = el._pv;
+      }
+    });
+    document.querySelectorAll('input.tpl-default, textarea.tpl-default').forEach(function (el) {
+      if (el._tpv !== undefined) el.value = el._tpv;
+    });
+    document.querySelectorAll('input.tpl-default-radio').forEach(function (el) {
+      if (el._tpc) el.checked = true;
+    });
+    document.querySelectorAll(PRINT_CLEAR_SELECTOR).forEach(function (el) {
+      if (el._bpv !== undefined) {
+        el.value = el._bpv;
+        delete el._bpv;
+      }
+    });
+  });
+
+  // ── حماية الصفحة: لازم تسجيل دخول بصلاحية أدمن ──────────────────
+  tgRequireAuth('admin', function (u) {
+    var box = document.getElementById('sbUser');
+    if (box) box.innerHTML = '👤 <strong style="color:#fff">' + (u.name || u.email) + '</strong><br>' + u.email;
+  });
+</script>
+</body>
+</html>
