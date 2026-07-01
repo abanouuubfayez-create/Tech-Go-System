@@ -24,7 +24,7 @@ var T={
     comp:"الشكاوى والمقترحات", set:"تخصيص النظام", proj:"نموذج إدارة المشروع",
     mexp:"شيت المصروفات الشهري",
     res:"طلب استقالة", promo:"قرار ترقية", contract:"عقد عمل", raise:"زيادة راتب / علاوة",
-    staff:"متابعة الموظفين", pmgmt:"إدارة المشاريع"
+    staff:"متابعة الموظفين", pmgmt:"إدارة المشاريع", account:"حسابي"
 };
 
 // ─── DOCUMENT NUMBERING ───────────────────────────────────────────────────
@@ -32,7 +32,8 @@ var DCODES={
     emp:'EMP', leave:'LV', perm:'PM', delay:'DLY', la:'LA', lb:'LB', lc:'LC', ld:'LD',
     notice:'NTC', warn:'WRN', inv:'INV', exp:'EXP', clr:'CLR', gen:'GEN',
     task:'TSK', sal:'SAL', comp:'CMP', proj:'PRJ', mexp:'MEXP',
-    res:'RES', promo:'PRM', contract:'CTR', raise:'RAI'
+    res:'RES', promo:'PRM', contract:'CTR', raise:'RAI',
+    wkr:'WKR', ach:'ACH', req:'REQ'
 };
 function genDocNum(type){
     if(!type||!DCODES[type])return '';
@@ -161,6 +162,23 @@ function renderEmpListSec(){
     el.outerHTML=empListSecHTML();
 }
 
+// ─── نظرة عامة سريعة على لوحة التحكم (تكامل حي بين الموظفين/المشاريع/الطلبات) ──
+function loadDashboardSummary(){
+    var box=document.getElementById('dashSummary');
+    if(!box)return;
+    Promise.all([
+        db.collection('users').where('role','==','employee').get(),
+        db.collection('projects').get(),
+        db.collection('requests').where('status','==','pending').get()
+    ]).then(function(res){
+        var empCount=res[0].size, projCount=res[1].size, pendingCount=res[2].size;
+        box.innerHTML=
+            '<div class="DC" onclick="go(\'staff\')" style="cursor:pointer"><div class="di">👥</div><div class="dt2">'+empCount+' موظف</div><div class="dd">إجمالي حسابات الموظفين المسجّلة</div></div>'+
+            '<div class="DC" onclick="go(\'pmgmt\')" style="cursor:pointer"><div class="di">📁</div><div class="dt2">'+projCount+' مشروع</div><div class="dd">إجمالي المشاريع الحالية</div></div>'+
+            '<div class="DC" onclick="go(\'staff\')" style="cursor:pointer'+(pendingCount?';border:2px solid var(--gd)':'')+'"><div class="di">⏳</div><div class="dt2">'+pendingCount+' طلب معلّق</div><div class="dd">بانتظار موافقة أو رفض الأدمن</div></div>';
+    }).catch(function(){ box.innerHTML=''; });
+}
+
 // ─── متابعة الموظفين (بيانات حية من Firebase Firestore) ──────────────────
 function loadStaffOverview(){
     var box=document.getElementById('staffList');
@@ -172,6 +190,9 @@ function loadStaffOverview(){
         }
         var employees=[];
         snap.forEach(function(doc){employees.push(Object.assign({uid:doc.id},doc.data()));});
+        // مزامنة قائمة أسماء الموظفين الحقيقيين (حسابات الدخول) مع قائمة الأوتوكومبليت في كل النماذج
+        employees.forEach(function(emp){ if(emp.name) addEmployeeName(emp.name); });
+        renderEmpListSec();
         var proms=employees.map(function(emp){
             return Promise.all([
                 db.collection('projects').where('assignees','array-contains',emp.uid).get(),
@@ -218,6 +239,7 @@ function reqStatusLabel(s){
 function renderStaffList(list){
     var box=document.getElementById('staffList');
     if(!box)return;
+    window._staffEmpCache=list;
     var h='';
     list.forEach(function(emp,idx){
         var pending=emp.requests.filter(function(r){return r.status==='pending';}).length;
@@ -251,16 +273,22 @@ function renderStaffList(list){
 
         h+='<div class="staff-sub-title">📆 التقارير الأسبوعية</div>';
         if(emp.weeklyReports.length){
-            emp.weeklyReports.forEach(function(r){
-                h+='<div class="ac-row"><div class="ac-t">أسبوع '+escH(r.weekStart||'')+'</div>'+
+            window._staffWkrCache=window._staffWkrCache||{};
+            window._staffWkrCache[idx]=emp.weeklyReports;
+            emp.weeklyReports.forEach(function(r,ri){
+                h+='<div class="ac-row"><div class="ac-t">أسبوع '+escH(r.weekStart||'')+
+                   ' <button class="bt bt-o" style="padding:2px 8px;font-size:10px;margin-right:8px" onclick="printWeeklyReportDoc(window._staffEmpCache['+idx+'],window._staffWkrCache['+idx+']['+ri+'])">🖨 طباعة</button></div>'+
                    (r.content?'<div class="ac-meta">'+escH(r.content)+'</div>':'')+'</div>';
             });
         }else h+='<div class="empty-hint">لم يُرسل الموظف أي تقرير أسبوعي بعد.</div>';
 
         h+='<div class="staff-sub-title">🏆 الإنجازات</div>';
         if(emp.achievements.length){
-            emp.achievements.forEach(function(a){
-                h+='<div class="ac-row"><div class="ac-t">'+escH(a.title||'')+'</div>'+
+            window._staffAchCache=window._staffAchCache||{};
+            window._staffAchCache[idx]=emp.achievements;
+            emp.achievements.forEach(function(a,ai){
+                h+='<div class="ac-row"><div class="ac-t">'+escH(a.title||'')+
+                   ' <button class="bt bt-o" style="padding:2px 8px;font-size:10px;margin-right:8px" onclick="printAchievementDoc(window._staffEmpCache['+idx+'],window._staffAchCache['+idx+']['+ai+'])">🖨 طباعة</button></div>'+
                    (a.description?'<div class="ac-meta">'+escH(a.description)+'</div>':'')+
                    (a.date?'<div class="ac-meta">📅 '+escH(a.date)+'</div>':'')+'</div>';
             });
@@ -268,10 +296,14 @@ function renderStaffList(list){
 
         h+='<div class="staff-sub-title">📨 الطلبات</div>';
         if(emp.requests.length){
-            emp.requests.forEach(function(r){
-                h+='<div class="rq-row"><div class="rq-t">'+escH(r.type||'طلب')+' <span class="badge '+badgeClassForReq(r.status)+'">'+reqStatusLabel(r.status)+'</span></div>'+
+            window._staffReqCache=window._staffReqCache||{};
+            window._staffReqCache[idx]=emp.requests;
+            emp.requests.forEach(function(r,qi){
+                h+='<div class="rq-row"><div class="rq-t">'+escH(r.type||'طلب')+' <span class="badge '+badgeClassForReq(r.status)+'">'+reqStatusLabel(r.status)+'</span>'+
+                   ' <button class="bt bt-o" style="padding:2px 8px;font-size:10px;margin-right:8px" onclick="printRequestDoc(window._staffEmpCache['+idx+'],window._staffReqCache['+idx+']['+qi+'])">🖨 طباعة</button></div>'+
                    (r.details?'<div class="pj-meta">'+escH(r.details)+'</div>':'')+
                    (r.fromDate?('<div class="pj-meta">من '+escH(r.fromDate)+(r.toDate?(' إلى '+escH(r.toDate)):'')+'</div>'):'')+
+                   (r.reviewedBy?('<div class="pj-meta">تمت المراجعة بواسطة: '+escH(r.reviewedBy)+'</div>'):'')+
                    (r.status==='pending'?('<div class="rq-actions"><button class="bt bt-p" onclick="reviewRequest(\''+r.id+'\',\'approved\')">✔ موافقة</button><button class="bt bt-d" onclick="reviewRequest(\''+r.id+'\',\'rejected\')">✕ رفض</button></div>'):'')+
                    '</div>';
             });
@@ -353,7 +385,7 @@ function createProject(){
     db.collection('projects').add({
         title:title, description:desc, assignees:checked, progressMap:{},
         createdAt:firebase.firestore.FieldValue.serverTimestamp(),
-        createdBy:(TG_USER?TG_USER.name:'')
+        createdBy:(TG_USER?TG_USER.name:''), createdByUid:(TG_USER?TG_USER.uid:'')
     }).then(function(){
         msg.style.color='var(--ok)'; msg.textContent='✅ تم إنشاء المشروع بنجاح.';
         document.getElementById('pmTitle').value='';
@@ -547,6 +579,128 @@ function FG(l,t,p){return '<div class="fg"><label>'+l+'</label><input type="'+(t
 function FGE(l){return '<div class="fg"><label>'+l+'</label><input type="text" class="emp-name-fld" list="tgEmpDL" autocomplete="off" onchange="addEmployeeName(this.value)"></div>'}
 function FGA(l,r,p){return '<div class="fg fg-full"><label>'+l+'</label><textarea rows="'+(r||3)+'"'+(p?' placeholder="'+p+'"':'')+'></textarea></div>'}
 function FGS(l,opts){var o='<option value="" selected></option>';for(var i=0;i<opts.length;i++)o+='<option>'+opts[i]+'</option>';return '<div class="fg"><label>'+l+'</label><select>'+o+'</select></div>'}
+
+// ─── طباعة موحدة لمستندات الموظف (تُستخدم من لوحة الأدمن وبوابة الموظف معاً) ──
+// تبحث عن إطار طباعة مخفي بمعرّف tgPrintFrame في الصفحة الحالية (موجود في index.html و employee.html)
+function tgLine(lbl,val){
+    return '<div class="FL-line"><span class="FL-line-lbl">'+lbl+'</span>'+
+           '<input type="text" class="FL-line-val" readonly value="'+escH(val||'')+'"></div>';
+}
+function tgBlock(val){
+    return '<textarea class="FL-textbody" rows="8" readonly>'+escH(val||'')+'</textarea>';
+}
+// إبقاء الأسماء القديمة كمرادفات (متوافقة مع الكود القديم في بوابة الموظف)
+function empLine(lbl,val){ return tgLine(lbl,val); }
+function empBlock(val){ return tgBlock(val); }
+function printDoc(bodyHtml){
+    var ifr=document.getElementById('tgPrintFrame');
+    if(!ifr)return;
+    var doc=ifr.contentWindow.document;
+    doc.open();
+    doc.write('<!DOCTYPE html><html lang="ar" dir="rtl"><head><meta charset="UTF-8">'+
+        '<link rel="stylesheet" href="styles.css"></head><body>'+bodyHtml+'</body></html>');
+    doc.close();
+    doc.querySelectorAll('.dcn').forEach(function(e){e.innerText=CN;});
+    setTimeout(function(){
+        ifr.contentWindow.focus();
+        ifr.contentWindow.print();
+    },300);
+}
+function printWeeklyReportDoc(u,r){
+    var h=H('تقرير أسبوعي','تقرير أداء أسبوعي مُرسل من الموظف','WEEKLY WORK REPORT','wkr');
+    h+=SC('١','بيانات الموظف');
+    h+=tgLine('اسم الموظف',u.name);
+    if(u.email)h+=tgLine('البريد الإلكتروني',u.email);
+    h+=tgLine('بداية الأسبوع',r.weekStart);
+    h+=SC('٢','ملخص الأسبوع');
+    h+=tgBlock(r.content);
+    h+=FT(['نسخة للموظف','نسخة للإدارة']);
+    printDoc(h);
+}
+function printAchievementDoc(u,a){
+    var h=H('توثيق إنجاز','إنجاز مُسجّل من الموظف','ACHIEVEMENT RECORD','ach');
+    h+=SC('١','بيانات الموظف');
+    h+=tgLine('اسم الموظف',u.name);
+    h+=tgLine('عنوان الإنجاز',a.title);
+    h+=tgLine('التاريخ',a.date);
+    h+=SC('٢','وصف الإنجاز');
+    h+=tgBlock(a.description);
+    h+=FT(['نسخة للموظف','نسخة للإدارة']);
+    printDoc(h);
+}
+function printRequestDoc(u,r){
+    var h=H('طلب موظف','طلب مُقدَّم من الموظف','EMPLOYEE REQUEST','req');
+    h+=SC('١','بيانات الطلب');
+    h+=tgLine('اسم الموظف',u.name);
+    h+=tgLine('نوع الطلب',r.type);
+    h+=tgLine('الحالة', r.status==='approved'?'موافق عليه':(r.status==='rejected'?'مرفوض':'قيد المراجعة'));
+    if(r.fromDate) h+=tgLine('من تاريخ',r.fromDate);
+    if(r.toDate) h+=tgLine('إلى تاريخ',r.toDate);
+    if(r.reviewedBy) h+=tgLine('تمت المراجعة بواسطة',r.reviewedBy);
+    h+=SC('٢','تفاصيل الطلب');
+    h+=tgBlock(r.details);
+    h+=FT(['نسخة للموظف','نسخة للإدارة']);
+    printDoc(h);
+}
+
+// ─── حسابي — إعدادات شخصية مشتركة (تعمل للأدمن والموظف على حدٍّ سواء) ───────
+function myAccountHTML(){
+    var u=TG_USER||{};
+    var h='<div class="SP"><h3>👤 حسابي</h3>';
+    h+='<div class="set-hint">عدّل اسمك الظاهر في النظام، أو غيّر كلمة مرور حسابك. هذه الإعدادات خاصة بحسابك أنت فقط.</div>';
+
+    h+='<div class="set-sec"><div class="set-sec-title">🧑 البيانات الشخصية</div>';
+    h+='<div class="fg" style="margin-bottom:10px"><label>الاسم الظاهر في النظام</label><input type="text" id="acctName" value="'+escH(u.name||'')+'"></div>';
+    h+='<div class="fg" style="margin-bottom:10px"><label>البريد الإلكتروني</label><input type="email" value="'+escH(u.email||'')+'" disabled></div>';
+    h+='<button class="bt bt-p" onclick="saveMyName()">💾 حفظ الاسم</button>';
+    h+='<div id="acctNameMsg" style="margin-top:8px;font-size:11px"></div></div>';
+
+    h+='<div class="set-sec"><div class="set-sec-title">🔒 تغيير كلمة المرور</div>';
+    h+='<div class="fr fr2" style="margin-top:8px">'+
+       '<div class="fg"><label>كلمة المرور الحالية</label><input type="password" id="acctOldPass"></div>'+
+       '<div class="fg"><label>كلمة المرور الجديدة</label><input type="password" id="acctNewPass" placeholder="6 أحرف على الأقل"></div>'+
+       '</div>';
+    h+='<button class="bt bt-p" onclick="saveMyPassword()">🔒 تحديث كلمة المرور</button>';
+    h+='<div id="acctPassMsg" style="margin-top:8px;font-size:11px"></div></div>';
+
+    h+='</div>';
+    return h;
+}
+function saveMyName(){
+    var inp=document.getElementById('acctName');
+    var msg=document.getElementById('acctNameMsg');
+    if(!inp||!msg)return;
+    var name=(inp.value||'').trim();
+    if(!name){ msg.style.color='var(--no)'; msg.textContent='من فضلك اكتب اسماً صحيحاً.'; return; }
+    msg.style.color='var(--tx3)'; msg.textContent='⏳ جارٍ الحفظ...';
+    db.collection('users').doc(TG_USER.uid).update({name:name}).then(function(){
+        TG_USER.name=name;
+        msg.style.color='var(--ok)'; msg.textContent='✅ تم حفظ الاسم بنجاح.';
+        var whoEl=document.getElementById('empWhoName'); if(whoEl) whoEl.textContent=name;
+        var sbEl=document.getElementById('sbUser');
+        if(sbEl) sbEl.innerHTML='👤 <strong style="color:#fff">'+escH(name)+'</strong><br>'+escH(TG_USER.email||'');
+    }).catch(function(err){ msg.style.color='var(--no)'; msg.textContent='❌ '+err.message; });
+}
+function saveMyPassword(){
+    var oldPass=(document.getElementById('acctOldPass').value||'');
+    var newPass=(document.getElementById('acctNewPass').value||'');
+    var msg=document.getElementById('acctPassMsg');
+    if(!oldPass||!newPass){ msg.style.color='var(--no)'; msg.textContent='من فضلك املأ كلمة المرور الحالية والجديدة.'; return; }
+    if(newPass.length<6){ msg.style.color='var(--no)'; msg.textContent='كلمة المرور الجديدة يجب ألا تقل عن 6 أحرف.'; return; }
+    msg.style.color='var(--tx3)'; msg.textContent='⏳ جارٍ التحديث...';
+    var user=auth.currentUser;
+    var cred=firebase.auth.EmailAuthProvider.credential(user.email,oldPass);
+    user.reauthenticateWithCredential(cred).then(function(){
+        return user.updatePassword(newPass);
+    }).then(function(){
+        msg.style.color='var(--ok)'; msg.textContent='✅ تم تحديث كلمة المرور بنجاح.';
+        document.getElementById('acctOldPass').value='';
+        document.getElementById('acctNewPass').value='';
+    }).catch(function(err){
+        var map={'auth/wrong-password':'كلمة المرور الحالية غير صحيحة.','auth/weak-password':'كلمة المرور الجديدة ضعيفة جداً.','auth/requires-recent-login':'يرجى تسجيل الخروج والدخول مرة أخرى ثم إعادة المحاولة.'};
+        msg.style.color='var(--no)'; msg.textContent='❌ '+(map[err.code]||err.message);
+    });
+}
 
 function logTbl(title,app,ref,cols,rows,docId){
     var h=H(title+' — ملحق '+app,ref,'',docId);
@@ -1277,6 +1431,11 @@ function load(id,c){
 
         h+='<div style="text-align:left;margin-top:20px">'+
            '<button class="bt bt-p" onclick="saveSt()">💾 حفظ الإعدادات</button></div></div>';
+    }
+
+    // ── حسابي (إعدادات شخصية للأدمن) ──────────────────────────────────
+    else if(id==="account"){
+        h=myAccountHTML();
     }
 
     c.innerHTML=h;

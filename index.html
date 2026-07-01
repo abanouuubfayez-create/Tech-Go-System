@@ -13,6 +13,7 @@
 <script src="auth.js"></script>
 </head>
 <body>
+<iframe id="tgPrintFrame" style="position:fixed;top:-9999px;left:-9999px;width:0;height:0;border:0" title="طباعة"></iframe>
 <button class="mtg" onclick="document.getElementById('sb').classList.toggle('opn')">☰</button>
 
 <!-- ترويسة وتذييل الطباعة (مخفية على الشاشة) -->
@@ -66,6 +67,7 @@
     <div class="S-i" onclick="go('staff',this)" style="border-right:2px solid var(--gd)"><span class="ic">👥</span> متابعة الموظفين <span class="S-b">جديد</span></div>
     <div class="S-s">الإعدادات</div>
     <div class="S-i" onclick="go('set',this)"><span class="ic">⚙️</span> تخصيص النظام</div>
+    <div class="S-i" onclick="go('account',this)" style="border-right:2px solid var(--gd)"><span class="ic">👤</span> حسابي <span class="S-b">جديد</span></div>
     <div class="S-i" onclick="tgLogout()"><span class="ic">🚪</span> تسجيل الخروج</div>
 </nav>
 <div id="sbUser" style="padding:10px 16px 16px;font-size:10px;color:rgba(255,255,255,.5);border-top:1px solid rgba(255,255,255,.07)"></div>
@@ -74,6 +76,7 @@
 <div class="TB"><div class="t" id="pT">لوحة التحكم</div><div class="ac np"><button class="bt bt-o" onclick="openPrintPreview()">🖨 معاينة وطباعة</button></div></div>
 <div class="CT">
 <div class="pg a" id="pg-dash">
+<div class="DG" id="dashSummary" style="margin-bottom:16px"></div>
 <div class="DG">
 <div class="DC" onclick="go('emp')"><div class="di">👤</div><div class="dt2">ملف بيانات الموظف</div><div class="dd">البيانات الشخصية · الوظيفية · ساعات العمل</div></div>
 <div class="DC" onclick="go('leave')"><div class="di">🏖</div><div class="dt2">طلب إجازة</div><div class="dd">سنوية · عارضة · الموافقات والرصيد</div></div>
@@ -109,7 +112,7 @@
 <div class="pg" id="pg-exp"></div><div class="pg" id="pg-clr"></div><div class="pg" id="pg-task"></div><div class="pg" id="pg-sal"></div>
 <div class="pg" id="pg-res"></div><div class="pg" id="pg-promo"></div><div class="pg" id="pg-raise"></div><div class="pg" id="pg-contract"></div>
 <div class="pg" id="pg-att"></div><div class="pg" id="pg-comp"></div><div class="pg" id="pg-set"></div><div class="pg" id="pg-proj"></div><div class="pg" id="pg-mexp"></div>
-<div class="pg" id="pg-staff"></div><div class="pg" id="pg-pmgmt"></div>
+<div class="pg" id="pg-staff"></div><div class="pg" id="pg-pmgmt"></div><div class="pg" id="pg-account"></div>
 </div>
 </div>
 <datalist id="tgEmpDL"></datalist>
@@ -283,6 +286,7 @@
   tgRequireAuth('admin', function (u) {
     var box = document.getElementById('sbUser');
     if (box) box.innerHTML = '👤 <strong style="color:#fff">' + (u.name || u.email) + '</strong><br>' + u.email;
+    loadDashboardSummary();
   });
 </script>
 </body>

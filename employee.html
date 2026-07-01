@@ -23,7 +23,7 @@
 </head>
 <body class="emp-body">
 
-<iframe id="empPrintFrame" style="position:fixed;top:-9999px;left:-9999px;width:0;height:0;border:0" title="طباعة"></iframe>
+<iframe id="tgPrintFrame" style="position:fixed;top:-9999px;left:-9999px;width:0;height:0;border:0" title="طباعة"></iframe>
 
 <div class="emp-topbar">
   <div class="who">👋 أهلاً، <span id="empWhoName">...</span><small id="empWhoRole"></small></div>
@@ -35,13 +35,24 @@
   <div class="emp-tab" data-pg="wkr" onclick="empGo('wkr',this)">📆 تقاريري الأسبوعية</div>
   <div class="emp-tab" data-pg="ach" onclick="empGo('ach',this)">🏆 إنجازاتي</div>
   <div class="emp-tab" data-pg="req" onclick="empGo('req',this)">📨 طلباتي</div>
+  <div class="emp-tab" data-pg="acct" onclick="empGo('acct',this)">👤 حسابي</div>
 </div>
 
 <div class="emp-ct">
 
   <!-- مشاريعي -->
   <div class="emp-pg a" id="epg-proj">
-    <div class="set-hint" style="margin-bottom:14px">المشاريع المُسندة إليك — حدّث نسبة تقدّمك وحالتك أولاً بأول ليراها المدير.</div>
+    <div class="set-hint" style="margin-bottom:14px">المشاريع المُسندة إليك — حدّث نسبة تقدّمك وحالتك أولاً بأول ليراها المدير. وتقدر كمان تُنشئ مشروعاً خاصاً بيك وتعدّل عليه لاحقاً.</div>
+
+    <div class="set-sec">
+      <div class="set-sec-title">➕ مشروع جديد</div>
+      <div class="fg" style="margin-bottom:10px"><label>عنوان المشروع</label><input type="text" id="newProjTitle" placeholder="مثلاً: تحسين سكربت المعالجة اليومية"></div>
+      <div class="fg fg-full" style="margin-bottom:10px"><label>وصف مختصر (اختياري)</label><textarea rows="2" id="newProjDesc"></textarea></div>
+      <button class="bt bt-p" onclick="empCreateProject()">➕ إنشاء المشروع</button>
+      <div id="newProjMsg" style="margin-top:8px;font-size:11px"></div>
+    </div>
+
+    <div class="set-sec-title" style="margin:16px 0 8px">📁 مشاريعي الحالية</div>
     <div id="myProjectsList"><div class="empty-hint">⏳ جارٍ التحميل...</div></div>
   </div>
 
@@ -102,6 +113,27 @@
     <div id="myReqList"><div class="empty-hint">⏳ جارٍ التحميل...</div></div>
   </div>
 
+  <!-- حسابي -->
+  <div class="emp-pg" id="epg-acct">
+    <div class="set-hint" style="margin-bottom:14px">عدّل اسمك الظاهر في النظام، أو غيّر كلمة مرور حسابك.</div>
+    <div class="set-sec">
+      <div class="set-sec-title">🧑 البيانات الشخصية</div>
+      <div class="fg" style="margin-bottom:10px"><label>الاسم الظاهر في النظام</label><input type="text" id="acctName"></div>
+      <div class="fg" style="margin-bottom:10px"><label>البريد الإلكتروني</label><input type="email" id="acctEmail" disabled></div>
+      <button class="bt bt-p" onclick="saveMyName()">💾 حفظ الاسم</button>
+      <div id="acctNameMsg" style="margin-top:8px;font-size:11px"></div>
+    </div>
+    <div class="set-sec">
+      <div class="set-sec-title">🔒 تغيير كلمة المرور</div>
+      <div class="fr fr2" style="margin-top:8px">
+        <div class="fg"><label>كلمة المرور الحالية</label><input type="password" id="acctOldPass"></div>
+        <div class="fg"><label>كلمة المرور الجديدة</label><input type="password" id="acctNewPass" placeholder="6 أحرف على الأقل"></div>
+      </div>
+      <button class="bt bt-p" onclick="saveMyPassword()">🔒 تحديث كلمة المرور</button>
+      <div id="acctPassMsg" style="margin-top:8px;font-size:11px"></div>
+    </div>
+  </div>
+
 </div>
 
 <script>
@@ -114,65 +146,11 @@ function empGo(id,el){
 function esc(s){return (s||'').toString().replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
 
 // ── طباعة مستندات الموظف بنفس تنسيق النظام (خطاب رسمي FL) ─────────────
-// يعتمد على الدوال المشتركة H()/FT()/SC()/escH()/LOGO_URI الموجودة في app.js
-DCODES.wkr='WKR'; DCODES.ach='ACH'; DCODES.req='REQ';
-function empLine(lbl,val){
-    return '<div class="FL-line"><span class="FL-line-lbl">'+lbl+'</span>'+
-           '<input type="text" class="FL-line-val" readonly value="'+escH(val||'')+'"></div>';
-}
-function empBlock(val){
-    return '<textarea class="FL-textbody" rows="8" readonly>'+escH(val||'')+'</textarea>';
-}
-function printDoc(bodyHtml){
-    var ifr=document.getElementById('empPrintFrame');
-    var doc=ifr.contentWindow.document;
-    doc.open();
-    doc.write('<!DOCTYPE html><html lang="ar" dir="rtl"><head><meta charset="UTF-8">'+
-        '<link rel="stylesheet" href="styles.css"></head><body>'+bodyHtml+'</body></html>');
-    doc.close();
-    upCNIn(ifr.contentWindow.document);
-    setTimeout(function(){
-        ifr.contentWindow.focus();
-        ifr.contentWindow.print();
-    },300);
-}
-function upCNIn(doc){ doc.querySelectorAll('.dcn').forEach(function(e){e.innerText=CN;}); }
-
-function printWeeklyReport(r){
-    var h=H('تقرير أسبوعي','تقرير أداء أسبوعي مُرسل من الموظف','WEEKLY WORK REPORT','wkr');
-    h+=SC('١','بيانات الموظف');
-    h+=empLine('اسم الموظف',TG_USER.name);
-    h+=empLine('البريد الإلكتروني',TG_USER.email);
-    h+=empLine('بداية الأسبوع',r.weekStart);
-    h+=SC('٢','ملخص الأسبوع');
-    h+=empBlock(r.content);
-    h+=FT(['نسخة للموظف','نسخة للإدارة']);
-    printDoc(h);
-}
-function printAchievement(a){
-    var h=H('توثيق إنجاز','إنجاز مُسجّل من الموظف','ACHIEVEMENT RECORD','ach');
-    h+=SC('١','بيانات الموظف');
-    h+=empLine('اسم الموظف',TG_USER.name);
-    h+=empLine('عنوان الإنجاز',a.title);
-    h+=empLine('التاريخ',a.date);
-    h+=SC('٢','وصف الإنجاز');
-    h+=empBlock(a.description);
-    h+=FT(['نسخة للموظف','نسخة للإدارة']);
-    printDoc(h);
-}
-function printRequest(r){
-    var h=H('طلب موظف','طلب مُقدَّم من الموظف','EMPLOYEE REQUEST','req');
-    h+=SC('١','بيانات الطلب');
-    h+=empLine('اسم الموظف',TG_USER.name);
-    h+=empLine('نوع الطلب',r.type);
-    h+=empLine('الحالة', r.status==='approved'?'موافق عليه':(r.status==='rejected'?'مرفوض':'قيد المراجعة'));
-    if(r.fromDate) h+=empLine('من تاريخ',r.fromDate);
-    if(r.toDate) h+=empLine('إلى تاريخ',r.toDate);
-    h+=SC('٢','تفاصيل الطلب');
-    h+=empBlock(r.details);
-    h+=FT(['نسخة للموظف','نسخة للإدارة']);
-    printDoc(h);
-}
+// الدوال المشتركة H()/FT()/SC()/escH()/printDoc()/printWeeklyReportDoc()/... موجودة في app.js
+// (نفس الدوال اللي يستخدمها الأدمن لطباعة مستندات أي موظف من "متابعة الموظفين")
+function printWeeklyReport(r){ printWeeklyReportDoc(TG_USER,r); }
+function printAchievement(a){ printAchievementDoc(TG_USER,a); }
+function printRequest(r){ printRequestDoc(TG_USER,r); }
 function badgeReq(s){
     if(s==='approved')return '<span class="badge badge-approved">موافق عليه</span>';
     if(s==='rejected')return '<span class="badge badge-rejected">مرفوض</span>';
@@ -192,9 +170,10 @@ function loadMyProjects(){
         var h='';
         snap.forEach(function(doc){
             var p=doc.data(); var id=doc.id;
+            var mine=(p.createdByUid===TG_USER.uid);
             var pm=(p.progressMap&&p.progressMap[TG_USER.uid])||{progress:0,status:'لم يبدأ',note:''};
             h+='<div class="pj-row" style="margin-bottom:14px">'+
-               '<div class="pj-t" style="font-size:13px">'+esc(p.title||'بدون عنوان')+'</div>'+
+               '<div class="pj-t" style="font-size:13px">'+esc(p.title||'بدون عنوان')+(mine?' <span class="badge" style="background:var(--gd);color:#1b2a4a">مشروعي</span>':'')+'</div>'+
                (p.description?'<div class="pj-meta">'+esc(p.description)+'</div>':'')+
                '<div class="pj-bar"><div class="pj-bar-in" style="width:'+(pm.progress||0)+'%"></div></div>'+
                '<div class="fr fr3" style="margin-top:10px">'+
@@ -207,10 +186,63 @@ function loadMyProjects(){
                '</div>'+
                '<button class="bt bt-p" style="margin-top:8px" onclick="saveProjectProgress(\''+id+'\')">💾 حفظ التحديث</button>'+
                '<span id="pmsg_'+id+'" style="font-size:10.5px;margin-right:8px"></span>'+
+               (mine?(
+                 '<div style="display:flex;gap:8px;margin-top:10px">'+
+                 '<button class="bt bt-o" onclick="toggleMyProjEdit(\''+id+'\')">✏️ تعديل المشروع</button>'+
+                 '<button class="bt bt-d" onclick="deleteMyProject(\''+id+'\')">🗑 حذف المشروع</button>'+
+                 '</div>'+
+                 '<div id="mpEdit_'+id+'" style="display:none;margin-top:10px;padding-top:10px;border-top:1px dashed var(--bd2)">'+
+                 '<div class="fg" style="margin-bottom:8px"><label>عنوان المشروع</label><input type="text" id="mpEditTitle_'+id+'" value="'+esc(p.title||'')+'"></div>'+
+                 '<div class="fg fg-full" style="margin-bottom:8px"><label>وصف مختصر</label><textarea rows="2" id="mpEditDesc_'+id+'">'+esc(p.description||'')+'</textarea></div>'+
+                 '<div style="display:flex;gap:8px"><button class="bt bt-p" onclick="saveMyProjectEdit(\''+id+'\')">💾 حفظ التعديلات</button>'+
+                 '<button class="bt bt-o" onclick="toggleMyProjEdit(\''+id+'\')">إلغاء</button></div>'+
+                 '<div id="mpEditMsg_'+id+'" style="margin-top:6px;font-size:11px"></div>'+
+                 '</div>'
+               ):'')+
                '</div>';
         });
         box.innerHTML=h;
     }).catch(function(err){ box.innerHTML='<div class="empty-hint" style="color:var(--no)">تعذر تحميل المشاريع: '+esc(err.message)+'</div>'; });
+}
+
+// إنشاء مشروع جديد خاص بالموظف (مُسند لنفسه) — يقدر يعدّله أو يحذفه لاحقاً بنفسه
+function empCreateProject(){
+    var title=(document.getElementById('newProjTitle').value||'').trim();
+    var desc=(document.getElementById('newProjDesc').value||'').trim();
+    var msg=document.getElementById('newProjMsg');
+    if(!title){ msg.style.color='var(--no)'; msg.textContent='من فضلك اكتب عنوان المشروع.'; return; }
+    msg.style.color='var(--tx3)'; msg.textContent='⏳ جارٍ الإنشاء...';
+    db.collection('projects').add({
+        title:title, description:desc, assignees:[TG_USER.uid], progressMap:{},
+        createdAt:firebase.firestore.FieldValue.serverTimestamp(),
+        createdBy:TG_USER.name, createdByUid:TG_USER.uid
+    }).then(function(){
+        msg.style.color='var(--ok)'; msg.textContent='✅ تم إنشاء المشروع بنجاح.';
+        document.getElementById('newProjTitle').value='';
+        document.getElementById('newProjDesc').value='';
+        loadMyProjects();
+    }).catch(function(err){ msg.style.color='var(--no)'; msg.textContent='❌ '+err.message; });
+}
+function toggleMyProjEdit(id){
+    var e=document.getElementById('mpEdit_'+id);
+    if(!e)return;
+    e.style.display=(e.style.display==='none'||!e.style.display)?'block':'none';
+}
+function saveMyProjectEdit(id){
+    var title=(document.getElementById('mpEditTitle_'+id).value||'').trim();
+    var desc=(document.getElementById('mpEditDesc_'+id).value||'').trim();
+    var msg=document.getElementById('mpEditMsg_'+id);
+    if(!title){ msg.style.color='var(--no)'; msg.textContent='من فضلك اكتب عنوان المشروع.'; return; }
+    msg.style.color='var(--tx3)'; msg.textContent='⏳ جارٍ الحفظ...';
+    db.collection('projects').doc(id).update({title:title,description:desc}).then(function(){
+        loadMyProjects();
+    }).catch(function(err){ msg.style.color='var(--no)'; msg.textContent='❌ تعذر الحفظ: '+err.message; });
+}
+function deleteMyProject(id){
+    if(!confirm('حذف هذا المشروع نهائياً؟ لا يمكن التراجع عن هذا الإجراء.'))return;
+    db.collection('projects').doc(id).delete().then(loadMyProjects).catch(function(err){
+        alert('تعذر حذف المشروع: '+err.message);
+    });
 }
 function saveProjectProgress(id){
     var progress=parseInt(document.getElementById('pr_'+id).value,10)||0;
@@ -342,6 +374,8 @@ document.getElementById('wkrStart').value=mondayOf(new Date());
 tgRequireAuth('employee', function(u){
     document.getElementById('empWhoName').textContent=u.name;
     document.getElementById('empWhoRole').textContent='بوابة الموظف · '+u.email;
+    document.getElementById('acctName').value=u.name||'';
+    document.getElementById('acctEmail').value=u.email||'';
     loadMyProjects();
     loadMyWeeklyReports();
     loadMyAchievements();

@@ -41,19 +41,34 @@ service cloud.firestore {
                       (isAdmin() && request.resource.data.role == 'employee') ||
                       (myUid() == uid && request.resource.data.role == 'admin' && !setupDone())
                     );
-      allow update, delete: if isAdmin();
+      // كل مستخدم (أدمن أو موظف) يقدر يعدّل اسمه الظاهر بنفسه من "حسابي" — بدون المساس بالدور أو البريد
+      allow update: if isAdmin() || (
+                      isSignedIn() && myUid() == uid &&
+                      request.resource.data.diff(resource.data).affectedKeys().hasOnly(['name'])
+                    );
+      allow delete: if isAdmin();
     }
 
-    // المشاريع: الأدمن يدير كل شيء، الموظف يقرأ مشاريعه فقط ويحدّث تقدمه هو فقط
+    // المشاريع: الأدمن يدير كل شيء. الموظف يقرأ مشاريعه، يحدّث تقدمه هو فقط،
+    // وكمان يقدر يُنشئ مشروعاً خاصاً به (يُسند لنفسه) ويعدّل/يحذف المشاريع التي أنشأها هو بنفسه.
     match /projects/{projectId} {
       allow read: if isAdmin() || (isSignedIn() && myUid() in resource.data.assignees);
-      allow create, delete: if isAdmin();
-      allow update: if isAdmin() || (
+      allow create: if isAdmin() || (
         isSignedIn() &&
-        myUid() in resource.data.assignees &&
-        request.resource.data.diff(resource.data).affectedKeys()
-          .hasOnly(['progressMap'])
+        myUid() in request.resource.data.assignees &&
+        request.resource.data.createdByUid == myUid()
       );
+      allow update: if isAdmin() || (
+        isSignedIn() && myUid() in resource.data.assignees &&
+        (
+          request.resource.data.diff(resource.data).affectedKeys().hasOnly(['progressMap']) ||
+          (
+            resource.data.createdByUid == myUid() &&
+            request.resource.data.diff(resource.data).affectedKeys().hasOnly(['title','description'])
+          )
+        )
+      );
+      allow delete: if isAdmin() || (isSignedIn() && resource.data.createdByUid == myUid());
     }
 
     // الإنجازات: كل موظف يقرأ/يضيف إنجازاته فقط، الأدمن يقرأ كل شيء
