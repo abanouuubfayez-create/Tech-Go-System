@@ -1288,6 +1288,7 @@ function renderProjectsList(list){
         return bm-am;
     });
     var h='';
+    window._pmgmtProjCache = list;
     list.forEach(function(p,idx){
         var assignees=p.assignees||[];
         var sum=0;
@@ -1325,8 +1326,9 @@ function renderProjectsList(list){
         h+='<div class="proj-sec">'+projectChatHtml(p.id,'pmChatLog'+idx,'pmChatInput'+idx)+'</div>';
 
         h+='<div class="proj-sec"><div class="proj-sec-title">⚙️ إدارة المشروع</div>';
-        h+='<div style="display:flex;gap:8px">'+
+        h+='<div style="display:flex;gap:8px;flex-wrap:wrap">'+
            '<button class="bt bt-o" onclick="toggleProjEdit('+idx+')">✏️ تعديل المشروع</button>'+
+           '<button class="bt bt-o" onclick="printProjectDoc(window._pmgmtProjCache['+idx+'])">🖨 طباعة المشروع</button>'+
            '<button class="bt bt-d" onclick="deleteProject(\''+p.id+'\')">🗑 حذف المشروع</button>'+
            '</div>';
 
@@ -1541,6 +1543,35 @@ function printRequestDoc(u,r){
     h+=SC('٢','تفاصيل الطلب');
     h+=tgBlock(r.details);
     h+=FT(['نسخة للموظف','نسخة للإدارة']);
+    printDoc(h);
+}
+function printProjectDoc(p){
+    if(!p) return;
+    var h=H('تقرير مشروع','تقرير حالة المشروع وتحديثات الموظفين','PROJECT STATUS REPORT','proj');
+    h+=SC('١','بيانات المشروع');
+    h+=tgLine('اسم المشروع', p.title||'');
+    if(p.description) h+=tgLine('الوصف', p.description);
+    h+=tgLine('الأولوية', p.priority||'متوسطة');
+    h+=tgLine('حالة المشروع', p.status||'مخطط له');
+    if(p.deadline) h+=tgLine('تاريخ الاستحقاق', p.deadline);
+    if(p.createdBy) h+=tgLine('أنشئ بواسطة', p.createdBy);
+    h+=SC('٢','تقدّم الموظفين');
+    var assignees = p.assignees||[];
+    if(assignees.length){
+        assignees.forEach(function(uid){
+            var e = (PMGMT_EMPLOYEES||[]).find(function(x){return x.uid===uid;});
+            var nm = e ? (e.name||e.email) : uid;
+            var pm = (p.progressMap&&p.progressMap[uid])||{progress:0,status:'لم يبدأ',note:''};
+            h+=tgLine('الموظف', nm);
+            h+=tgLine('نسبة الإنجاز', (pm.progress||0)+'%');
+            h+=tgLine('الحالة', pm.status||'لم يبدأ');
+            if(pm.note) h+=tgLine('ملاحظة', pm.note);
+            h+='<div style="border-bottom:1px dashed #ccc;margin:8px 0"></div>';
+        });
+    } else {
+        h+=tgLine('الموظفون', 'لم يتم تعيين موظفين بعد');
+    }
+    h+=FT(['نسخة للإدارة','نسخة للأرشيف']);
     printDoc(h);
 }
 
