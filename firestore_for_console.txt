@@ -1,7 +1,3 @@
-// -------------------------------------------------------------------
-// قواعد أمان Firestore
-// انسخ من سطر rules_version لآخر الملف والصقه في Firebase Console
-// -------------------------------------------------------------------
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
@@ -21,13 +17,11 @@ service cloud.firestore {
       return isSignedIn() && (myRole() == 'admin' || myRole() == 'assistant_admin');
     }
 
-    // هل تم إعداد أول أدمن للنظام بالفعل؟ (يُسند في صفحة setup.html)
     function setupDone() {
       return exists(/databases/$(database)/documents/system/meta) &&
              get(/databases/$(database)/documents/system/meta).data.setupDone == true;
     }
 
-    // مستند حالة النظام
     match /system/meta {
       allow read: if true;
       allow create: if isSignedIn() && request.resource.data.setupDone == true;
@@ -36,15 +30,12 @@ service cloud.firestore {
       allow delete: if false;
     }
 
-    // ملفات المستخدمين
     match /users/{uid} {
       allow read: if isSignedIn() && (myUid() == uid || isAnyAdmin());
-      // يسمح للأدمن الرئيسي بإنشاء حساب موظف أو أدمن مساعد جديد
       allow create: if isSignedIn() && (
                       (isAdmin() && (request.resource.data.role == 'employee' || request.resource.data.role == 'assistant_admin')) ||
                       (myUid() == uid && request.resource.data.role == 'admin' && !setupDone())
                     );
-      // يسمح للأدمن بتعديل أي مستخدم، أو الموظف بتعديل اسمه فقط
       allow update: if isAdmin() || (
                       isSignedIn() && myUid() == uid &&
                       request.resource.data.diff(resource.data).affectedKeys().hasOnly(['name'])
@@ -52,8 +43,6 @@ service cloud.firestore {
       allow delete: if isAdmin();
     }
 
-    // المشاريع: الأدمن أو الأدمن المساعد يملك التحكم الكامل.
-    // الموظف يقرأ فقط المشاريع المسندة إليه، ولا يملك صلاحية الإنشاء أو الحذف، ويعدّل فقط تقدّمه (progressMap)
     match /projects/{projectId} {
       allow read: if isAnyAdmin() || (isSignedIn() && myUid() in resource.data.assignees);
       allow create: if isAnyAdmin();
@@ -64,7 +53,6 @@ service cloud.firestore {
       allow delete: if isAnyAdmin();
     }
 
-    // نقاش/تعليقات كل مشروع
     match /projectComments/{commentId} {
       allow read: if isAnyAdmin() || (
         isSignedIn() &&
@@ -78,7 +66,6 @@ service cloud.firestore {
       allow delete: if isAnyAdmin() || (isSignedIn() && resource.data.uid == myUid());
     }
 
-    // الشات العام
     match /chatMessages/{msgId} {
       allow read: if isSignedIn();
       allow create: if isSignedIn() && request.resource.data.uid == myUid()
@@ -89,7 +76,6 @@ service cloud.firestore {
       allow delete: if isAnyAdmin() || (isSignedIn() && resource.data.uid == myUid());
     }
 
-    // المهام: الأدمن أو الأدمن المساعد يكلّف بالمهام ويحذفها. الموظف يقرأ مهامه ويعدّل الحالة فقط
     match /tasks/{taskId} {
       allow read: if isAnyAdmin() || (isSignedIn() && resource.data.assignedTo == myUid());
       allow create: if isAnyAdmin();
@@ -100,14 +86,12 @@ service cloud.firestore {
       allow delete: if isAnyAdmin();
     }
 
-    // الإنجازات
     match /achievements/{achId} {
       allow read: if isAnyAdmin() || (isSignedIn() && resource.data.uid == myUid());
       allow create: if isSignedIn() && request.resource.data.uid == myUid();
       allow update, delete: if isAdmin();
     }
 
-    // الطلبات: الأدمن الرئيسي فقط يعدّل الحالة
     match /requests/{reqId} {
       allow read: if isAnyAdmin() || (isSignedIn() && resource.data.uid == myUid());
       allow create: if isSignedIn() && request.resource.data.uid == myUid()
@@ -116,23 +100,17 @@ service cloud.firestore {
       allow delete: if isAdmin();
     }
 
-    // التقارير الأسبوعية
     match /weeklyReports/{repId} {
       allow read: if isAnyAdmin() || (isSignedIn() && resource.data.uid == myUid());
       allow create: if isSignedIn() && request.resource.data.uid == myUid();
       allow update, delete: if isAdmin();
     }
 
-    // الإشعارات (Push Notifications عبر Firestore)
     match /notifications/{notifId} {
-      // المستلم يقرأ إشعاراته فقط
       allow read: if isSignedIn() && resource.data.toUid == myUid();
-      // أي مستخدم مسجّل يبعت إشعار
       allow create: if isSignedIn();
-      // المستلم بس يقدر يعلمها مقروءة
       allow update: if isSignedIn() && resource.data.toUid == myUid()
                     && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['read']);
-      // الأدمن أو المستلم يحذف
       allow delete: if isAdmin() || (isSignedIn() && resource.data.toUid == myUid());
     }
   }
