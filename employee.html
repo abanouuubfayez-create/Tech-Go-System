@@ -13,14 +13,33 @@
 <script src="auth.js"></script>
 <script src="app.js"></script>
 <style>
-.emp-body{margin:0}
-.emp-nav{display:flex;gap:6px;padding:0 20px;background:var(--w);border-bottom:1px solid var(--bd2);flex-wrap:wrap}
-.emp-tab{padding:12px 16px;font-size:12px;font-weight:700;color:var(--tx3);cursor:pointer;border-bottom:2px solid transparent}
-.emp-tab.a{color:var(--nv);border-bottom-color:var(--gd)}
-.emp-ct{padding:20px 24px;max-width:900px;margin:0 auto}
-.emp-pg{display:none}
+.emp-body{margin:0; background:var(--bg);}
+.emp-nav{
+    display:flex;gap:2px;padding:0 20px;
+    background:var(--w);border-bottom:2px solid var(--bd2);
+    flex-wrap:wrap; position:sticky; top:56px; z-index:70;
+    box-shadow:0 2px 8px rgba(27,42,74,.05);
+}
+.emp-tab{
+    padding:13px 18px;font-size:12.5px;font-weight:600;
+    color:var(--tx3);cursor:pointer;
+    border-bottom:3px solid transparent;
+    margin-bottom:-2px; transition:var(--tr);
+    display:flex;align-items:center;gap:6px;
+}
+.emp-tab:hover{color:var(--nv); background:rgba(27,42,74,.03);}
+.emp-tab.a{
+    color:var(--nv);border-bottom-color:var(--gd);
+    font-weight:800; background:linear-gradient(180deg,transparent,rgba(201,162,39,.06));
+}
+.emp-ct{padding:22px 24px;max-width:960px;margin:0 auto}
+.emp-pg{display:none; animation:fi .22s ease;}
 .emp-pg.a{display:block}
-.tab-badge{background-color:var(--no);color:#fff;font-size:10px;font-weight:700;padding:2px 6px;border-radius:10px;margin-right:6px;display:inline-block;vertical-align:middle;line-height:1}
+.tab-badge{
+    background:var(--no);color:#fff;font-size:9px;font-weight:800;
+    padding:2px 7px;border-radius:10px;display:inline-flex;
+    align-items:center;line-height:1; min-width:18px;justify-content:center;
+}
 </style>
 </head>
 <body class="emp-body">
@@ -45,21 +64,6 @@
 
   <!-- مشاريعي -->
   <div class="emp-pg a" id="epg-proj">
-    <div class="set-hint" style="margin-bottom:14px">المشاريع المُسندة إليك — حدّث نسبة تقدّمك وحالتك أولاً بأول ليراها المدير. وتقدر كمان تُنشئ مشروعاً خاصاً بيك وتعدّل عليه لاحقاً.</div>
-
-    <div class="set-sec">
-      <div class="set-sec-title">➕ مشروع جديد</div>
-      <div class="fg" style="margin-bottom:10px"><label>عنوان المشروع</label><input type="text" id="newProjTitle" placeholder="مثلاً: تحسين سكربت المعالجة اليومية"></div>
-      <div class="fg fg-full" style="margin-bottom:10px"><label>وصف مختصر (اختياري)</label><textarea rows="2" id="newProjDesc"></textarea></div>
-      <div class="fr fr3" style="margin-bottom:10px">
-        <div class="fg"><label>الأولوية</label><select id="newProjPriority"><option>منخفضة</option><option selected>متوسطة</option><option>عالية</option></select></div>
-        <div class="fg"><label>حالة المشروع</label><select id="newProjStatus"><option selected>مخطط له</option><option>جاري العمل</option><option>متوقف</option><option>مكتمل</option></select></div>
-        <div class="fg"><label>تاريخ الاستحقاق (اختياري)</label><input type="date" id="newProjDeadline"></div>
-      </div>
-      <button class="bt bt-p" onclick="empCreateProject()">➕ إنشاء المشروع</button>
-      <div id="newProjMsg" style="margin-top:8px;font-size:11px"></div>
-    </div>
-
     <div class="set-sec-title" style="margin:16px 0 8px">📁 مشاريعي الحالية</div>
     <div id="myProjectsList"><div class="empty-hint">⏳ جارٍ التحميل...</div></div>
   </div>
@@ -76,7 +80,7 @@
       <div class="set-sec-title">➕ إضافة تقرير أسبوعي</div>
       <div class="set-hint">اكتب ملخصاً بالمهام اللي أنجزتها هذا الأسبوع، والتقدم في مشاريعك، وأي معوقات واجهتك.</div>
       <div class="fr fr2" style="margin-top:8px">
-        <div class="fg"><label>بداية الأسبوع (يوم السبت أو الاثنين)</label><input type="date" id="wkrStart"></div>
+        <div class="fg"><label>بداية الأسبوع (يوم الأحد)</label><input type="date" id="wkrStart"></div>
         <div class="fg"></div>
       </div>
       <div class="fg fg-full"><label>ملخص الأسبوع</label><textarea id="wkrContent" rows="4" placeholder="المهام المنجزة هذا الأسبوع، نسبة التقدم، أي معوقات أو ملاحظات..."></textarea></div>
@@ -299,72 +303,142 @@ function loadMyProjects(){
 }
 
 function renderProjectsHtml(projects){
-    var box=document.getElementById('myProjectsList');
-    var h='';
-    projects.forEach(function(p,idx){
-        var id=p.id;
-        var mine=(p.createdByUid===TG_USER.uid);
-        var pm=(p.progressMap&&p.progressMap[TG_USER.uid])||{progress:0,status:'لم يبدأ',note:''};
-        h+='<div class="staff-card'+(idx===0?' open':'')+'" id="myPjCard'+idx+'">';
-        h+='<div class="staff-card-h" onclick="toggleMyProjCard('+idx+')">'+
-           '<div><div class="staff-name">'+esc(p.title||'بدون عنوان')+(mine?' <span class="badge" style="background:var(--gd);color:#1b2a4a">مشروعي</span>':'')+'</div>'+
-           (p.description?'<div class="staff-email">'+esc(p.description)+'</div>':'')+
-           projectTagsHtml(p)+
-           '</div>'+
-           '<div class="staff-stats"><span class="staff-stat">📊 تقدّمي '+(pm.progress||0)+'%</span></div>'+
-           '</div>';
-        h+='<div class="staff-card-body">';
-
-        h+='<div class="proj-sec"><div class="proj-sec-title">📊 تحديث تقدّمي في المشروع</div>'+
-           '<div class="pj-bar"><div class="pj-bar-in" style="width:'+(pm.progress||0)+'%"></div></div>'+
-           '<div class="fr fr3" style="margin-top:10px">'+
-           '<div class="fg"><label>نسبة التقدم % <span id="pv_'+id+'">'+(pm.progress||0)+'</span></label>'+
-           '<input type="range" min="0" max="100" value="' + (pm.progress||0) + '" oninput="document.getElementById(\'pv_'+id+'\').textContent=this.value" id="pr_'+id+'"></div>'+
-           '<div class="fg"><label>الحالة</label><select id="ps_'+id+'">'+
-           ['لم يبدأ','جاري العمل','مكتمل'].map(function(s){return '<option'+(pm.status===s?' selected':'')+'>'+s+'</option>';}).join('')+
-           '</select></div>'+
-           '<div class="fg"><label>ملاحظة (اختياري)</label><input type="text" id="pn_'+id+'" value="' + esc(pm.note||'') + '"></div>'+
-           '</div>'+
-           '<button class="bt bt-p" style="margin-top:8px" onclick="saveProjectProgress(\''+id+'\')">💾 حفظ التحديث</button>'+
-           '<span id="pmsg_'+id+'" style="font-size:10.5px;margin-right:8px"></span>'+
-           '</div>';
-
-        h+='<div class="proj-sec">'+projectChatHtml(id,'empChatLog_'+id,'empChatInput_'+id)+'</div>';
-
-        if(mine){
-            h+='<div class="proj-sec"><div class="proj-sec-title">⚙️ إدارة المشروع</div>'+
-             '<div style="display:flex;gap:8px">'+
-             '<button class="bt bt-o" onclick="toggleMyProjEdit(\''+id+'\')">✏️ تعديل المشروع</button>'+
-             '<button class="bt bt-d" onclick="deleteMyProject(\''+id+'\')">🗑 حذف المشروع</button>'+
-             '</div>'+
-             '<div id="mpEdit_'+id+'" style="display:none;margin-top:10px;padding-top:10px;border-top:1px dashed var(--bd2)">'+
-             '<div class="fg" style="margin-bottom:8px"><label>عنوان المشروع</label><input type="text" id="mpEditTitle_'+id+'" value="'+esc(p.title||'')+'"></div>'+
-             '<div class="fg fg-full" style="margin-bottom:8px"><label>وصف مختصر</label><textarea rows="2" id="mpEditDesc_'+id+'">'+esc(p.description||'')+'</textarea></div>'+
-             '<div class="fr fr3" style="margin-bottom:8px">'+
-             '<div class="fg"><label>الأولوية</label><select id="mpEditPriority_'+id+'">'+
-                ['منخفضة','متوسطة','عالية'].map(function(s){return '<option'+((p.priority||'متوسطة')===s?' selected':'')+'>'+s+'</option>';}).join('')+
-             '</select></div>'+
-             '<div class="fg"><label>حالة المشروع</label><select id="mpEditStatus_'+id+'">'+
-                ['مخطط له','جاري العمل','متوقف','مكتمل'].map(function(s){return '<option'+((p.status||'مخطط له')===s?' selected':'')+'>'+s+'</option>';}).join('')+
-             '</select></div>'+
-             '<div class="fg"><label>تاريخ الاستحقاق</label><input type="date" id="mpEditDeadline_'+id+'" value="'+esc(p.deadline||'')+'"></div>'+
-             '</div>'+
-             '<div style="display:flex;gap:8px"><button class="bt bt-p" onclick="saveMyProjectEdit(\''+id+'\')">💾 حفظ التعديلات</button>'+
-             '<button class="bt bt-o" onclick="toggleMyProjEdit(\''+id+'\')">إلغاء</button></div>'+
-             '<div id="mpEditMsg_'+id+'" style="margin-top:6px;font-size:11px"></div>'+
-             '</div>'+
-             '</div>';
-        }
-
-        h+='</div></div>';
+    var box = document.getElementById('myProjectsList');
+    var label = document.getElementById('projCountLabel');
+    if(label) label.textContent = projects.length + ' مشروع';
+    if(!projects.length){
+        box.innerHTML='<div class="empty-hint">لا توجد مشاريع مُسندة إليك حالياً.</div>';
+        return;
+    }
+    // Store for detail view
+    window._projectsData = projects;
+    var h = '<div class="emp-proj-grid">';
+    projects.forEach(function(p){
+        var pm = (p.progressMap && p.progressMap[TG_USER.uid]) || {progress:0, status:'لم يبدأ', note:''};
+        var prog = pm.progress || 0;
+        var mine = (p.createdByUid === TG_USER.uid);
+        // Stripe color by priority
+        var stripeColor = p.priority === 'عالية' ? 'linear-gradient(90deg,var(--no),#e87272)'
+            : p.priority === 'منخفضة' ? 'linear-gradient(90deg,var(--ok),#40c674)'
+            : 'linear-gradient(90deg,var(--nv),var(--gd))';
+        h += '<div class="emp-proj-card" onclick="openProjectDetail(\''+p.id+'\')">';
+        h += '<div class="emp-proj-card-stripe" style="background:'+stripeColor+'"></div>';
+        h += '<div class="emp-proj-card-top">';
+        h += '<div class="emp-proj-card-title">'+esc(p.title||'بدون عنوان')+(mine?' <span class="badge" style="background:var(--gd);color:#1b2a4a;font-size:8.5px">مشروعي</span>':'')+'</div>';
+        if(p.description) h += '<div class="emp-proj-card-desc">'+esc(p.description)+'</div>';
+        h += '<div class="emp-proj-card-bar"><div class="emp-proj-card-bar-in" style="width:'+prog+'%"></div></div>';
+        h += '<div class="emp-proj-card-meta">'+projectTagsHtml(p)+'</div>';
+        h += '</div>';
+        h += '<div class="emp-proj-card-foot">';
+        h += '<div class="emp-proj-card-prog">📊 تقدّمي '+prog+'%</div>';
+        h += '<button class="bt bt-g" style="padding:6px 14px;font-size:11px" onclick="event.stopPropagation();openProjectDetail(\''+p.id+'\')">🔍 تفاصيل</button>';
+        h += '</div></div>';
     });
-    box.innerHTML=h;
-    projects.forEach(function(p,idx){ renderProjectChat(p.id,p.comments||[],'empChatLog_'+p.id); });
+    h += '</div>';
+    box.innerHTML = h;
 }
-function toggleMyProjCard(idx){
-    var c=document.getElementById('myPjCard'+idx);
-    if(c)c.classList.toggle('open');
+function openProjectDetail(pid){
+    var p = window._projectsData && window._projectsData.find(function(x){ return x.id===pid; });
+    if(!p) return;
+    var pm = (p.progressMap && p.progressMap[TG_USER.uid]) || {progress:0, status:'لم يبدأ', note:''};
+    var prog = pm.progress || 0;
+    var mine = (p.createdByUid === TG_USER.uid);
+
+    document.getElementById('projListView').style.display = 'none';
+    var dv = document.getElementById('projDetailView');
+    dv.style.display = 'block';
+
+    var h = '<div class="emp-proj-detail">';
+    // Back button
+    h += '<button class="emp-proj-back" onclick="closeProjectDetail()">&#x2B05; العودة لقائمة المشاريع</button>';
+    // Header
+    h += '<div class="emp-proj-detail-header">';
+    h += '<div class="emp-proj-detail-title">'+esc(p.title||'بدون عنوان')+(mine?' <span class="badge" style="background:rgba(201,162,39,.25);color:#fde47f;font-size:9px">مشروعي</span>':'')+'</div>';
+    if(p.description) h += '<div class="emp-proj-detail-desc">'+esc(p.description)+'</div>';
+    h += '<div class="emp-proj-detail-tags">'+projectTagsHtml(p)+'</div>';
+    h += '</div>'; // end header
+
+    // Section 1: Progress
+    h += '<div class="proj-sec">';
+    h += '<div class="proj-sec-title">📊 تقدّمي في المشروع</div>';
+    h += '<div style="background:var(--bg);border-radius:10px;padding:16px 18px;margin-bottom:2px">';
+    h += '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">';
+    h += '<span style="font-size:13px;font-weight:700;color:var(--nv)">نسبة الإنجاز</span>';
+    h += '<span style="font-size:22px;font-weight:900;color:var(--gd)" id="dpv_'+p.id+'">'+prog+'%</span>';
+    h += '</div>';
+    h += '<div class="emp-proj-card-bar" style="height:10px;margin-bottom:14px"><div class="emp-proj-card-bar-in" id="dpbar_'+p.id+'" style="width:'+prog+'%"></div></div>';
+    h += '<input type="range" min="0" max="100" value="'+prog+'" style="width:100%;margin-bottom:14px;accent-color:var(--gd)" oninput="document.getElementById(\'dpv_'+p.id+'\').textContent=this.value+\'%\';document.getElementById(\'dpbar_'+p.id+'\').style.width=this.value+\'%\'" id="dpr_'+p.id+'">';
+    h += '<div class="fr fr2">';
+    h += '<div class="fg"><label>الحالة</label><select id="dps_'+p.id+'">'+['لم يبدأ','جاري العمل','مكتمل'].map(function(s){return '<option'+(pm.status===s?' selected':'')+'>'+s+'</option>';}).join('')+'</select></div>';
+    h += '<div class="fg"><label>ملاحظة (اختياري)</label><input type="text" id="dpn_'+p.id+'" value="'+esc(pm.note||'')+'"></div>';
+    h += '</div>';
+    h += '<button class="bt bt-p" style="margin-top:14px;width:100%" onclick="saveProjDetailProgress(\''+p.id+'\')">💾 حفظ التحديث</button>';
+    h += '<div id="dpmsg_'+p.id+'" style="font-size:11px;margin-top:8px;text-align:center"></div>';
+    h += '</div></div>'; // end proj-sec
+
+    // Section 2: Chat / Discussion
+    h += '<div class="proj-sec">';
+    h += '<div class="proj-sec-title">💬 النقاش والملاحظات</div>';
+    h += projectChatHtml(p.id, 'empChatLog_'+p.id, 'empChatInput_'+p.id);
+    h += '</div>';
+
+    // Section 3: Manage (mine only)
+    if(mine){
+        h += '<div class="proj-sec">';
+        h += '<div class="proj-sec-title">⚙️ إدارة المشروع</div>';
+        h += '<div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:12px">';
+        h += '<button class="bt bt-o" onclick="document.getElementById(\'dEdit_'+p.id+'\').style.display=document.getElementById(\'dEdit_'+p.id+'\').style.display===\'none\'?\'block\':\'none\'">✏️ تعديل</button>';
+        h += '<button class="bt bt-d" onclick="deleteMyProject(\''+p.id+'\')">🗑 حذف المشروع</button>';
+        h += '</div>';
+        h += '<div id="dEdit_'+p.id+'" style="display:none;padding:16px;background:var(--bg);border-radius:10px">';
+        h += '<div class="fg" style="margin-bottom:10px"><label>عنوان المشروع</label><input type="text" id="deTitle_'+p.id+'" value="'+esc(p.title||'')+'"></div>';
+        h += '<div class="fg fg-full" style="margin-bottom:10px"><label>وصف مختصر</label><textarea rows="2" id="deDesc_'+p.id+'">'+esc(p.description||'')+'</textarea></div>';
+        h += '<div class="fr fr3" style="margin-bottom:10px">';
+        h += '<div class="fg"><label>الأولوية</label><select id="dePriority_'+p.id+'">'+['منخفضة','متوسطة','عالية'].map(function(s){return '<option'+((p.priority||'متوسطة')===s?' selected':'')+'>'+s+'</option>';}).join('')+'</select></div>';
+        h += '<div class="fg"><label>حالة المشروع</label><select id="deStatus_'+p.id+'">'+['مخطط له','جاري العمل','متوقف','مكتمل'].map(function(s){return '<option'+((p.status||'مخطط له')===s?' selected':'')+'>'+s+'</option>';}).join('')+'</select></div>';
+        h += '<div class="fg"><label>تاريخ الاستحقاق</label><input type="date" id="deDeadline_'+p.id+'" value="'+esc(p.deadline||'')+'"></div>';
+        h += '</div>';
+        h += '<div style="display:flex;gap:8px">';
+        h += '<button class="bt bt-p" onclick="saveMyProjDetailEdit(\''+p.id+'\')">💾 حفظ التعديلات</button>';
+        h += '<button class="bt bt-o" onclick="document.getElementById(\'dEdit_'+p.id+'\').style.display=\'none\'">إلغاء</button>';
+        h += '</div><div id="deMsg_'+p.id+'" style="margin-top:8px;font-size:11px"></div>';
+        h += '</div>';
+        h += '</div>';
+    }
+
+    h += '</div>'; // end emp-proj-detail
+    dv.innerHTML = h;
+    renderProjectChat(p.id, p.comments||[], 'empChatLog_'+p.id);
 }
+function closeProjectDetail(){
+    document.getElementById('projDetailView').style.display = 'none';
+    document.getElementById('projDetailView').innerHTML = '';
+    document.getElementById('projListView').style.display = 'block';
+}
+function saveProjDetailProgress(id){
+    var prog = parseInt(document.getElementById('dpr_'+id).value)||0;
+    var status = document.getElementById('dps_'+id).value;
+    var note = document.getElementById('dpn_'+id).value;
+    var msg = document.getElementById('dpmsg_'+id);
+    msg.style.color='var(--tx3)'; msg.textContent='⏳ جارٍ الحفظ...';
+    var upd = {}; upd['progressMap.'+TG_USER.uid] = {progress:prog, status:status, note:note, updatedAt:firebase.firestore.FieldValue.serverTimestamp()};
+    db.collection('projects').doc(id).update(upd)
+        .then(function(){ msg.style.color='var(--ok)'; msg.textContent='✅ تم حفظ التحديث.'; })
+        .catch(function(e){ msg.style.color='var(--no)'; msg.textContent='❌ '+e.message; });
+}
+function saveMyProjDetailEdit(id){
+    var title = (document.getElementById('deTitle_'+id).value||'').trim();
+    var desc = document.getElementById('deDesc_'+id).value;
+    var priority = document.getElementById('dePriority_'+id).value;
+    var status = document.getElementById('deStatus_'+id).value;
+    var deadline = document.getElementById('deDeadline_'+id).value;
+    var msg = document.getElementById('deMsg_'+id);
+    if(!title){ msg.style.color='var(--no)'; msg.textContent='العنوان مطلوب.'; return; }
+    db.collection('projects').doc(id).update({title:title, description:desc, priority:priority, status:status, deadline:deadline})
+        .then(function(){ msg.style.color='var(--ok)'; msg.textContent='✅ تم حفظ التعديلات.'; })
+        .catch(function(e){ msg.style.color='var(--no)'; msg.textContent='❌ '+e.message; });
+}
+
 
 // إنشاء مشروع جديد خاص بالموظف (مُسند لنفسه) — يقدر يعدّله أو يحذفه لاحقاً بنفسه
 function empCreateProject(){
