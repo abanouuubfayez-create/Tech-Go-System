@@ -133,12 +133,12 @@
   <div class="emp-pg" id="epg-ach">
     <div class="set-sec">
       <div class="set-sec-title">➕ إضافة إنجاز جديد</div>
-      <div class="fr fr3" style="margin-top:8px">
-        <div class="fg" style="grid-column:span 1"><label>عنوان الإنجاز</label><input type="text" id="achTitle"></div>
+      <div class="fr fr2" style="margin-top:8px">
+        <div class="fg"><label>عنوان الإنجاز</label><input type="text" id="achTitle" placeholder="مثلاً: إتمام نظام المرفقات"></div>
         <div class="fg"><label>التاريخ</label><input type="date" id="achDate"></div>
-        <div class="fg"><label></label><button class="bt bt-p" style="margin-top:auto" onclick="addAchievement()">➕ إضافة</button></div>
       </div>
-      <div class="fg fg-full" style="margin-top:6px"><label>وصف مختصر (اختياري)</label><textarea id="achDesc" rows="2"></textarea></div>
+      <div class="fg fg-full" style="margin-top:12px"><label>وصف مختصر (اختياري)</label><textarea id="achDesc" rows="2"></textarea></div>
+      <button class="bt bt-p" style="margin-top:12px" onclick="addAchievement()">➕ إضافة الإنجاز</button>
       <div id="achMsg" style="font-size:11px;margin-top:4px"></div>
     </div>
     <div class="set-sec-title" style="margin:16px 0 8px">📜 سجل إنجازاتي</div>
@@ -203,6 +203,12 @@
 </div>
 
 <script>
+function esc(s){ return (s||'').replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+function badgeReq(s){
+    var cls = s === 'approved' ? 'badge-approved' : (s === 'rejected' ? 'badge-rejected' : 'badge-pending');
+    var lbl = s === 'approved' ? 'موافق عليه' : (s === 'rejected' ? 'مرفوض' : 'قيد المراجعة');
+    return '<span class="badge ' + cls + '">' + lbl + '</span>';
+}
 function empGo(id,el){
     document.querySelectorAll('.emp-tab').forEach(function(t){t.classList.remove('a');});
     document.querySelectorAll('.emp-pg').forEach(function(p){p.classList.remove('a');});
