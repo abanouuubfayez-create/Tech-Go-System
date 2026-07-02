@@ -4,8 +4,15 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <meta name="color-scheme" content="light">
-<title>نظام إدارة شركة تيك جو</title>
+<meta name="theme-color" content="#1b2a4a">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Tech Go">
+<title>لوحة التحكم · تيك جو</title>
 <link rel="stylesheet" href="styles.css">
+<link rel="manifest" href="manifest.json">
+<link rel="icon" type="image/png" sizes="192x192" href="icon-192.png">
+<link rel="apple-touch-icon" href="icon-192.png">
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
@@ -38,7 +45,6 @@
     <div class="S-i" onclick="go('tasksmgmt',this)" style="border-right:2px solid var(--gd)"><span class="ic">🗂</span> توزيع المهام <span class="S-b">جديد</span></div>
     <div class="S-i" onclick="go('staff',this);clearAdminBadge('notif-req-badge','notif-req-badge-sb')" style="border-right:2px solid var(--gd)"><span class="ic">👥</span> متابعة الموظفين <span class="S-b">جديد</span> <span id="notif-req-badge-sb" style="display:none;background:var(--no);color:#fff;border-radius:50%;min-width:18px;height:18px;font-size:10px;font-weight:800;align-items:center;justify-content:center;padding:0 3px;margin-right:4px">0</span></div>
     <div class="S-i" onclick="go('account',this)" style="border-right:2px solid var(--gd)"><span class="ic">👤</span> حسابي <span class="S-b">جديد</span></div>
-    <div class="S-i" onclick="tgLogout()" style="background:rgba(231,76,60,0.1);color:#e74c3c"><span class="ic">🚪</span> تسجيل الخروج</div>
 
     <div class="S-s">نماذج الموظفين</div>
     <div class="S-i" onclick="go('emp',this)"><span class="ic">👤</span> ملف بيانات الموظف</div>
@@ -72,9 +78,22 @@
     <div class="S-s">الإعدادات</div>
     <div class="S-i" onclick="go('set',this)"><span class="ic">⚙️</span> تخصيص النظام</div>
 </nav>
-<div id="sbUser" style="padding:10px 16px 16px;font-size:10px;color:rgba(255,255,255,.5);border-top:1px solid rgba(255,255,255,.07)"></div>
+<div class="sb-logout-wrap">
+  <button class="sb-logout-btn" onclick="tgLogout()">
+    <span>🚪</span> تسجيل الخروج
+  </button>
+</div>
+<div id="sbUser" style="padding:6px 16px 10px;font-size:10px;color:rgba(255,255,255,.45);border-top:1px solid rgba(255,255,255,.07);text-align:center"></div>
 </aside>
 <div class="M">
+<!-- شريط تثبيت التطبيق (يظهر تلقائياً عند الدعم) -->
+<div class="pwa-install-bar np" id="pwaInstallBar">
+  <span>📲 ثبّت تطبيق Tech Go على جهازك للوصول السريع بدون متصفح</span>
+  <div style="display:flex;gap:8px;align-items:center">
+    <button class="pwa-install-btn" onclick="tgInstallPWA()">📥 تثبيت التطبيق</button>
+    <span class="pwa-install-close" onclick="document.getElementById('pwaInstallBar').style.display='none'">✕</span>
+  </div>
+</div>
 <div class="TB"><div class="t" id="pT">لوحة التحكم</div><div class="ac np"><button class="bt bt-o" onclick="openPrintPreview()">🖨 معاينة وطباعة</button></div></div>
 <div class="CT">
 <div class="pg a" id="pg-dash">
@@ -289,13 +308,32 @@
   tgRequireAuth('admin', function (u) {
     var roleLabel = u.role === 'assistant_admin' ? 'أدمن مساعد' : 'أدمن';
     var box = document.getElementById('sbUser');
-    if (box) box.innerHTML = '👤 <strong style="color:#fff">' + (u.name || u.email) + '</strong><br>' + u.email + '<br><small style="color:var(--gd);font-weight:700">' + roleLabel + '</small>';
+    if (box) box.innerHTML = '👤 <strong style="color:#fff">' + (u.name || u.email) + '</strong><br><small style="color:rgba(255,255,255,.5)">' + u.email + '</small><br><small style="color:var(--gd);font-weight:700">' + roleLabel + '</small>';
     loadDashboardSummary();
     if(u.role !== 'assistant_admin') {
       tgChatMount();
       tgChatWatch();
     }
+    applyAssistantAdminRestrictions(u);
   });
+
+  // PWA Service Worker
+  if('serviceWorker' in navigator){
+    navigator.serviceWorker.register('./sw.js').catch(function(){});
+  }
+  // PWA Install prompt
+  var _deferredInstall = null;
+  window.addEventListener('beforeinstallprompt', function(e){
+    e.preventDefault();
+    _deferredInstall = e;
+    var bar = document.getElementById('pwaInstallBar');
+    if(bar) bar.style.display='flex';
+  });
+  function tgInstallPWA(){
+    if(!_deferredInstall) return;
+    _deferredInstall.prompt();
+    _deferredInstall.userChoice.then(function(){ _deferredInstall=null; var bar=document.getElementById('pwaInstallBar'); if(bar) bar.style.display='none'; });
+  }
 </script>
 </body>
 </html>

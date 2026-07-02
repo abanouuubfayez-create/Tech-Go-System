@@ -99,6 +99,57 @@ function ts(b){var p=b.parentNode;p.querySelectorAll(".stb").forEach(function(x)
 function sct(c){c.parentNode.querySelectorAll(".ctc").forEach(function(x){x.classList.remove("sel")});c.classList.add("sel")}
 function spr(p){p.parentNode.querySelectorAll(".ppl").forEach(function(x){x.classList.remove("a")});p.classList.add("a")}
 
+// ─── Toast Notification Helper ────────────────────────────────────────────
+function tgToast(msg, type){
+    var t=document.createElement('div');
+    t.className='tg-toast'+(type==='ok'?' toast-ok':type==='err'?' toast-err':'');
+    t.textContent=msg;
+    document.body.appendChild(t);
+    setTimeout(function(){ if(t.parentNode) t.parentNode.removeChild(t); }, 3100);
+}
+
+// ─── تقييد صلاحيات الأدمن المساعد ────────────────────────────────────────
+function applyAssistantAdminRestrictions(u){
+    if(!u || u.role !== 'assistant_admin') return;
+    // أخفِ بنود الشريط الجانبي غير المسموح بها للأدمن المساعد
+    var allowed = ['dash','pmgmt','account'];
+    document.querySelectorAll('.S-i').forEach(function(el){
+        var onclick = el.getAttribute('onclick') || '';
+        var allowed_item = allowed.some(function(id){ return onclick.indexOf("'"+id+"'")>-1||onclick.indexOf('"'+id+'"')>-1; });
+        if(!allowed_item && onclick.indexOf('tgLogout')===-1){ el.style.display='none'; }
+    });
+}
+
+// ─── إعادة ضبط النظام (للأدمن الرئيسي فقط) ───────────────────────────────
+function resetSystem(){
+    if(!TG_USER || TG_USER.role !== 'admin'){
+        tgToast('هذه العملية للأدمن الرئيسي فقط.','err'); return;
+    }
+    tgConfirmModal(
+        '⚠️ إعادة ضبط النظام',
+        '<div style="color:var(--no);font-weight:700;margin-bottom:10px">تحذير: هذا الإجراء سيحذف كل البيانات الديناميكية بشكل نهائي.</div>'+
+        '<div style="font-size:11px;color:var(--tx3);line-height:2">سيتم حذف: المشاريع · المهام · التقارير الأسبوعية · الإنجازات · الطلبات · رسائل الشات · التعليقات<br><strong>لن يتم حذف</strong> حسابات المستخدمين أو إعدادات النظام.</div>',
+        [
+            { label:'❌ إلغاء', cls:'bt-o', onClick: function(){} },
+            { label:'🗑 تأكيد الحذف', cls:'bt-d', onClick: function(){
+                var batch = db.batch();
+                var collections = ['projects','tasks','weeklyReports','achievements','requests','chatMessages','projectComments'];
+                var proms = collections.map(function(col){
+                    return db.collection(col).get().then(function(snap){
+                        snap.forEach(function(doc){ batch.delete(doc.ref); });
+                    });
+                });
+                Promise.all(proms).then(function(){ return batch.commit(); }).then(function(){
+                    tgToast('✅ تم إعادة ضبط النظام بنجاح','ok');
+                    loadDashboardSummary();
+                }).catch(function(err){
+                    tgToast('❌ تعذرت إعادة الضبط: '+err.message,'err');
+                });
+            }}
+        ]
+    );
+}
+
 function updTaskSigs(rb){
     var el=document.getElementById('task-approver-sig');
     if(!el)return;
@@ -2289,6 +2340,12 @@ function load(id,c){
         h+='<div class="set-hint" style="margin-bottom:8px">إعادة ضبط أرقام التسلسل تجعل ترقيم كل النماذج يبدأ من <strong>001</strong> من جديد.</div>';
         h+='<button class="bt bt-d" onclick="resetSeq()">↺ تصفير أرقام المستندات</button>';
         h+='</div></div>';
+
+        // ── إعادة ضبط النظام (أدمن رئيسي فقط) ──
+        h+='<div class="set-sec"><div class="set-sec-title"><span>🗑</span> إعادة ضبط النظام</div>';
+        h+='<div class="set-hint" style="color:#b91c1c;font-weight:600">تحذير: هذا الإجراء يحذف جميع البيانات الديناميكية نهائياً (مشاريع، مهام، تقارير، رسائل...).<br>لن يُؤثر على حسابات المستخدمين أو الإعدادات.</div>';
+        h+='<button class="bt bt-d" onclick="resetSystem()">🗑 إعادة ضبط كل البيانات</button>';
+        h+='</div>';
 
         h+='<div style="text-align:left;margin-top:20px">'+
            '<button class="bt bt-p" onclick="saveSt()">💾 حفظ الإعدادات</button></div></div>';

@@ -3,8 +3,15 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="theme-color" content="#1b2a4a">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Tech Go">
 <title>بوابة الموظف · تيك جو</title>
 <link rel="stylesheet" href="styles.css">
+<link rel="manifest" href="manifest.json">
+<link rel="icon" type="image/png" sizes="192x192" href="icon-192.png">
+<link rel="apple-touch-icon" href="icon-192.png">
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
@@ -60,7 +67,7 @@
 
 <div class="emp-topbar">
   <div class="who">👋 أهلاً، <span id="empWhoName">...</span><small id="empWhoRole"></small></div>
-  <button class="bt bt-o" onclick="tgLogout()">🚪 تسجيل الخروج</button>
+  <button class="bt-logout" onclick="tgLogout()">🚪 خروج</button>
 </div>
 
 <div class="emp-nav">
@@ -830,6 +837,10 @@ tgRequireAuth('employee', function(u){
     loadMyRequests();
     tgChatMount();
     tgChatWatch();
+    // PWA Service Worker
+    if('serviceWorker' in navigator){
+      navigator.serviceWorker.register('./sw.js').catch(function(){});
+    }
 });
 </script>
 </body>
