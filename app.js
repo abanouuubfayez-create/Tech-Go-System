@@ -25,7 +25,7 @@ var T={
     mexp:"شيت المصروفات الشهري",
     res:"طلب استقالة", promo:"قرار ترقية", contract:"عقد عمل", raise:"زيادة راتب / علاوة",
     staff:"متابعة الموظفين", pmgmt:"إدارة المشاريع", account:"حسابي",
-    tasksmgmt:"توزيع المهام", chat:"الشات العام"
+    tasksmgmt:"توزيع المهام"
 };
 
 // ─── DOCUMENT NUMBERING ───────────────────────────────────────────────────
@@ -84,7 +84,6 @@ function go(id,nav){
     if(window.innerWidth<=900)document.getElementById("sb").classList.remove("opn");
     var c=document.getElementById("pg-"+id);
     if(id!=="dash"&&c.innerHTML.trim()===""){load(id,c);upCN();setD(c)}
-    else if(id==="chat"){ renderChatMessages(); tgChatMarkRead(); }
 }
 function ts(b){var p=b.parentNode;p.querySelectorAll(".stb").forEach(function(x){x.classList.remove("a")});b.classList.add("a")}
 function sct(c){c.parentNode.querySelectorAll(".ctc").forEach(function(x){x.classList.remove("sel")});c.classList.add("sel")}
@@ -685,44 +684,128 @@ function projectTagsHtml(p){
 // ─── نقاش/شات كل مشروع (مشترك بين لوحة الأدمن وبوابة الموظف) ─────────────
 window._chatContainers = window._chatContainers || {};
 // ═══════════════════════════════════════════════════════════════════════
-// 💬 الشات العام اللحظي — غرفة واحدة يشترك فيها الأدمن وكل الموظفين
+// 💬 الشات العام اللحظي — ودجت عائم (فقاعة + لوحة) يظهر فوق كل الصفحات،
+// بنفس فكرة شات فيسبوك ماسنجر — غرفة واحدة يشترك فيها الأدمن وكل الموظفين
 // ═══════════════════════════════════════════════════════════════════════
 var _chatUnsub = null;
 var _chatMessages = [];
+var _chatWidgetOpen = false;
 
-function chatShellHTML(){
-    return '<div class="tg-chat-wrap">'+
-        '<div class="tg-chat-log" id="tgChatLog"><div class="pj-chat-empty">جارِ تحميل الرسائل...</div></div>'+
-        '<div class="tg-chat-input-row">'+
-        '<textarea id="tgChatInput" rows="1" placeholder="اكتب رسالتك هنا... (Enter للإرسال)" onkeydown="tgChatKeydown(event)"></textarea>'+
-        '<button class="bt bt-p" onclick="tgChatSend()">➤ إرسال</button>'+
-        '</div></div>';
+// يُبنى مرة واحدة بس ويتضاف على body — بيفضل فوق كل الصفحات وأنت بتتنقل بينها
+function tgChatMount(){
+    if(document.getElementById('tgChatBubble')) return;
+    var wrap=document.createElement('div');
+    wrap.id='tgChatWidgetWrap';
+    wrap.innerHTML =
+        '<div id="tgChatPanel" class="tg-chat-panel">'+
+          '<div class="tg-chat-panel-h">'+
+            '<span>💬 الشات العام</span>'+
+            '<span class="tg-chat-panel-h-r">'+
+              '<span class="tg-chat-panel-mute" id="tgChatMuteBtn" onclick="tgChatToggleMute()" title="كتم/تشغيل صوت الإشعارات">🔔</span>'+
+              '<span class="tg-chat-panel-close" onclick="tgChatToggle(false)">✕</span>'+
+            '</span>'+
+          '</div>'+
+          '<div class="tg-chat-log" id="tgChatLog"><div class="pj-chat-empty">جارِ تحميل الرسائل...</div></div>'+
+          '<div class="tg-chat-input-row">'+
+            '<textarea id="tgChatInput" rows="1" placeholder="اكتب رسالتك هنا..." onkeydown="tgChatKeydown(event)"></textarea>'+
+            '<button class="bt bt-p" onclick="tgChatSend()">➤</button>'+
+          '</div>'+
+        '</div>'+
+        '<div id="tgChatBubble" class="tg-chat-bubble" onclick="tgChatToggle()" title="الشات العام">'+
+          '<span class="tg-chat-bubble-ic">💬</span>'+
+          '<span class="tgChatBadge tg-chat-bubble-badge" id="tgChatBubbleBadge" style="display:none"></span>'+
+        '</div>';
+    document.body.appendChild(wrap);
+    var mb=document.getElementById('tgChatMuteBtn');
+    if(mb) mb.textContent = (localStorage.getItem('tg_chat_muted')==='1') ? '🔕' : '🔔';
+    // فك قفل الصوت (سياسة المتصفحات بتطلب تفاعل أول) عند أول لمسة/كليك بالمستخدم
+    var unlock=function(){ tgChatUnlockAudio(); document.removeEventListener('click',unlock); document.removeEventListener('keydown',unlock); };
+    document.addEventListener('click',unlock);
+    document.addEventListener('keydown',unlock);
+}
+
+function tgChatToggleMute(){
+    var muted = localStorage.getItem('tg_chat_muted')==='1';
+    muted = !muted;
+    localStorage.setItem('tg_chat_muted', muted?'1':'0');
+    var mb=document.getElementById('tgChatMuteBtn');
+    if(mb) mb.textContent = muted ? '🔕' : '🔔';
+    if(!muted) tgChatPlaySound(); // نغمة تجريبية عشان يسمع الفرق
+}
+
+function tgChatToggle(force){
+    var panel=document.getElementById('tgChatPanel');
+    var bubble=document.getElementById('tgChatBubble');
+    if(!panel) return;
+    _chatWidgetOpen = (typeof force==='boolean') ? force : !_chatWidgetOpen;
+    panel.classList.toggle('open', _chatWidgetOpen);
+    if(bubble) bubble.classList.toggle('hide', _chatWidgetOpen && window.innerWidth<=560);
+    if(_chatWidgetOpen){
+        renderChatMessages();
+        tgChatMarkRead();
+        setTimeout(function(){ var inp=document.getElementById('tgChatInput'); if(inp) inp.focus(); },80);
+    }
 }
 
 function tgChatKeydown(e){
     if(e.key==='Enter' && !e.shiftKey){ e.preventDefault(); tgChatSend(); }
 }
 
-function tgChatIsPageOpen(){
-    var a=document.getElementById('pg-chat');
-    var b=document.getElementById('epg-chat');
-    return !!((a&&a.classList.contains('a')) || (b&&b.classList.contains('a')));
-}
-
 // يبدأ الاستماع اللحظي لرسائل الشات (يُستدعى مرة واحدة بعد تسجيل الدخول)
+var _chatInitialSnapDone = false;
 function tgChatWatch(){
     if(_chatUnsub || !TG_USER) return;
     _chatUnsub = db.collection('chatMessages').orderBy('createdAt','asc').limitToLast(200)
         .onSnapshot(function(snap){
             _chatMessages=[];
             snap.forEach(function(d){ var m=d.data(); m.id=d.id; _chatMessages.push(m); });
-            if(tgChatIsPageOpen()){
+            // صوت التنبيه: بس لو فيه رسالة جديدة "فعلاً" وصلت من شخص تاني (مش أول تحميل، ومش رسالتي أنا)
+            if(_chatInitialSnapDone){
+                var newFromOthers = snap.docChanges().some(function(ch){
+                    if(ch.type!=='added') return false;
+                    var d=ch.doc.data();
+                    return !TG_USER || d.uid!==TG_USER.uid;
+                });
+                if(newFromOthers) tgChatPlaySound();
+            }
+            _chatInitialSnapDone = true;
+            if(_chatWidgetOpen){
                 renderChatMessages();
                 tgChatMarkRead();
             } else {
                 tgChatUpdateBadgeFromCache();
             }
         }, function(err){ console.error('tgChatWatch error:', err); });
+}
+
+// ─── صوت تنبيه الرسائل (Web Audio API — نغمة مُولَّدة، مفيش حاجة تتحمّل من النت) ───
+var _tgAudioCtx=null, _tgAudioUnlocked=false;
+function tgChatUnlockAudio(){
+    if(_tgAudioUnlocked) return;
+    try{
+        _tgAudioCtx = _tgAudioCtx || new (window.AudioContext||window.webkitAudioContext)();
+        if(_tgAudioCtx.state==='suspended') _tgAudioCtx.resume();
+        _tgAudioUnlocked=true;
+    }catch(e){}
+}
+function tgChatPlaySound(){
+    if(localStorage.getItem('tg_chat_muted')==='1') return;
+    try{
+        _tgAudioCtx = _tgAudioCtx || new (window.AudioContext||window.webkitAudioContext)();
+        if(_tgAudioCtx.state==='suspended') _tgAudioCtx.resume();
+        var now=_tgAudioCtx.currentTime;
+        _tgTone(_tgAudioCtx, 880.00, now, 0.13, 0.16);       // نغمة أولى (لا)
+        _tgTone(_tgAudioCtx, 1318.51, now+0.10, 0.16, 0.19); // نغمة ثانية (مي) — أعلى شوية زي "دينج"
+    }catch(e){}
+}
+function _tgTone(ctx, freq, start, dur, vol){
+    var osc=ctx.createOscillator(), gain=ctx.createGain();
+    osc.type='sine'; osc.frequency.value=freq;
+    gain.gain.setValueAtTime(0.0001, start);
+    gain.gain.linearRampToValueAtTime(vol, start+0.012);
+    gain.gain.exponentialRampToValueAtTime(0.0001, start+dur);
+    osc.connect(gain); gain.connect(ctx.destination);
+    osc.start(start); osc.stop(start+dur+0.03);
 }
 
 function renderChatMessages(){
@@ -767,7 +850,7 @@ function tgChatDelete(msgId){
     db.collection('chatMessages').doc(msgId).delete().catch(function(err){ alert('تعذر الحذف: '+err.message); });
 }
 
-// ─── شارة عدد الرسائل غير المقروءة ─────────────────────────────────────
+// ─── شارة عدد الرسائل غير المقروءة على الفقاعة العائمة ────────────────
 function tgChatLastReadKey(){ return TG_USER ? ('tg_chat_lastread_'+TG_USER.uid) : null; }
 function tgChatGetLastRead(){
     var k=tgChatLastReadKey(); if(!k) return 0;
@@ -792,7 +875,7 @@ function tgChatUpdateBadgeFromCache(){
 }
 function updateChatBadge(n){
     document.querySelectorAll('.tgChatBadge').forEach(function(el){
-        if(n>0){ el.style.display='inline-block'; el.textContent = n>99?'99+':String(n); }
+        if(n>0){ el.style.display='flex'; el.textContent = n>99?'99+':String(n); }
         else { el.style.display='none'; el.textContent=''; }
     });
 }
@@ -1963,17 +2046,9 @@ function load(id,c){
         h=myAccountHTML();
     }
 
-    // ── 💬 الشات العام ────────────────────────────────────────────────
-    else if(id==="chat"){
-        h='<div class="SP"><h3>💬 الشات العام</h3>'+
-          '<div class="set-hint" style="margin-bottom:12px">غرفة نقاش واحدة يشترك فيها كل الموظفين والأدمن — لحظياً.</div>'+
-          chatShellHTML()+'</div>';
-    }
-
     c.innerHTML=h;
     if(id==="mexp") mexpInit();
     if(id==="staff") loadStaffOverview();
     if(id==="pmgmt") loadPmgmtData();
     if(id==="tasksmgmt") loadTasksMgmt();
-    if(id==="chat"){ renderChatMessages(); tgChatMarkRead(); }
 }

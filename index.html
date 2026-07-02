@@ -66,8 +66,6 @@
     <div class="S-i" onclick="go('pmgmt',this)" style="border-right:2px solid var(--gd)"><span class="ic">📁</span> إدارة المشاريع <span class="S-b">جديد</span></div>
     <div class="S-i" onclick="go('tasksmgmt',this)" style="border-right:2px solid var(--gd)"><span class="ic">🗂</span> توزيع المهام <span class="S-b">جديد</span></div>
     <div class="S-i" onclick="go('staff',this)" style="border-right:2px solid var(--gd)"><span class="ic">👥</span> متابعة الموظفين <span class="S-b">جديد</span></div>
-    <div class="S-s">التواصل</div>
-    <div class="S-i" onclick="go('chat',this)" style="border-right:2px solid var(--gd)"><span class="ic">💬</span> الشات العام <span class="tgChatBadge" style="display:none"></span></div>
     <div class="S-s">الإعدادات</div>
     <div class="S-i" onclick="go('set',this)"><span class="ic">⚙️</span> تخصيص النظام</div>
     <div class="S-i" onclick="go('account',this)" style="border-right:2px solid var(--gd)"><span class="ic">👤</span> حسابي <span class="S-b">جديد</span></div>
@@ -116,7 +114,7 @@
 <div class="pg" id="pg-exp"></div><div class="pg" id="pg-clr"></div><div class="pg" id="pg-task"></div><div class="pg" id="pg-sal"></div>
 <div class="pg" id="pg-res"></div><div class="pg" id="pg-promo"></div><div class="pg" id="pg-raise"></div><div class="pg" id="pg-contract"></div>
 <div class="pg" id="pg-att"></div><div class="pg" id="pg-comp"></div><div class="pg" id="pg-set"></div><div class="pg" id="pg-proj"></div><div class="pg" id="pg-mexp"></div>
-<div class="pg" id="pg-staff"></div><div class="pg" id="pg-pmgmt"></div><div class="pg" id="pg-account"></div><div class="pg" id="pg-chat"></div>
+<div class="pg" id="pg-staff"></div><div class="pg" id="pg-pmgmt"></div><div class="pg" id="pg-tasksmgmt"></div><div class="pg" id="pg-account"></div>
 </div>
 </div>
 <datalist id="tgEmpDL"></datalist>
@@ -291,6 +289,7 @@
     var box = document.getElementById('sbUser');
     if (box) box.innerHTML = '👤 <strong style="color:#fff">' + (u.name || u.email) + '</strong><br>' + u.email;
     loadDashboardSummary();
+    tgChatMount();
     tgChatWatch();
   });
 </script>

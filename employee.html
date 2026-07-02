@@ -37,7 +37,6 @@
   <div class="emp-tab" data-pg="ach" onclick="empGo('ach',this)">🏆 إنجازاتي</div>
   <div class="emp-tab" data-pg="req" onclick="empGo('req',this)">📨 طلباتي</div>
   <div class="emp-tab" data-pg="acct" onclick="empGo('acct',this)">👤 حسابي</div>
-  <div class="emp-tab" data-pg="chat" onclick="empGo('chat',this)" style="border-right:2px solid var(--gd)">💬 الشات العام <span class="tgChatBadge" style="display:none"></span></div>
 </div>
 
 <div class="emp-ct">
@@ -148,12 +147,6 @@
     </div>
   </div>
 
-  <!-- الشات العام -->
-  <div class="emp-pg" id="epg-chat">
-    <div class="set-hint" style="margin-bottom:12px">غرفة نقاش واحدة يشترك فيها كل الموظفين والأدمن — لحظياً.</div>
-    <div id="empChatShell"></div>
-  </div>
-
 </div>
 
 <script>
@@ -162,12 +155,6 @@ function empGo(id,el){
     document.querySelectorAll('.emp-pg').forEach(function(p){p.classList.remove('a');});
     if(el)el.classList.add('a');
     document.getElementById('epg-'+id).classList.add('a');
-    if(id==='chat'){
-        var shell=document.getElementById('empChatShell');
-        if(shell && !shell.dataset.built){ shell.innerHTML=chatShellHTML(); shell.dataset.built='1'; }
-        renderChatMessages();
-        tgChatMarkRead();
-    }
 }
 function esc(s){return (s||'').toString().replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
 
@@ -498,6 +485,7 @@ tgRequireAuth('employee', function(u){
     loadMyWeeklyReports();
     loadMyAchievements();
     loadMyRequests();
+    tgChatMount();
     tgChatWatch();
 });
 </script>
