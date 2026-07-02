@@ -19,6 +19,7 @@
 .emp-ct{padding:20px 24px;max-width:900px;margin:0 auto}
 .emp-pg{display:none}
 .emp-pg.a{display:block}
+.tab-badge{background-color:var(--no);color:#fff;font-size:10px;font-weight:700;padding:2px 6px;border-radius:10px;margin-right:6px;display:inline-block;vertical-align:middle;line-height:1}
 </style>
 </head>
 <body class="emp-body">
@@ -31,8 +32,8 @@
 </div>
 
 <div class="emp-nav">
-  <div class="emp-tab a" data-pg="proj" onclick="empGo('proj',this)">📁 مشاريعي</div>
-  <div class="emp-tab" data-pg="tasks" onclick="empGo('tasks',this)">🗂 مهامي</div>
+  <div class="emp-tab a" data-pg="proj" onclick="empGo('proj',this)">📁 مشاريعي <span class="tab-badge" id="proj-badge" style="display:none">0</span></div>
+  <div class="emp-tab" data-pg="tasks" onclick="empGo('tasks',this)">🗂 مهامي <span class="tab-badge" id="tasks-badge" style="display:none">0</span></div>
   <div class="emp-tab" data-pg="wkr" onclick="empGo('wkr',this)">📆 تقاريري الأسبوعية</div>
   <div class="emp-tab" data-pg="ach" onclick="empGo('ach',this)">🏆 إنجازاتي</div>
   <div class="emp-tab" data-pg="req" onclick="empGo('req',this)">📨 طلباتي</div>
@@ -155,106 +156,201 @@ function empGo(id,el){
     document.querySelectorAll('.emp-pg').forEach(function(p){p.classList.remove('a');});
     if(el)el.classList.add('a');
     document.getElementById('epg-'+id).classList.add('a');
+    
+    if(id==='proj' && window._currentProjectIds && TG_USER){
+        var seenProjects = JSON.parse(localStorage.getItem('seen_projects_'+TG_USER.uid) || '[]');
+        window._currentProjectIds.forEach(function(pid){
+            if(seenProjects.indexOf(pid)===-1) seenProjects.push(pid);
+        });
+        localStorage.setItem('seen_projects_'+TG_USER.uid, JSON.stringify(seenProjects));
+        updateProjBadge(0);
+    }
+    if(id==='tasks' && window._currentTaskIds && TG_USER){
+        var seenTasks = JSON.parse(localStorage.getItem('seen_tasks_'+TG_USER.uid) || '[]');
+        window._currentTaskIds.forEach(function(tid){
+            if(seenTasks.indexOf(tid)===-1) seenTasks.push(tid);
+        });
+        localStorage.setItem('seen_tasks_'+TG_USER.uid, JSON.stringify(seenTasks));
+        updateTasksBadge(0);
+    }
 }
-function esc(s){return (s||'').toString().replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
 
-// ── طباعة مستندات الموظف بنفس تنسيق النظام (خطاب رسمي FL) ─────────────
-// الدوال المشتركة H()/FT()/SC()/escH()/printDoc()/printWeeklyReportDoc()/... موجودة في app.js
-// (نفس الدوال اللي يستخدمها الأدمن لطباعة مستندات أي موظف من "متابعة الموظفين")
-function printWeeklyReport(r){ printWeeklyReportDoc(TG_USER,r); }
-function printAchievement(a){ printAchievementDoc(TG_USER,a); }
-function printRequest(r){ printRequestDoc(TG_USER,r); }
-function badgeReq(s){
-    if(s==='approved')return '<span class="badge badge-approved">موافق عليه</span>';
-    if(s==='rejected')return '<span class="badge badge-rejected">مرفوض</span>';
-    return '<span class="badge badge-pending">قيد المراجعة</span>';
-}
-function badgeStatus(s){
-    if(s==='مكتمل')return 'badge-done';
-    if(s==='جاري العمل')return 'badge-progress';
-    return '';
+function updateProjBadge(n) {
+    var el = document.getElementById('proj-badge');
+    if (!el) return;
+    if (n > 0) {
+        el.style.display = 'inline-block';
+        el.textContent = n;
+    } else {
+        el.style.display = 'none';
+        el.textContent = '0';
+    }
 }
 
-// ── مشاريعي ─────────────────────────────────────────────────────────
+function updateTasksBadge(n) {
+    var el = document.getElementById('tasks-badge');
+    if (!el) return;
+    if (n > 0) {
+        el.style.display = 'inline-block';
+        el.textContent = n;
+    } else {
+        el.style.display = 'none';
+        el.textContent = '0';
+    }
+}
+
+function playTaskProjNotification() {
+    try {
+        var ctx = window._tgAudioCtx || new (window.AudioContext || window.webkitAudioContext)();
+        window._tgAudioCtx = ctx;
+        if (ctx.state === 'suspended') ctx.resume();
+        var now = ctx.currentTime;
+        
+        var toneFn = typeof _tgTone === 'function' ? _tgTone : function(c, freq, start, dur, vol) {
+            var osc = c.createOscillator(), gain = c.createGain();
+            osc.type = 'sine'; osc.frequency.value = freq;
+            gain.gain.setValueAtTime(0.0001, start);
+            gain.gain.linearRampToValueAtTime(vol, start + 0.012);
+            gain.gain.exponentialRampToValueAtTime(0.0001, start + dur);
+            osc.connect(gain); gain.connect(c.destination);
+            osc.start(start); osc.stop(start + dur + 0.03);
+        };
+        
+        // A pleasant double note chime var _projectsUnsub = null;
 function loadMyProjects(){
-    var box=document.getElementById('myProjectsList');
-    db.collection('projects').where('assignees','array-contains',TG_USER.uid).get().then(function(snap){
-        if(snap.empty){ box.innerHTML='<div class="empty-hint">لا توجد مشاريع مُسندة إليك حالياً.</div>'; return; }
-        var projects=snap.docs.map(function(d){return Object.assign({id:d.id},d.data());});
-        var proms=projects.map(function(p){
-            return db.collection('projectComments').where('projectId','==',p.id).get().then(function(csnap){
-                p.comments=csnap.docs.map(function(d){return Object.assign({id:d.id},d.data());})
-                    .sort(function(a,b){
-                        var am=(a.createdAt&&a.createdAt.toMillis)?a.createdAt.toMillis():0;
-                        var bm=(b.createdAt&&b.createdAt.toMillis)?b.createdAt.toMillis():0;
-                        return am-bm;
-                    });
-                return p;
-            });
-        });
-        Promise.all(proms).then(function(projects){
-        var h='';
-        projects.forEach(function(p,idx){
-            var id=p.id;
-            var mine=(p.createdByUid===TG_USER.uid);
-            var pm=(p.progressMap&&p.progressMap[TG_USER.uid])||{progress:0,status:'لم يبدأ',note:''};
-            h+='<div class="staff-card'+(idx===0?' open':'')+'" id="myPjCard'+idx+'">';
-            h+='<div class="staff-card-h" onclick="toggleMyProjCard('+idx+')">'+
-               '<div><div class="staff-name">'+esc(p.title||'بدون عنوان')+(mine?' <span class="badge" style="background:var(--gd);color:#1b2a4a">مشروعي</span>':'')+'</div>'+
-               (p.description?'<div class="staff-email">'+esc(p.description)+'</div>':'')+
-               projectTagsHtml(p)+
-               '</div>'+
-               '<div class="staff-stats"><span class="staff-stat">📊 تقدّمي '+(pm.progress||0)+'%</span></div>'+
-               '</div>';
-            h+='<div class="staff-card-body">';
-
-            h+='<div class="proj-sec"><div class="proj-sec-title">📊 تحديث تقدّمي في المشروع</div>'+
-               '<div class="pj-bar"><div class="pj-bar-in" style="width:'+(pm.progress||0)+'%"></div></div>'+
-               '<div class="fr fr3" style="margin-top:10px">'+
-               '<div class="fg"><label>نسبة التقدم % <span id="pv_'+id+'">'+(pm.progress||0)+'</span></label>'+
-               '<input type="range" min="0" max="100" value="'+(pm.progress||0)+'" oninput="document.getElementById(\'pv_'+id+'\').textContent=this.value" id="pr_'+id+'"></div>'+
-               '<div class="fg"><label>الحالة</label><select id="ps_'+id+'">'+
-               ['لم يبدأ','جاري العمل','مكتمل'].map(function(s){return '<option'+(pm.status===s?' selected':'')+'>'+s+'</option>';}).join('')+
-               '</select></div>'+
-               '<div class="fg"><label>ملاحظة (اختياري)</label><input type="text" id="pn_'+id+'" value="'+esc(pm.note||'')+'"></div>'+
-               '</div>'+
-               '<button class="bt bt-p" style="margin-top:8px" onclick="saveProjectProgress(\''+id+'\')">💾 حفظ التحديث</button>'+
-               '<span id="pmsg_'+id+'" style="font-size:10.5px;margin-right:8px"></span>'+
-               '</div>';
-
-            h+='<div class="proj-sec">'+projectChatHtml(id,'empChatLog_'+id,'empChatInput_'+id)+'</div>';
-
-            if(mine){
-                h+='<div class="proj-sec"><div class="proj-sec-title">⚙️ إدارة المشروع</div>'+
-                 '<div style="display:flex;gap:8px">'+
-                 '<button class="bt bt-o" onclick="toggleMyProjEdit(\''+id+'\')">✏️ تعديل المشروع</button>'+
-                 '<button class="bt bt-d" onclick="deleteMyProject(\''+id+'\')">🗑 حذف المشروع</button>'+
-                 '</div>'+
-                 '<div id="mpEdit_'+id+'" style="display:none;margin-top:10px;padding-top:10px;border-top:1px dashed var(--bd2)">'+
-                 '<div class="fg" style="margin-bottom:8px"><label>عنوان المشروع</label><input type="text" id="mpEditTitle_'+id+'" value="'+esc(p.title||'')+'"></div>'+
-                 '<div class="fg fg-full" style="margin-bottom:8px"><label>وصف مختصر</label><textarea rows="2" id="mpEditDesc_'+id+'">'+esc(p.description||'')+'</textarea></div>'+
-                 '<div class="fr fr3" style="margin-bottom:8px">'+
-                 '<div class="fg"><label>الأولوية</label><select id="mpEditPriority_'+id+'">'+
-                    ['منخفضة','متوسطة','عالية'].map(function(s){return '<option'+((p.priority||'متوسطة')===s?' selected':'')+'>'+s+'</option>';}).join('')+
-                 '</select></div>'+
-                 '<div class="fg"><label>حالة المشروع</label><select id="mpEditStatus_'+id+'">'+
-                    ['مخطط له','جاري العمل','متوقف','مكتمل'].map(function(s){return '<option'+((p.status||'مخطط له')===s?' selected':'')+'>'+s+'</option>';}).join('')+
-                 '</select></div>'+
-                 '<div class="fg"><label>تاريخ الاستحقاق</label><input type="date" id="mpEditDeadline_'+id+'" value="'+esc(p.deadline||'')+'"></div>'+
-                 '</div>'+
-                 '<div style="display:flex;gap:8px"><button class="bt bt-p" onclick="saveMyProjectEdit(\''+id+'\')">💾 حفظ التعديلات</button>'+
-                 '<button class="bt bt-o" onclick="toggleMyProjEdit(\''+id+'\')">إلغاء</button></div>'+
-                 '<div id="mpEditMsg_'+id+'" style="margin-top:6px;font-size:11px"></div>'+
-                 '</div>'+
-                 '</div>';
+    if(_projectsUnsub) return;
+    var isInitialProjects = true;
+    var box = document.getElementById('myProjectsList');
+    _projectsUnsub = db.collection('projects').where('assignees','array-contains',TG_USER.uid)
+        .onSnapshot(function(snap){
+            if(snap.empty){
+                box.innerHTML='<div class="empty-hint">لا توجد مشاريع مُسندة إليك حالياً.</div>';
+                updateProjBadge(0);
+                window._currentProjectIds = [];
+                isInitialProjects = false;
+                return;
             }
+            var projects=snap.docs.map(function(d){return Object.assign({id:d.id},d.data());});
+            var proms=projects.map(function(p){
+                return db.collection('projectComments').where('projectId','==',p.id).get().then(function(csnap){
+                    p.comments=csnap.docs.map(function(d){return Object.assign({id:d.id},d.data());})
+                        .sort(function(a,b){
+                            var am=(a.createdAt&&a.createdAt.toMillis)?a.createdAt.toMillis():0;
+                            var bm=(b.createdAt&&b.createdAt.toMillis)?b.createdAt.toMillis():0;
+                            return am-bm;
+                        });
+                    return p;
+                });
+            });
+            Promise.all(proms).then(function(projectsList){
+                renderProjectsHtml(projectsList);
+                
+                var currentIds = projectsList.map(function(p){ return p.id; });
+                window._currentProjectIds = currentIds;
+                
+                var seenProjects = JSON.parse(localStorage.getItem('seen_projects_'+TG_USER.uid) || '[]');
+                var isTabActive = document.getElementById('epg-proj').classList.contains('a');
+                
+                if(isTabActive){
+                    currentIds.forEach(function(id){
+                        if(seenProjects.indexOf(id)===-1) seenProjects.push(id);
+                    });
+                    localStorage.setItem('seen_projects_'+TG_USER.uid, JSON.stringify(seenProjects));
+                }
+                
+                var unseenCount = 0;
+                currentIds.forEach(function(id){
+                    var p = projectsList.find(function(proj){ return proj.id === id; });
+                    if(seenProjects.indexOf(id)===-1 && p.createdByUid!==TG_USER.uid){
+                        unseenCount++;
+                    }
+                });
+                
+                if(!isInitialProjects){
+                    var hasNewProj = false;
+                    snap.docChanges().forEach(function(change){
+                        if(change.type==='added'){
+                            var pData = change.doc.data();
+                            if(pData.createdByUid!==TG_USER.uid){
+                                hasNewProj = true;
+                            }
+                        }
+                    });
+                    if(hasNewProj){
+                        playTaskProjNotification();
+                    }
+                }
+                
+                updateProjBadge(unseenCount);
+                isInitialProjects = false;
+            });
+        }, function(err){
+            box.innerHTML='<div class="empty-hint" style="color:var(--no)">تعذر تحميل المشاريع: '+esc(err.message)+'</div>';
+        });
+}
 
-            h+='</div></div>';
-        });
-        box.innerHTML=h;
-        projects.forEach(function(p,idx){ renderProjectChat(p.id,p.comments||[],'empChatLog_'+p.id); });
-        });
-    }).catch(function(err){ box.innerHTML='<div class="empty-hint" style="color:var(--no)">تعذر تحميل المشاريع: '+esc(err.message)+'</div>'; });
+function renderProjectsHtml(projects){
+    var box=document.getElementById('myProjectsList');
+    var h='';
+    projects.forEach(function(p,idx){
+        var id=p.id;
+        var mine=(p.createdByUid===TG_USER.uid);
+        var pm=(p.progressMap&&p.progressMap[TG_USER.uid])||{progress:0,status:'لم يبدأ',note:''};
+        h+='<div class="staff-card'+(idx===0?' open':'')+'" id="myPjCard'+idx+'">';
+        h+='<div class="staff-card-h" onclick="toggleMyProjCard('+idx+')">'+
+           '<div><div class="staff-name">'+esc(p.title||'بدون عنوان')+(mine?' <span class="badge" style="background:var(--gd);color:#1b2a4a">مشروعي</span>':'')+'</div>'+
+           (p.description?'<div class="staff-email">'+esc(p.description)+'</div>':'')+
+           projectTagsHtml(p)+
+           '</div>'+
+           '<div class="staff-stats"><span class="staff-stat">📊 تقدّمي '+(pm.progress||0)+'%</span></div>'+
+           '</div>';
+        h+='<div class="staff-card-body">';
+
+        h+='<div class="proj-sec"><div class="proj-sec-title">📊 تحديث تقدّمي في المشروع</div>'+
+           '<div class="pj-bar"><div class="pj-bar-in" style="width:'+(pm.progress||0)+'%"></div></div>'+
+           '<div class="fr fr3" style="margin-top:10px">'+
+           '<div class="fg"><label>نسبة التقدم % <span id="pv_'+id+'">'+(pm.progress||0)+'</span></label>'+
+           '<input type="range" min="0" max="100" value="' + (pm.progress||0) + '" oninput="document.getElementById(\'pv_'+id+'\').textContent=this.value" id="pr_'+id+'"></div>'+
+           '<div class="fg"><label>الحالة</label><select id="ps_'+id+'">'+
+           ['لم يبدأ','جاري العمل','مكتمل'].map(function(s){return '<option'+(pm.status===s?' selected':'')+'>'+s+'</option>';}).join('')+
+           '</select></div>'+
+           '<div class="fg"><label>ملاحظة (اختياري)</label><input type="text" id="pn_'+id+'" value="' + esc(pm.note||'') + '"></div>'+
+           '</div>'+
+           '<button class="bt bt-p" style="margin-top:8px" onclick="saveProjectProgress(\''+id+'\')">💾 حفظ التحديث</button>'+
+           '<span id="pmsg_'+id+'" style="font-size:10.5px;margin-right:8px"></span>'+
+           '</div>';
+
+        h+='<div class="proj-sec">'+projectChatHtml(id,'empChatLog_'+id,'empChatInput_'+id)+'</div>';
+
+        if(mine){
+            h+='<div class="proj-sec"><div class="proj-sec-title">⚙️ إدارة المشروع</div>'+
+             '<div style="display:flex;gap:8px">'+
+             '<button class="bt bt-o" onclick="toggleMyProjEdit(\''+id+'\')">✏️ تعديل المشروع</button>'+
+             '<button class="bt bt-d" onclick="deleteMyProject(\''+id+'\')">🗑 حذف المشروع</button>'+
+             '</div>'+
+             '<div id="mpEdit_'+id+'" style="display:none;margin-top:10px;padding-top:10px;border-top:1px dashed var(--bd2)">'+
+             '<div class="fg" style="margin-bottom:8px"><label>عنوان المشروع</label><input type="text" id="mpEditTitle_'+id+'" value="'+esc(p.title||'')+'"></div>'+
+             '<div class="fg fg-full" style="margin-bottom:8px"><label>وصف مختصر</label><textarea rows="2" id="mpEditDesc_'+id+'">'+esc(p.description||'')+'</textarea></div>'+
+             '<div class="fr fr3" style="margin-bottom:8px">'+
+             '<div class="fg"><label>الأولوية</label><select id="mpEditPriority_'+id+'">'+
+                ['منخفضة','متوسطة','عالية'].map(function(s){return '<option'+((p.priority||'متوسطة')===s?' selected':'')+'>'+s+'</option>';}).join('')+
+             '</select></div>'+
+             '<div class="fg"><label>حالة المشروع</label><select id="mpEditStatus_'+id+'">'+
+                ['مخطط له','جاري العمل','متوقف','مكتمل'].map(function(s){return '<option'+((p.status||'مخطط له')===s?' selected':'')+'>'+s+'</option>';}).join('')+
+             '</select></div>'+
+             '<div class="fg"><label>تاريخ الاستحقاق</label><input type="date" id="mpEditDeadline_'+id+'" value="'+esc(p.deadline||'')+'"></div>'+
+             '</div>'+
+             '<div style="display:flex;gap:8px"><button class="bt bt-p" onclick="saveMyProjectEdit(\''+id+'\')">💾 حفظ التعديلات</button>'+
+             '<button class="bt bt-o" onclick="toggleMyProjEdit(\''+id+'\')">إلغاء</button></div>'+
+             '<div id="mpEditMsg_'+id+'" style="margin-top:6px;font-size:11px"></div>'+
+             '</div>'+
+             '</div>';
+        }
+
+        h+='</div></div>';
+    });
+    box.innerHTML=h;
+    projects.forEach(function(p,idx){ renderProjectChat(p.id,p.comments||[],'empChatLog_'+p.id); });
 }
 function toggleMyProjCard(idx){
     var c=document.getElementById('myPjCard'+idx);
@@ -357,31 +453,81 @@ function addAchievement(){
 }
 
 // ── مهامي ───────────────────────────────────────────────────────────
+var _tasksUnsub = null;
 function loadMyTasks(){
+    if(_tasksUnsub) return;
+    var isInitialTasks = true;
+    var box = document.getElementById('myTasksList');
+    _tasksUnsub = db.collection('tasks').where('assignedTo','==',TG_USER.uid)
+        .onSnapshot(function(snap){
+            if(snap.empty){
+                box.innerHTML='<div class="empty-hint">لا توجد مهام مُكلَّفة إليك حالياً.</div>';
+                updateTasksBadge(0);
+                window._currentTaskIds = [];
+                isInitialTasks = false;
+                return;
+            }
+            var rows=[];
+            snap.forEach(function(d){rows.push(Object.assign({id:d.id},d.data()));});
+            rows.sort(function(a,b){
+                var am=(a.createdAt&&a.createdAt.toMillis)?a.createdAt.toMillis():0;
+                var bm=(b.createdAt&&b.createdAt.toMillis)?b.createdAt.toMillis():0;
+                return bm-am;
+            });
+            
+            renderTasksHtml(rows);
+            
+            var currentIds = rows.map(function(t){ return t.id; });
+            window._currentTaskIds = currentIds;
+            
+            var seenTasks = JSON.parse(localStorage.getItem('seen_tasks_'+TG_USER.uid) || '[]');
+            var isTabActive = document.getElementById('epg-tasks').classList.contains('a');
+            
+            if(isTabActive){
+                currentIds.forEach(function(id){
+                    if(seenTasks.indexOf(id)===-1) seenTasks.push(id);
+                });
+                localStorage.setItem('seen_tasks_'+TG_USER.uid, JSON.stringify(seenTasks));
+            }
+            
+            var unseenCount = 0;
+            currentIds.forEach(function(id){
+                if(seenTasks.indexOf(id)===-1) unseenCount++;
+            });
+            
+            if(!isInitialTasks){
+                var hasNewTask = false;
+                snap.docChanges().forEach(function(change){
+                    if(change.type==='added') hasNewTask = true;
+                });
+                if(hasNewTask){
+                    playTaskProjNotification();
+                }
+            }
+            
+            updateTasksBadge(unseenCount);
+            isInitialTasks = false;
+        }, function(err){
+            box.innerHTML='<div class="empty-hint" style="color:var(--no)">تعذر تحميل المهام: '+esc(err.message)+'</div>';
+        });
+}
+
+function renderTasksHtml(rows){
     var box=document.getElementById('myTasksList');
-    db.collection('tasks').where('assignedTo','==',TG_USER.uid).get().then(function(snap){
-        if(snap.empty){ box.innerHTML='<div class="empty-hint">لا توجد مهام مُكلَّفة إليك حالياً.</div>'; return; }
-        var rows=[]; snap.forEach(function(d){rows.push(Object.assign({id:d.id},d.data()));});
-        rows.sort(function(a,b){
-            var am=(a.createdAt&&a.createdAt.toMillis)?a.createdAt.toMillis():0;
-            var bm=(b.createdAt&&b.createdAt.toMillis)?b.createdAt.toMillis():0;
-            return bm-am;
-        });
-        var h='';
-        rows.forEach(function(t){
-            h+='<div class="pj-row"><div class="pj-t">'+esc(t.title||'بدون عنوان')+
-               ' <span class="badge">'+esc(t.priority||'متوسطة')+'</span></div>'+
-               (t.description?'<div class="pj-meta">'+esc(t.description)+'</div>':'')+
-               (t.deadline?'<div class="pj-meta">تاريخ التسليم: '+esc(t.deadline)+'</div>':'')+
-               '<div class="fg" style="max-width:220px;margin:8px 0"><label>حالة المهمة</label><select id="tks_'+t.id+'">'+
-               ['لم يبدأ','جاري العمل','متوقف','مكتمل'].map(function(s){return '<option'+(s===(t.status||'لم يبدأ')?' selected':'')+'>'+s+'</option>';}).join('')+
-               '</select></div>'+
-               '<button class="bt bt-p" onclick="saveTaskStatus(\''+t.id+'\')">💾 حفظ الحالة</button>'+
-               ' <span id="tkmsg_'+t.id+'" style="font-size:10.5px"></span>'+
-               '</div>';
-        });
-        box.innerHTML=h;
-    }).catch(function(err){ box.innerHTML='<div class="empty-hint" style="color:var(--no)">تعذر التحميل: '+esc(err.message)+'</div>'; });
+    var h='';
+    rows.forEach(function(t){
+        h+='<div class="pj-row"><div class="pj-t">'+esc(t.title||'بدون عنوان')+
+           ' <span class="badge">'+esc(t.priority||'متوسطة')+'</span></div>'+
+           (t.description?'<div class="pj-meta">'+esc(t.description)+'</div>':'')+
+           (t.deadline?'<div class="pj-meta">تاريخ التسليم: '+esc(t.deadline)+'</div>':'')+
+           '<div class="fg" style="max-width:220px;margin:8px 0"><label>حالة المهمة</label><select id="tks_'+t.id+'">'+
+           ['لم يبدأ','جاري العمل','متوقف','مكتمل'].map(function(s){return '<option'+(s===(t.status||'لم يبدأ')?' selected':'')+'>'+s+'</option>';}).join('')+
+           '</select></div>'+
+           '<button class="bt bt-p" onclick="saveTaskStatus(\''+t.id+'\')">💾 حفظ الحالة</button>'+
+           ' <span id="tkmsg_'+t.id+'" style="font-size:10.5px"></span>'+
+           '</div>';
+    });
+    box.innerHTML=h;
 }
 function saveTaskStatus(id){
     var status=document.getElementById('tks_'+id).value;
