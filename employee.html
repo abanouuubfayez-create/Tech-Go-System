@@ -216,7 +216,15 @@ function playTaskProjNotification() {
             osc.start(start); osc.stop(start + dur + 0.03);
         };
         
-        // A pleasant double note chime var _projectsUnsub = null;
+        // A pleasant double note chime (C5 then G5)
+        toneFn(ctx, 523.25, now, 0.15, 0.15);
+        toneFn(ctx, 783.99, now + 0.12, 0.25, 0.15);
+    } catch(e) {
+        console.error("Audio error:", e);
+    }
+}
+
+var _projectsUnsub = null;
 function loadMyProjects(){
     if(_projectsUnsub) return;
     var isInitialProjects = true;
