@@ -789,25 +789,20 @@ function submitRequest(){
         if(file.size > MAX_MB * 1024 * 1024){ msg.style.color='var(--no)'; msg.textContent='الملف كبير جداً (الحد الأقصى '+MAX_MB+' MB).'; return; }
         var prog = document.getElementById('reqUploadProg');
         if(prog) { prog.style.display = 'block'; prog.textContent = '⏳ جاري رفع المرفق... 0%'; }
-        var path = 'requests/' + TG_USER.uid + '/' + Date.now() + '_' + file.name;
-        var ref = storage.ref(path);
-        var task = ref.put(file);
-        task.on('state_changed',
-            function(snap){
-                var pct = Math.round(snap.bytesTransferred/snap.totalBytes*100);
+        var uniqueName = TG_USER.uid + '/' + Date.now() + '_' + file.name;
+        tgUploadFile('requests', uniqueName, file,
+            function(pct){
                 if(prog) prog.textContent = '⏳ جاري رفع المرفق... ' + pct + '%';
             },
-            function(err){
+            function(errMsg){
                 if(prog) prog.style.display='none';
-                msg.style.color='var(--no)'; msg.textContent='❌ تعذر رفع الملف: '+err.message;
+                msg.style.color='var(--no)'; msg.textContent='❌ تعذر رفع الملف: '+errMsg;
             },
-            function(){
-                task.snapshot.ref.getDownloadURL().then(function(url){
-                    return db.collection('requests').add({
-                        uid:TG_USER.uid, type:type, details:details, fromDate:from, toDate:to,
-                        status:'pending', fileUrl:url, fileName:file.name, fileType:file.type,
-                        createdAt:firebase.firestore.FieldValue.serverTimestamp()
-                    });
+            function(publicUrl){
+                db.collection('requests').add({
+                    uid:TG_USER.uid, type:type, details:details, fromDate:from, toDate:to,
+                    status:'pending', fileUrl:publicUrl, fileName:file.name, fileType:file.type,
+                    createdAt:firebase.firestore.FieldValue.serverTimestamp()
                 }).then(function(){
                     if(prog) { prog.style.display='none'; prog.textContent=''; }
                     msg.style.color='var(--ok)'; msg.textContent='✅ تم إرسال الطلب مع المرفق';

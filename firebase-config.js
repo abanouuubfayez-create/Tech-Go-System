@@ -14,4 +14,49 @@ const firebaseConfig = {
 if (!firebase.apps.length) firebase.initializeApp(firebaseConfig);
 var auth = firebase.auth();
 var db   = firebase.firestore();
-var storage = firebase.storage();
+
+// ═══════════════════════════════════════════════════════════════════════
+// 🗄️ Supabase Storage (بديل مجاني لـ Firebase Storage)
+// ═══════════════════════════════════════════════════════════════════════
+var SUPABASE_URL = 'https://nokyxxajtrlmndsvbzik.supabase.co';
+var SUPABASE_ANON_KEY = 'sb_publishable_o2zJ82_vrSGnYeFnL2Iemw_PI6oeqZ7';
+var SUPABASE_BUCKET = 'uploads';
+
+/**
+ * رفع ملف على Supabase Storage مع متابعة نسبة الرفع
+ * @param {string} folder - المجلد (مثلاً 'tasks', 'projects', 'requests')
+ * @param {string} fileName - اسم الملف الفريد
+ * @param {File} file - كائن الملف
+ * @param {function} onProgress - callback نسبة الرفع (0-100)
+ * @param {function} onError - callback عند الخطأ
+ * @param {function} onDone - callback عند النجاح (يستقبل الـ public URL)
+ */
+function tgUploadFile(folder, fileName, file, onProgress, onError, onDone) {
+    var path = folder + '/' + fileName;
+    var url = SUPABASE_URL + '/storage/v1/object/' + SUPABASE_BUCKET + '/' + path;
+    var xhr = new XMLHttpRequest();
+    xhr.open('POST', url, true);
+    xhr.setRequestHeader('Authorization', 'Bearer ' + SUPABASE_ANON_KEY);
+    xhr.setRequestHeader('apikey', SUPABASE_ANON_KEY);
+    xhr.setRequestHeader('x-upsert', 'true');
+    // لا نضع Content-Type لأن XHR سيضعه تلقائياً مع الملف
+    xhr.upload.onprogress = function(e) {
+        if (e.lengthComputable && onProgress) {
+            onProgress(Math.round(e.loaded / e.total * 100));
+        }
+    };
+    xhr.onerror = function() {
+        onError('فشل الاتصال بالخادم. تحقق من اتصال الإنترنت.');
+    };
+    xhr.onload = function() {
+        if (xhr.status >= 200 && xhr.status < 300) {
+            var publicUrl = SUPABASE_URL + '/storage/v1/object/public/' + SUPABASE_BUCKET + '/' + path;
+            onDone(publicUrl);
+        } else {
+            var errMsg = 'خطأ في الرفع (HTTP ' + xhr.status + ')';
+            try { var resp = JSON.parse(xhr.responseText); errMsg = resp.message || resp.error || errMsg; } catch(e){}
+            onError(errMsg);
+        }
+    };
+    xhr.send(file);
+}

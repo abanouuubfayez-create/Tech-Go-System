@@ -801,25 +801,20 @@ function createProject(){
         if(file.size > MAX_MB * 1024 * 1024){ msg.style.color='var(--no)'; msg.textContent='الملف كبير جداً (الحد الأقصى '+MAX_MB+' MB).'; return; }
         var prog = document.getElementById('pmUploadProg');
         if(prog) { prog.style.display = 'block'; prog.textContent = '⏳ جاري رفع المرفق... 0%'; }
-        var path = 'projects/' + Date.now() + '_' + file.name;
-        var ref = storage.ref(path);
-        var uploadTask = ref.put(file);
-        uploadTask.on('state_changed',
-            function(snap){
-                var pct = Math.round(snap.bytesTransferred/snap.totalBytes*100);
+        var uniqueName = Date.now() + '_' + file.name;
+        tgUploadFile('projects', uniqueName, file,
+            function(pct){
                 if(prog) prog.textContent = '⏳ جاري رفع المرفق... ' + pct + '%';
             },
-            function(err){
+            function(errMsg){
                 if(prog) prog.style.display='none';
-                msg.style.color='var(--no)'; msg.textContent='❌ تعذر رفع الملف: '+err.message;
+                msg.style.color='var(--no)'; msg.textContent='❌ تعذر رفع الملف: '+errMsg;
             },
-            function(){
-                uploadTask.snapshot.ref.getDownloadURL().then(function(url){
-                    projectData.fileUrl = url;
-                    projectData.fileName = file.name;
-                    projectData.fileType = file.type;
-                    return db.collection('projects').add(projectData);
-                }).then(function(){
+            function(publicUrl){
+                projectData.fileUrl = publicUrl;
+                projectData.fileName = file.name;
+                projectData.fileType = file.type;
+                db.collection('projects').add(projectData).then(function(){
                     if(prog) { prog.style.display='none'; prog.textContent=''; }
                     onDone();
                 }).catch(function(err){
@@ -937,25 +932,20 @@ function createTask(){
         if(file.size > MAX_MB * 1024 * 1024){ msg.style.color='var(--no)'; msg.textContent='الملف كبير جداً (الحد الأقصى '+MAX_MB+' MB).'; return; }
         var prog = document.getElementById('tkUploadProg');
         if(prog) { prog.style.display = 'block'; prog.textContent = '⏳ جاري رفع المرفق... 0%'; }
-        var path = 'tasks/' + uid + '/' + Date.now() + '_' + file.name;
-        var ref = storage.ref(path);
-        var uploadTask = ref.put(file);
-        uploadTask.on('state_changed',
-            function(snap){
-                var pct = Math.round(snap.bytesTransferred/snap.totalBytes*100);
+        var uniqueName = uid + '/' + Date.now() + '_' + file.name;
+        tgUploadFile('tasks', uniqueName, file,
+            function(pct){
                 if(prog) prog.textContent = '⏳ جاري رفع المرفق... ' + pct + '%';
             },
-            function(err){
+            function(errMsg){
                 if(prog) prog.style.display='none';
-                msg.style.color='var(--no)'; msg.textContent='❌ تعذر رفع الملف: '+err.message;
+                msg.style.color='var(--no)'; msg.textContent='❌ تعذر رفع الملف: '+errMsg;
             },
-            function(){
-                uploadTask.snapshot.ref.getDownloadURL().then(function(url){
-                    taskData.fileUrl = url;
-                    taskData.fileName = file.name;
-                    taskData.fileType = file.type;
-                    return db.collection('tasks').add(taskData);
-                }).then(function(){
+            function(publicUrl){
+                taskData.fileUrl = publicUrl;
+                taskData.fileName = file.name;
+                taskData.fileType = file.type;
+                db.collection('tasks').add(taskData).then(function(){
                     if(prog) { prog.style.display='none'; prog.textContent=''; }
                     onDone();
                 }).catch(function(err){
