@@ -1,0 +1,115 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>تسجيل الدخول · تيك جو</title>
+<link rel="stylesheet" href="styles.css">
+</head>
+<body>
+<div class="tg-login-wrap">
+  <div class="tg-login-card">
+    <div class="tg-login-logo">
+      <div class="lgo"><span>TECH - GO</span><small>تيك – جو</small></div>
+    </div>
+    <div class="tg-login-title">تسجيل الدخول إلى نظام الإدارة الشامل</div>
+
+    <div class="tg-login-err" id="loginErr"></div>
+
+    <div class="fg" style="margin-bottom:14px">
+      <label>البريد الإلكتروني</label>
+      <input type="email" id="loginEmail" placeholder="name@techgo.com" autofocus>
+    </div>
+    <div class="fg" style="margin-bottom:8px">
+      <label>كلمة المرور</label>
+      <input type="password" id="loginPass" placeholder="••••••••" onkeydown="if(event.key==='Enter')doLogin()">
+    </div>
+
+    <button class="bt bt-p tg-login-btn" onclick="doLogin()">دخول</button>
+
+    <div class="tg-login-foot">
+      نسيت كلمة المرور؟ <a onclick="doReset()">إعادة تعيينها بالبريد الإلكتروني</a>
+    </div>
+    <div class="tg-login-foot" id="firstRunLink" style="display:none">
+      أول مرة تستخدم النظام؟ <a href="setup.html">إعداد حساب المدير الأول</a>
+    </div>
+  </div>
+</div>
+
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
+<script src="firebase-config.js"></script>
+<script>
+function showErr(msg){
+    var e=document.getElementById('loginErr');
+    e.textContent=msg; e.classList.add('show');
+}
+function hideErr(){ document.getElementById('loginErr').classList.remove('show'); }
+
+function friendlyErr(code){
+    var map={
+        'auth/invalid-email':'صيغة البريد الإلكتروني غير صحيحة.',
+        'auth/user-not-found':'لا يوجد حساب بهذا البريد الإلكتروني.',
+        'auth/wrong-password':'كلمة المرور غير صحيحة.',
+        'auth/invalid-credential':'البريد الإلكتروني أو كلمة المرور غير صحيحة.',
+        'auth/too-many-requests':'محاولات كثيرة خاطئة، برجاء المحاولة لاحقاً.',
+        'auth/network-request-failed':'تعذر الاتصال بالخادم، تحقق من الإنترنت.'
+    };
+    return map[code] || 'حدث خطأ أثناء تسجيل الدخول.';
+}
+
+function doLogin(){
+    hideErr();
+    var email=(document.getElementById('loginEmail').value||'').trim();
+    var pass=document.getElementById('loginPass').value||'';
+    if(!email||!pass){ showErr('من فضلك أدخل البريد الإلكتروني وكلمة المرور.'); return; }
+    auth.signInWithEmailAndPassword(email,pass).then(function(cred){
+        return db.collection('users').doc(cred.user.uid).get();
+    }).then(function(doc){
+        if(!doc.exists){
+            showErr('هذا الحساب غير مرتبط بملف مستخدم في النظام. تواصل مع مدير النظام.');
+            auth.signOut();
+            return;
+        }
+        if(doc.data().disabled===true){
+            showErr('تم تعطيل هذا الحساب من قبل الإدارة. تواصل مع مدير النظام.');
+            auth.signOut();
+            return;
+        }
+        var role=doc.data().role;
+        location.href = (role==='admin') ? 'index.html' : 'employee.html';
+    }).catch(function(err){
+        showErr(friendlyErr(err.code));
+    });
+}
+
+function doReset(){
+    hideErr();
+    var email=(document.getElementById('loginEmail').value||'').trim();
+    if(!email){ showErr('اكتب بريدك الإلكتروني في الحقل أولاً، ثم اضغط على الرابط.'); return; }
+    auth.sendPasswordResetEmail(email).then(function(){
+        alert('تم إرسال رابط إعادة تعيين كلمة المرور إلى بريدك الإلكتروني.');
+    }).catch(function(err){ showErr(friendlyErr(err.code)); });
+}
+
+// لو المستخدم داخل بالفعل، حوّله مباشرة لصفحته
+auth.onAuthStateChanged(function(user){
+    if(!user){ checkFirstRun(); return; }
+    db.collection('users').doc(user.uid).get().then(function(doc){
+        if(!doc.exists){ checkFirstRun(); return; }
+        if(doc.data().disabled===true){ auth.signOut(); return; }
+        location.href = (doc.data().role==='admin') ? 'index.html' : 'employee.html';
+    });
+});
+
+// يظهر رابط "الإعداد الأول" فقط لو مفيش أدمن اتعمل للنظام لسه
+function checkFirstRun(){
+    db.collection('system').doc('meta').get().then(function(doc){
+        var done = !!(doc.exists && doc.data().setupDone === true);
+        if(!done) document.getElementById('firstRunLink').style.display = 'block';
+    }).catch(function(){});
+}
+</script>
+</body>
+</html>

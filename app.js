@@ -1,0 +1,2054 @@
+// ─── STATE & INIT ─────────────────────────────────────────────────────────
+var CN   = "شركة تيك جو";
+var MGRS = { admin:'', exec:'', tech:'' };
+var EMPLOYEES = [];
+var PMGMT_EMPLOYEES = []; // موظفون (uid+name+email) مستخدمون في صفحة "إدارة المشاريع"
+var LOGO_URI = "data:image/png;base64,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";
+
+(function init(){
+    var c=localStorage.getItem('tg_cn');   if(c) CN=c;
+    var m=localStorage.getItem('tg_mgrs'); if(m) try{MGRS=JSON.parse(m);}catch(e){}
+    var e=localStorage.getItem('tg_employees'); if(e) try{EMPLOYEES=JSON.parse(e);}catch(err){}
+    refreshEmpDatalist();
+})();
+
+// ─── TITLES ───────────────────────────────────────────────────────────────
+var T={
+    dash:"لوحة التحكم", emp:"ملف بيانات الموظف", leave:"طلب إجازة",
+    perm:"إذن حضور / انصراف", delay:"التماس تعديل موعد الحضور", la:"سجل الإجازة السنوية",
+    lb:"سجل الإجازة العارضة", lc:"سجل الأعياد والمناسبات",
+    ld:"سجل الغياب بالخصم", notice:"نموذج لفت نظر", warn:"خطاب إنذار",
+    inv:"محضر تحقيق", exp:"شهادة خبرة", clr:"إخلاء طرف",
+    gen:"خطاب إداري عام",
+    task:"تكليف بمهمة عمل", sal:"شهادة راتب", att:"الحضور والانصراف",
+    comp:"الشكاوى والمقترحات", set:"تخصيص النظام", proj:"نموذج إدارة المشروع",
+    mexp:"شيت المصروفات الشهري",
+    res:"طلب استقالة", promo:"قرار ترقية", contract:"عقد عمل", raise:"زيادة راتب / علاوة",
+    staff:"متابعة الموظفين", pmgmt:"إدارة المشاريع", account:"حسابي",
+    tasksmgmt:"توزيع المهام"
+};
+
+// ─── DOCUMENT NUMBERING ───────────────────────────────────────────────────
+var DCODES={
+    emp:'EMP', leave:'LV', perm:'PM', delay:'DLY', la:'LA', lb:'LB', lc:'LC', ld:'LD',
+    notice:'NTC', warn:'WRN', inv:'INV', exp:'EXP', clr:'CLR', gen:'GEN',
+    task:'TSK', sal:'SAL', comp:'CMP', proj:'PRJ', mexp:'MEXP',
+    res:'RES', promo:'PRM', contract:'CTR', raise:'RAI',
+    wkr:'WKR', ach:'ACH', req:'REQ'
+};
+function genDocNum(type){
+    if(!type||!DCODES[type])return '';
+    var code=DCODES[type], yr=new Date().getFullYear();
+    var key='tg_seq_'+type+'_'+yr;
+    var seq=(parseInt(localStorage.getItem(key))||0)+1;
+    localStorage.setItem(key,seq);
+    return 'TG-'+yr+'-'+code+'-'+String(seq).padStart(3,'0');
+}
+function escH(s){ return (s||'').replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+
+// ─── نافذة تأكيد عامة (Modal) ─────────────────────────────────────────────
+// tgConfirmModal(title, bodyHtml, [{label, cls, onClick}, ...])
+function tgConfirmModal(title, bodyHtml, buttons){
+    tgCloseModal();
+    var bd=document.createElement('div');
+    bd.className='tg-modal-backdrop';
+    bd.id='tgModalBackdrop';
+    bd.onclick=function(e){ if(e.target===bd) tgCloseModal(); };
+    var btnsHtml='';
+    buttons.forEach(function(b,i){
+        btnsHtml+='<button class="bt '+(b.cls||'bt-o')+'" id="tgModalBtn'+i+'">'+b.label+'</button>';
+    });
+    bd.innerHTML='<div class="tg-modal">'+
+        '<div class="tg-modal-title">'+title+'</div>'+
+        '<div class="tg-modal-body">'+bodyHtml+'</div>'+
+        '<div class="tg-modal-actions">'+btnsHtml+'</div>'+
+        '</div>';
+    document.body.appendChild(bd);
+    buttons.forEach(function(b,i){
+        document.getElementById('tgModalBtn'+i).onclick=function(){ b.onClick&&b.onClick(); };
+    });
+}
+function tgCloseModal(){
+    var bd=document.getElementById('tgModalBackdrop');
+    if(bd) bd.remove();
+}
+
+// ─── NAVIGATION ───────────────────────────────────────────────────────────
+function go(id,nav){
+    document.querySelectorAll(".S-i").forEach(function(e){e.classList.remove("a")});
+    if(nav)nav.classList.add("a");
+    else{var el=document.querySelector('.S-i[onclick*="\''+id+'\'"]');if(el)el.classList.add("a")}
+    document.querySelectorAll(".pg").forEach(function(e){e.classList.remove("a")});
+    document.getElementById("pg-"+id).classList.add("a");
+    document.getElementById("pT").innerText=T[id]||id;
+    if(window.innerWidth<=900)document.getElementById("sb").classList.remove("opn");
+    var c=document.getElementById("pg-"+id);
+    if(id!=="dash"&&c.innerHTML.trim()===""){load(id,c);upCN();setD(c)}
+}
+function ts(b){var p=b.parentNode;p.querySelectorAll(".stb").forEach(function(x){x.classList.remove("a")});b.classList.add("a")}
+function sct(c){c.parentNode.querySelectorAll(".ctc").forEach(function(x){x.classList.remove("sel")});c.classList.add("sel")}
+function spr(p){p.parentNode.querySelectorAll(".ppl").forEach(function(x){x.classList.remove("a")});p.classList.add("a")}
+
+function updTaskSigs(rb){
+    var el=document.getElementById('task-approver-sig');
+    if(!el)return;
+    var isTech=rb.value==='tech';
+    el.outerHTML=_sig(
+        isTech?'المدير التقني':'المدير الإداري / مدير المشروعات',
+        isTech?MGRS.tech:MGRS.admin,
+        isTech?'التكليف التقني والمتابعة':'الموافقة والاعتماد',
+        'task-approver-sig'
+    );
+}
+
+function updGenSig(rb){
+    var el=document.getElementById('gen-issuer-sig');
+    if(!el)return;
+    var map={admin:['المدير الإداري / مدير المشروعات',MGRS.admin],tech:['المدير التقني',MGRS.tech],exec:['المدير التنفيذي',MGRS.exec]};
+    var v=map[rb.value]||map.admin;
+    el.outerHTML=_sigFL(v[0],v[1],'اعتماد وإصدار','gen-issuer-sig');
+}
+
+function saveSt(){
+    var n=document.getElementById("sn").value;
+    if(n){CN=n;localStorage.setItem('tg_cn',CN);}
+    MGRS.admin=(document.getElementById("sm_admin").value||'').trim();
+    MGRS.exec =(document.getElementById("sm_exec").value||'').trim();
+    MGRS.tech =(document.getElementById("sm_tech").value||'').trim();
+    localStorage.setItem('tg_mgrs',JSON.stringify(MGRS));
+    upCN();
+    // Clear cached forms so names refresh on next visit
+    document.querySelectorAll('.pg').forEach(function(p){
+        if(p.id!=='pg-dash'&&p.id!=='pg-set')p.innerHTML='';
+    });
+    alert("✅ تم حفظ الإعدادات\nسيتم تحديث أسماء المديرين عند فتح النماذج.");
+}
+function upCN(){document.querySelectorAll(".dcn").forEach(function(e){e.innerText=CN})}
+function resetSeq(){
+    if(!confirm("⚠️ هل تريد تصفير كل أرقام التسلسل للمستندات؟\nسيبدأ ترقيم كل النماذج من 001 من جديد.\nلا يمكن التراجع عن هذا الإجراء."))return;
+    var rm=[];
+    for(var i=0;i<localStorage.length;i++){var k=localStorage.key(i);if(k&&k.indexOf('tg_seq_')===0)rm.push(k);}
+    rm.forEach(function(k){localStorage.removeItem(k);});
+    alert("✅ تم تصفير أرقام المستندات\nستبدأ كل النماذج من جديد بالرقم 001.");
+}
+// ─── قائمة الموظفين المشتركة (إدخال مرة واحدة → اختيار من دروب ليست) ──────
+function refreshEmpDatalist(){
+    var dl=document.getElementById('tgEmpDL');
+    if(!dl)return;
+    EMPLOYEES.sort(function(a,b){return a.localeCompare(b,'ar');});
+    dl.innerHTML=EMPLOYEES.map(function(n){return '<option value="'+escH(n)+'"></option>';}).join('');
+}
+function saveEmployees(){
+    localStorage.setItem('tg_employees',JSON.stringify(EMPLOYEES));
+    refreshEmpDatalist();
+}
+function addEmployeeName(name){
+    name=(name||'').trim();
+    if(!name)return;
+    if(EMPLOYEES.indexOf(name)===-1){
+        EMPLOYEES.push(name);
+        saveEmployees();
+    }
+}
+function delEmployeeName(name){
+    if(!confirm('حذف "'+name+'" من قائمة الموظفين؟'))return;
+    var i=EMPLOYEES.indexOf(name);
+    if(i>-1){EMPLOYEES.splice(i,1);saveEmployees();}
+    renderEmpListSec();
+}
+function addEmpFromSettings(){
+    var inp=document.getElementById('newEmpName');
+    if(!inp)return;
+    var name=(inp.value||'').trim();
+    if(!name){inp.focus();return;}
+    addEmployeeName(name);
+    inp.value='';
+    renderEmpListSec();
+    inp.focus();
+}
+function empListSecHTML(){
+    var h='<div class="set-sec" id="empListSec"><div class="set-sec-title">👥 قائمة الموظفين</div>';
+    h+='<div class="set-hint">أضف اسم كل موظف هنا مرة واحدة، وبعدها سيظهر تلقائياً كخيار دروب ليست (Autocomplete) في كل حقول "اسم الموظف" بجميع النماذج — مع إمكانية الكتابة اليدوية أيضاً لأي اسم جديد.</div>';
+    h+='<div class="fr fr2" style="margin-top:10px"><div class="fg" style="margin:0"><input type="text" id="newEmpName" placeholder="اكتب اسم الموظف الجديد..." onkeydown="if(event.key===\'Enter\'){event.preventDefault();addEmpFromSettings();}"></div>'+
+       '<button class="bt bt-p" style="align-self:flex-start" onclick="addEmpFromSettings()">➕ إضافة للقائمة</button></div>';
+    if(EMPLOYEES.length){
+        h+='<div style="display:flex;flex-wrap:wrap;gap:8px;margin-top:12px">';
+        EMPLOYEES.slice().sort(function(a,b){return a.localeCompare(b,'ar');}).forEach(function(n){
+            h+='<div class="code-chip" style="display:flex;align-items:center;gap:6px"><span class="code-lbl">'+escH(n)+'</span>'+
+               '<span onclick="delEmployeeName(\''+n.replace(/'/g,"\\'")+'\')" style="cursor:pointer;color:#c0392b;font-weight:800" title="حذف">✕</span></div>';
+        });
+        h+='</div>';
+    }else{
+        h+='<div class="set-hint" style="margin-top:10px">لا يوجد أي موظف في القائمة بعد.</div>';
+    }
+    h+='</div>';
+    return h;
+}
+function renderEmpListSec(){
+    var el=document.getElementById('empListSec');
+    if(!el)return;
+    el.outerHTML=empListSecHTML();
+}
+
+// ─── نظرة عامة سريعة على لوحة التحكم (تكامل حي بين الموظفين/المشاريع/الطلبات) ──
+function loadDashboardSummary(){
+    var box=document.getElementById('dashSummary');
+    if(!box)return;
+    Promise.all([
+        db.collection('users').where('role','==','employee').get(),
+        db.collection('projects').get(),
+        db.collection('requests').where('status','==','pending').get()
+    ]).then(function(res){
+        var empCount=res[0].size, projCount=res[1].size, pendingCount=res[2].size;
+        box.innerHTML=
+            '<div class="DC" onclick="go(\'staff\')" style="cursor:pointer"><div class="di">👥</div><div class="dt2">'+empCount+' موظف</div><div class="dd">إجمالي حسابات الموظفين المسجّلة</div></div>'+
+            '<div class="DC" onclick="go(\'pmgmt\')" style="cursor:pointer"><div class="di">📁</div><div class="dt2">'+projCount+' مشروع</div><div class="dd">إجمالي المشاريع الحالية</div></div>'+
+            '<div class="DC" onclick="go(\'staff\')" style="cursor:pointer'+(pendingCount?';border:2px solid var(--gd)':'')+'"><div class="di">⏳</div><div class="dt2">'+pendingCount+' طلب معلّق</div><div class="dd">بانتظار موافقة أو رفض الأدمن</div></div>';
+    }).catch(function(){ box.innerHTML=''; });
+}
+
+// ─── متابعة الموظفين (بيانات حية من Firebase Firestore) ──────────────────
+function loadStaffOverview(){
+    var box=document.getElementById('staffList');
+    if(!box)return;
+    db.collection('users').where('role','==','employee').get().then(function(snap){
+        if(snap.empty){
+            box.innerHTML='<div class="empty-hint">لا يوجد موظفون مسجّلون بعد. أنشئ أول حساب من الأعلى.</div>';
+            return;
+        }
+        var employees=[];
+        snap.forEach(function(doc){employees.push(Object.assign({uid:doc.id},doc.data()));});
+        // مزامنة قائمة أسماء الموظفين الحقيقيين (حسابات الدخول) مع قائمة الأوتوكومبليت في كل النماذج
+        employees.forEach(function(emp){ if(emp.name) addEmployeeName(emp.name); });
+        renderEmpListSec();
+        var proms=employees.map(function(emp){
+            return Promise.all([
+                db.collection('projects').where('assignees','array-contains',emp.uid).get(),
+                db.collection('achievements').where('uid','==',emp.uid).get(),
+                db.collection('requests').where('uid','==',emp.uid).get(),
+                db.collection('weeklyReports').where('uid','==',emp.uid).get()
+            ]).then(function(res){
+                emp.projects=res[0].docs.map(function(d){return Object.assign({id:d.id},d.data());});
+                emp.achievements=res[1].docs.map(function(d){return Object.assign({id:d.id},d.data());})
+                    .sort(function(a,b){return (a.date<b.date)?1:-1;});
+                emp.requests=res[2].docs.map(function(d){return Object.assign({id:d.id},d.data());})
+                    .sort(function(a,b){
+                        var am=(a.createdAt&&a.createdAt.toMillis)?a.createdAt.toMillis():0;
+                        var bm=(b.createdAt&&b.createdAt.toMillis)?b.createdAt.toMillis():0;
+                        return bm-am;
+                    });
+                emp.weeklyReports=res[3].docs.map(function(d){return Object.assign({id:d.id},d.data());})
+                    .sort(function(a,b){return (a.weekStart<b.weekStart)?1:-1;});
+                return emp;
+            });
+        });
+        Promise.all(proms).then(renderStaffList).catch(function(err){
+            box.innerHTML='<div class="empty-hint" style="color:var(--no)">تعذر تحميل بيانات المشاريع/الطلبات: '+escH(err.message)+'</div>';
+        });
+    }).catch(function(err){
+        box.innerHTML='<div class="empty-hint" style="color:var(--no)">تعذر تحميل بيانات الموظفين: '+escH(err.message)+'</div>';
+    });
+}
+function badgeClassForStatus(s){
+    if(s==='مكتمل')return 'badge-done';
+    if(s==='جاري العمل')return 'badge-progress';
+    return '';
+}
+function badgeClassForReq(s){
+    if(s==='approved')return 'badge-approved';
+    if(s==='rejected')return 'badge-rejected';
+    return 'badge-pending';
+}
+function reqStatusLabel(s){
+    if(s==='approved')return 'موافق عليه';
+    if(s==='rejected')return 'مرفوض';
+    return 'قيد المراجعة';
+}
+function renderStaffList(list){
+    var box=document.getElementById('staffList');
+    if(!box)return;
+    window._staffEmpCache=list;
+    var countEl=document.getElementById('staffCount');
+    if(countEl)countEl.textContent=list.length+' موظف';
+    var h='';
+    list.forEach(function(emp,idx){
+        var pending=emp.requests.filter(function(r){return r.status==='pending';}).length;
+        var avgProg=emp.projects.length?Math.round(emp.projects.reduce(function(s,p){
+            var pm=(p.progressMap&&p.progressMap[emp.uid])?p.progressMap[emp.uid].progress:0;
+            return s+(pm||0);
+        },0)/emp.projects.length):0;
+        var searchKey=((emp.name||'')+' '+(emp.email||'')).toLowerCase();
+        h+='<div class="staff-card'+(emp.disabled?' is-disabled':'')+'" id="staffCard'+idx+'" data-search="'+escH(searchKey)+'">';
+        h+='<div class="staff-card-h" onclick="toggleStaffCard('+idx+')">'+
+           '<div><div class="staff-name-row"><span class="staff-name">'+escH(emp.name||emp.email)+'</span>'+
+           (emp.jobTitle?'<span class="badge" style="background:var(--gd);color:#1b2a4a">'+escH(emp.jobTitle)+'</span>':'')+
+           (emp.disabled?'<span class="badge badge-disabled">🚫 معطّل</span>':'<span class="badge badge-active">✅ نشط</span>')+
+           '</div><div class="staff-email">'+escH(emp.email||'')+'</div></div>'+
+           '<div class="staff-stats">'+
+           '<span class="staff-stat">📁 '+emp.projects.length+' مشروع</span>'+
+           '<span class="staff-stat">📊 متوسط تقدم '+avgProg+'%</span>'+
+           '<span class="staff-stat">📆 '+emp.weeklyReports.length+' تقرير أسبوعي</span>'+
+           '<span class="staff-stat">🏆 '+emp.achievements.length+' إنجاز</span>'+
+           (pending?('<span class="staff-stat pending">⏳ '+pending+' طلب معلّق</span>'):'<span class="staff-stat">✅ لا طلبات معلّقة</span>')+
+           '</div></div>';
+        h+='<div class="staff-card-body">';
+
+        h+='<div class="staff-actions-row">'+
+           '<button class="bt bt-o" onclick="event.stopPropagation();toggleEmpNameEdit('+idx+')">✏️ تعديل الاسم</button>'+
+           '<button class="bt bt-o" onclick="event.stopPropagation();toggleEmpJobEdit('+idx+')">🏷 تعديل المسمى الوظيفي</button>'+
+           '<button class="bt '+(emp.disabled?'bt-p':'bt-o')+'" onclick="event.stopPropagation();toggleEmpDisabled(\''+emp.uid+'\','+(!!emp.disabled)+')">'+
+           (emp.disabled?'✅ إعادة تفعيل الحساب':'🚫 تعطيل الحساب')+'</button>'+
+           '<button class="bt bt-d" onclick="event.stopPropagation();openDeleteEmpModal(\''+emp.uid+'\','+idx+')">🗑 حذف الموظف</button>'+
+           '</div>'+
+           '<div class="emp-inline-edit" id="empNameEdit'+idx+'" style="display:none">'+
+           '<input type="text" id="empNameInput'+idx+'" value="'+escH(emp.name||'')+'">'+
+           '<button class="bt bt-p" onclick="saveEmpName(\''+emp.uid+'\','+idx+')">💾 حفظ</button>'+
+           '<span id="empNameMsg'+idx+'" style="font-size:10.5px"></span>'+
+           '</div>'+
+           '<div class="emp-inline-edit" id="empJobEdit'+idx+'" style="display:none">'+
+           '<input type="text" id="empJobInput'+idx+'" value="'+escH(emp.jobTitle||'')+'" placeholder="مثلاً: مصمم جرافيك">'+
+           '<button class="bt bt-p" onclick="saveEmpJob(\''+emp.uid+'\','+idx+')">💾 حفظ</button>'+
+           '<span id="empJobMsg'+idx+'" style="font-size:10.5px"></span>'+
+           '</div>';
+
+        h+='<div class="staff-sub-title">📁 المشاريع</div>';
+        if(emp.projects.length){
+            emp.projects.forEach(function(p){
+                var pm=(p.progressMap&&p.progressMap[emp.uid])||{progress:0,status:'لم يبدأ',note:''};
+                h+='<div class="pj-row"><div class="pj-t">'+escH(p.title||'بدون عنوان')+'</div>'+
+                   (p.description?'<div class="pj-meta">'+escH(p.description)+'</div>':'')+
+                   '<div class="pj-bar"><div class="pj-bar-in" style="width:'+(pm.progress||0)+'%"></div></div>'+
+                   '<div class="pj-meta">الحالة: <span class="badge '+badgeClassForStatus(pm.status)+'">'+escH(pm.status||'لم يبدأ')+'</span> · التقدم: '+(pm.progress||0)+'%'+(pm.note?(' · ملاحظة: '+escH(pm.note)):'')+'</div>'+
+                   '</div>';
+            });
+        }else h+='<div class="empty-hint">لا توجد مشاريع مُسندة حالياً.</div>';
+
+        h+='<div class="staff-sub-title">📆 التقارير الأسبوعية</div>';
+        if(emp.weeklyReports.length){
+            window._staffWkrCache=window._staffWkrCache||{};
+            window._staffWkrCache[idx]=emp.weeklyReports;
+            emp.weeklyReports.forEach(function(r,ri){
+                h+='<div class="ac-row"><div class="ac-t">أسبوع '+escH(r.weekStart||'')+
+                   ' <button class="bt bt-o" style="padding:2px 8px;font-size:10px;margin-right:8px" onclick="printWeeklyReportDoc(window._staffEmpCache['+idx+'],window._staffWkrCache['+idx+']['+ri+'])">🖨 طباعة</button></div>'+
+                   (r.content?'<div class="ac-meta">'+escH(r.content)+'</div>':'')+'</div>';
+            });
+        }else h+='<div class="empty-hint">لم يُرسل الموظف أي تقرير أسبوعي بعد.</div>';
+
+        h+='<div class="staff-sub-title">🏆 الإنجازات</div>';
+        if(emp.achievements.length){
+            window._staffAchCache=window._staffAchCache||{};
+            window._staffAchCache[idx]=emp.achievements;
+            emp.achievements.forEach(function(a,ai){
+                h+='<div class="ac-row"><div class="ac-t">'+escH(a.title||'')+
+                   ' <button class="bt bt-o" style="padding:2px 8px;font-size:10px;margin-right:8px" onclick="printAchievementDoc(window._staffEmpCache['+idx+'],window._staffAchCache['+idx+']['+ai+'])">🖨 طباعة</button></div>'+
+                   (a.description?'<div class="ac-meta">'+escH(a.description)+'</div>':'')+
+                   (a.date?'<div class="ac-meta">📅 '+escH(a.date)+'</div>':'')+'</div>';
+            });
+        }else h+='<div class="empty-hint">لا توجد إنجازات مسجّلة بعد.</div>';
+
+        h+='<div class="staff-sub-title">📨 الطلبات</div>';
+        if(emp.requests.length){
+            window._staffReqCache=window._staffReqCache||{};
+            window._staffReqCache[idx]=emp.requests;
+            emp.requests.forEach(function(r,qi){
+                h+='<div class="rq-row"><div class="rq-t">'+escH(r.type||'طلب')+' <span class="badge '+badgeClassForReq(r.status)+'">'+reqStatusLabel(r.status)+'</span>'+
+                   ' <button class="bt bt-o" style="padding:2px 8px;font-size:10px;margin-right:8px" onclick="printRequestDoc(window._staffEmpCache['+idx+'],window._staffReqCache['+idx+']['+qi+'])">🖨 طباعة</button></div>'+
+                   (r.details?'<div class="pj-meta">'+escH(r.details)+'</div>':'')+
+                   (r.fromDate?('<div class="pj-meta">من '+escH(r.fromDate)+(r.toDate?(' إلى '+escH(r.toDate)):'')+'</div>'):'')+
+                   (r.reviewedBy?('<div class="pj-meta">تمت المراجعة بواسطة: '+escH(r.reviewedBy)+'</div>'):'')+
+                   (r.status==='pending'?('<div class="rq-actions"><button class="bt bt-p" onclick="reviewRequest(\''+r.id+'\',\'approved\')">✔ موافقة</button><button class="bt bt-d" onclick="reviewRequest(\''+r.id+'\',\'rejected\')">✕ رفض</button></div>'):'')+
+                   '</div>';
+            });
+        }else h+='<div class="empty-hint">لا توجد طلبات بعد.</div>';
+
+        h+='</div></div>';
+    });
+    box.innerHTML=h;
+}
+function toggleStaffCard(idx){
+    var c=document.getElementById('staffCard'+idx);
+    if(c)c.classList.toggle('open');
+}
+function filterStaffCards(){
+    var q=(document.getElementById('staffSearch').value||'').trim().toLowerCase();
+    var visible=0;
+    document.querySelectorAll('#staffList .staff-card').forEach(function(c){
+        var match=!q||(c.getAttribute('data-search')||'').indexOf(q)>-1;
+        c.style.display=match?'':'none';
+        if(match)visible++;
+    });
+    var countEl=document.getElementById('staffCount');
+    if(countEl)countEl.textContent=visible+' موظف'+(q?(' من '+(window._staffEmpCache?window._staffEmpCache.length:0)):'');
+}
+function reviewRequest(reqId,newStatus){
+    db.collection('requests').doc(reqId).update({
+        status:newStatus,
+        reviewedBy:(TG_USER?TG_USER.name:''),
+        reviewedAt:firebase.firestore.FieldValue.serverTimestamp()
+    }).then(loadStaffOverview).catch(function(err){ alert('تعذر تحديث الطلب: '+err.message); });
+}
+
+// ─── تعديل اسم الموظف من "متابعة الموظفين" ─────────────────────────────
+function toggleEmpNameEdit(idx){
+    var e=document.getElementById('empNameEdit'+idx);
+    if(!e)return;
+    e.style.display=(e.style.display==='none'||!e.style.display)?'flex':'none';
+}
+function saveEmpName(uid,idx){
+    var name=(document.getElementById('empNameInput'+idx).value||'').trim();
+    var msg=document.getElementById('empNameMsg'+idx);
+    if(!name){ msg.style.color='var(--no)'; msg.textContent='اكتب اسماً صحيحاً.'; return; }
+    msg.style.color='var(--tx3)'; msg.textContent='⏳ جارٍ الحفظ...';
+    db.collection('users').doc(uid).update({name:name}).then(function(){
+        addEmployeeName(name);
+        loadStaffOverview();
+    }).catch(function(err){ msg.style.color='var(--no)'; msg.textContent='❌ '+err.message; });
+}
+
+// ─── تعديل المسمى الوظيفي من "متابعة الموظفين" ─────────────────────────
+function toggleEmpJobEdit(idx){
+    var e=document.getElementById('empJobEdit'+idx);
+    if(!e)return;
+    e.style.display=(e.style.display==='none'||!e.style.display)?'flex':'none';
+}
+function saveEmpJob(uid,idx){
+    var jobTitle=(document.getElementById('empJobInput'+idx).value||'').trim();
+    var msg=document.getElementById('empJobMsg'+idx);
+    msg.style.color='var(--tx3)'; msg.textContent='⏳ جارٍ الحفظ...';
+    db.collection('users').doc(uid).update({jobTitle:jobTitle}).then(function(){
+        loadStaffOverview();
+    }).catch(function(err){ msg.style.color='var(--no)'; msg.textContent='❌ '+err.message; });
+}
+
+// ─── تعطيل / إعادة تفعيل حساب موظف (يمنع الدخول بدون فقد أي بيانات) ────
+function toggleEmpDisabled(uid,currentlyDisabled){
+    db.collection('users').doc(uid).update({disabled:!currentlyDisabled}).then(loadStaffOverview)
+      .catch(function(err){ alert('تعذر تحديث حالة الحساب: '+err.message); });
+}
+
+// ─── حذف موظف: يسأل في كل مرة بين تعطيل فقط أو حذف نهائي كامل ─────────
+function openDeleteEmpModal(uid,idx){
+    var emp=(window._staffEmpCache||[])[idx];
+    var name=escH(emp?(emp.name||emp.email):'');
+    tgConfirmModal(
+        '🗑 حذف / تعطيل: '+name,
+        'اختر الإجراء المناسب لحساب هذا الموظف:<br><br>'+
+        '<b>تعطيل الحساب:</b> يمنعه من الدخول فوراً، مع الاحتفاظ الكامل بسجل مشاريعه وإنجازاته وطلباته السابقة (يمكن التراجع لاحقاً).<br><br>'+
+        '<b>حذف نهائي:</b> يمسح ملفه من النظام، ويزيله من كل المشاريع المُسندة إليه، ويحذف إنجازاته وطلباته وتقاريره الأسبوعية نهائياً — إجراء لا يمكن التراجع عنه. '+
+        '(ملاحظة: حساب الدخول في Firebase Authentication نفسه يبقى موجوداً تقنياً ولازم يتحذف يدوياً من Firebase Console لو حبيت إزالته بالكامل، لكنه لن يقدر يدخل على النظام بعد الحذف).',
+        [
+            {label:'إلغاء', cls:'bt-o', onClick:tgCloseModal},
+            {label:'🚫 تعطيل الحساب فقط', cls:'bt-p', onClick:function(){ tgCloseModal(); toggleEmpDisabled(uid,false); }},
+            {label:'🗑 حذف نهائي مع كل بياناته', cls:'bt-d', onClick:function(){ tgCloseModal(); permanentlyDeleteEmployee(uid,name); }}
+        ]
+    );
+}
+function permanentlyDeleteEmployee(uid,name){
+    tgConfirmModal(
+        '⚠️ تأكيد نهائي',
+        'هل أنت متأكد تماماً من حذف "'+name+'" وكل بياناته نهائياً؟ لا يمكن التراجع عن هذا الإجراء.',
+        [
+            {label:'إلغاء', cls:'bt-o', onClick:tgCloseModal},
+            {label:'🗑 نعم، احذف نهائياً', cls:'bt-d', onClick:function(){
+                tgCloseModal();
+                Promise.all([
+                    db.collection('projects').where('assignees','array-contains',uid).get(),
+                    db.collection('achievements').where('uid','==',uid).get(),
+                    db.collection('requests').where('uid','==',uid).get(),
+                    db.collection('weeklyReports').where('uid','==',uid).get(),
+                    db.collection('projectComments').where('uid','==',uid).get()
+                ]).then(function(res){
+                    var batch=db.batch();
+                    res[0].forEach(function(d){
+                        var data=d.data();
+                        var assignees=(data.assignees||[]).filter(function(a){return a!==uid;});
+                        var pm=Object.assign({},data.progressMap||{});
+                        delete pm[uid];
+                        batch.update(d.ref,{assignees:assignees,progressMap:pm});
+                    });
+                    res[1].forEach(function(d){batch.delete(d.ref);});
+                    res[2].forEach(function(d){batch.delete(d.ref);});
+                    res[3].forEach(function(d){batch.delete(d.ref);});
+                    res[4].forEach(function(d){batch.delete(d.ref);});
+                    batch.delete(db.collection('users').doc(uid));
+                    return batch.commit();
+                }).then(loadStaffOverview).catch(function(err){
+                    alert('تعذر إتمام الحذف بالكامل: '+err.message);
+                });
+            }}
+        ]
+    );
+}
+function createStaffAccount(){
+    var name=(document.getElementById('newAccName').value||'').trim();
+    var email=(document.getElementById('newAccEmail').value||'').trim();
+    var pass=document.getElementById('newAccPass').value||'';
+    var jobTitle=(document.getElementById('newAccJobTitle').value||'').trim();
+    var msg=document.getElementById('newAccMsg');
+    if(!name||!email||!pass){ msg.style.color='var(--no)'; msg.textContent='من فضلك املأ الاسم والبريد الإلكتروني وكلمة المرور.'; return; }
+    if(pass.length<6){ msg.style.color='var(--no)'; msg.textContent='كلمة المرور يجب أن تكون 6 أحرف على الأقل.'; return; }
+    msg.style.color='var(--tx3)'; msg.textContent='⏳ جارٍ إنشاء الحساب...';
+    tgCreateEmployeeAccount(name,email,pass,'',jobTitle,function(){
+        addEmployeeName(name);
+        msg.style.color='var(--ok)'; msg.textContent='✅ تم إنشاء حساب الموظف بنجاح.';
+        document.getElementById('newAccName').value='';
+        document.getElementById('newAccEmail').value='';
+        document.getElementById('newAccPass').value='';
+        document.getElementById('newAccJobTitle').value='';
+        loadStaffOverview();
+    },function(err){
+        var map={'auth/email-already-in-use':'هذا البريد الإلكتروني مستخدم بالفعل.','auth/invalid-email':'صيغة البريد الإلكتروني غير صحيحة.','auth/weak-password':'كلمة المرور ضعيفة جداً.'};
+        msg.style.color='var(--no)'; msg.textContent='❌ '+(map[err.code]||err.message);
+    });
+}
+
+// ─── إدارة المشاريع (إنشاء المشاريع وتعيين الموظفين مباشرة من الموقع) ─────
+function loadPmgmtData(){
+    var assigneesBox=document.getElementById('pmgmtAssignees');
+    var listBox=document.getElementById('pmgmtList');
+    if(!assigneesBox||!listBox)return;
+    db.collection('users').where('role','==','employee').get().then(function(snap){
+        PMGMT_EMPLOYEES=[];
+        snap.forEach(function(doc){PMGMT_EMPLOYEES.push(Object.assign({uid:doc.id},doc.data()));});
+        PMGMT_EMPLOYEES.sort(function(a,b){return (a.name||a.email||'').localeCompare((b.name||b.email||''),'ar');});
+        renderPmgmtAssigneesBox();
+        return db.collection('projects').get();
+    }).then(function(snap){
+        var list=[];
+        snap.forEach(function(doc){list.push(Object.assign({id:doc.id},doc.data()));});
+        var proms=list.map(function(p){
+            return db.collection('projectComments').where('projectId','==',p.id).get().then(function(csnap){
+                p.comments=csnap.docs.map(function(d){return Object.assign({id:d.id},d.data());})
+                    .sort(function(a,b){
+                        var am=(a.createdAt&&a.createdAt.toMillis)?a.createdAt.toMillis():0;
+                        var bm=(b.createdAt&&b.createdAt.toMillis)?b.createdAt.toMillis():0;
+                        return am-bm;
+                    });
+                return p;
+            });
+        });
+        return Promise.all(proms);
+    }).then(renderProjectsList).catch(function(err){
+        listBox.innerHTML='<div class="empty-hint" style="color:var(--no)">تعذر تحميل البيانات: '+escH(err.message)+'</div>';
+    });
+}
+function renderPmgmtAssigneesBox(){
+    var box=document.getElementById('pmgmtAssignees');
+    if(!box)return;
+    if(!PMGMT_EMPLOYEES.length){
+        box.innerHTML='<div class="empty-hint">لا يوجد موظفون مسجّلون بعد. أنشئ حسابات الموظفين أولاً من "متابعة الموظفين".</div>';
+        return;
+    }
+    box.innerHTML=PMGMT_EMPLOYEES.map(function(e){
+        return '<label><input type="checkbox" class="pm-assignee-chk" value="'+e.uid+'"> '+escH(e.name||e.email)+'</label>';
+    }).join('');
+}
+function createProject(){
+    var title=(document.getElementById('pmTitle').value||'').trim();
+    var desc=(document.getElementById('pmDesc').value||'').trim();
+    var priority=document.getElementById('pmPriority').value;
+    var status=document.getElementById('pmStatus').value;
+    var deadline=document.getElementById('pmDeadline').value||'';
+    var msg=document.getElementById('pmCreateMsg');
+    var checked=Array.prototype.slice.call(document.querySelectorAll('#pmgmtAssignees .pm-assignee-chk:checked')).map(function(c){return c.value;});
+    if(!title){ msg.style.color='var(--no)'; msg.textContent='من فضلك اكتب عنوان المشروع.'; return; }
+    msg.style.color='var(--tx3)'; msg.textContent='⏳ جارٍ إنشاء المشروع...';
+    db.collection('projects').add({
+        title:title, description:desc, assignees:checked, progressMap:{},
+        priority:priority, status:status, deadline:deadline,
+        createdAt:firebase.firestore.FieldValue.serverTimestamp(),
+        createdBy:(TG_USER?TG_USER.name:''), createdByUid:(TG_USER?TG_USER.uid:'')
+    }).then(function(){
+        msg.style.color='var(--ok)'; msg.textContent='✅ تم إنشاء المشروع بنجاح.';
+        document.getElementById('pmTitle').value='';
+        document.getElementById('pmDesc').value='';
+        document.getElementById('pmDeadline').value='';
+        document.getElementById('pmPriority').value='متوسطة';
+        document.getElementById('pmStatus').value='مخطط له';
+        document.querySelectorAll('#pmgmtAssignees .pm-assignee-chk').forEach(function(c){c.checked=false;});
+        loadPmgmtData();
+    }).catch(function(err){
+        msg.style.color='var(--no)'; msg.textContent='❌ تعذر إنشاء المشروع: '+err.message;
+    });
+}
+
+// ─── توزيع المهام (الأدمن يكلّف موظفاً بمهمة، والموظف يتابع حالتها من بوابته) ───
+function loadTasksMgmt(){
+    var assigneeSel=document.getElementById('tkAssignee');
+    var listBox=document.getElementById('tasksMgmtList');
+    if(!assigneeSel||!listBox)return;
+    db.collection('users').where('role','==','employee').get().then(function(snap){
+        var employees=[];
+        snap.forEach(function(doc){employees.push(Object.assign({uid:doc.id},doc.data()));});
+        employees.sort(function(a,b){return (a.name||a.email||'').localeCompare((b.name||b.email||''),'ar');});
+        if(!employees.length){
+            assigneeSel.innerHTML='<option value="">لا يوجد موظفون مسجّلون بعد</option>';
+        }else{
+            assigneeSel.innerHTML=employees.map(function(e){
+                return '<option value="'+e.uid+'" data-name="'+escH(e.name||e.email)+'">'+escH(e.name||e.email)+(e.jobTitle?(' — '+escH(e.jobTitle)):'')+'</option>';
+            }).join('');
+        }
+        return db.collection('tasks').get();
+    }).then(function(snap){
+        var list=[];
+        snap.forEach(function(doc){list.push(Object.assign({id:doc.id},doc.data()));});
+        list.sort(function(a,b){
+            var am=(a.createdAt&&a.createdAt.toMillis)?a.createdAt.toMillis():0;
+            var bm=(b.createdAt&&b.createdAt.toMillis)?b.createdAt.toMillis():0;
+            return bm-am;
+        });
+        renderTasksMgmtList(list);
+    }).catch(function(err){
+        listBox.innerHTML='<div class="empty-hint" style="color:var(--no)">تعذر تحميل المهام: '+escH(err.message)+'</div>';
+    });
+}
+function renderTasksMgmtList(list){
+    var box=document.getElementById('tasksMgmtList');
+    if(!box)return;
+    window._tasksMgmtCache=list;
+    if(!list.length){ box.innerHTML='<div class="empty-hint">لا توجد مهام مُكلَّفة بعد.</div>'; return; }
+    var h='';
+    list.forEach(function(t,i){
+        h+='<div class="pj-row"><div class="pj-t">'+escH(t.title||'بدون عنوان')+
+           ' <span class="badge '+prioBadgeClass(t.priority)+'">'+escH(t.priority||'متوسطة')+'</span>'+
+           ' <span class="badge '+pstatusBadgeClass(t.status)+'">'+escH(t.status||'لم يبدأ')+'</span></div>'+
+           '<div class="pj-meta">👤 مكلَّف إلى: '+escH(t.assignedToName||'')+(t.deadline?(' · تاريخ التسليم: '+escH(t.deadline)):'')+'</div>'+
+           (t.description?'<div class="pj-meta">'+escH(t.description)+'</div>':'')+
+           '<button class="bt bt-d" style="margin-top:6px" onclick="deleteTask(\''+t.id+'\')">🗑 حذف المهمة</button>'+
+           '</div>';
+    });
+    box.innerHTML=h;
+}
+function createTask(){
+    var sel=document.getElementById('tkAssignee');
+    var uid=sel.value;
+    var name=sel.selectedOptions&&sel.selectedOptions[0]?sel.selectedOptions[0].getAttribute('data-name'):'';
+    var title=(document.getElementById('tkTitle').value||'').trim();
+    var desc=(document.getElementById('tkDesc').value||'').trim();
+    var priority=document.getElementById('tkPriority').value;
+    var deadline=document.getElementById('tkDeadline').value||'';
+    var msg=document.getElementById('tkCreateMsg');
+    if(!uid){ msg.style.color='var(--no)'; msg.textContent='من فضلك اختر الموظف المكلَّف.'; return; }
+    if(!title){ msg.style.color='var(--no)'; msg.textContent='من فضلك اكتب عنوان المهمة.'; return; }
+    msg.style.color='var(--tx3)'; msg.textContent='⏳ جارٍ التكليف...';
+    db.collection('tasks').add({
+        title:title, description:desc, assignedTo:uid, assignedToName:name||'',
+        priority:priority, deadline:deadline, status:'لم يبدأ',
+        createdAt:firebase.firestore.FieldValue.serverTimestamp(),
+        createdBy:(TG_USER?TG_USER.name:''), createdByUid:(TG_USER?TG_USER.uid:'')
+    }).then(function(){
+        msg.style.color='var(--ok)'; msg.textContent='✅ تم تكليف المهمة بنجاح.';
+        document.getElementById('tkTitle').value='';
+        document.getElementById('tkDesc').value='';
+        document.getElementById('tkDeadline').value='';
+        document.getElementById('tkPriority').value='متوسطة';
+        loadTasksMgmt();
+    }).catch(function(err){
+        msg.style.color='var(--no)'; msg.textContent='❌ تعذر تكليف المهمة: '+err.message;
+    });
+}
+function deleteTask(id){
+    if(!confirm('حذف هذه المهمة نهائياً؟'))return;
+    db.collection('tasks').doc(id).delete().then(loadTasksMgmt).catch(function(err){
+        alert('تعذر حذف المهمة: '+err.message);
+    });
+}
+
+// ─── شارات الأولوية / حالة المشروع / تاريخ الاستحقاق (مشتركة بين لوحة الأدمن وبوابة الموظف) ───
+function prioBadgeClass(p){
+    if(p==='عالية')return 'badge-prio-high';
+    if(p==='منخفضة')return 'badge-prio-low';
+    return 'badge-prio-med';
+}
+function pstatusBadgeClass(s){
+    if(s==='جاري العمل')return 'badge-pstatus-progress';
+    if(s==='متوقف')return 'badge-pstatus-hold';
+    if(s==='مكتمل')return 'badge-pstatus-done';
+    return 'badge-pstatus-plan';
+}
+function isOverdue(deadline,status){
+    return !!deadline && status!=='مكتمل' && deadline < new Date().toISOString().split('T')[0];
+}
+function projectTagsHtml(p){
+    var h='<div class="pj-tags">';
+    h+='<span class="badge '+pstatusBadgeClass(p.status)+'">'+escH(p.status||'مخطط له')+'</span>';
+    h+='<span class="badge '+prioBadgeClass(p.priority)+'">⚑ أولوية '+escH(p.priority||'متوسطة')+'</span>';
+    if(p.deadline){
+        var overdue=isOverdue(p.deadline,p.status);
+        h+='<span class="badge '+(overdue?'badge-overdue':'badge-pstatus-plan')+'">📅 '+(overdue?'متأخر — استحقاقه ':'يستحق في ')+escH(p.deadline)+'</span>';
+    }
+    h+='</div>';
+    return h;
+}
+
+// ─── نقاش/شات كل مشروع (مشترك بين لوحة الأدمن وبوابة الموظف) ─────────────
+window._chatContainers = window._chatContainers || {};
+// ═══════════════════════════════════════════════════════════════════════
+// 💬 الشات العام اللحظي — ودجت عائم (فقاعة + لوحة) يظهر فوق كل الصفحات،
+// بنفس فكرة شات فيسبوك ماسنجر — غرفة واحدة يشترك فيها الأدمن وكل الموظفين
+// ═══════════════════════════════════════════════════════════════════════
+var _chatUnsub = null;
+var _chatMessages = [];
+var _chatWidgetOpen = false;
+
+// يُبنى مرة واحدة بس ويتضاف على body — بيفضل فوق كل الصفحات وأنت بتتنقل بينها
+function tgChatMount(){
+    if(document.getElementById('tgChatBubble')) return;
+    var wrap=document.createElement('div');
+    wrap.id='tgChatWidgetWrap';
+    wrap.innerHTML =
+        '<div id="tgChatPanel" class="tg-chat-panel">'+
+          '<div class="tg-chat-panel-h">'+
+            '<span>💬 الشات العام</span>'+
+            '<span class="tg-chat-panel-h-r">'+
+              '<span class="tg-chat-panel-mute" id="tgChatMuteBtn" onclick="tgChatToggleMute()" title="كتم/تشغيل صوت الإشعارات">🔔</span>'+
+              '<span class="tg-chat-panel-close" onclick="tgChatToggle(false)">✕</span>'+
+            '</span>'+
+          '</div>'+
+          '<div class="tg-chat-log" id="tgChatLog"><div class="pj-chat-empty">جارِ تحميل الرسائل...</div></div>'+
+          '<div class="tg-chat-input-row">'+
+            '<textarea id="tgChatInput" rows="1" placeholder="اكتب رسالتك هنا..." onkeydown="tgChatKeydown(event)"></textarea>'+
+            '<button class="bt bt-p" onclick="tgChatSend()">➤</button>'+
+          '</div>'+
+        '</div>'+
+        '<div id="tgChatBubble" class="tg-chat-bubble" onclick="tgChatToggle()" title="الشات العام">'+
+          '<span class="tg-chat-bubble-ic">💬</span>'+
+          '<span class="tgChatBadge tg-chat-bubble-badge" id="tgChatBubbleBadge" style="display:none"></span>'+
+        '</div>';
+    document.body.appendChild(wrap);
+    var mb=document.getElementById('tgChatMuteBtn');
+    if(mb) mb.textContent = (localStorage.getItem('tg_chat_muted')==='1') ? '🔕' : '🔔';
+    // فك قفل الصوت (سياسة المتصفحات بتطلب تفاعل أول) عند أول لمسة/كليك بالمستخدم
+    var unlock=function(){ tgChatUnlockAudio(); document.removeEventListener('click',unlock); document.removeEventListener('keydown',unlock); };
+    document.addEventListener('click',unlock);
+    document.addEventListener('keydown',unlock);
+}
+
+function tgChatToggleMute(){
+    var muted = localStorage.getItem('tg_chat_muted')==='1';
+    muted = !muted;
+    localStorage.setItem('tg_chat_muted', muted?'1':'0');
+    var mb=document.getElementById('tgChatMuteBtn');
+    if(mb) mb.textContent = muted ? '🔕' : '🔔';
+    if(!muted) tgChatPlaySound(); // نغمة تجريبية عشان يسمع الفرق
+}
+
+function tgChatToggle(force){
+    var panel=document.getElementById('tgChatPanel');
+    var bubble=document.getElementById('tgChatBubble');
+    if(!panel) return;
+    _chatWidgetOpen = (typeof force==='boolean') ? force : !_chatWidgetOpen;
+    panel.classList.toggle('open', _chatWidgetOpen);
+    if(bubble) bubble.classList.toggle('hide', _chatWidgetOpen && window.innerWidth<=560);
+    if(_chatWidgetOpen){
+        renderChatMessages();
+        tgChatMarkRead();
+        setTimeout(function(){ var inp=document.getElementById('tgChatInput'); if(inp) inp.focus(); },80);
+    }
+}
+
+function tgChatKeydown(e){
+    if(e.key==='Enter' && !e.shiftKey){ e.preventDefault(); tgChatSend(); }
+}
+
+// يبدأ الاستماع اللحظي لرسائل الشات (يُستدعى مرة واحدة بعد تسجيل الدخول)
+var _chatInitialSnapDone = false;
+function tgChatWatch(){
+    if(_chatUnsub || !TG_USER) return;
+    _chatUnsub = db.collection('chatMessages').orderBy('createdAt','asc').limitToLast(200)
+        .onSnapshot(function(snap){
+            _chatMessages=[];
+            snap.forEach(function(d){ var m=d.data(); m.id=d.id; _chatMessages.push(m); });
+            // صوت التنبيه: بس لو فيه رسالة جديدة "فعلاً" وصلت من شخص تاني (مش أول تحميل، ومش رسالتي أنا)
+            if(_chatInitialSnapDone){
+                var newFromOthers = snap.docChanges().some(function(ch){
+                    if(ch.type!=='added') return false;
+                    var d=ch.doc.data();
+                    return !TG_USER || d.uid!==TG_USER.uid;
+                });
+                if(newFromOthers) tgChatPlaySound();
+            }
+            _chatInitialSnapDone = true;
+            if(_chatWidgetOpen){
+                renderChatMessages();
+                tgChatMarkRead();
+            } else {
+                tgChatUpdateBadgeFromCache();
+            }
+        }, function(err){ console.error('tgChatWatch error:', err); });
+}
+
+// ─── صوت تنبيه الرسائل (Web Audio API — نغمة مُولَّدة، مفيش حاجة تتحمّل من النت) ───
+var _tgAudioCtx=null, _tgAudioUnlocked=false;
+function tgChatUnlockAudio(){
+    if(_tgAudioUnlocked) return;
+    try{
+        _tgAudioCtx = _tgAudioCtx || new (window.AudioContext||window.webkitAudioContext)();
+        if(_tgAudioCtx.state==='suspended') _tgAudioCtx.resume();
+        _tgAudioUnlocked=true;
+    }catch(e){}
+}
+function tgChatPlaySound(){
+    if(localStorage.getItem('tg_chat_muted')==='1') return;
+    try{
+        _tgAudioCtx = _tgAudioCtx || new (window.AudioContext||window.webkitAudioContext)();
+        if(_tgAudioCtx.state==='suspended') _tgAudioCtx.resume();
+        var now=_tgAudioCtx.currentTime;
+        _tgTone(_tgAudioCtx, 880.00, now, 0.13, 0.16);       // نغمة أولى (لا)
+        _tgTone(_tgAudioCtx, 1318.51, now+0.10, 0.16, 0.19); // نغمة ثانية (مي) — أعلى شوية زي "دينج"
+    }catch(e){}
+}
+function _tgTone(ctx, freq, start, dur, vol){
+    var osc=ctx.createOscillator(), gain=ctx.createGain();
+    osc.type='sine'; osc.frequency.value=freq;
+    gain.gain.setValueAtTime(0.0001, start);
+    gain.gain.linearRampToValueAtTime(vol, start+0.012);
+    gain.gain.exponentialRampToValueAtTime(0.0001, start+dur);
+    osc.connect(gain); gain.connect(ctx.destination);
+    osc.start(start); osc.stop(start+dur+0.03);
+}
+
+function renderChatMessages(){
+    var log=document.getElementById('tgChatLog');
+    if(!log) return;
+    if(!_chatMessages.length){ log.innerHTML='<div class="pj-chat-empty">لا توجد رسائل بعد. ابدأ المحادثة! 👋</div>'; return; }
+    var h='';
+    _chatMessages.forEach(function(m){
+        var mine = TG_USER && m.uid===TG_USER.uid;
+        var t = (m.createdAt && m.createdAt.toDate) ? m.createdAt.toDate() : null;
+        var timeStr = t ? (t.toLocaleDateString('ar-EG')+' · '+t.toLocaleTimeString('ar-EG',{hour:'2-digit',minute:'2-digit'})) : 'جارِ الإرسال...';
+        var roleLabel = m.role==='admin' ? 'أدمن' : 'موظف';
+        var canDelete = TG_USER && (mine || TG_USER.role==='admin');
+        h+='<div class="pj-chat-msg'+(mine?' mine':'')+'">'+
+           '<div class="pj-chat-msg-h"><span class="pj-chat-name">'+escH(m.name||'')+'</span>'+
+           '<span class="pj-chat-role">'+roleLabel+'</span>'+
+           '<span class="pj-chat-time">'+escH(timeStr)+'</span>'+
+           (canDelete?('<span class="pj-chat-del" title="حذف الرسالة" onclick="tgChatDelete(\''+m.id+'\')">🗑</span>'):'')+
+           '</div>'+
+           '<div class="pj-chat-text">'+escH(m.text||'')+'</div>'+
+           '</div>';
+    });
+    log.innerHTML=h;
+    log.scrollTop=log.scrollHeight;
+}
+
+function tgChatSend(){
+    var inp=document.getElementById('tgChatInput');
+    if(!inp || !TG_USER) return;
+    var text=(inp.value||'').trim();
+    if(!text) return;
+    inp.value='';
+    inp.style.height='';
+    db.collection('chatMessages').add({
+        uid: TG_USER.uid, name: TG_USER.name||TG_USER.email, role: TG_USER.role||'employee',
+        text: text, createdAt: firebase.firestore.FieldValue.serverTimestamp()
+    }).catch(function(err){ alert('تعذر إرسال الرسالة: '+err.message); });
+}
+
+function tgChatDelete(msgId){
+    if(!confirm('حذف هذه الرسالة؟')) return;
+    db.collection('chatMessages').doc(msgId).delete().catch(function(err){ alert('تعذر الحذف: '+err.message); });
+}
+
+// ─── شارة عدد الرسائل غير المقروءة على الفقاعة العائمة ────────────────
+function tgChatLastReadKey(){ return TG_USER ? ('tg_chat_lastread_'+TG_USER.uid) : null; }
+function tgChatGetLastRead(){
+    var k=tgChatLastReadKey(); if(!k) return 0;
+    return parseInt(localStorage.getItem(k))||0;
+}
+function tgChatMarkRead(){
+    if(!_chatMessages.length) { updateChatBadge(0); return; }
+    var last=_chatMessages[_chatMessages.length-1];
+    var t=(last.createdAt && last.createdAt.toDate) ? last.createdAt.toDate().getTime() : Date.now();
+    var k=tgChatLastReadKey(); if(k) localStorage.setItem(k, String(t));
+    updateChatBadge(0);
+}
+function tgChatUpdateBadgeFromCache(){
+    var lastRead=tgChatGetLastRead();
+    var count=0;
+    _chatMessages.forEach(function(m){
+        if(!TG_USER || m.uid===TG_USER.uid) return;
+        var t=(m.createdAt && m.createdAt.toDate) ? m.createdAt.toDate().getTime() : 0;
+        if(t>lastRead) count++;
+    });
+    updateChatBadge(count);
+}
+function updateChatBadge(n){
+    document.querySelectorAll('.tgChatBadge').forEach(function(el){
+        if(n>0){ el.style.display='flex'; el.textContent = n>99?'99+':String(n); }
+        else { el.style.display='none'; el.textContent=''; }
+    });
+}
+
+function renderProjectChat(projectId, comments, containerId){
+    var box=document.getElementById(containerId);
+    if(!box)return;
+    window._chatContainers[projectId]=containerId;
+    var h='';
+    if(!comments||!comments.length){
+        h='<div class="pj-chat-empty">لا توجد ملاحظات بعد على هذا المشروع.</div>';
+    }else{
+        comments.forEach(function(c){
+            var mine=TG_USER&&c.uid===TG_USER.uid;
+            var canDelete=mine||(TG_USER&&TG_USER.role==='admin');
+            var roleLabel=c.role==='admin'?'أدمن':'موظف';
+            var timeStr='';
+            if(c.createdAt&&c.createdAt.toDate){
+                try{ timeStr=c.createdAt.toDate().toLocaleString('ar-EG',{day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'}); }catch(e){}
+            }
+            h+='<div class="pj-chat-msg'+(mine?' mine':'')+'">'+
+               '<div class="pj-chat-msg-h"><span class="pj-chat-name">'+escH(c.name||'')+'</span>'+
+               '<span class="pj-chat-role">'+roleLabel+'</span>'+
+               '<span class="pj-chat-time">'+escH(timeStr)+'</span>'+
+               (canDelete?('<span class="pj-chat-del" title="حذف الملاحظة" onclick="deleteProjectComment(\''+c.id+'\',\''+projectId+'\')">🗑</span>'):'')+
+               '</div>'+
+               '<div class="pj-chat-text">'+escH(c.text||'')+'</div>'+
+               '</div>';
+        });
+    }
+    box.innerHTML=h;
+    box.scrollTop=box.scrollHeight;
+}
+function reloadProjectChat(projectId){
+    db.collection('projectComments').where('projectId','==',projectId).get().then(function(snap){
+        var list=snap.docs.map(function(d){return Object.assign({id:d.id},d.data());})
+            .sort(function(a,b){
+                var am=(a.createdAt&&a.createdAt.toMillis)?a.createdAt.toMillis():0;
+                var bm=(b.createdAt&&b.createdAt.toMillis)?b.createdAt.toMillis():0;
+                return am-bm;
+            });
+        renderProjectChat(projectId,list,window._chatContainers[projectId]);
+    }).catch(function(err){ console.error('reloadProjectChat',err); });
+}
+function postProjectComment(projectId,inputId){
+    var input=document.getElementById(inputId);
+    if(!input||!TG_USER)return;
+    var text=(input.value||'').trim();
+    if(!text)return;
+    input.disabled=true;
+    db.collection('projectComments').add({
+        projectId:projectId, uid:TG_USER.uid, name:TG_USER.name, role:TG_USER.role,
+        text:text, createdAt:firebase.firestore.FieldValue.serverTimestamp()
+    }).then(function(){
+        input.value=''; input.disabled=false; input.focus();
+        reloadProjectChat(projectId);
+    }).catch(function(err){ input.disabled=false; alert('تعذر إضافة الملاحظة: '+err.message); });
+}
+function deleteProjectComment(commentId,projectId){
+    if(!confirm('حذف هذه الملاحظة من المشروع؟'))return;
+    db.collection('projectComments').doc(commentId).delete().then(function(){
+        reloadProjectChat(projectId);
+    }).catch(function(err){ alert('تعذر حذف الملاحظة: '+err.message); });
+}
+function projectChatHtml(projectId,logId,inputId){
+    return '<div class="proj-sec-title">📝 ملاحظات المشروع</div>'+
+       '<div class="pj-chat">'+
+       '<div class="pj-chat-log" id="'+logId+'"></div>'+
+       '<div class="pj-chat-input-row">'+
+       '<input type="text" id="'+inputId+'" placeholder="اكتب ملاحظة على المشروع..." onkeydown="if(event.key===\'Enter\'){event.preventDefault();postProjectComment(\''+projectId+'\',\''+inputId+'\')}">'+
+       '<button class="bt bt-p" onclick="postProjectComment(\''+projectId+'\',\''+inputId+'\')">➕ إضافة</button>'+
+       '</div></div>';
+}
+function renderProjectsList(list){
+    var box=document.getElementById('pmgmtList');
+    if(!box)return;
+    if(!list.length){
+        box.innerHTML='<div class="empty-hint">لا توجد مشاريع بعد. أنشئ أول مشروع من الأعلى.</div>';
+        return;
+    }
+    list.sort(function(a,b){
+        var am=(a.createdAt&&a.createdAt.toMillis)?a.createdAt.toMillis():0;
+        var bm=(b.createdAt&&b.createdAt.toMillis)?b.createdAt.toMillis():0;
+        return bm-am;
+    });
+    var h='';
+    list.forEach(function(p,idx){
+        var assignees=p.assignees||[];
+        var sum=0;
+        assignees.forEach(function(uid){
+            var pm=(p.progressMap&&p.progressMap[uid])?p.progressMap[uid].progress:0;
+            sum+=(pm||0);
+        });
+        var avgProg=assignees.length?Math.round(sum/assignees.length):0;
+
+        h+='<div class="staff-card" id="pmCard'+idx+'">';
+        h+='<div class="staff-card-h" onclick="toggleProjCard('+idx+')">'+
+           '<div><div class="staff-name">'+escH(p.title||'بدون عنوان')+'</div>'+
+           (p.description?'<div class="staff-email">'+escH(p.description)+'</div>':'')+
+           projectTagsHtml(p)+
+           '</div>'+
+           '<div class="staff-stats">'+
+           '<span class="staff-stat">👥 '+assignees.length+' موظف</span>'+
+           '<span class="staff-stat">📊 متوسط تقدم '+avgProg+'%</span>'+
+           '</div></div>';
+        h+='<div class="staff-card-body">';
+
+        h+='<div class="proj-sec"><div class="proj-sec-title">👥 الموظفون المسؤولون</div>';
+        if(assignees.length){
+            assignees.forEach(function(uid){
+                var e=PMGMT_EMPLOYEES.find(function(x){return x.uid===uid;});
+                var nm=e?(e.name||e.email):'(موظف غير موجود حالياً)';
+                var pm=(p.progressMap&&p.progressMap[uid])||{progress:0,status:'لم يبدأ',note:''};
+                h+='<div class="pj-row"><div class="pj-t">'+escH(nm)+'</div>'+
+                   '<div class="pj-bar"><div class="pj-bar-in" style="width:'+(pm.progress||0)+'%"></div></div>'+
+                   '<div class="pj-meta">الحالة: <span class="badge '+badgeClassForStatus(pm.status)+'">'+escH(pm.status||'لم يبدأ')+'</span> · التقدم: '+(pm.progress||0)+'%'+(pm.note?(' · ملاحظة: '+escH(pm.note)):'')+'</div></div>';
+            });
+        }else h+='<div class="empty-hint">لم يتم تعيين أي موظف على هذا المشروع بعد.</div>';
+        h+='</div>';
+
+        h+='<div class="proj-sec">'+projectChatHtml(p.id,'pmChatLog'+idx,'pmChatInput'+idx)+'</div>';
+
+        h+='<div class="proj-sec"><div class="proj-sec-title">⚙️ إدارة المشروع</div>';
+        h+='<div style="display:flex;gap:8px">'+
+           '<button class="bt bt-o" onclick="toggleProjEdit('+idx+')">✏️ تعديل المشروع</button>'+
+           '<button class="bt bt-d" onclick="deleteProject(\''+p.id+'\')">🗑 حذف المشروع</button>'+
+           '</div>';
+
+        h+='<div id="pmEdit'+idx+'" style="display:none;margin-top:14px;padding-top:14px;border-top:1px dashed var(--bd2)">'+
+           '<div class="fg" style="margin-bottom:10px"><label>عنوان المشروع</label><input type="text" id="pmEditTitle'+idx+'" value="'+escH(p.title||'')+'"></div>'+
+           '<div class="fg fg-full" style="margin-bottom:10px"><label>وصف مختصر</label><textarea rows="2" id="pmEditDesc'+idx+'">'+escH(p.description||'')+'</textarea></div>'+
+           '<div class="fr fr3" style="margin-bottom:10px">'+
+           '<div class="fg"><label>الأولوية</label><select id="pmEditPriority'+idx+'">'+
+             ['منخفضة','متوسطة','عالية'].map(function(s){return '<option'+((p.priority||'متوسطة')===s?' selected':'')+'>'+s+'</option>';}).join('')+
+           '</select></div>'+
+           '<div class="fg"><label>حالة المشروع</label><select id="pmEditStatus'+idx+'">'+
+             ['مخطط له','جاري العمل','متوقف','مكتمل'].map(function(s){return '<option'+((p.status||'مخطط له')===s?' selected':'')+'>'+s+'</option>';}).join('')+
+           '</select></div>'+
+           '<div class="fg"><label>تاريخ الاستحقاق</label><input type="date" id="pmEditDeadline'+idx+'" value="'+escH(p.deadline||'')+'"></div>'+
+           '</div>'+
+           '<div class="fg fg-full" style="margin-bottom:6px"><label>الموظفون المسؤولون</label></div>'+
+           '<div class="chk-grid" id="pmEditAssignees'+idx+'">'+PMGMT_EMPLOYEES.map(function(e){
+                var checked=assignees.indexOf(e.uid)>-1?' checked':'';
+                return '<label><input type="checkbox" class="pm-edit-assignee-chk"'+checked+' value="'+e.uid+'"> '+escH(e.name||e.email)+'</label>';
+           }).join('')+'</div>'+
+           '<div style="display:flex;gap:8px;margin-top:10px">'+
+           '<button class="bt bt-p" onclick="saveProjectEdit(\''+p.id+'\','+idx+')">💾 حفظ التعديلات</button>'+
+           '<button class="bt bt-o" onclick="toggleProjEdit('+idx+')">إلغاء</button>'+
+           '</div>'+
+           '<div id="pmEditMsg'+idx+'" style="margin-top:8px;font-size:11px"></div>'+
+           '</div>';
+        h+='</div>'; // proj-sec إدارة المشروع
+
+        h+='</div></div>';
+    });
+    box.innerHTML=h;
+    list.forEach(function(p,idx){
+        renderProjectChat(p.id,p.comments||[],'pmChatLog'+idx);
+    });
+}
+function toggleProjCard(idx){
+    var c=document.getElementById('pmCard'+idx);
+    if(c)c.classList.toggle('open');
+}
+function toggleProjEdit(idx){
+    var e=document.getElementById('pmEdit'+idx);
+    if(!e)return;
+    e.style.display=(e.style.display==='none'||!e.style.display)?'block':'none';
+}
+function saveProjectEdit(id,idx){
+    var title=(document.getElementById('pmEditTitle'+idx).value||'').trim();
+    var desc=(document.getElementById('pmEditDesc'+idx).value||'').trim();
+    var priority=document.getElementById('pmEditPriority'+idx).value;
+    var status=document.getElementById('pmEditStatus'+idx).value;
+    var deadline=document.getElementById('pmEditDeadline'+idx).value||'';
+    var msg=document.getElementById('pmEditMsg'+idx);
+    if(!title){ msg.style.color='var(--no)'; msg.textContent='من فضلك اكتب عنوان المشروع.'; return; }
+    var checked=Array.prototype.slice.call(document.querySelectorAll('#pmEditAssignees'+idx+' .pm-edit-assignee-chk:checked')).map(function(c){return c.value;});
+    msg.style.color='var(--tx3)'; msg.textContent='⏳ جارٍ الحفظ...';
+    db.collection('projects').doc(id).update({title:title,description:desc,assignees:checked,priority:priority,status:status,deadline:deadline}).then(function(){
+        loadPmgmtData();
+    }).catch(function(err){
+        msg.style.color='var(--no)'; msg.textContent='❌ تعذر الحفظ: '+err.message;
+    });
+}
+function deleteProject(id){
+    if(!confirm('حذف هذا المشروع نهائياً؟ لا يمكن التراجع عن هذا الإجراء.'))return;
+    db.collection('projects').doc(id).delete().then(loadPmgmtData).catch(function(err){
+        alert('تعذر حذف المشروع: '+err.message);
+    });
+}
+
+function setD(c){
+    var t=new Date().toISOString().split("T")[0];
+    c.querySelectorAll('input[type="date"]').forEach(function(i){if(!i.value)i.value=t});
+}
+function toggleAnon(cb){
+    var d=document.getElementById("cud");
+    if(cb.checked){d.style.opacity="0.3";d.style.pointerEvents="none"}
+    else{d.style.opacity="1";d.style.pointerEvents="auto"}
+}
+
+// ─── HTML BUILDERS ────────────────────────────────────────────────────────
+// تنسيق موحّد لكل المستندات — يعتمد تصميم "الخطاب الرسمي" (FL) مع لوجو الشركة الفعلي
+// ext=true: مستند خارجي (يُسلَّم لجهة خارج الشركة) — يأخذ برواز رسمي مزدوج عند الطباعة
+function H(title,sub,en,docId,ext){
+    var num=docId?genDocNum(docId):'';
+    var h='<div class="FL'+(ext?' FL-external':'')+'">';
+    h+='<div class="FL-head">'+
+       '<div class="FL-brand">'+
+       '<img class="FL-logo" src="'+LOGO_URI+'" alt="Tech Go">'+
+       '<div class="FL-brand-text"><div class="FL-brand-ar dcn"></div><div class="FL-brand-sub">'+sub+'</div></div>'+
+       '</div>'+
+       '<div class="FL-doctype">'+title+(en?'<span class="FL-doctype-en">'+en+'</span>':'')+'</div>'+
+       '</div>';
+    h+='<div class="FL-rule"></div>';
+    h+='<div class="FL-meta">'+
+       '<div class="FL-meta-item"><span class="FL-meta-lbl">رقم المستند</span><input type="text" class="FL-meta-val doc-num-fld" value="'+escH(num)+'"></div>'+
+       '<div class="FL-meta-item"><span class="FL-meta-lbl">التاريخ</span><input type="date" class="FL-meta-val"></div>'+
+       '</div>';
+    h+='<div class="FL-body">';
+    return h;
+}
+function FT(copies){
+    var cp=copies||['نسخة للموظف','نسخة للإدارة','نسخة للأرشيف'];
+    var sp='';for(var i=0;i<cp.length;i++)sp+='<span>'+cp[i]+'</span>';
+    return '</div><div class="FL-foot">'+
+    '<span>شركة تيك – جو | وثيقة سرية تُحفظ في ملف الموظف</span>'+
+    '<span class="FL-foot-ts print-only-ts"></span>'+
+    '<span class="FL-foot-ref print-only-ts"></span>'+
+    '<span class="FL-foot-copies">'+sp+'</span>'+
+    '</div></div>';
+}
+function SC(n,t){return '<div class="sec"><div class="num">'+n+'</div><div class="stx">'+t+'</div></div>'}
+
+function _sig(title,name,sub,id){
+    var nm=name?'<div class="sig-nm">'+escH(name)+'</div>':'<div class="sig-nm-ph"></div>';
+    var ia=id?' id="'+id+'"':'';
+    return '<div class="sig"'+ia+'>'+
+        '<div class="st">'+title+'</div>'+nm+
+        '<div class="ss">'+sub+'</div>'+
+        '<div class="sl"></div>'+
+        '<div class="sd">التاريخ: ..................</div>'+
+        '</div>';
+}
+
+// توقيع بتصميم الخطاب الرسمي الجديد (FL) — يُستخدم في الخطاب الإداري العام
+function _sigFL(role,name,sub,id){
+    var nm=name?'<div class="FL-sig-name">'+escH(name)+'</div>':'<div class="FL-sig-name">&nbsp;</div>';
+    var ia=id?' id="'+id+'"':'';
+    return '<div class="FL-sig"'+ia+'>'+
+        '<div class="FL-sig-role">'+role+'</div>'+
+        '<div class="FL-sig-sub">'+sub+'</div>'+
+        nm+
+        '<div class="FL-sig-line"></div>'+
+        '<div class="FL-sig-date">التاريخ: ..................</div>'+
+        '</div>';
+}
+function SG3(a,sa,b,sb,c,sc,ar,br,cr){
+    return '<div class="sigs">'+
+        _sig(a,ar?MGRS[ar]:'',sa)+
+        _sig(b,br?MGRS[br]:'',sb)+
+        _sig(c,cr?MGRS[cr]:'',sc)+
+        '</div>';
+}
+function SG2(a,sa,b,sb,ar,br){
+    return '<div class="sigs sigs2">'+
+        _sig(a,ar?MGRS[ar]:'',sa)+
+        _sig(b,br?MGRS[br]:'',sb)+
+        '</div>';
+}
+function F2(a,b){return '<div class="fr fr2">'+a+b+'</div>'}
+function F3(a,b,c){return '<div class="fr fr3">'+a+b+c+'</div>'}
+function FG(l,t,p){return '<div class="fg"><label>'+l+'</label><input type="'+(t||"text")+'"'+(p?' placeholder="'+p+'"':'')+'></div>'}
+// حقل اسم موظف: يظهر كدروب ليست (Autocomplete) من قائمة الموظفين المحفوظة، مع إمكانية الكتابة اليدوية
+function FGE(l){return '<div class="fg"><label>'+l+'</label><input type="text" class="emp-name-fld" list="tgEmpDL" autocomplete="off" onchange="addEmployeeName(this.value)"></div>'}
+function FGA(l,r,p){return '<div class="fg fg-full"><label>'+l+'</label><textarea rows="'+(r||3)+'"'+(p?' placeholder="'+p+'"':'')+'></textarea></div>'}
+function FGS(l,opts){var o='<option value="" selected></option>';for(var i=0;i<opts.length;i++)o+='<option>'+opts[i]+'</option>';return '<div class="fg"><label>'+l+'</label><select>'+o+'</select></div>'}
+
+// ─── طباعة موحدة لمستندات الموظف (تُستخدم من لوحة الأدمن وبوابة الموظف معاً) ──
+// تبحث عن إطار طباعة مخفي بمعرّف tgPrintFrame في الصفحة الحالية (موجود في index.html و employee.html)
+function tgLine(lbl,val){
+    return '<div class="FL-line"><span class="FL-line-lbl">'+lbl+'</span>'+
+           '<input type="text" class="FL-line-val" readonly value="'+escH(val||'')+'"></div>';
+}
+function tgBlock(val){
+    return '<textarea class="FL-textbody" rows="8" readonly>'+escH(val||'')+'</textarea>';
+}
+// إبقاء الأسماء القديمة كمرادفات (متوافقة مع الكود القديم في بوابة الموظف)
+function empLine(lbl,val){ return tgLine(lbl,val); }
+function empBlock(val){ return tgBlock(val); }
+function printDoc(bodyHtml){
+    var ifr=document.getElementById('tgPrintFrame');
+    if(!ifr)return;
+    var doc=ifr.contentWindow.document;
+    doc.open();
+    doc.write('<!DOCTYPE html><html lang="ar" dir="rtl"><head><meta charset="UTF-8">'+
+        '<link rel="stylesheet" href="styles.css"></head><body>'+bodyHtml+'</body></html>');
+    doc.close();
+    doc.querySelectorAll('.dcn').forEach(function(e){e.innerText=CN;});
+    setTimeout(function(){
+        ifr.contentWindow.focus();
+        ifr.contentWindow.print();
+    },300);
+}
+function printWeeklyReportDoc(u,r){
+    var h=H('تقرير أسبوعي','تقرير أداء أسبوعي مُرسل من الموظف','WEEKLY WORK REPORT','wkr');
+    h+=SC('١','بيانات الموظف');
+    h+=tgLine('اسم الموظف',u.name);
+    if(u.email)h+=tgLine('البريد الإلكتروني',u.email);
+    h+=tgLine('بداية الأسبوع',r.weekStart);
+    h+=SC('٢','ملخص الأسبوع');
+    h+=tgBlock(r.content);
+    h+=FT(['نسخة للموظف','نسخة للإدارة']);
+    printDoc(h);
+}
+function printAchievementDoc(u,a){
+    var h=H('توثيق إنجاز','إنجاز مُسجّل من الموظف','ACHIEVEMENT RECORD','ach');
+    h+=SC('١','بيانات الموظف');
+    h+=tgLine('اسم الموظف',u.name);
+    h+=tgLine('عنوان الإنجاز',a.title);
+    h+=tgLine('التاريخ',a.date);
+    h+=SC('٢','وصف الإنجاز');
+    h+=tgBlock(a.description);
+    h+=FT(['نسخة للموظف','نسخة للإدارة']);
+    printDoc(h);
+}
+function printRequestDoc(u,r){
+    var h=H('طلب موظف','طلب مُقدَّم من الموظف','EMPLOYEE REQUEST','req');
+    h+=SC('١','بيانات الطلب');
+    h+=tgLine('اسم الموظف',u.name);
+    h+=tgLine('نوع الطلب',r.type);
+    h+=tgLine('الحالة', r.status==='approved'?'موافق عليه':(r.status==='rejected'?'مرفوض':'قيد المراجعة'));
+    if(r.fromDate) h+=tgLine('من تاريخ',r.fromDate);
+    if(r.toDate) h+=tgLine('إلى تاريخ',r.toDate);
+    if(r.reviewedBy) h+=tgLine('تمت المراجعة بواسطة',r.reviewedBy);
+    h+=SC('٢','تفاصيل الطلب');
+    h+=tgBlock(r.details);
+    h+=FT(['نسخة للموظف','نسخة للإدارة']);
+    printDoc(h);
+}
+
+// ─── حسابي — إعدادات شخصية مشتركة (تعمل للأدمن والموظف على حدٍّ سواء) ───────
+function myAccountHTML(){
+    var u=TG_USER||{};
+    var h='<div class="SP"><h3>👤 حسابي</h3>';
+    h+='<div class="set-hint">عدّل اسمك الظاهر في النظام، أو غيّر كلمة مرور حسابك. هذه الإعدادات خاصة بحسابك أنت فقط.</div>';
+
+    h+='<div class="set-sec"><div class="set-sec-title">🧑 البيانات الشخصية</div>';
+    h+='<div class="fg" style="margin-bottom:10px"><label>الاسم الظاهر في النظام</label><input type="text" id="acctName" value="'+escH(u.name||'')+'"></div>';
+    h+='<div class="fg" style="margin-bottom:10px"><label>البريد الإلكتروني</label><input type="email" value="'+escH(u.email||'')+'" disabled></div>';
+    h+='<button class="bt bt-p" onclick="saveMyName()">💾 حفظ الاسم</button>';
+    h+='<div id="acctNameMsg" style="margin-top:8px;font-size:11px"></div></div>';
+
+    h+='<div class="set-sec"><div class="set-sec-title">🔒 تغيير كلمة المرور</div>';
+    h+='<div class="fr fr2" style="margin-top:8px">'+
+       '<div class="fg"><label>كلمة المرور الحالية</label><input type="password" id="acctOldPass"></div>'+
+       '<div class="fg"><label>كلمة المرور الجديدة</label><input type="password" id="acctNewPass" placeholder="6 أحرف على الأقل"></div>'+
+       '</div>';
+    h+='<button class="bt bt-p" onclick="saveMyPassword()">🔒 تحديث كلمة المرور</button>';
+    h+='<div id="acctPassMsg" style="margin-top:8px;font-size:11px"></div></div>';
+
+    h+='</div>';
+    return h;
+}
+function saveMyName(){
+    var inp=document.getElementById('acctName');
+    var msg=document.getElementById('acctNameMsg');
+    if(!inp||!msg)return;
+    var name=(inp.value||'').trim();
+    if(!name){ msg.style.color='var(--no)'; msg.textContent='من فضلك اكتب اسماً صحيحاً.'; return; }
+    msg.style.color='var(--tx3)'; msg.textContent='⏳ جارٍ الحفظ...';
+    db.collection('users').doc(TG_USER.uid).update({name:name}).then(function(){
+        TG_USER.name=name;
+        msg.style.color='var(--ok)'; msg.textContent='✅ تم حفظ الاسم بنجاح.';
+        var whoEl=document.getElementById('empWhoName'); if(whoEl) whoEl.textContent=name;
+        var sbEl=document.getElementById('sbUser');
+        if(sbEl) sbEl.innerHTML='👤 <strong style="color:#fff">'+escH(name)+'</strong><br>'+escH(TG_USER.email||'');
+    }).catch(function(err){ msg.style.color='var(--no)'; msg.textContent='❌ '+err.message; });
+}
+function saveMyPassword(){
+    var oldPass=(document.getElementById('acctOldPass').value||'');
+    var newPass=(document.getElementById('acctNewPass').value||'');
+    var msg=document.getElementById('acctPassMsg');
+    if(!oldPass||!newPass){ msg.style.color='var(--no)'; msg.textContent='من فضلك املأ كلمة المرور الحالية والجديدة.'; return; }
+    if(newPass.length<6){ msg.style.color='var(--no)'; msg.textContent='كلمة المرور الجديدة يجب ألا تقل عن 6 أحرف.'; return; }
+    msg.style.color='var(--tx3)'; msg.textContent='⏳ جارٍ التحديث...';
+    var user=auth.currentUser;
+    var cred=firebase.auth.EmailAuthProvider.credential(user.email,oldPass);
+    user.reauthenticateWithCredential(cred).then(function(){
+        return user.updatePassword(newPass);
+    }).then(function(){
+        msg.style.color='var(--ok)'; msg.textContent='✅ تم تحديث كلمة المرور بنجاح.';
+        document.getElementById('acctOldPass').value='';
+        document.getElementById('acctNewPass').value='';
+    }).catch(function(err){
+        var map={'auth/wrong-password':'كلمة المرور الحالية غير صحيحة.','auth/weak-password':'كلمة المرور الجديدة ضعيفة جداً.','auth/requires-recent-login':'يرجى تسجيل الخروج والدخول مرة أخرى ثم إعادة المحاولة.'};
+        msg.style.color='var(--no)'; msg.textContent='❌ '+(map[err.code]||err.message);
+    });
+}
+
+function logTbl(title,app,ref,cols,rows,docId){
+    var h=H(title+' — ملحق '+app,ref,'',docId);
+    h+=SC('١','بيانات الموظف');
+    h+=F2(FG('السنة'),FG('القسم'))+F2(FG('الرقم الوظيفي'),FGE('اسم الموظف'));
+    h+=SC('٢','السجل التفصيلي');
+    h+='<table class="dt"><tr><th>م</th>';
+    for(var i=0;i<cols.length;i++)h+='<th>'+cols[i]+'</th>';
+    h+='</tr>';
+    for(var r=1;r<=rows;r++){h+='<tr><td>'+r+'</td>';for(var j=0;j<cols.length;j++)h+='<td><input type="text"></td>';h+='</tr>'}
+    h+='</table>';
+    h+=SG3('توقيع الموظف','','المدير الإداري / مدير المشروعات','','المدير التنفيذي','',null,'admin','exec');
+    h+=FT();
+    return h;
+}
+
+// ─── MONTHLY EXPENSE SHEET (mexp) ──────────────────────────────────────────
+function fmtMoney(n){
+    n = isNaN(n) ? 0 : n;
+    var parts = n.toFixed(2).split('.');
+    parts[0] = parts[0].replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+    return parts.join('.') + ' ج.م';
+}
+function mexpKey(){
+    var mi = document.getElementById('mexp-month');
+    return 'tg_mexp_' + (mi && mi.value ? mi.value : '');
+}
+function mexpInit(){
+    var mi = document.getElementById('mexp-month');
+    if(mi && !mi.value){
+        var d = new Date();
+        mi.value = d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0');
+    }
+    mexpLoad();
+}
+function mexpLoad(){
+    var tbody = document.getElementById('mexp-tbody');
+    if(!tbody) return;
+    tbody.innerHTML = '';
+    var raw = localStorage.getItem(mexpKey());
+    var rows = [];
+    try{ rows = raw ? JSON.parse(raw) : []; }catch(e){ rows = []; }
+    if(rows.length === 0){
+        for(var i = 0; i < 8; i++) mexpAddRow();
+    } else {
+        rows.forEach(function(r){ mexpAddRow(r); });
+    }
+    mexpCalc();
+}
+function mexpAddRow(row){
+    var tbody = document.getElementById('mexp-tbody');
+    if(!tbody) return;
+    var tr = document.createElement('tr');
+    var amtVal = (row && row.amt !== undefined && row.amt !== null && row.amt !== '') ? String(row.amt) : '';
+    tr.innerHTML =
+        '<td class="mexp-idx">' + (tbody.children.length + 1) + '</td>' +
+        '<td><input type="text" class="mexp-spender" value="' + escH(row && row.spender || '') + '"></td>' +
+        '<td><input type="text" class="mexp-cat" value="' + escH(row && row.cat || '') + '"></td>' +
+        '<td><input type="number" step="0.01" class="mexp-amt" value="' + escH(amtVal) + '" oninput="mexpCalc()"></td>' +
+        '<td><input type="date" class="mexp-date" value="' + escH(row && row.date || '') + '"></td>' +
+        '<td><input type="text" class="mexp-notes" value="' + escH(row && row.notes || '') + '"></td>' +
+        '<td class="np" style="text-align:center"><button class="bt bt-d" style="padding:3px 8px;font-size:10px" onclick="mexpDelRow(this)">✕</button></td>';
+    tbody.appendChild(tr);
+}
+function mexpDelRow(btn){
+    var tr = btn.closest('tr');
+    if(tr) tr.remove();
+    mexpReindex();
+    mexpCalc();
+}
+function mexpReindex(){
+    document.querySelectorAll('#mexp-tbody tr').forEach(function(tr, i){
+        var idxEl = tr.querySelector('.mexp-idx');
+        if(idxEl) idxEl.innerText = i + 1;
+    });
+}
+function mexpCalc(){
+    var total = 0, count = 0;
+    document.querySelectorAll('#mexp-tbody .mexp-amt').forEach(function(inp){
+        var v = parseFloat(inp.value);
+        if(!isNaN(v) && v !== 0){ total += v; count++; }
+    });
+    var tf = document.getElementById('mexp-total'); if(tf) tf.value = fmtMoney(total);
+    var cf = document.getElementById('mexp-count'); if(cf) cf.value = count;
+    var tc = document.getElementById('mexp-total-cell'); if(tc) tc.innerText = fmtMoney(total);
+}
+function mexpSave(){
+    var rows = [];
+    document.querySelectorAll('#mexp-tbody tr').forEach(function(tr){
+        var spender = tr.querySelector('.mexp-spender').value;
+        var cat = tr.querySelector('.mexp-cat').value;
+        var amt = tr.querySelector('.mexp-amt').value;
+        var date = tr.querySelector('.mexp-date').value;
+        var notes = tr.querySelector('.mexp-notes').value;
+        if(spender || cat || amt || date || notes){
+            rows.push({spender: spender, cat: cat, amt: amt, date: date, notes: notes});
+        }
+    });
+    localStorage.setItem(mexpKey(), JSON.stringify(rows));
+    var mi = document.getElementById('mexp-month');
+    alert('✅ تم حفظ شيت المصروفات لشهر ' + (mi ? mi.value : ''));
+}
+
+// ─── MAIN LOAD ────────────────────────────────────────────────────────────
+function load(id,c){
+    var h="";
+
+    // ── خطاب إداري عام (تصميم رسمي FL — نفس تنسيق كل المستندات) ──────────
+    if(id==="gen"){
+        h=H('خطاب إداري عام','نظام الإدارة الشامل · وثيقة رسمية','General Memorandum','gen');
+        h+='<div class="FL-line"><span class="FL-line-lbl">إلى:</span><input type="text" class="FL-line-val" placeholder="الجهة / الشخص المرسل إليه"></div>';
+        h+='<div class="FL-line"><span class="FL-line-lbl">من:</span><input type="text" class="FL-line-val" placeholder="الجهة المُصدرة"></div>';
+        h+='<div class="FL-line"><span class="FL-line-lbl">الموضوع:</span><input type="text" class="FL-line-val FL-subject" placeholder="اكتب موضوع الخطاب هنا..."></div>';
+        h+='<div class="FL-types">'+
+           '<label><input type="radio" name="gtype" class="tpl-default-radio" checked> تعميم عام</label>'+
+           '<label><input type="radio" name="gtype"> إشعار رسمي</label>'+
+           '<label><input type="radio" name="gtype"> طلب إداري</label>'+
+           '<label><input type="radio" name="gtype"> توجيه عمل</label>'+
+           '<label><input type="radio" name="gtype"> دعوة لاجتماع</label>'+
+           '<label><input type="radio" name="gtype"> أخرى</label>'+
+           '</div>';
+        h+='<input type="text" class="FL-open tpl-default" value="تحية طيبة وبعد،">';
+        h+='<textarea class="FL-textbody" rows="9" placeholder="يرجى كتابة محتوى الخطاب بالتفصيل هنا..."></textarea>';
+        h+='<input type="text" class="FL-close tpl-default" value="وتفضلوا بقبول فائق الاحترام والتقدير.">';
+        h+='<div class="FL-extra">'+
+           '<div class="FL-line"><span class="FL-line-lbl">مرفقات:</span><input type="text" class="FL-line-val"></div>'+
+           '<div class="FL-line"><span class="FL-line-lbl">نسخة إلى:</span><input type="text" class="FL-line-val"></div>'+
+           '</div>';
+        h+='<div class="FL-types" style="margin-top:0">'+
+           '<label><input type="radio" name="gsign" value="admin" class="tpl-default-radio" checked onclick="updGenSig(this)"> يُعتمد من المدير الإداري</label>'+
+           '<label><input type="radio" name="gsign" value="tech" onclick="updGenSig(this)"> يُعتمد من المدير التقني</label>'+
+           '<label><input type="radio" name="gsign" value="exec" onclick="updGenSig(this)"> يُعتمد من المدير التنفيذي</label>'+
+           '</div>';
+        h+='<div class="FL-signrow">'+
+           _sigFL('محرر الخطاب','','إعداد ومراجعة')+
+           _sigFL('المدير الإداري / مدير المشروعات',MGRS.admin,'اعتماد وإصدار','gen-issuer-sig')+
+           _sigFL('المستلم','','بالعلم والاستلام')+
+           '</div>';
+        h+=FT(['نسخة للمُصدر','نسخة للمستلم','نسخة للأرشيف']);
+    }
+
+    // ── نموذج لفت نظر ──────────────────────────────────────────────────
+    else if(id==="notice"){
+        h=H('نموذج لفت نظر','إنذار رسمي وفق اللائحة التنظيمية','OFFICIAL NOTICE','notice');
+        h+=SC('١','بيانات الموظف');
+        h+=F2(FGE('اسم الموظف'),FG('القسم / الإدارة'));
+        h+=F2(FG('الكود الوظيفي'),FG('تاريخ التعيين','date'));
+        h+=F2(FG('المسمى الوظيفي'),FG('المدير المباشر'));
+        h+=SC('٢','تفاصيل المخالفة');
+        h+=F2(FG('تاريخ المخالفة','date'),FG('المادة المخالفة'));
+        h+='<div class="chk-grid"><label><input type="checkbox"> الانصراف المبكر</label><label><input type="checkbox"> الغياب بدون إذن</label><label><input type="checkbox"> التأخر في الحضور</label><label><input type="checkbox"> مخالفة اللوائح</label><label><input type="checkbox"> عدم الرد على المديرين</label><label><input type="checkbox"> إهمال في العمل</label></div>';
+        h+='<div class="fg"><label>أخرى</label><input type="text"></div>';
+        h+=FGA('وصف المخالفة بالتفصيل',4);
+        h+=SC('٣','الإجراء المتخذ والتحذير الرسمي');
+        h+='<div class="wb wb-gd"><strong>⚠ تنبيه رسمي</strong><br>يُعدّ هذا الإنذار وثيقة رسمية محفوظة في ملف الموظف، وفق أحكام قانون العمل المصري رقم 12 لسنة 2003. يُلزَم الموظف بالالتزام الفوري بأحكام المادة (1) من اللائحة التنظيمية.</div>';
+        h+='<div class="wb wb-gd"><span class="wb-t">سياسة الخصم التراكمي</span> <span class="wb-t2">تطبيق تلقائي</span><br>في حال بلوغ عدد نماذج لفت النظر ٤ نماذج أو أكثر خلال الشهر التقويمي الواحد، يُطبَّق خصم من الراتب تلقائياً بقرار من المدير التنفيذي.</div>';
+        h+=SC('٤','التوقيعات');
+        h+=SG3('توقيع الموظف','إقراراً باستلام هذا الإنذار',
+               'المدير الإداري / مدير المشروعات','اعتماد وإشهاد',
+               'المدير التنفيذي','موافقة وإصدار',
+               null,'admin','exec');
+        h+=FT();
+    }
+
+    // ── نموذج إدارة المشروع ─────────────────────────────────────────────
+    else if(id==="proj"){
+        h=H('نموذج إدارة المشروع','متابعة وتوثيق المشاريع — للاستخدام الداخلي','PROJECT MANAGEMENT','proj');
+        h+=SC('١','بيانات المشروع الأساسية');
+        h+=F3(FG('اسم المشروع'),FG('التاريخ','date'),FG('المسؤول التقني عن المشروع'));
+        h+='<div class="fg fg-full"><label>الحالة</label><div class="chk-grid" style="grid-template-columns:repeat(5,1fr)"><label><input type="checkbox"> مكتمل</label><label><input type="checkbox"> قيد التنفيذ</label><label><input type="checkbox"> في الانتظار</label><label><input type="checkbox"> متأخر</label><label><input type="checkbox"> مراجعة</label></div></div>';
+        h+=SC('٢','معلومات المشروع');
+        h+=F2(FG('نوع المشروع'),FG('العميل / الجهة'));
+        h+=F2(FG('الموعد النهائي','date'),FG('تاريخ البداية','date'));
+        h+=F2(FG('القسم المسؤول'),FG('الميزانية'));
+        h+=F2(FG('رقم التواصل','tel'),FG('عدد الأعضاء','number'));
+        h+=SC('٣','تفاصيل المشروع');
+        h+=FGA('وصف المشروع',4);
+        h+='<div class="fg fg-full"><label>الأولوية</label><div class="chk-grid" style="grid-template-columns:repeat(3,1fr)"><label><input type="radio" name="prp"> عالية</label><label><input type="radio" name="prp"> متوسطة</label><label><input type="radio" name="prp"> عادية</label></div></div>';
+        h+='<div class="fg"><label>نسبة الإنجاز</label><input type="text" placeholder="%"></div>';
+        h+=SC('٤','فريق العمل والمهام');
+        h+='<table class="dt"><tr><th>م</th><th>الاسم والوظيفة</th><th>التاسك</th><th>الموعد</th><th>الأولوية</th><th>الحالة</th><th>ملاحظة</th></tr>';
+        for(var pr=1;pr<=12;pr++) h+='<tr><td>'+pr+'</td><td><input type="text"></td><td><input type="text"></td><td><input type="text"></td><td><input type="text"></td><td><input type="text"></td><td><input type="text"></td></tr>';
+        h+='</table>';
+        h+=SC('٥','ملاحظات عامة على المشروع');
+        h+=FGA('',4);
+        h+=SC('٦','التوقيعات');
+        h+=SG3('مدير المشروعات','','المدير التقني','','المدير التنفيذي','اعتماد',null,null,'exec');
+        h+=FT();
+    }
+
+
+
+    // ── ملف بيانات الموظف ──────────────────────────────────────────────
+    else if(id==="emp"){
+        h=H('ملف بيانات الموظف الكامل','يرجى التعبئة بخط واضح · للاستخدام الداخلي فقط','EMPLOYEE FILE','emp');
+        h+=SC('١','البيانات الشخصية');
+        h+=F2(FG('الاسم الكامل'),FG('الرقم القومي'));
+        h+=F3(FG('تاريخ الميلاد','date'),FG('الجنسية'),FGS('الحالة الاجتماعية',['أعزب','متزوج','مطلق','أرمل']));
+        h+=F2(FG('رقم الهاتف','tel'),FG('البريد الإلكتروني','email'));
+        h+='<div class="fg"><label>العنوان</label><input type="text"></div>';
+        h+=SC('٢','بيانات الوظيفة');
+        h+=F2(FG('المسمى الوظيفي'),FG('القسم / الإدارة'));
+        h+=F3(FG('تاريخ التعيين','date'),FG('الرقم الوظيفي'),FGS('نوع العقد',['دوام كامل','دوام جزئي','عقد مؤقت']));
+        h+=F2(FG('المدير المباشر'),FG('درجة الوظيفة'));
+        h+=SC('٣','ساعات العمل والحضور — المادة ١');
+        h+='<table class="dt"><tr><th>أيام العمل</th><td>الأحد — الخميس</td><th>الحد الأقصى اليومي</th><td>٨ ساعات (م. ١١٧)</td></tr><tr><th>وقت الحضور</th><td>١٠:٠٠ صباحاً</td><th>فترة السماح</th><td>حتى ١٠:٣٠ صباحاً</td></tr><tr><th>وقت الانصراف</th><td>٦:٠٠ مساءً</td><th>نظام العمل</th><td>حضوري — هجين عند الحاجة</td></tr><tr><th>تسجيل الحضور</th><td>بجهاز البصمة إلزامياً</td><th>إخطار الاستقالة</th><td>شهر على الأقل مسبقاً</td></tr></table>';
+        h+=SC('٤','العمل الإضافي — المادة ٢');
+        h+='<table class="dt"><tr><th>الحد الأقصى اليومي</th><td>١٠ ساعات (م. ١١٩)</td><th>عمل يوم الراحة</th><td>مثلي الأجر أو يوم بديل</td></tr><tr><th>بدل إضافي نهاري</th><td>لا يقل عن ٣٥٪ من الأجر</td><th>بدل إضافي ليلي</th><td>لا يقل عن ٧٠٪ من الأجر</td></tr></table>';
+        h+=SC('٥','الإجازات — المادة ٣');
+        h+='<table class="dt"><tr><th>نوع الإجازة</th><th>الاستحقاق</th><th>ملاحظات</th></tr><tr><td>سنوية — السنة الأولى</td><td>١٥ يوماً</td><td>السنة الأولى: ٦ أيام متصلة على الأقل</td></tr><tr><td>سنوية — السنة الثانية +</td><td>٢١ يوماً</td><td>من السنة الثانية فصاعداً</td></tr><tr><td>ذوو الإعاقة والأقزام</td><td>٤٥ يوماً</td><td>م. ١٢٤</td></tr><tr><td>عارضة (م. ١٢٨)</td><td>٧ أيام/سنة — حد أقصى يومان/مرة</td><td>تحتسب من الإجازة السنوية</td></tr><tr><td>أعياد ومناسبات (م. ١٢٩)</td><td>بأجر كامل</td><td>بقرار من الوزير المختص</td></tr></table>';
+        h+='<div style="font-size:9px;color:var(--tx3);margin-top:4px">⊳ التفاصيل الكاملة وسجلات الإجازة في الملاحق (أ، ب، ج) المرفقة</div>';
+        h+=SC('٦','الإقرار والتوقيع');
+        h+='<div class="wb wb-gd">أقر بأنني اطلعت على اللائحة التنظيمية لشركة تيك جو وأتعهد بالالتزام الكامل بجميع بنودها.</div>';
+
+        // ملحق أ
+        h+='<div class="sec" style="margin-top:0"><div class="num">أ</div><div class="stx">ملحق (أ) — سجل الإجازة السنوية</div></div>';
+        h+='<div style="font-size:9px;color:var(--tx3);margin-bottom:6px">استناداً للمادتين ١٢٤ و١٢٥ من اللائحة التنظيمية</div>';
+        h+=F2(FG('السنة'),FGE('اسم الموظف'));
+        h+=F3(FG('إجمالي الاستحقاق (يوم)'),FG('الأيام المستخدمة'),FG('الرصيد المتبقي'));
+        h+='<div class="wb wb-bl" style="font-size:9px">⊳ الاستحقاق: ١٥ يوماً في السنة الأولى · ٢١ يوماً من السنة الثانية · ٤٥ يوماً لذوي الإعاقة (م. ١٢٤)</div>';
+        h+='<table class="dt"><tr><th>م</th><th>تاريخ البدء</th><th>تاريخ الانتهاء</th><th>تاريخ العودة</th><th>الأيام المستخدمة</th><th>الموافقة</th><th>ملاحظات</th></tr>';
+        for(var aa=1;aa<=20;aa++) h+='<tr><td>'+aa+'</td><td><input type="text"></td><td><input type="text"></td><td><input type="text"></td><td><input type="text"></td><td><input type="text"></td><td><input type="text"></td></tr>';
+        h+='</table>';
+        h+='<div class="wb wb-bl" style="font-size:8px">⊳ م. ١٢٤: يستحق الموظف إجازة سنوية بأجر لا تحتسب فيها أيام العطلات والأعياد وأيام الراحة الأسبوعية.<br>⊳ م. ١٢٥: يحدد صاحب العمل مواعيد الإجازة وفق مقتضيات العمل، ولا يجوز قطعها إلا لأسباب قوية.<br>⊳ م. ١٢٧: يحق لصاحب العمل استرداد أجر الإجازة إذا ثبت اشتغال الموظف لدى جهة أخرى خلالها.<br>⊳ عند انتهاء العلاقة الوظيفية يستحق الموظف أجر رصيد الإجازات غير المستخدمة كاملاً.</div>';
+
+        // ملحق ب
+        h+='<div class="sec" style="margin-top:0"><div class="num">ب</div><div class="stx">ملحق (ب) — سجل الإجازة العارضة</div></div>';
+        h+='<div style="font-size:9px;color:var(--tx3);margin-bottom:6px">استناداً للمادة ١٢٨ من اللائحة التنظيمية</div>';
+        h+=F2(FG('السنة'),FGE('اسم الموظف'));
+        h+=F3(FG('الحد الأقصى السنوي'),FG('إجمالي الأيام المستخدمة'),FG('الرصيد المتبقي من ٧'));
+        h+='<div class="wb wb-gd" style="font-size:9px">⊳ الإجازة العارضة تخصم تلقائياً من رصيد الإجازة السنوية (م. ١٢٨)<br>⊳ الحد الأقصى في المرة الواحدة: يومان فقط — أي طلب يتجاوز اليومين يحول تلقائياً إلى إجازة سنوية</div>';
+        h+='<table class="dt"><tr><th>م</th><th>السبب</th><th>تاريخ البدء</th><th>تاريخ العودة</th><th>عدد الأيام</th><th>الموافقة</th><th>ملاحظات</th></tr>';
+        for(var bb=1;bb<=12;bb++) h+='<tr><td>'+bb+'</td><td><input type="text"></td><td><input type="text"></td><td><input type="text"></td><td><input type="text"></td><td><input type="text"></td><td><input type="text"></td></tr>';
+        h+='</table>';
+
+        // ملحق ج
+        h+='<div class="sec" style="margin-top:0"><div class="num">ج</div><div class="stx">ملحق (ج) — سجل إجازات الأعياد والمناسبات</div></div>';
+        h+='<div style="font-size:9px;color:var(--tx3);margin-bottom:6px">استناداً للمادة ١٢٩ من اللائحة التنظيمية</div>';
+        h+=F2(FG('السنة'),FGE('اسم الموظف'));
+        h+=F3(FG('إجمالي أيام الأعياد'),FG('أيام عمل في عطلة (مثلي الأجر)'),FG('أيام راحة بديلة مستحقة'));
+        h+='<div class="wb wb-gd" style="font-size:9px">⊳ التشغيل في أيام الأعياد يستوجب مثلي الأجر أو يوم راحة بديل — م. ١٢٩</div>';
+        h+='<table class="dt"><tr><th>م</th><th>التاريخ</th><th>المناسبة</th><th>هل عمل؟</th><th>البديل</th><th>الموافقة</th><th>ملاحظات</th></tr>';
+        for(var cc=1;cc<=15;cc++) h+='<tr><td>'+cc+'</td><td><input type="text"></td><td><input type="text"></td><td><input type="text"></td><td><input type="text"></td><td><input type="text"></td><td><input type="text"></td></tr>';
+        h+='</table>';
+
+        // ملحق د
+        h+='<div class="sec" style="margin-top:0"><div class="num">د</div><div class="stx">ملحق (د) — سجل الغياب بالخصم</div></div>';
+        h+='<div style="font-size:9px;color:var(--tx3);margin-bottom:6px">استناداً للمادة ١٣٠ من اللائحة التنظيمية</div>';
+        h+=F2(FG('السنة'),FGE('اسم الموظف'));
+        h+='<div class="wb wb-gd" style="font-size:9px">⊳ يسجل الغياب بغير عذر مقبول ويخصم من أجر الموظف بواقع أجر اليوم الواحد (م. ١٣٠)<br>⊳ الحد الأقصى للخصم الشهري لا يتجاوز أجر ستة أيام — الزيادة تحال لمسار الجزاءات التأديبية</div>';
+        h+='<table class="dt"><tr><th>م</th><th>التاريخ</th><th>سبب الغياب</th><th>أيام الغياب</th><th>نسبة الخصم %</th><th>مبلغ الخصم (جنيه)</th><th>الموافقة</th><th>ملاحظات</th></tr>';
+        for(var dd=1;dd<=13;dd++) h+='<tr><td>'+dd+'</td><td><input type="text"></td><td><input type="text"></td><td><input type="text"></td><td><input type="text"></td><td><input type="text"></td><td><input type="text"></td><td><input type="text"></td></tr>';
+        h+='</table>';
+        h+='<div class="wb wb-bl" style="font-size:8px">⊳ م. ١٣٠: يخصم من أجر الموظف عن كل يوم غياب بدون عذر بواقع أجر يوم واحد كامل.<br>⊳ م. ١٣١: يوثق قرار الخصم بموافقة خطية من المدير المباشر ويحفظ في ملف الموظف.<br>⊳ لا يحتسب الغياب بعذر مقبول (مرض بتقرير طبي أو إجازة معتمدة) ضمن هذا السجل.</div>';
+
+        // ملاحظات 1
+        h+='<div class="sec" style="margin-top:0"><div class="num">✎</div><div class="stx">ملاحظات (١)</div></div>';
+        h+='<div class="fg fg-full"><label>صفحة الملاحظات ١</label><textarea rows="13" style="line-height:2.1;border:1px solid var(--bd)"></textarea></div>';
+
+        // ملاحظات 2
+        h+='<div class="sec" style="margin-top:6px"><div class="num">✎</div><div class="stx">ملاحظات (٢)</div></div>';
+        h+='<div class="fg fg-full"><label>صفحة الملاحظات ٢</label><textarea rows="13" style="line-height:2.1;border:1px solid var(--bd)"></textarea></div>';
+        h+=SG3('توقيع الموظف','','المدير الإداري / مدير المشروعات','','المدير التنفيذي','',null,'admin','exec');
+        h+=FT();
+    }
+
+    // ── طلب إجازة ──────────────────────────────────────────────────────
+    else if(id==="leave"){
+        h=H('نموذج طلب إجازة','اللائحة التنظيمية — المادة الثالثة','LEAVE REQUEST','leave');
+        h+=SC('١','بيانات الموظف');
+        h+=F2(FG('الاسم بالكامل'),FG('القسم / الإدارة'));
+        h+=F2(FG('المسمى الوظيفي'),FG('رقم التواصل أثناء الإجازة','tel'));
+        h+=SC('٢','نوع الإجازة');
+        h+='<div class="chk-grid" style="grid-template-columns:1fr 1fr"><label><input type="radio" name="lt"> <strong>إجازة سنوية</strong> (م.١٢٤)</label><label><input type="radio" name="lt"> <strong>إجازة عارضة</strong> (م.١٢٨)</label></div>';
+        h+=SC('٣','مدة الإجازة');
+        h+=F3(FG('تاريخ البدء','date'),FG('تاريخ الانتهاء','date'),FG('عدد الأيام','number'));
+        h+=SC('٤','سبب الإجازة والرصيد');
+        h+='<div class="fg"><label>سبب الإجازة</label><input type="text"></div>';
+        h+=F3(FG('الرصيد المتاح'),FG('الرصيد المتبقي'),FG('البديل أثناء الغياب'));
+        h+='<div class="wb wb-gd"><strong>⚠ م.١٢٧:</strong> العمل لدى جهة أخرى أثناء الإجازة يُعرّض الموظف للحرمان من الأجر أو الجزاء التأديبي.</div>';
+        h+=SC('٥','حالة الطلب');
+        h+='<div class="stg"><button class="stb ok" onclick="ts(this)">✅ موافق</button><button class="stb no" onclick="ts(this)">❌ مرفوض</button><button class="stb pn a" onclick="ts(this)">⏳ معلق</button></div>';
+        h+=SC('٦','التوقيعات');
+        h+=SG3('توقيع الموظف','','المدير الإداري / مدير المشروعات','الموافقة','المدير التنفيذي','الاعتماد النهائي',null,'admin','exec');
+        h+=FT();
+    }
+
+    // ── إذن حضور / انصراف ─────────────────────────────────────────────
+    else if(id==="perm"){
+        h=H('إذن حضور / انصراف','اللائحة التنظيمية — المادة الثالثة','ATTENDANCE PERMISSION','perm');
+        h+=SC('١','نوع الإذن');
+        h+='<div class="chk-grid" style="grid-template-columns:1fr 1fr"><label><input type="radio" name="pt"> <strong>حضور</strong> بعد مواعيد العمل</label><label><input type="radio" name="pt"> <strong>انصراف</strong> قبل مواعيد العمل</label></div>';
+        h+=SC('٢','بيانات الموظف');
+        h+=F2(FGE('اسم الموظف'),FG('الرقم الوظيفي'));
+        h+=F2(FG('القسم / الإدارة'),FG('التاريخ','date'));
+        h+=SC('٣','تفاصيل الإذن');
+        h+=F3(FG('الموعد الرسمي','time'),FG('الحضور/الانصراف الفعلي','time'),FG('مدة الفارق'));
+        h+=FGA('السبب',2);
+        h+=SC('٤','التوقيعات');
+        h+=SG3('توقيع الموظف','','المدير الإداري','الموافقة','المدير التنفيذي','',null,'admin','exec');
+        h+='<div style="text-align:center;font-size:8px;color:var(--tx3);margin-top:6px">المغادرة أو التأخر بدون إذن موقع يعد مخالفة تأديبية م. ١٢٤</div>';
+        h+=FT();
+    }
+
+    // ── التماس تعديل موعد الحضور ──────────────────────────────────────
+    else if(id==="delay"){
+        h=H('التماس تعديل موعد الحضور','طلب تعديل موعد الحضور الرسمي بصفة دائمة','ATTENDANCE DELAY REQUEST','delay');
+
+        // ١ — بيانات الموظف
+        h+=SC('١','بيانات الموظف');
+        h+=F2(FGE('اسم الموظف الكامل'),FG('الرقم الوظيفي'));
+        h+=F2(FG('المسمى الوظيفي'),FG('القسم / الإدارة'));
+        h+=F2(FG('رقم التواصل','tel'),FG('التاريخ','date'));
+
+        // ٢ — تفاصيل الالتماس
+        h+=SC('٢','تفاصيل الالتماس');
+        h+=F3(
+            FG('موعد الحضور الرسمي الحالي','time'),
+            '<div class="fg"><label>مدة التأخير المطلوبة</label><select><option>ساعة واحدة كحد أقصى</option><option>ساعتان كحد أقصى</option></select></div>',
+            FG('الموعد المقترح بعد التعديل','time')
+        );
+        h+=FGA('سبب طلب التعديل (يُرجى التفصيل)',4,
+            'مثال: بُعد مسافة السكن عن مقر العمل وشُح وسائل المواصلات المتاحة في أوقات الصباح الباكر...');
+
+        // ٣ — التزامات الموظف
+        h+=SC('٣','التزامات الموظف');
+        h+='<div class="wb wb-gd" style="font-size:11px;line-height:2">'
+          +'<label style="display:flex;align-items:flex-start;gap:8px;cursor:pointer;margin-bottom:6px">'
+          +'<input type="checkbox" style="margin-top:4px;flex-shrink:0"> '
+          +'<span>أتعهد بإتمام ساعات العمل الكاملة المقررة يومياً دون تقليص.</span>'
+          +'</label>'
+          +'<label style="display:flex;align-items:flex-start;gap:8px;cursor:pointer;margin-bottom:6px">'
+          +'<input type="checkbox" style="margin-top:4px;flex-shrink:0"> '
+          +'<span>أتعهد بتعويض وقت التأخير بالانصراف في وقت متأخر مماثل بالضبط.</span>'
+          +'</label>'
+          +'<label style="display:flex;align-items:flex-start;gap:8px;cursor:pointer">'
+          +'<input type="checkbox" style="margin-top:4px;flex-shrink:0"> '
+          +'<span>أتعهد بإخطار المدير المباشر فوراً في حال أي تغيير على الظروف الموضحة أعلاه.</span>'
+          +'</label>'
+          +'</div>';
+
+        // ٤ — إشعار مهم
+        h+=SC('٤','إشعار هام');
+        h+='<div class="wb wb-gd" style="font-size:10px;line-height:1.9;border-right:4px solid var(--no,#e53e3e)">'
+          +'<strong>⚠ تنبيه:</strong> يُعدّ هذا الالتماس نافذاً فقط بعد الموافقة الخطية من المدير الإداري والمدير التنفيذي.<br>'
+          +'في حال رفض الطلب، يلتزم الموظف بالحضور في الموعد الرسمي المحدد بالساعة العاشرة صباحاً وفق اللائحة التنظيمية.<br>'
+          +'<strong>يُحفظ هذا الالتماس في الملف الشخصي للموظف ويُعدّ وثيقة رسمية.</strong>'
+          +'</div>';
+
+        // ٥ — حالة الطلب
+        h+=SC('٥','قرار الإدارة');
+        h+='<div class="stg"><button class="stb ok" onclick="ts(this)">✅ موافق</button>'
+          +'<button class="stb no" onclick="ts(this)">❌ مرفوض</button>'
+          +'<button class="stb pn a" onclick="ts(this)">⏳ قيد الدراسة</button></div>';
+        h+='<div class="fg" style="margin-top:10px"><label>ملاحظات الإدارة</label><input type="text" placeholder="أي ملاحظات أو شروط مرفقة بالموافقة..."></div>';
+
+        // ٦ — التوقيعات
+        h+=SC('٦','التوقيعات');
+        h+=SG3(
+            'توقيع الموظف','مقدم الالتماس',
+            'المدير الإداري / مدير المشروعات','اعتماد وتوثيق',
+            'المدير التنفيذي','الموافقة النهائية',
+            null,'admin','exec'
+        );
+        h+=FT();
+    }
+
+    // ── سجلات الإجازة ──────────────────────────────────────────────────
+    else if(id==="la") h=logTbl('سجل الإجازة السنوية','أ','المادتين ١٢٤ و١٢٥',['تاريخ البدء','الانتهاء','العودة','الأيام','الموافقة','ملاحظات'],15,'la');
+    else if(id==="lb") h=logTbl('سجل الإجازة العارضة','ب','المادة ١٢٨',['السبب','تاريخ البدء','العودة','الأيام','الموافقة','ملاحظات'],12,'lb');
+    else if(id==="lc") h=logTbl('سجل الأعياد والمناسبات','ج','المادة ١٢٩',['التاريخ','المناسبة','هل عمل؟','البديل','الموافقة','ملاحظات'],15,'lc');
+    else if(id==="ld") h=logTbl('سجل الغياب بالخصم','د','المادة ١٣٠',['التاريخ','السبب','الأيام','الخصم %','المبلغ','الموافقة','ملاحظات'],13,'ld');
+
+    // ── خطاب إنذار ────────────────────────────────────────────────────
+    else if(id==="warn"){
+        h=H('خطاب إنذار إداري','توجيه إنذار لعدم الالتزام باللوائح','WARNING LETTER','warn');
+        h+=SC('١','بيانات الموظف');
+        h+=F2(FGE('اسم الموظف'),FG('الرقم الوظيفي'));
+        h+=F2(FG('المسمى الوظيفي'),FG('القسم / الإدارة'));
+        h+=SC('٢','درجة الإنذار');
+        h+='<div class="chk-grid" style="grid-template-columns:1fr 1fr 1fr"><label style="color:var(--wn)"><input type="radio" name="wl"> <strong>إنذار أول</strong></label><label style="color:#ed8936"><input type="radio" name="wl"> <strong>إنذار ثانٍ</strong></label><label style="color:var(--no)"><input type="radio" name="wl"> <strong>إنذار نهائي</strong></label></div>';
+        h+=SC('٣','تفاصيل المخالفة');
+        h+=FGA('أسباب توجيه الإنذار (المخالفات)',4);
+        h+=FGA('الإجراءات التصحيحية المطلوبة',3);
+        h+='<div class="wb wb-gd"><strong>⚠</strong> في حالة تكرار المخالفة يحق للشركة اتخاذ إجراءات تصعيدية قد تصل إلى الفصل.</div>';
+        h+=SC('٤','التوقيعات');
+        h+=SG3('توقيع الموظف','بالاستلام والعلم',
+               'المدير الإداري / مدير المشروعات','اعتماد وإشهاد',
+               'المدير التنفيذي','موافقة وإصدار',
+               null,'admin','exec');
+        h+=FT();
+    }
+
+    // ── محضر تحقيق ────────────────────────────────────────────────────
+    else if(id==="inv"){
+        h=H('محضر تحقيق داخلي','توثيق رسمي لجلسة تحقيق','INVESTIGATION REPORT','inv');
+        h+=SC('١','بيانات الجلسة');
+        h+=F3(FG('تاريخ التحقيق','date'),FG('وقت التحقيق','time'),FG('مكان التحقيق'));
+        h+=SC('٢','أطراف التحقيق');
+        h+=F2(FG('المحقق (الاسم والصفة)'),FG('المُحال للتحقيق'));
+        h+=SC('٣','مجريات التحقيق');
+        h+=FGA('ملخص المخالفة المنسوبة',3);
+        h+=FGA('الأسئلة والأجوبة',8,'س: ...\nج: ...');
+        h+=SC('٤','التوصيات والقرارات');
+        h+=FGA('',3);
+        h+=SC('٥','التوقيعات');
+        h+=SG3('الموظف','أقر بصحة أقوالي',
+               'المدير الإداري / المحقق','',
+               'المدير التنفيذي','اعتماد وإصدار',
+               null,'admin','exec');
+        h+=FT();
+    }
+
+    // ── شهادة خبرة ────────────────────────────────────────────────────
+    else if(id==="exp"){
+        h=H('شهادة خبرة','إدارة الموارد البشرية','EXPERIENCE CERTIFICATE','exp',true);
+        h+='<div class="cert"><h2 style="text-align:center;color:var(--nv);font-size:20px;font-weight:800;text-decoration:underline;margin-bottom:24px">شـهـادة خـبـرة</h2>';
+        h+='<div style="text-align:left;margin-bottom:24px">التاريخ: <input type="date"></div>';
+        h+='تشهد إدارة الموارد البشرية بشركة <strong><span class="dcn"></span></strong> بأن:<br><br>';
+        h+='السيد/ة: <input type="text" style="width:280px;font-weight:bold"><br>';
+        h+='والذي يحمل جنسية: <input type="text" style="width:150px"><br><br>';
+        h+='قد عمل لدينا بوظيفة: <input type="text" style="width:230px;font-weight:bold"><br>';
+        h+='خلال الفترة من <input type="date"> إلى <input type="date"><br><br>';
+        h+='وقد أُعطيت له هذه الشهادة بناءً على طلبه دون أدنى مسؤولية على الشركة.';
+        h+='<div style="margin-top:50px;display:flex;justify-content:space-between;align-items:flex-end;text-align:center">'+
+           '<div><div style="font-weight:700;color:var(--nv);margin-bottom:24px">ختم الشركة</div>'+
+           '<div style="width:100px;height:100px;border:2px dashed #cbd5e0;border-radius:50%;margin:0 auto;display:flex;align-items:center;justify-content:center;color:#a0aec0;font-size:9px;transform:rotate(-15deg)">موقع الختم</div></div>'+
+           '<div style="text-align:center"><div style="font-weight:700;color:var(--nv);margin-bottom:6px">المدير التنفيذي</div>'+
+           '<div class="cert-mgr-nm">'+(MGRS.exec||'&nbsp;')+'</div>'+
+           '<div style="border-bottom:1.5px solid #333;width:220px;margin:0 auto"></div></div>'+
+           '</div>';
+        h+=FT(['نسخة للموظف','نسخة للأرشيف']);
+    }
+
+    // ── إخلاء طرف ─────────────────────────────────────────────────────
+    else if(id==="clr"){
+        h=H('نموذج إخلاء طرف · براءة ذمة','يُعبأ عند انتهاء خدمات الموظف','CLEARANCE FORM','clr');
+        h+=SC('١','بيانات الموظف');
+        h+=F3(FG('الاسم'),FG('الرقم الوظيفي'),FG('القسم'));
+        h+=F2(FG('آخر يوم عمل','date'),FGS('سبب إنهاء الخدمة',['استقالة','انتهاء عقد','إقالة']));
+        h+=SC('٢','تواقيع الإدارات (إخلاء العُهد)');
+        h+='<table class="dt" style="text-align:right"><tr><th style="width:22%">الإدارة</th><th style="width:40%">العهد المُستردة</th><th>التوقيع</th></tr>';
+        h+='<tr><td style="font-weight:bold">المدير الإداري / مدير المشروعات</td><td><input type="text" style="text-align:right"></td><td><input type="text"></td></tr>';
+        h+='<tr><td style="font-weight:bold">المدير التقني</td><td><input type="text" style="text-align:right"></td><td><input type="text"></td></tr>';
+        h+='<tr><td style="font-weight:bold">تقنية المعلومات</td><td><input type="text" style="text-align:right"></td><td><input type="text"></td></tr>';
+        h+='<tr><td style="font-weight:bold">الشؤون الإدارية</td><td><input type="text" style="text-align:right"></td><td><input type="text"></td></tr>';
+        h+='<tr><td style="font-weight:bold">الإدارة المالية</td><td><input type="text" style="text-align:right"></td><td><input type="text"></td></tr></table>';
+        h+=SC('٣','الإقرار');
+        h+='<div class="wb wb-bl">أقر بأنني استلمت كافة مستحقاتي وسلمت جميع العُهد الموجودة بحوزتي.</div>';
+        h+=SG3('توقيع الموظف','','المدير الإداري / مدير المشروعات','اعتماد الإخلاء','المدير التنفيذي','الموافقة النهائية',null,'admin','exec');
+        h+=FT();
+    }
+
+    // ── طلب استقالة ───────────────────────────────────────────────────
+    else if(id==="res"){
+        h=H('نموذج طلب استقالة','وفق اللائحة التنظيمية — إشعار إنهاء الخدمة','RESIGNATION REQUEST','res');
+        h+=SC('١','بيانات الموظف');
+        h+=F2(FG('الاسم بالكامل'),FG('الرقم الوظيفي'));
+        h+=F3(FG('القسم / الإدارة'),FG('المسمى الوظيفي'),FG('تاريخ التعيين','date'));
+        h+=SC('٢','تفاصيل الاستقالة');
+        h+=F3(FG('تاريخ تقديم الطلب','date'),FG('آخر يوم عمل مقترح','date'),FG('مدة الإشعار (بالأيام)'));
+        h+='<div class="wb wb-bl"><strong>⊳ ملاحظة:</strong> يلتزم الموظف بإخطار الشركة برغبته في إنهاء الخدمة قبل شهر واحد على الأقل من تاريخ ترك العمل الفعلي.</div>';
+        h+=FGA('سبب تقديم الاستقالة (اختياري)',3);
+        h+=SC('٣','الإقرار');
+        h+='<div class="wb wb-gd">أقر أنا الموقّع أدناه برغبتي في إنهاء خدمتي لدى شركة <span class="dcn"></span> اعتباراً من التاريخ المذكور أعلاه، وأتعهد بتسليم كافة العُهد والمستندات الخاصة بالعمل قبل تاريخ آخر يوم عمل.</div>';
+        h+=SC('٤','حالة الطلب');
+        h+='<div class="stg"><button class="stb ok" onclick="ts(this)">✅ مقبولة</button><button class="stb no" onclick="ts(this)">❌ مرفوضة</button><button class="stb pn a" onclick="ts(this)">⏳ قيد المراجعة</button></div>';
+        h+=SC('٥','التوقيعات');
+        h+=SG3('توقيع الموظف','مقدم الطلب',
+               'المدير الإداري / مدير المشروعات','استلام ومراجعة',
+               'المدير التنفيذي','الموافقة النهائية',
+               null,'admin','exec');
+        h+='<div style="text-align:center;font-size:8px;color:var(--tx3);margin-top:6px">⊳ يُستكمل إجراء إخلاء الطرف عبر نموذج «إخلاء طرف» بعد اعتماد الاستقالة</div>';
+        h+=FT();
+    }
+
+    // ── قرار ترقية ────────────────────────────────────────────────────
+    else if(id==="promo"){
+        h=H('قرار ترقية','تعديل المسمى الوظيفي والدرجة','PROMOTION DECISION','promo');
+        h+=SC('١','بيانات الموظف الحالية');
+        h+=F2(FG('الاسم بالكامل'),FG('الرقم الوظيفي'));
+        h+=F3(FG('القسم / الإدارة'),FG('المسمى الوظيفي الحالي'),FG('تاريخ التعيين','date'));
+        h+=SC('٢','تفاصيل الترقية');
+        h+=F2(FG('المسمى الوظيفي الجديد'),FG('القسم / الإدارة الجديدة (إن وُجد)'));
+        h+=F3(FG('تاريخ سريان الترقية','date'),FG('الراتب الحالي'),FG('الراتب الجديد'));
+        h+='<div class="fg"><label>نسبة الزيادة</label><input type="text" placeholder="%"></div>';
+        h+=SC('٣','أساس الترقية');
+        h+='<div class="chk-grid" style="grid-template-columns:1fr 1fr"><label><input type="checkbox"> تقييم أداء متميز</label><label><input type="checkbox"> الأقدمية الوظيفية</label><label><input type="checkbox"> استحداث منصب جديد</label><label><input type="checkbox"> إعادة هيكلة الإدارة</label></div>';
+        h+=FGA('ملاحظات إضافية',3);
+        h+=SC('٤','التوقيعات');
+        h+=SG3('المدير المباشر','توصية بالترقية',
+               'المدير الإداري / مدير المشروعات','مراجعة واعتماد',
+               'المدير التنفيذي','الاعتماد النهائي',
+               null,'admin','exec');
+        h+=FT();
+    }
+
+    // ── قرار زيادة راتب / علاوة ───────────────────────────────────────
+    else if(id==="raise"){
+        h=H('قرار زيادة راتب / علاوة','تعديل الأجر الشهري','SALARY INCREASE DECISION','raise');
+        h+=SC('١','بيانات الموظف');
+        h+=F2(FG('الاسم بالكامل'),FG('الرقم الوظيفي'));
+        h+=F2(FG('القسم / الإدارة'),FG('المسمى الوظيفي'));
+        h+=SC('٢','نوع الزيادة');
+        h+='<div class="chk-grid" style="grid-template-columns:1fr 1fr 1fr"><label><input type="radio" name="rtp"> علاوة دورية</label><label><input type="radio" name="rtp"> علاوة استثنائية</label><label><input type="radio" name="rtp"> زيادة تقديرية</label></div>';
+        h+=SC('٣','تفاصيل الزيادة');
+        h+=F3(FG('الراتب الحالي'),FG('قيمة الزيادة'),FG('الراتب الجديد'));
+        h+=F2(FG('نسبة الزيادة','text'),FG('تاريخ السريان','date'));
+        h+=FGA('سبب الزيادة',3);
+        h+=SC('٤','التوقيعات');
+        h+=SG3('المدير المباشر','توصية',
+               'المدير الإداري / مدير المشروعات','مراجعة',
+               'المدير التنفيذي','الاعتماد النهائي',
+               null,'admin','exec');
+        h+=FT();
+    }
+
+    // ── عقد عمل ───────────────────────────────────────────────────────
+    else if(id==="contract"){
+        h=H('عقد عمل','اتفاقية توظيف بين الطرفين','EMPLOYMENT CONTRACT','contract',true);
+        h+=SC('١','أطراف العقد');
+        h+='<table class="dt"><tr><th style="width:22%">الطرف الأول</th><td>شركة <span class="dcn"></span> ويمثلها في توقيع هذا العقد <input type="text" style="width:180px"></td></tr>'+
+           '<tr><th>الطرف الثاني</th><td>السيد/ة <input type="text" style="width:220px;font-weight:bold"></td></tr></table>';
+        h+=SC('٢','بيانات الطرف الثاني');
+        h+=F2(FG('الرقم القومي'),FG('تاريخ الميلاد','date'));
+        h+='<div class="fg"><label>العنوان</label><input type="text"></div>';
+        h+=F2(FG('رقم الهاتف','tel'),FG('البريد الإلكتروني','email'));
+        h+=SC('٣','بيانات الوظيفة');
+        h+=F3(FG('المسمى الوظيفي'),FG('القسم / الإدارة'),FG('تاريخ بدء العمل','date'));
+        h+=F2(FGS('نوع العقد',['محدد المدة','غير محدد المدة']),FG('مدة فترة التجربة (بالأشهر)'));
+        h+=SC('٤','الأجر والمزايا');
+        h+=F3(FG('الراتب الأساسي (جنيه)'),FG('بدلات (إن وُجدت)'),FG('إجمالي الأجر الشهري'));
+        h+='<div class="fg"><label>مواعيد صرف الراتب</label><input type="text" class="tpl-default" value="نهاية كل شهر ميلادي عن طريق التحويل البنكي"></div>';
+        h+=SC('٥','ساعات العمل وأيام الراحة');
+        h+='<table class="dt"><tr><th>أيام العمل</th><td>الأحد — الخميس</td><th>الحد الأقصى اليومي</th><td>٨ ساعات (م. ١١٧)</td></tr><tr><th>وقت الحضور</th><td>١٠:٠٠ صباحاً</td><th>وقت الانصراف</th><td>٦:٠٠ مساءً</td></tr></table>';
+        h+=SC('٦','بنود عامة');
+        h+='<div class="wb wb-bl" style="font-size:9px">⊳ يخضع هذا العقد لأحكام قانون العمل المصري رقم ١٢ لسنة ٢٠٠٣ واللائحة التنظيمية الداخلية للشركة.<br>⊳ يلتزم الطرف الثاني بالحفاظ على سرية بيانات ومعلومات العمل أثناء وبعد انتهاء الخدمة.<br>⊳ يجوز إنهاء هذا العقد من أي من الطرفين بإخطار كتابي مسبق وفقاً للمدة المحددة في اللائحة التنظيمية.</div>';
+        h+=SC('٧','التوقيعات');
+        h+=SG3('الطرف الثاني (الموظف)','بالقبول والالتزام',
+               'المدير الإداري / مدير المشروعات','مراجعة',
+               'المدير التنفيذي','اعتماد الطرف الأول',
+               null,'admin','exec');
+        h+=FT(['نسخة للموظف','نسخة للملف الشخصي','نسخة للأرشيف']);
+    }
+
+    // ── تكليف بمهمة ───────────────────────────────────────────────────
+    else if(id==="task"){
+        h=H('تكليف بمهمة عمل','تحديد المهام والمسؤوليات والمواعيد','TASK ASSIGNMENT','task');
+        h+=SC('١','بيانات الموظف');
+        h+=F2(FGE('اسم الموظف المُكلَّف'),FG('القسم / الإدارة'));
+        h+=SC('٢','نوع المهمة');
+        h+='<div class="chk-grid" style="grid-template-columns:1fr 1fr">'+
+           '<label><input type="radio" name="ttype" value="admin" class="tpl-default-radio" checked onclick="updTaskSigs(this)"> 🏢 مهمة إدارية / مشروع</label>'+
+           '<label><input type="radio" name="ttype" value="tech" onclick="updTaskSigs(this)"> 💻 مهمة تقنية</label>'+
+           '</div>';
+        h+=SC('٣','تفاصيل المهمة');
+        h+='<div class="fg"><label>عنوان المهمة / المشروع</label><input type="text" style="font-weight:bold;color:var(--nv)"></div>';
+        h+=FGA('وصف المهمة والأهداف',5);
+        h+=F2(FG('تاريخ البدء','date'),FG('الموعد النهائي','date'));
+        h+=SC('٤','الموارد الممنوحة');
+        h+=FGA('',3,'الميزانية، الفريق، الأدوات...');
+        h+=SC('٥','التوقيعات');
+        h+='<div class="sigs">'+
+           _sig('الموظف المكلَّف','','الاستلام والالتزام')+
+           _sig('المدير الإداري / مدير المشروعات',MGRS.admin,'الموافقة والاعتماد','task-approver-sig')+
+           _sig('المدير التنفيذي',MGRS.exec,'الإصدار')+
+           '</div>';
+        h+=FT();
+    }
+
+    // ── شهادة راتب ────────────────────────────────────────────────────
+    else if(id==="sal"){
+        h=H('شهادة راتب','إلى من يهمه الأمر — شهادة مفردات مرتب','SALARY CERTIFICATE','sal',true);
+        h+='<div class="cert" style="font-size:13px">';
+        h+='تشهد شركة <strong><span class="dcn"></span></strong> بأن الموظف أدناه يعمل لدينا ولا يزال على رأس عمله.<br><br>';
+        h+='<table class="dt" style="margin:16px 0;border:2px solid var(--bd)"><tr><th style="width:30%;text-align:right;background:#f7f8fb;color:#333">اسم الموظف</th><td style="text-align:right"><input type="text" class="emp-name-fld" list="tgEmpDL" autocomplete="off" onchange="addEmployeeName(this.value)" style="font-weight:bold;text-align:right"></td></tr><tr><th style="text-align:right;background:#f7f8fb;color:#333">الرقم الوظيفي</th><td style="text-align:right"><input type="text" style="text-align:right"></td></tr><tr><th style="text-align:right;background:#f7f8fb;color:#333">المسمى الوظيفي</th><td style="text-align:right"><input type="text" style="text-align:right"></td></tr><tr><th style="text-align:right;background:#f7f8fb;color:#333">الراتب الأساسي</th><td style="text-align:right"><input type="text" style="text-align:right;width:130px"></td></tr><tr><th style="text-align:right;background:#edf2f7;color:var(--nv);font-weight:800">إجمالي الراتب</th><td style="text-align:right;background:#edf2f7"><input type="text" class="sal-total-fld" style="font-weight:bold;text-align:right"></td></tr></table>';
+        h+='لتقديمها إلى: <input type="text" style="width:180px"> دون مسؤولية على الشركة.';
+        h+='<div style="margin-top:40px;display:flex;justify-content:space-between;align-items:flex-end;text-align:center">'+
+           '<div><div style="font-weight:700;color:var(--nv);margin-bottom:24px">الختم</div>'+
+           '<div style="width:90px;height:90px;border:2px dashed #cbd5e0;border-radius:50%;margin:0 auto;display:flex;align-items:center;justify-content:center;color:#a0aec0;font-size:8px">ختم</div></div>'+
+           '<div style="text-align:center"><div style="font-weight:700;color:var(--nv);margin-bottom:6px">المدير التنفيذي</div>'+
+           '<div class="cert-mgr-nm">'+(MGRS.exec||'&nbsp;')+'</div>'+
+           '<div style="border-bottom:1.5px solid #333;width:200px;margin:0 auto"></div></div>'+
+           '</div>';
+        h+=FT(['نسخة للموظف','نسخة للأرشيف']);
+    }
+
+    // ── الحضور والانصراف ──────────────────────────────────────────────
+    else if(id==="att"){
+        h='<div style="background:var(--w);border:1px solid var(--bd);border-radius:6px;overflow:hidden">';
+        h+='<div style="background:var(--nv);color:#fff;padding:10px 20px;display:flex;align-items:center;justify-content:space-between">';
+        h+='<div><span style="font-size:15px;font-weight:800">⏱ نظام الحضور والانصراف</span><br><span style="font-size:10px;opacity:.6">تحليل البيانات · WFH · التقارير التفصيلية</span></div>';
+        h+='<div class="np"><button class="bt bt-g" onclick="document.getElementById(\'attF\').contentWindow.print()">🖨 طباعة التقرير</button></div>';
+        h+='</div>';
+        h+='<iframe id="attF" src="attendance.html" style="width:100%;height:calc(100vh - 100px);border:none"></iframe>';
+        h+='</div>';
+    }
+
+    // ── الشكاوى والمقترحات ─────────────────────────────────────────────
+    else if(id==="comp"){
+        h=H('الشكاوى والمقترحات','صوتك مسموع — نحن نهتم برأيك','COMPLAINTS & SUGGESTIONS','comp');
+        h+=SC('١','نوع التقديم');
+        h+='<div class="ctg"><div class="ctc sel" onclick="sct(this)"><div class="ci">💡</div><div class="ct3">مقترح تطويري</div></div><div class="ctc" onclick="sct(this)"><div class="ci">🏢</div><div class="ct3">شكوى بيئة العمل</div></div><div class="ctc" onclick="sct(this)"><div class="ci">👥</div><div class="ct3">شكوى إدارية</div></div><div class="ctc" onclick="sct(this)"><div class="ci">🔧</div><div class="ct3">صيانة / مرافق</div></div></div>';
+        h+=SC('٢','بيانات مقدم الطلب');
+        h+='<div style="padding:0 0 8px 0"><label style="display:flex;align-items:center;gap:5px;font-size:11px;cursor:pointer"><input type="checkbox" onchange="toggleAnon(this)"> تقديم بسرية تامة (بدون ذكر الاسم)</label></div>';
+        h+='<div class="fr fr3" id="cud">'+FG('الاسم')+FG('القسم')+FG('التاريخ','date')+'</div>';
+        h+=SC('٣','التفاصيل');
+        h+='<div style="margin-bottom:8px"><label style="font-size:10px;font-weight:600;color:var(--tx2)">مستوى الأهمية</label><div class="pp"><div class="ppl hi" onclick="spr(this)">عاجل</div><div class="ppl md a" onclick="spr(this)">متوسط</div><div class="ppl lo" onclick="spr(this)">عادي</div></div></div>';
+        h+='<div class="fg"><label>الموضوع</label><input type="text"></div>';
+        h+=FGA('الوصف التفصيلي',5);
+        h+=SC('٤','الإجراءات المتخذة');
+        h+=F2(FG('تاريخ الاستلام','date'),FG('المسؤول عن المتابعة'));
+        h+=FGA('القرارات المتخذة',3);
+        h+=SG3('مقدم الطلب','','المدير الإداري / مدير المشروعات','استلام وإجراء','المدير التنفيذي','الاعتماد النهائي',null,'admin','exec');
+        h+=FT();
+    }
+
+    // ── شيت المصروفات الشهري ────────────────────────────────────────────
+    else if(id==="mexp"){
+        var mexpNum=genDocNum('mexp');
+        h=H('شيت المصروفات الشهري','تسجيل وتوثيق حركة المصروفات النقدية للشركة','MONTHLY EXPENSE SHEET','mexp');
+        h+=SC('١','بيانات الشهر');
+        h+='<div class="fr fr3">'+
+           '<div class="fg"><label>الشهر</label><input type="month" id="mexp-month" onchange="mexpLoad()"></div>'+
+           '<div class="fg"><label>عدد الحركات</label><input type="text" id="mexp-count" readonly></div>'+
+           '<div class="fg"><label>إجمالي المصروفات</label><input type="text" id="mexp-total" readonly style="font-weight:900;color:var(--nv)"></div>'+
+           '</div>';
+        h+=SC('٢','تفاصيل المصروفات');
+        h+='<div class="np" style="display:flex;gap:8px;margin-bottom:10px">'+
+           '<button class="bt bt-p" onclick="mexpAddRow()">➕ إضافة سطر</button>'+
+           '<button class="bt bt-o" onclick="mexpSave()">💾 حفظ بيانات الشهر</button>'+
+           '</div>';
+        h+='<table class="dt" id="mexp-table">'+
+           '<thead><tr><th style="width:34px">م</th><th>اسم الصارف</th><th>بند (نوع) الصرف</th><th style="width:110px">العدد (المبلغ)</th><th style="width:120px">التاريخ</th><th>ملاحظات</th><th class="np" style="width:30px"></th></tr></thead>'+
+           '<tbody id="mexp-tbody"></tbody>'+
+           '<tfoot><tr><td colspan="3" style="text-align:left;font-weight:800;background:#edf2f7">الإجمالي</td><td id="mexp-total-cell" style="font-weight:900;color:var(--nv);background:#edf2f7"></td><td colspan="3" style="background:#edf2f7"></td></tr></tfoot>'+
+           '</table>';
+        h+=SC('٣','الاعتماد والتوقيعات');
+        h+=SG3('أمين الصندوق / المسؤول عن الصرف','تحرير وتوثيق البيانات',
+               'المدير الإداري / مدير المشروعات','مراجعة واعتماد',
+               'المدير التنفيذي','اعتماد نهائي',
+               null,'admin','exec');
+        h+=FT();
+    }
+
+    // ── إدارة المشاريع (إنشاء المشاريع وتعيين الموظفين مباشرة) ─────────
+    else if(id==="pmgmt"){
+        h='<div class="SP"><h3>📁 إدارة المشاريع</h3>';
+        h+='<div class="set-hint">أنشئ مشروعاً جديداً وحدد الموظفين المسؤولين عنه مباشرة من هنا، بدل الدخول على Firebase Console يدوياً. كل موظف بعدها يقدر يحدّث نسبة تقدّمه في المشروع من بوابته الخاصة (employee.html)، ويقدر يتواصل مع باقي الفريق والأدمن من خلال نقاش المشروع.</div>';
+
+        h+='<div class="set-sec"><div class="set-sec-title">➕ إنشاء مشروع جديد</div>';
+        h+='<div class="fg" style="margin-bottom:10px"><label>عنوان المشروع</label><input type="text" id="pmTitle" placeholder="مثلاً: تطوير نظام إدارة المخازن"></div>';
+        h+='<div class="fg fg-full" style="margin-bottom:10px"><label>وصف مختصر</label><textarea rows="2" id="pmDesc" placeholder="نبذة مختصرة عن المشروع وأهدافه..."></textarea></div>';
+        h+='<div class="fr fr3" style="margin-bottom:10px">'+
+           '<div class="fg"><label>الأولوية</label><select id="pmPriority"><option>منخفضة</option><option selected>متوسطة</option><option>عالية</option></select></div>'+
+           '<div class="fg"><label>حالة المشروع</label><select id="pmStatus"><option selected>مخطط له</option><option>جاري العمل</option><option>متوقف</option><option>مكتمل</option></select></div>'+
+           '<div class="fg"><label>تاريخ الاستحقاق (اختياري)</label><input type="date" id="pmDeadline"></div>'+
+           '</div>';
+        h+='<div class="fg fg-full" style="margin-bottom:6px"><label>الموظفون المسؤولون عن المشروع</label></div>';
+        h+='<div class="chk-grid" id="pmgmtAssignees"><div class="empty-hint">⏳ جارٍ تحميل قائمة الموظفين...</div></div>';
+        h+='<button class="bt bt-p" style="margin-top:12px" onclick="createProject()">➕ إنشاء المشروع</button>';
+        h+='<div id="pmCreateMsg" style="margin-top:8px;font-size:11px"></div>';
+        h+='</div>';
+
+        h+='<div class="set-sec-title" style="margin:18px 0 10px">📁 المشاريع الحالية</div>';
+        h+='<div id="pmgmtList"><div class="empty-hint">⏳ جارٍ تحميل المشاريع...</div></div>';
+        h+='</div>';
+    }
+
+    // ── توزيع المهام (الأدمن يكلّف كل موظف بمهمة يقدر يتابعها من بوابته) ─
+    else if(id==="tasksmgmt"){
+        h='<div class="SP"><h3>🗂 توزيع المهام</h3>';
+        h+='<div class="set-hint">كلّف أي موظف بمهمة محددة، وهيقدر يشوفها ويحدّث حالتها (لم يبدأ / جاري العمل / مكتمل) من بوابته الخاصة (employee.html) تحت تبويب "مهامي".</div>';
+
+        h+='<div class="set-sec"><div class="set-sec-title">➕ تكليف مهمة جديدة</div>';
+        h+='<div class="fr fr2" style="margin-bottom:10px">'+
+           '<div class="fg"><label>الموظف المكلَّف</label><select id="tkAssignee"><option value="">⏳ جارٍ تحميل قائمة الموظفين...</option></select></div>'+
+           '<div class="fg"><label>الأولوية</label><select id="tkPriority"><option>منخفضة</option><option selected>متوسطة</option><option>عالية</option></select></div>'+
+           '</div>';
+        h+='<div class="fg" style="margin-bottom:10px"><label>عنوان المهمة</label><input type="text" id="tkTitle" placeholder="مثلاً: تجهيز تصميمات كتالوج المنتجات"></div>';
+        h+='<div class="fg fg-full" style="margin-bottom:10px"><label>تفاصيل المهمة (اختياري)</label><textarea rows="2" id="tkDesc"></textarea></div>';
+        h+='<div class="fg" style="margin-bottom:10px;max-width:220px"><label>تاريخ التسليم (اختياري)</label><input type="date" id="tkDeadline"></div>';
+        h+='<button class="bt bt-p" onclick="createTask()">➕ تكليف المهمة</button>';
+        h+='<div id="tkCreateMsg" style="margin-top:8px;font-size:11px"></div>';
+        h+='</div>';
+
+        h+='<div class="set-sec-title" style="margin:18px 0 10px">🗂 المهام الحالية</div>';
+        h+='<div id="tasksMgmtList"><div class="empty-hint">⏳ جارٍ تحميل المهام...</div></div>';
+        h+='</div>';
+    }
+
+    // ── متابعة الموظفين (بيانات حية من Firebase) ─────────────────────
+    else if(id==="staff"){
+        h='<div class="SP"><h3>👥 متابعة الموظفين</h3>';
+        h+='<div class="set-hint">نظرة شاملة على كل موظف: المشاريع المُسندة إليه ونسبة تقدّمه فيها، الإنجازات المسجّلة، وطلباته (إجازة / إذن / غير ذلك) وحالتها — مع إمكانية الموافقة أو الرفض مباشرة.</div>';
+
+        h+='<div class="set-sec"><div class="set-sec-title">➕ إضافة حساب دخول لموظف جديد</div>';
+        h+='<div class="set-hint">أنشئ بريد إلكتروني وكلمة مرور مبدئية للموظف حتى يستطيع الدخول على بوابته الخاصة (employee.html) من جهازه.</div>';
+        h+='<div class="fr fr3" style="margin-top:10px">'+
+           '<div class="fg"><label>اسم الموظف</label><input type="text" id="newAccName" class="emp-name-fld" list="tgEmpDL" autocomplete="off"></div>'+
+           '<div class="fg"><label>البريد الإلكتروني</label><input type="email" id="newAccEmail" placeholder="name@techgo.com"></div>'+
+           '<div class="fg"><label>كلمة مرور مبدئية</label><input type="text" id="newAccPass" placeholder="6 أحرف على الأقل"></div>'+
+           '</div>'+
+           '<div class="fr" style="margin-top:10px"><div class="fg fg-full"><label>المسمى الوظيفي</label><input type="text" id="newAccJobTitle" placeholder="مثلاً: مصمم جرافيك، مسؤول طلبات..."></div></div>';
+        h+='<button class="bt bt-p" onclick="createStaffAccount()">➕ إنشاء الحساب</button>';
+        h+='<div id="newAccMsg" style="margin-top:8px;font-size:11px"></div>';
+        h+='</div>';
+
+        h+='<div class="set-sec-title" style="margin:18px 0 10px">👥 قائمة الموظفين</div>';
+        h+='<div class="staff-toolbar">'+
+           '<input type="text" class="staff-search" id="staffSearch" oninput="filterStaffCards()" placeholder="🔍 ابحث بالاسم أو البريد الإلكتروني...">'+
+           '<span class="staff-count" id="staffCount"></span>'+
+           '</div>';
+        h+='<div id="staffList"><div class="empty-hint">⏳ جارٍ تحميل بيانات الموظفين...</div></div>';
+        h+='</div>';
+    }
+
+    // ── تخصيص النظام ──────────────────────────────────────────────────
+    else if(id==="set"){
+        h='<div class="SP"><h3>⚙️ تخصيص النظام</h3>';
+
+        h+='<div class="set-sec"><div class="set-sec-title">🏢 بيانات الشركة</div>';
+        h+='<div class="fg" style="margin-bottom:14px"><label>اسم الشركة</label><input type="text" id="sn" value="'+escH(CN)+'"></div>';
+        h+='<div class="fg" style="margin-bottom:14px"><label>العنوان</label><input type="text" class="tpl-default" value="شارع التسعين، التجمع الخامس، القاهرة"></div>';
+        h+=F2('<div class="fg"><label>الهاتف</label><input type="tel" class="tpl-default" value="01012345678"></div>','<div class="fg"><label>البريد</label><input type="email" class="tpl-default" value="hr@techgo.com"></div>');
+        h+='</div>';
+
+        h+='<div class="set-sec"><div class="set-sec-title">👔 المديرون المُفوَّضون بالتوقيع</div>';
+        h+='<div class="set-hint">يظهر اسم كل مدير تلقائياً أسفل المسمى الوظيفي في خانات التوقيع بجميع النماذج والوثائق المُصدَرة.</div>';
+        h+='<div class="mgr-row">'+
+           '<div class="mgr-badge admin-badge">م.إداري / م.مشروعات</div>'+
+           '<div class="fg" style="flex:1;margin:0"><label>المدير الإداري / مدير المشروعات</label>'+
+           '<input type="text" id="sm_admin" value="'+escH(MGRS.admin)+'" placeholder="الاسم الكامل للمدير"></div>'+
+           '</div>';
+        h+='<div class="mgr-row">'+
+           '<div class="mgr-badge exec-badge">م.تنفيذي</div>'+
+           '<div class="fg" style="flex:1;margin:0"><label>المدير التنفيذي</label>'+
+           '<input type="text" id="sm_exec" value="'+escH(MGRS.exec)+'" placeholder="الاسم الكامل للمدير"></div>'+
+           '</div>';
+        h+='<div class="mgr-row">'+
+           '<div class="mgr-badge tech-badge">م.تقني</div>'+
+           '<div class="fg" style="flex:1;margin:0"><label>المدير التقني <span style="font-size:9px;opacity:.7">(للمهام التقنية)</span></label>'+
+           '<input type="text" id="sm_tech" value="'+escH(MGRS.tech)+'" placeholder="الاسم الكامل للمدير"></div>'+
+           '</div>';
+        h+='</div>';
+
+        h+=empListSecHTML();
+
+        h+='<div class="set-sec"><div class="set-sec-title">📋 ترقيم المستندات</div>';
+        h+='<div class="set-hint">يُنشأ رقم مستند تلقائي لكل ورقة تصدر من النظام بالصيغة: <strong>TG-السنة-الكود-التسلسل</strong><br>مثال: TG-'+new Date().getFullYear()+'-NTC-001 (لفت نظر) · TG-'+new Date().getFullYear()+'-LV-003 (إجازة) · TG-'+new Date().getFullYear()+'-TSK-007 (مهمة)</div>';
+        h+='<div style="display:flex;flex-wrap:wrap;gap:8px;margin-top:8px">';
+        var codeList=[['EMP','ملف موظف'],['LV','إجازة'],['PM','إذن'],['DLY','التماس'],['NTC','لفت نظر'],['WRN','إنذار'],['INV','تحقيق'],['TSK','مهمة'],['CLR','إخلاء'],['SAL','راتب'],['EXP','خبرة'],['CMP','شكوى'],['LA','إج.سنوية'],['LB','إج.عارضة'],['LC','أعياد'],['LD','غياب'],['MEXP','مصروفات شهرية'],['RES','استقالة'],['PRM','ترقية'],['CTR','عقد عمل'],['RAI','زيادة راتب']];
+        for(var ci=0;ci<codeList.length;ci++){
+            h+='<div class="code-chip"><span class="code-val">'+codeList[ci][0]+'</span><span class="code-lbl">'+codeList[ci][1]+'</span></div>';
+        }
+        h+='</div>';
+        h+='<div style="margin-top:12px;padding-top:12px;border-top:1px dashed var(--bd,#ccd)">';
+        h+='<div class="set-hint" style="margin-bottom:8px">إعادة ضبط أرقام التسلسل تجعل ترقيم كل النماذج يبدأ من <strong>001</strong> من جديد.</div>';
+        h+='<button class="bt bt-d" onclick="resetSeq()">↺ تصفير أرقام المستندات</button>';
+        h+='</div></div>';
+
+        h+='<div style="text-align:left;margin-top:20px">'+
+           '<button class="bt bt-p" onclick="saveSt()">💾 حفظ الإعدادات</button></div></div>';
+    }
+
+    // ── حسابي (إعدادات شخصية للأدمن) ──────────────────────────────────
+    else if(id==="account"){
+        h=myAccountHTML();
+    }
+
+    c.innerHTML=h;
+    if(id==="mexp") mexpInit();
+    if(id==="staff") loadStaffOverview();
+    if(id==="pmgmt") loadPmgmtData();
+    if(id==="tasksmgmt") loadTasksMgmt();
+}
