@@ -759,11 +759,22 @@ function renderTasksMgmtList(list){
     if(!list.length){ box.innerHTML='<div class="empty-hint">لا توجد مهام مُكلَّفة بعد.</div>'; return; }
     var h='';
     list.forEach(function(t,i){
+        var attachHtml = '';
+        if(t.fileUrl && t.fileType){
+            if(t.fileType.indexOf('image/')===0){
+                attachHtml = '<div style="margin-top:6px"><a href="'+t.fileUrl+'" target="_blank"><img src="'+t.fileUrl+'" style="max-width:140px;max-height:100px;border-radius:6px;display:block"></a></div>';
+            } else if(t.fileType.indexOf('video/')===0){
+                attachHtml = '<div style="margin-top:6px"><video src="'+t.fileUrl+'" controls style="max-width:180px;border-radius:6px"></video></div>';
+            } else {
+                attachHtml = '<div style="margin-top:6px"><a href="'+t.fileUrl+'" target="_blank" style="color:var(--nv);font-weight:700;text-decoration:underline">📎 '+escH(t.fileName||'ملف مرفق')+'</a></div>';
+            }
+        }
         h+='<div class="pj-row"><div class="pj-t">'+escH(t.title||'بدون عنوان')+
            ' <span class="badge '+prioBadgeClass(t.priority)+'">'+escH(t.priority||'متوسطة')+'</span>'+
            ' <span class="badge '+pstatusBadgeClass(t.status)+'">'+escH(t.status||'لم يبدأ')+'</span></div>'+
            '<div class="pj-meta">👤 مكلَّف إلى: '+escH(t.assignedToName||'')+(t.deadline?(' · تاريخ التسليم: '+escH(t.deadline)):'')+'</div>'+
            (t.description?'<div class="pj-meta">'+escH(t.description)+'</div>':'')+
+           attachHtml+
            '<button class="bt bt-d" style="margin-top:6px" onclick="deleteTask(\''+t.id+'\')">🗑 حذف المهمة</button>'+
            '</div>';
     });
@@ -777,23 +788,68 @@ function createTask(){
     var desc=(document.getElementById('tkDesc').value||'').trim();
     var priority=document.getElementById('tkPriority').value;
     var deadline=document.getElementById('tkDeadline').value||'';
+    var fileInput=document.getElementById('tkFile');
+    var file=fileInput && fileInput.files && fileInput.files[0];
     var msg=document.getElementById('tkCreateMsg');
     if(!uid){ msg.style.color='var(--no)'; msg.textContent='من فضلك اختر الموظف المكلَّف.'; return; }
     if(!title){ msg.style.color='var(--no)'; msg.textContent='من فضلك اكتب عنوان المهمة.'; return; }
     msg.style.color='var(--tx3)'; msg.textContent='⏳ جارٍ التكليف...';
-    db.collection('tasks').add({
+
+    var taskData = {
         title:title, description:desc, assignedTo:uid, assignedToName:name||'',
         priority:priority, deadline:deadline, status:'لم يبدأ',
         createdAt:firebase.firestore.FieldValue.serverTimestamp(),
         createdBy:(TG_USER?TG_USER.name:''), createdByUid:(TG_USER?TG_USER.uid:'')
-    }).then(function(){
+    };
+
+    var onDone = function(){
         msg.style.color='var(--ok)'; msg.textContent='✅ تم تكليف المهمة بنجاح.';
         document.getElementById('tkTitle').value='';
         document.getElementById('tkDesc').value='';
         document.getElementById('tkDeadline').value='';
         document.getElementById('tkPriority').value='متوسطة';
+        if(fileInput) fileInput.value='';
+        var fnSpan = document.getElementById('tkFileName');
+        if(fnSpan) fnSpan.textContent='';
         loadTasksMgmt();
-    }).catch(function(err){
+    };
+
+    if(file){
+        var MAX_MB = 20;
+        if(file.size > MAX_MB * 1024 * 1024){ msg.style.color='var(--no)'; msg.textContent='الملف كبير جداً (الحد الأقصى '+MAX_MB+' MB).'; return; }
+        var prog = document.getElementById('tkUploadProg');
+        if(prog) { prog.style.display = 'block'; prog.textContent = '⏳ جاري رفع المرفق... 0%'; }
+        var path = 'tasks/' + uid + '/' + Date.now() + '_' + file.name;
+        var ref = storage.ref(path);
+        var uploadTask = ref.put(file);
+        uploadTask.on('state_changed',
+            function(snap){
+                var pct = Math.round(snap.bytesTransferred/snap.totalBytes*100);
+                if(prog) prog.textContent = '⏳ جاري رفع المرفق... ' + pct + '%';
+            },
+            function(err){
+                if(prog) prog.style.display='none';
+                msg.style.color='var(--no)'; msg.textContent='❌ تعذر رفع الملف: '+err.message;
+            },
+            function(){
+                uploadTask.snapshot.ref.getDownloadURL().then(function(url){
+                    taskData.fileUrl = url;
+                    taskData.fileName = file.name;
+                    taskData.fileType = file.type;
+                    return db.collection('tasks').add(taskData);
+                }).then(function(){
+                    if(prog) { prog.style.display='none'; prog.textContent=''; }
+                    onDone();
+                }).catch(function(err){
+                    if(prog) prog.style.display='none';
+                    msg.style.color='var(--no)'; msg.textContent='❌ '+err.message;
+                });
+            }
+        );
+        return;
+    }
+
+    db.collection('tasks').add(taskData).then(onDone).catch(function(err){
         msg.style.color='var(--no)'; msg.textContent='❌ تعذر تكليف المهمة: '+err.message;
     });
 }
@@ -2098,6 +2154,17 @@ function load(id,c){
            '</div>';
         h+='<div class="fg fg-full" style="margin-bottom:6px"><label>الموظفون المسؤولون عن المشروع</label></div>';
         h+='<div class="chk-grid" id="pmgmtAssignees"><div class="empty-hint">⏳ جارٍ تحميل قائمة الموظفين...</div></div>';
+        h+='<div class="fr fr2" style="margin-top:10px">';
+        h+='  <div class="fg" style="justify-content: flex-end;">';
+        h+='    <label class="file-upload-label" style="text-align:center;display:block;margin-bottom:0">';
+        h+='      📎 ملف أو صورة مرفقة';
+        h+='      <input type="file" id="pmFile" accept="image/*,video/*,.pdf,.doc,.docx,.xls,.xlsx,.txt,.zip" style="display:none" onchange="document.getElementById(\'pmFileName\').textContent=this.files[0]?this.files[0].name:\'\'">';
+        h+='    </label>';
+        h+='    <span id="pmFileName" style="font-size:11px;color:var(--tx3);max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;display:block;margin-top:4px"></span>';
+        h+='  </div>';
+        h+='  <div class="fg"><label>رابط خارجي (اختياري)</label><input type="url" id="pmLink" placeholder="https://example.com"></div>';
+        h+='</div>';
+        h+='<div id="pmUploadProg" style="display:none" class="file-upload-progress"></div>';
         h+='<button class="bt bt-p" style="margin-top:12px" onclick="createProject()">➕ إنشاء المشروع</button>';
         h+='<div id="pmCreateMsg" style="margin-top:8px;font-size:11px"></div>';
         h+='</div>';
@@ -2119,7 +2186,17 @@ function load(id,c){
            '</div>';
         h+='<div class="fg" style="margin-bottom:10px"><label>عنوان المهمة</label><input type="text" id="tkTitle" placeholder="مثلاً: تجهيز تصميمات كتالوج المنتجات"></div>';
         h+='<div class="fg fg-full" style="margin-bottom:10px"><label>تفاصيل المهمة (اختياري)</label><textarea rows="2" id="tkDesc"></textarea></div>';
-        h+='<div class="fg" style="margin-bottom:10px;max-width:220px"><label>تاريخ التسليم (اختياري)</label><input type="date" id="tkDeadline"></div>';
+        h+='<div class="fr fr2" style="margin-bottom:10px">';
+        h+='  <div class="fg"><label>تاريخ التسليم (اختياري)</label><input type="date" id="tkDeadline"></div>';
+        h+='  <div class="fg" style="justify-content: flex-end; margin-bottom: 2px;">';
+        h+='    <label class="file-upload-label" style="margin-bottom: 0; align-self: stretch; text-align: center; display: block;">';
+        h+='      📎 مرفق اختياري';
+        h+='      <input type="file" id="tkFile" accept="image/*,video/*,.pdf,.doc,.docx,.xls,.xlsx,.txt,.zip" style="display:none" onchange="document.getElementById(\'tkFileName\').textContent=this.files[0]?this.files[0].name:\'\'">';
+        h+='    </label>';
+        h+='    <span id="tkFileName" style="font-size:11px;color:var(--tx3);max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;display:block;margin-top:4px"></span>';
+        h+='  </div>';
+        h+='</div>';
+        h+='<div id="tkUploadProg" style="display:none" class="file-upload-progress"></div>';
         h+='<button class="bt bt-p" onclick="createTask()">➕ تكليف المهمة</button>';
         h+='<div id="tkCreateMsg" style="margin-top:8px;font-size:11px"></div>';
         h+='</div>';

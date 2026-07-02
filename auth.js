@@ -46,12 +46,28 @@ function tgRequireAuth(requiredRole, onOk) {
             }
 
             document.documentElement.classList.remove('tg-auth-pending');
+            // طلب إذن الإشعارات
+            tgRequestNotificationPermission();
             onOk(TG_USER);
         }).catch(function (err) {
             console.error(err);
             alert('حدث خطأ أثناء التحقق من صلاحية الحساب: ' + err.message);
         });
     });
+}
+
+function tgRequestNotificationPermission(){
+    if ("Notification" in window && Notification.permission !== "granted" && Notification.permission !== "denied") {
+        Notification.requestPermission();
+    }
+}
+
+function tgShowNotification(title, body) {
+    if ("Notification" in window && Notification.permission === "granted") {
+        try {
+            new Notification(title, { body: body });
+        } catch(e) {}
+    }
 }
 
 // هل المستخدم الحالي لديه صلاحية الأدمن الكاملة؟

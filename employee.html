@@ -264,6 +264,11 @@ function playTaskProjNotification() {
         // A pleasant double note chime (C5 then G5)
         toneFn(ctx, 523.25, now, 0.15, 0.15);
         toneFn(ctx, 783.99, now + 0.12, 0.25, 0.15);
+        
+        // إشعار سطح المكتب للموظف
+        if(typeof tgShowNotification === 'function') {
+            tgShowNotification("مهمة أو مشروع جديد 🔔", "تم تكليفك بمهمة أو مشروع جديد في نظام Tech Go.");
+        }
     } catch(e) {
         console.error("Audio error:", e);
     }
@@ -642,10 +647,21 @@ function renderTasksHtml(rows){
     var box=document.getElementById('myTasksList');
     var h='';
     rows.forEach(function(t){
+        var attachHtml = '';
+        if(t.fileUrl && t.fileType){
+            if(t.fileType.indexOf('image/')===0){
+                attachHtml = '<div style="margin-top:6px"><a href="'+t.fileUrl+'" target="_blank"><img src="'+t.fileUrl+'" style="max-width:140px;max-height:100px;border-radius:6px;display:block"></a></div>';
+            } else if(t.fileType.indexOf('video/')===0){
+                attachHtml = '<div style="margin-top:6px"><video src="'+t.fileUrl+'" controls style="max-width:180px;border-radius:6px"></video></div>';
+            } else {
+                attachHtml = '<div style="margin-top:6px"><a href="'+t.fileUrl+'" target="_blank" style="color:var(--nv);font-weight:700;text-decoration:underline">📎 '+esc(t.fileName||'ملف مرفق')+'</a></div>';
+            }
+        }
         h+='<div class="pj-row"><div class="pj-t">'+esc(t.title||'بدون عنوان')+
            ' <span class="badge">'+esc(t.priority||'متوسطة')+'</span></div>'+
            (t.description?'<div class="pj-meta">'+esc(t.description)+'</div>':'')+
            (t.deadline?'<div class="pj-meta">تاريخ التسليم: '+esc(t.deadline)+'</div>':'')+
+           attachHtml+
            '<div class="fg" style="max-width:220px;margin:8px 0"><label>حالة المهمة</label><select id="tks_'+t.id+'">'+
            ['لم يبدأ','جاري العمل','متوقف','مكتمل'].map(function(s){return '<option'+(s===(t.status||'لم يبدأ')?' selected':'')+'>'+s+'</option>';}).join('')+
            '</select></div>'+
