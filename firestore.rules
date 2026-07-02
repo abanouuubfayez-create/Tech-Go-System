@@ -8,20 +8,26 @@ service cloud.firestore {
 
     function isSignedIn() { return request.auth != null; }
     function myUid() { return request.auth.uid; }
+    
     function myRole() {
       return get(/databases/$(database)/documents/users/$(myUid())).data.role;
     }
-    function isAdmin() { return isSignedIn() && myRole() == 'admin'; }
+    
+    function isAdmin() { 
+      return isSignedIn() && myRole() == 'admin'; 
+    }
+    
+    function isAnyAdmin() {
+      return isSignedIn() && (myRole() == 'admin' || myRole() == 'assistant_admin');
+    }
 
-    // هل تم إعداد أول أدمن للنظام بالفعل؟ (يُستخدم في صفحة setup.html)
+    // هل تم إعداد أول أدمن للنظام بالفعل؟ (يُسند في صفحة setup.html)
     function setupDone() {
       return exists(/databases/$(database)/documents/system/meta) &&
              get(/databases/$(database)/documents/system/meta).data.setupDone == true;
     }
 
-    // مستند حالة النظام: قراءة عامة (تحتاجها صفحة تسجيل الدخول وصفحة الإعداد
-    // قبل ما يكون فيه أي مستخدم مسجّل دخول)، وكتابة مسموحة مرة واحدة بس
-    // (من false إلى true) عند إنشاء أول أدمن.
+    // مستند حالة النظام
     match /system/meta {
       allow read: if true;
       allow create: if isSignedIn() && request.resource.data.setupDone == true;
@@ -30,18 +36,15 @@ service cloud.firestore {
       allow delete: if false;
     }
 
-    // ملفات المستخدمين (الاسم، البريد، الدور: admin/employee)
+    // ملفات المستخدمين
     match /users/{uid} {
-      allow read: if isSignedIn() && (myUid() == uid || isAdmin());
-      // حالتان فقط مسموح فيهما إنشاء ملف مستخدم:
-      // 1) الأدمن الحالي بينشئ حساب موظف جديد (من "متابعة الموظفين")
-      // 2) صفحة setup.html بتنشئ أول حساب أدمن للنظام، وده بس لو لسه محدّش عمل ده (setupDone() == false)،
-      //    وبشرط إن الحساب ده بينشئ نفسه (myUid() == uid)
+      allow read: if isSignedIn() && (myUid() == uid || isAnyAdmin());
+      // يسمح للأدمن الرئيسي بإنشاء حساب موظف أو أدمن مساعد جديد
       allow create: if isSignedIn() && (
-                      (isAdmin() && request.resource.data.role == 'employee') ||
+                      (isAdmin() && (request.resource.data.role == 'employee' || request.resource.data.role == 'assistant_admin')) ||
                       (myUid() == uid && request.resource.data.role == 'admin' && !setupDone())
                     );
-      // كل مستخدم (أدمن أو موظف) يقدر يعدّل اسمه الظاهر بنفسه من "حسابي" — بدون المساس بالدور أو البريد
+      // يسمح للأدمن بتعديل أي مستخدم، أو الموظف بتعديل اسمه فقط
       allow update: if isAdmin() || (
                       isSignedIn() && myUid() == uid &&
                       request.resource.data.diff(resource.data).affectedKeys().hasOnly(['name'])
@@ -49,45 +52,33 @@ service cloud.firestore {
       allow delete: if isAdmin();
     }
 
-    // المشاريع: الأدمن يدير كل شيء. الموظف يقرأ مشاريعه، يحدّث تقدمه هو فقط،
-    // وكمان يقدر يُنشئ مشروعاً خاصاً به (يُسند لنفسه) ويعدّل/يحذف المشاريع التي أنشأها هو بنفسه.
+    // المشاريع: الأدمن أو الأدمن المساعد يملك التحكم الكامل.
+    // الموظف يقرأ فقط المشاريع المسندة إليه، ولا يملك صلاحية الإنشاء أو الحذف، ويعدّل فقط تقدّمه (progressMap)
     match /projects/{projectId} {
-      allow read: if isAdmin() || (isSignedIn() && myUid() in resource.data.assignees);
-      allow create: if isAdmin() || (
-        isSignedIn() &&
-        myUid() in request.resource.data.assignees &&
-        request.resource.data.createdByUid == myUid()
-      );
-      allow update: if isAdmin() || (
+      allow read: if isAnyAdmin() || (isSignedIn() && myUid() in resource.data.assignees);
+      allow create: if isAnyAdmin();
+      allow update: if isAnyAdmin() || (
         isSignedIn() && myUid() in resource.data.assignees &&
-        (
-          request.resource.data.diff(resource.data).affectedKeys().hasOnly(['progressMap']) ||
-          (
-            resource.data.createdByUid == myUid() &&
-            request.resource.data.diff(resource.data).affectedKeys().hasOnly(['title','description','priority','deadline','status'])
-          )
-        )
+        request.resource.data.diff(resource.data).affectedKeys().hasOnly(['progressMap'])
       );
-      allow delete: if isAdmin() || (isSignedIn() && resource.data.createdByUid == myUid());
+      allow delete: if isAnyAdmin();
     }
 
-    // نقاش/تعليقات كل مشروع: يقرأ ويكتب فيها الأدمن وكل موظف مُسند على نفس المشروع فقط
+    // نقاش/تعليقات كل مشروع
     match /projectComments/{commentId} {
-      allow read: if isAdmin() || (
+      allow read: if isAnyAdmin() || (
         isSignedIn() &&
         myUid() in get(/databases/$(database)/documents/projects/$(resource.data.projectId)).data.assignees
       );
       allow create: if isSignedIn() && request.resource.data.uid == myUid() && (
-        isAdmin() ||
+        isAnyAdmin() ||
         myUid() in get(/databases/$(database)/documents/projects/$(request.resource.data.projectId)).data.assignees
       );
       allow update: if false;
-      allow delete: if isAdmin() || (isSignedIn() && resource.data.uid == myUid());
+      allow delete: if isAnyAdmin() || (isSignedIn() && resource.data.uid == myUid());
     }
 
-    // الشات العام: غرفة واحدة يشترك فيها كل المستخدمين المسجّلين (أدمن وموظفين).
-    // أي شخص مسجّل دخول يقرأ كل الرسائل، وينشئ رسالة باسمه هو فقط، ولا تعديل بعد الإرسال.
-    // الحذف مسموح فقط لصاحب الرسالة نفسه أو للأدمن (تعديل/إشراف).
+    // الشات العام
     match /chatMessages/{msgId} {
       allow read: if isSignedIn();
       allow create: if isSignedIn() && request.resource.data.uid == myUid()
@@ -95,40 +86,39 @@ service cloud.firestore {
                     && request.resource.data.text.size() > 0
                     && request.resource.data.text.size() <= 2000;
       allow update: if false;
-      allow delete: if isAdmin() || (isSignedIn() && resource.data.uid == myUid());
+      allow delete: if isAnyAdmin() || (isSignedIn() && resource.data.uid == myUid());
     }
 
-    // المهام: الأدمن هو الوحيد اللي يكلّف/يحذف مهمة. الموظف المُكلَّف يقرأ مهامه
-    // فقط، ويقدر يحدّث حقل "status" بس (حالة تنفيذه للمهمة) من بوابته.
+    // المهام: الأدمن أو الأدمن المساعد يكلّف بالمهام ويحذفها. الموظف يقرأ مهامه ويعدّل الحالة فقط
     match /tasks/{taskId} {
-      allow read: if isAdmin() || (isSignedIn() && resource.data.assignedTo == myUid());
-      allow create: if isAdmin();
-      allow update: if isAdmin() || (
+      allow read: if isAnyAdmin() || (isSignedIn() && resource.data.assignedTo == myUid());
+      allow create: if isAnyAdmin();
+      allow update: if isAnyAdmin() || (
         isSignedIn() && resource.data.assignedTo == myUid() &&
         request.resource.data.diff(resource.data).affectedKeys().hasOnly(['status'])
       );
-      allow delete: if isAdmin();
+      allow delete: if isAnyAdmin();
     }
 
-    // الإنجازات: كل موظف يقرأ/يضيف إنجازاته فقط، الأدمن يقرأ كل شيء
+    // الإنجازات
     match /achievements/{achId} {
-      allow read: if isAdmin() || (isSignedIn() && resource.data.uid == myUid());
+      allow read: if isAnyAdmin() || (isSignedIn() && resource.data.uid == myUid());
       allow create: if isSignedIn() && request.resource.data.uid == myUid();
       allow update, delete: if isAdmin();
     }
 
-    // الطلبات: الموظف يقدّم طلباته ويقرأها، الأدمن يقرأ الكل ويوافق/يرفض
+    // الطلبات: الأدمن الرئيسي فقط يعدّل الحالة
     match /requests/{reqId} {
-      allow read: if isAdmin() || (isSignedIn() && resource.data.uid == myUid());
+      allow read: if isAnyAdmin() || (isSignedIn() && resource.data.uid == myUid());
       allow create: if isSignedIn() && request.resource.data.uid == myUid()
                     && request.resource.data.status == 'pending';
       allow update: if isAdmin();
       allow delete: if isAdmin();
     }
 
-    // التقارير الأسبوعية: كل موظف يكتب تقريره الأسبوعي ويقرأ تقاريره فقط، الأدمن يقرأ تقارير الجميع
+    // التقارير الأسبوعية
     match /weeklyReports/{repId} {
-      allow read: if isAdmin() || (isSignedIn() && resource.data.uid == myUid());
+      allow read: if isAnyAdmin() || (isSignedIn() && resource.data.uid == myUid());
       allow create: if isSignedIn() && request.resource.data.uid == myUid();
       allow update, delete: if isAdmin();
     }
