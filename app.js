@@ -74,7 +74,17 @@ function tgCloseModal(){
 }
 
 // ─── NAVIGATION ───────────────────────────────────────────────────────────
+// الصفحات التي يمكن للأدمن المساعد الوصول إليها فقط
+var ASSISTANT_ALLOWED = ['pmgmt','proj','account','dash'];
+
 function go(id,nav){
+    // قيود الأدمن المساعد
+    if(TG_USER && TG_USER.role==='assistant_admin' && ASSISTANT_ALLOWED.indexOf(id)===-1){
+        tgConfirmModal('🔒 وصول محدود',
+            'الأدمن المساعد يمكنه فقط الوصول إلى صفحة <b>إدارة المشاريع</b>.<br>تواصل مع الأدمن الرئيسي لو احتجت صلاحيات أعلى.',
+            [{label:'حسناً', cls:'bt-p', onClick:tgCloseModal}]);
+        return;
+    }
     document.querySelectorAll(".S-i").forEach(function(e){e.classList.remove("a")});
     if(nav)nav.classList.add("a");
     else{var el=document.querySelector('.S-i[onclick*="\''+id+'\'"]');if(el)el.classList.add("a")}
@@ -205,6 +215,131 @@ function loadDashboardSummary(){
             '<div class="DC" onclick="go(\'pmgmt\')" style="cursor:pointer"><div class="di">📁</div><div class="dt2">'+projCount+' مشروع</div><div class="dd">إجمالي المشاريع الحالية</div></div>'+
             '<div class="DC" onclick="go(\'staff\')" style="cursor:pointer'+(pendingCount?';border:2px solid var(--gd)':'')+'"><div class="di">⏳</div><div class="dt2">'+pendingCount+' طلب معلّق</div><div class="dd">بانتظار موافقة أو رفض الأدمن</div></div>';
     }).catch(function(){ box.innerHTML=''; });
+    // بدء مراقبة إشعارات الأدمن من الموظفين
+    startAdminNotifications();
+    // إخفاء عناصر القائمة للأدمن المساعد
+    applyAssistantAdminRestrictions();
+}
+
+// ─── تقييد القائمة الجانبية للأدمن المساعد ──────────────────────────────
+function applyAssistantAdminRestrictions(){
+    if(!TG_USER || TG_USER.role !== 'assistant_admin') return;
+    // إخفاء كل عناصر القائمة التي لا علاقة لها بالمشاريع
+    document.querySelectorAll('.S-n .S-i').forEach(function(el){
+        var onclick = el.getAttribute('onclick') || '';
+        var allowed = ASSISTANT_ALLOWED.some(function(id){ return onclick.indexOf("'"+id+"'") > -1; });
+        if(!allowed && onclick.indexOf('tgLogout') === -1) {
+            el.style.display = 'none';
+        }
+    });
+    document.querySelectorAll('.S-n .S-s').forEach(function(el){
+        // إخفاء الفواصل التي لا يتبعها عناصر ظاهرة
+        var next = el.nextElementSibling;
+        var hasVisible = false;
+        while(next && !next.classList.contains('S-s')){
+            if(next.style.display !== 'none') { hasVisible = true; break; }
+            next = next.nextElementSibling;
+        }
+        if(!hasVisible) el.style.display = 'none';
+    });
+    // عرض رسالة ترحيب مخصصة
+    var subEl = document.querySelector('.S-h .sub');
+    if(subEl) subEl.textContent = 'أدمن مساعد — إدارة المشاريع';
+}
+
+// ─── إشعارات الأدمن اللحظية من الموظفين (طلبات + تقارير + مشاريع جديدة) ───
+var _adminNotifUnsub = null;
+var _adminNotifAudioCtx = null;
+var _adminNotifAudioUnlocked = false;
+var _adminNotifInitialDone = false;
+
+function startAdminNotifications(){
+    if(_adminNotifUnsub) return;
+    // فك قفل الصوت عند أول تفاعل
+    var unlockFn = function(){
+        if(_adminNotifAudioUnlocked) return;
+        try{
+            _adminNotifAudioCtx = _adminNotifAudioCtx || new (window.AudioContext||window.webkitAudioContext)();
+            if(_adminNotifAudioCtx.state==='suspended') _adminNotifAudioCtx.resume();
+            _adminNotifAudioUnlocked = true;
+        }catch(e){}
+        document.removeEventListener('click', unlockFn);
+        document.removeEventListener('keydown', unlockFn);
+    };
+    document.addEventListener('click', unlockFn);
+    document.addEventListener('keydown', unlockFn);
+
+    // مراقبة الطلبات الجديدة (requests)
+    var lastReqTime = Date.now();
+    db.collection('requests').orderBy('createdAt','desc').limit(30)
+        .onSnapshot(function(snap){
+            if(!_adminNotifInitialDone){ _adminNotifInitialDone=true; return; }
+            var hasNew = snap.docChanges().some(function(ch){
+                if(ch.type !== 'added') return false;
+                var d = ch.doc.data();
+                var t = (d.createdAt && d.createdAt.toMillis) ? d.createdAt.toMillis() : 0;
+                return t > lastReqTime;
+            });
+            if(hasNew){
+                lastReqTime = Date.now();
+                playAdminNotif();
+                incrementAdminBadge('notif-req-badge', 'notif-req-badge-sb');
+            }
+        });
+
+    // مراقبة التقارير الأسبوعية الجديدة
+    var lastWkrTime = Date.now();
+    db.collection('weeklyReports').orderBy('createdAt','desc').limit(30)
+        .onSnapshot(function(snap){
+            snap.docChanges().forEach(function(ch){
+                if(ch.type !== 'added') return;
+                var d = ch.doc.data();
+                var t = (d.createdAt && d.createdAt.toMillis) ? d.createdAt.toMillis() : 0;
+                if(t > lastWkrTime){
+                    lastWkrTime = Date.now();
+                    playAdminNotif();
+                    incrementAdminBadge('notif-wkr-badge', 'notif-wkr-badge-sb');
+                }
+            });
+        });
+}
+
+function playAdminNotif(){
+    try{
+        _adminNotifAudioCtx = _adminNotifAudioCtx || new (window.AudioContext||window.webkitAudioContext)();
+        if(_adminNotifAudioCtx.state==='suspended') _adminNotifAudioCtx.resume();
+        var ctx = _adminNotifAudioCtx;
+        var now = ctx.currentTime;
+        // نغمتان متتاليتان: صول + دو
+        _adminTone(ctx, 784.00, now,       0.18, 0.14);
+        _adminTone(ctx, 523.25, now+0.15,  0.22, 0.18);
+    }catch(e){}
+}
+function _adminTone(ctx, freq, start, dur, vol){
+    var osc=ctx.createOscillator(), gain=ctx.createGain();
+    osc.type='sine'; osc.frequency.value=freq;
+    gain.gain.setValueAtTime(0.0001, start);
+    gain.gain.linearRampToValueAtTime(vol, start+0.015);
+    gain.gain.exponentialRampToValueAtTime(0.0001, start+dur);
+    osc.connect(gain); gain.connect(ctx.destination);
+    osc.start(start); osc.stop(start+dur+0.05);
+}
+function incrementAdminBadge(badgeId, sbBadgeId){
+    [badgeId, sbBadgeId].forEach(function(id){
+        var el = document.getElementById(id);
+        if(!el) return;
+        var cur = parseInt(el.textContent) || 0;
+        el.textContent = String(cur + 1);
+        el.style.display = 'flex';
+    });
+}
+function clearAdminBadge(badgeId, sbBadgeId){
+    [badgeId, sbBadgeId].forEach(function(id){
+        var el = document.getElementById(id);
+        if(!el) return;
+        el.textContent = '0';
+        el.style.display = 'none';
+    });
 }
 
 // ─── متابعة الموظفين (بيانات حية من Firebase Firestore) ──────────────────
@@ -351,12 +486,23 @@ function renderStaffList(list){
             window._staffReqCache=window._staffReqCache||{};
             window._staffReqCache[idx]=emp.requests;
             emp.requests.forEach(function(r,qi){
+                var attachHtml = '';
+                if(r.fileUrl && r.fileType){
+                    if(r.fileType.indexOf('image/')===0){
+                        attachHtml = '<div style="margin-top:6px"><a href="'+r.fileUrl+'" target="_blank"><img src="'+r.fileUrl+'" style="max-width:140px;max-height:100px;border-radius:6px;display:block"></a></div>';
+                    } else if(r.fileType.indexOf('video/')===0){
+                        attachHtml = '<div style="margin-top:6px"><video src="'+r.fileUrl+'" controls style="max-width:180px;border-radius:6px"></video></div>';
+                    } else {
+                        attachHtml = '<div style="margin-top:6px"><a href="'+r.fileUrl+'" target="_blank" style="color:var(--nv);font-weight:700;text-decoration:underline">📎 '+escH(r.fileName||'ملف مرفق')+'</a></div>';
+                    }
+                }
                 h+='<div class="rq-row"><div class="rq-t">'+escH(r.type||'طلب')+' <span class="badge '+badgeClassForReq(r.status)+'">'+reqStatusLabel(r.status)+'</span>'+
                    ' <button class="bt bt-o" style="padding:2px 8px;font-size:10px;margin-right:8px" onclick="printRequestDoc(window._staffEmpCache['+idx+'],window._staffReqCache['+idx+']['+qi+'])">🖨 طباعة</button></div>'+
                    (r.details?'<div class="pj-meta">'+escH(r.details)+'</div>':'')+
                    (r.fromDate?('<div class="pj-meta">من '+escH(r.fromDate)+(r.toDate?(' إلى '+escH(r.toDate)):'')+'</div>'):'')+
                    (r.reviewedBy?('<div class="pj-meta">تمت المراجعة بواسطة: '+escH(r.reviewedBy)+'</div>'):'')+
-                   (r.status==='pending'?('<div class="rq-actions"><button class="bt bt-p" onclick="reviewRequest(\''+r.id+'\',\'approved\')">✔ موافقة</button><button class="bt bt-d" onclick="reviewRequest(\''+r.id+'\',\'rejected\')">✕ رفض</button></div>'):'')+
+                   attachHtml+
+                   (r.status==='pending'?('<div class="rq-actions" style="margin-top:8px"><button class="bt bt-p" onclick="reviewRequest(\''+r.id+'\',\'approved\')">✔ موافقة</button><button class="bt bt-d" onclick="reviewRequest(\''+r.id+'\',\'rejected\')">✕ رفض</button></div>'):'')+
                    '</div>';
             });
         }else h+='<div class="empty-hint">لا توجد طلبات بعد.</div>';
@@ -484,17 +630,21 @@ function createStaffAccount(){
     var email=(document.getElementById('newAccEmail').value||'').trim();
     var pass=document.getElementById('newAccPass').value||'';
     var jobTitle=(document.getElementById('newAccJobTitle').value||'').trim();
+    var roleEl=document.getElementById('newAccRole');
+    var role=roleEl?roleEl.value:'employee';
     var msg=document.getElementById('newAccMsg');
     if(!name||!email||!pass){ msg.style.color='var(--no)'; msg.textContent='من فضلك املأ الاسم والبريد الإلكتروني وكلمة المرور.'; return; }
     if(pass.length<6){ msg.style.color='var(--no)'; msg.textContent='كلمة المرور يجب أن تكون 6 أحرف على الأقل.'; return; }
     msg.style.color='var(--tx3)'; msg.textContent='⏳ جارٍ إنشاء الحساب...';
-    tgCreateEmployeeAccount(name,email,pass,'',jobTitle,function(){
-        addEmployeeName(name);
-        msg.style.color='var(--ok)'; msg.textContent='✅ تم إنشاء حساب الموظف بنجاح.';
+    tgCreateEmployeeAccount(name,email,pass,'',jobTitle,role,function(){
+        if(role==='employee') addEmployeeName(name);
+        var roleAr = role==='assistant_admin' ? 'أدمن مساعد' : 'موظف';
+        msg.style.color='var(--ok)'; msg.textContent='✅ تم إنشاء حساب '+roleAr+' بنجاح.';
         document.getElementById('newAccName').value='';
         document.getElementById('newAccEmail').value='';
         document.getElementById('newAccPass').value='';
         document.getElementById('newAccJobTitle').value='';
+        if(roleEl) roleEl.value='employee';
         loadStaffOverview();
     },function(err){
         var map={'auth/email-already-in-use':'هذا البريد الإلكتروني مستخدم بالفعل.','auth/invalid-email':'صيغة البريد الإلكتروني غير صحيحة.','auth/weak-password':'كلمة المرور ضعيفة جداً.'};
@@ -890,11 +1040,22 @@ function renderProjectChat(projectId, comments, containerId){
     }else{
         comments.forEach(function(c){
             var mine=TG_USER&&c.uid===TG_USER.uid;
-            var canDelete=mine||(TG_USER&&TG_USER.role==='admin');
-            var roleLabel=c.role==='admin'?'أدمن':'موظف';
+            var canDelete=mine||(TG_USER&&(TG_USER.role==='admin'||TG_USER.role==='assistant_admin'));
+            var roleLabel=c.role==='admin'||c.role==='assistant_admin'?'أدمن':'موظف';
             var timeStr='';
             if(c.createdAt&&c.createdAt.toDate){
                 try{ timeStr=c.createdAt.toDate().toLocaleString('ar-EG',{day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'}); }catch(e){}
+            }
+            // محتوى المرفق (صورة / فيديو / ملف)
+            var attachHtml = '';
+            if(c.fileUrl && c.fileType){
+                if(c.fileType.indexOf('image/')===0){
+                    attachHtml = '<div style="margin-top:6px"><a href="'+c.fileUrl+'" target="_blank"><img src="'+c.fileUrl+'" style="max-width:200px;max-height:160px;border-radius:8px;cursor:pointer;display:block" loading="lazy"></a></div>';
+                } else if(c.fileType.indexOf('video/')===0){
+                    attachHtml = '<div style="margin-top:6px"><video src="'+c.fileUrl+'" controls style="max-width:240px;border-radius:8px"></video></div>';
+                } else {
+                    attachHtml = '<div style="margin-top:6px"><a href="'+c.fileUrl+'" target="_blank" style="color:var(--nv);font-weight:700;text-decoration:underline">📎 '+escH(c.fileName||'ملف مرفق')+'</a></div>';
+                }
             }
             h+='<div class="pj-chat-msg'+(mine?' mine':'')+'">'+
                '<div class="pj-chat-msg-h"><span class="pj-chat-name">'+escH(c.name||'')+'</span>'+
@@ -902,7 +1063,8 @@ function renderProjectChat(projectId, comments, containerId){
                '<span class="pj-chat-time">'+escH(timeStr)+'</span>'+
                (canDelete?('<span class="pj-chat-del" title="حذف الملاحظة" onclick="deleteProjectComment(\''+c.id+'\',\''+projectId+'\')">🗑</span>'):'')+
                '</div>'+
-               '<div class="pj-chat-text">'+escH(c.text||'')+'</div>'+
+               (c.text?'<div class="pj-chat-text">'+escH(c.text||'')+'</div>':'')+
+               attachHtml+
                '</div>';
         });
     }
@@ -1969,26 +2131,40 @@ function load(id,c){
 
     // ── متابعة الموظفين (بيانات حية من Firebase) ─────────────────────
     else if(id==="staff"){
+        var isFullAdm = typeof isFullAdmin === 'function' && isFullAdmin();
         h='<div class="SP"><h3>👥 متابعة الموظفين</h3>';
-        h+='<div class="set-hint">نظرة شاملة على كل موظف: المشاريع المُسندة إليه ونسبة تقدّمه فيها، الإنجازات المسجّلة، وطلباته (إجازة / إذن / غير ذلك) وحالتها — مع إمكانية الموافقة أو الرفض مباشرة.</div>';
+        h+='<div class="set-hint">نظرة شاملة على كل موظف: المشاريع المُسندة إليه ونسبة تقدّمه فيها، الإنجازات، وطلباته — مع إمكانية الموافقة أو الرفض مباشرة.</div>';
 
-        h+='<div class="set-sec"><div class="set-sec-title">➕ إضافة حساب دخول لموظف جديد</div>';
-        h+='<div class="set-hint">أنشئ بريد إلكتروني وكلمة مرور مبدئية للموظف حتى يستطيع الدخول على بوابته الخاصة (employee.html) من جهازه.</div>';
-        h+='<div class="fr fr3" style="margin-top:10px">'+
-           '<div class="fg"><label>اسم الموظف</label><input type="text" id="newAccName" class="emp-name-fld" list="tgEmpDL" autocomplete="off"></div>'+
-           '<div class="fg"><label>البريد الإلكتروني</label><input type="email" id="newAccEmail" placeholder="name@techgo.com"></div>'+
-           '<div class="fg"><label>كلمة مرور مبدئية</label><input type="text" id="newAccPass" placeholder="6 أحرف على الأقل"></div>'+
-           '</div>'+
-           '<div class="fr" style="margin-top:10px"><div class="fg fg-full"><label>المسمى الوظيفي</label><input type="text" id="newAccJobTitle" placeholder="مثلاً: مصمم جرافيك، مسؤول طلبات..."></div></div>';
+        // إشعار بادج
+        h+='<div style="display:flex;gap:12px;margin-bottom:14px;flex-wrap:wrap">';
+        h+='<div style="display:flex;align-items:center;gap:8px;background:rgba(231,76,60,.08);border:1.5px solid rgba(231,76,60,.25);padding:10px 16px;border-radius:10px;cursor:pointer" onclick="clearAdminBadge(\'notif-req-badge\',\'notif-req-badge-sb\')">';
+        h+='📨 طلبات جديدة <span id="notif-req-badge" style="display:none;background:var(--no);color:#fff;border-radius:50%;min-width:20px;height:20px;font-size:11px;font-weight:800;align-items:center;justify-content:center;padding:0 4px">0</span></div>';
+        h+='<div style="display:flex;align-items:center;gap:8px;background:rgba(39,174,96,.08);border:1.5px solid rgba(39,174,96,.25);padding:10px 16px;border-radius:10px;cursor:pointer" onclick="clearAdminBadge(\'notif-wkr-badge\',\'notif-wkr-badge-sb\')">';
+        h+='📆 تقارير أسبوعية جديدة <span id="notif-wkr-badge" style="display:none;background:var(--ok);color:#fff;border-radius:50%;min-width:20px;height:20px;font-size:11px;font-weight:800;align-items:center;justify-content:center;padding:0 4px">0</span></div>';
+        h+='</div>';
+
+        h+='<div class="set-sec"><div class="set-sec-title">➕ إضافة حساب جديد</div>';
+        h+='<div class="set-hint">أنشئ بريد إلكتروني وكلمة مرور للموظف حتى يدخل بوابته، أو أنشئ حساب أدمن مساعد يملك صلاحية إضافة المشاريع فقط.</div>';
+        h+='<div class="fr fr3" style="margin-top:10px">';
+        h+='<div class="fg"><label>اسم المستخدم</label><input type="text" id="newAccName" class="emp-name-fld" list="tgEmpDL" autocomplete="off"></div>';
+        h+='<div class="fg"><label>البريد الإلكتروني</label><input type="email" id="newAccEmail" placeholder="name@techgo.com"></div>';
+        h+='<div class="fg"><label>كلمة مرور مبدئية</label><input type="text" id="newAccPass" placeholder="6 أحرف على الأقل"></div>';
+        h+='</div>';
+        h+='<div class="fr fr2" style="margin-top:10px">';
+        h+='<div class="fg"><label>المسمى الوظيفي (اختياري)</label><input type="text" id="newAccJobTitle" placeholder="مثلاً: مصمم جرافيك"></div>';
+        h+='<div class="fg"><label>دور الحساب</label><select id="newAccRole"><option value="employee">موظف (employee)</option><option value="assistant_admin">أدمن مساعد — إدارة مشاريع فقط</option></select></div>';
+        h+='</div>';
         h+='<button class="bt bt-p" onclick="createStaffAccount()">➕ إنشاء الحساب</button>';
         h+='<div id="newAccMsg" style="margin-top:8px;font-size:11px"></div>';
         h+='</div>';
 
-        h+='<div class="set-sec-title" style="margin:18px 0 10px">👥 قائمة الموظفين</div>';
-        h+='<div class="staff-toolbar">'+
-           '<input type="text" class="staff-search" id="staffSearch" oninput="filterStaffCards()" placeholder="🔍 ابحث بالاسم أو البريد الإلكتروني...">'+
-           '<span class="staff-count" id="staffCount"></span>'+
-           '</div>';
+        h+='<div style="display:flex;align-items:center;gap:12px;margin:18px 0 10px">';
+        h+='<div class="set-sec-title" style="margin:0">👥 قائمة الموظفين</div>';
+        h+='</div>';
+        h+='<div class="staff-toolbar">';
+        h+='<input type="text" class="staff-search" id="staffSearch" oninput="filterStaffCards()" placeholder="🔍 ابحث بالاسم أو البريد الإلكتروني...">';
+        h+='<span class="staff-count" id="staffCount"></span>';
+        h+='</div>';
         h+='<div id="staffList"><div class="empty-hint">⏳ جارٍ تحميل بيانات الموظفين...</div></div>';
         h+='</div>';
     }

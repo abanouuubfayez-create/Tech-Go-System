@@ -40,6 +40,18 @@
     padding:2px 7px;border-radius:10px;display:inline-flex;
     align-items:center;line-height:1; min-width:18px;justify-content:center;
 }
+/* upload styles */
+.file-upload-label{
+    display:inline-flex;align-items:center;gap:6px;
+    padding:8px 14px;background:var(--bg2);border:1.5px solid var(--bd);
+    border-radius:8px;cursor:pointer;font-size:12px;font-weight:600;
+    color:var(--tx2);transition:var(--tr);
+}
+.file-upload-label:hover{border-color:var(--nv);color:var(--nv);}
+.file-upload-progress{
+    font-size:11px;color:var(--tx3);margin-top:6px;padding:6px 10px;
+    background:var(--bg2);border-radius:6px;border-right:3px solid var(--gd);
+}
 </style>
 </head>
 <body class="emp-body">
@@ -64,8 +76,34 @@
 
   <!-- مشاريعي -->
   <div class="emp-pg a" id="epg-proj">
-    <div class="set-sec-title" style="margin:16px 0 8px">📁 مشاريعي الحالية</div>
-    <div id="myProjectsList"><div class="empty-hint">⏳ جارٍ التحميل...</div></div>
+
+    <!-- قائمة المشاريع (تظهر افتراضياً) -->
+    <div id="projListView">
+      <div class="set-hint" style="margin-bottom:16px">المشاريع المُسندة إليك — حدّث نسبة تقدّمك وحالتك أولاً بأول ليراها المدير. وتقدر كمان تُنشئ مشروعاً خاصاً بيك وتعدّل عليه لاحقاً.</div>
+
+      <div class="set-sec" style="margin-bottom:18px">
+        <div class="set-sec-title">➕ مشروع جديد</div>
+        <div class="fg" style="margin-bottom:12px"><label>عنوان المشروع</label><input type="text" id="newProjTitle" placeholder="مثلاً: تحسين سكربت المعالجة اليومية"></div>
+        <div class="fg fg-full" style="margin-bottom:12px"><label>وصف مختصر (اختياري)</label><textarea rows="2" id="newProjDesc"></textarea></div>
+        <div class="fr fr3" style="margin-bottom:12px">
+          <div class="fg"><label>الأولوية</label><select id="newProjPriority"><option>منخفضة</option><option selected>متوسطة</option><option>عالية</option></select></div>
+          <div class="fg"><label>حالة المشروع</label><select id="newProjStatus"><option selected>مخطط له</option><option>جاري العمل</option><option>متوقف</option><option>مكتمل</option></select></div>
+          <div class="fg"><label>تاريخ الاستحقاق (اختياري)</label><input type="date" id="newProjDeadline"></div>
+        </div>
+        <button class="bt bt-p" onclick="empCreateProject()">➕ إنشاء المشروع</button>
+        <div id="newProjMsg" style="margin-top:8px;font-size:11px"></div>
+      </div>
+
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px">
+        <div style="font-size:14px;font-weight:800;color:var(--nv)">📁 مشاريعي الحالية</div>
+        <div id="projCountLabel" style="font-size:11px;color:var(--tx3);font-weight:600"></div>
+      </div>
+      <div id="myProjectsList"><div class="empty-hint">⏳ جارٍ التحميل...</div></div>
+    </div>
+
+    <!-- صفحة تفاصيل المشروع (مخفية افتراضياً، تظهر عند الضغط على مشروع) -->
+    <div id="projDetailView" style="display:none"></div>
+
   </div>
 
   <!-- مهامي -->
@@ -124,7 +162,16 @@
         <div class="fg"><label>إلى تاريخ (اختياري)</label><input type="date" id="reqTo"></div>
       </div>
       <div class="fg fg-full"><label>تفاصيل الطلب</label><textarea id="reqDetails" rows="3"></textarea></div>
-      <button class="bt bt-p" onclick="submitRequest()">📨 إرسال الطلب</button>
+      <!-- رفع مرفق اختياري -->
+      <div style="margin-top:10px;display:flex;align-items:center;gap:10px;flex-wrap:wrap">
+        <label class="file-upload-label">
+          📎 مرفق (اختياري)
+          <input type="file" id="reqFile" accept="image/*,video/*,.pdf,.doc,.docx,.xls,.xlsx,.txt,.zip" style="display:none" onchange="document.getElementById('reqFileName').textContent=this.files[0]?this.files[0].name:''">
+        </label>
+        <span id="reqFileName" style="font-size:11px;color:var(--tx3);max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap"></span>
+      </div>
+      <div id="reqUploadProg" style="display:none" class="file-upload-progress"></div>
+      <button class="bt bt-p" style="margin-top:12px" onclick="submitRequest()">📨 إرسال الطلب</button>
       <div id="reqMsg" style="font-size:11px;margin-top:6px"></div>
     </div>
     <div class="set-sec-title" style="margin:16px 0 8px">📋 سجل طلباتي</div>
@@ -231,7 +278,10 @@ function playTaskProjNotification() {
 
 var _projectsUnsub = null;
 function loadMyProjects(){
-    if(_projectsUnsub) return;
+    if(_projectsUnsub) { 
+        // Already listening — just refresh the box reference in case DOM was re-rendered
+        return; 
+    }
     var isInitialProjects = true;
     var box = document.getElementById('myProjectsList');
     _projectsUnsub = db.collection('projects').where('assignees','array-contains',TG_USER.uid)
@@ -622,7 +672,7 @@ function saveTaskStatus(id){
     }).catch(function(err){ msg.style.color='var(--no)'; msg.textContent='❌ '+err.message; });
 }
 
-// ── طلباتي ──────────────────────────────────────────────────────────
+// ── الطلبات ──────────────────────────────────────────────────────────
 function loadMyRequests(){
     var box=document.getElementById('myReqList');
     db.collection('requests').where('uid','==',TG_USER.uid).get().then(function(snap){
@@ -636,10 +686,22 @@ function loadMyRequests(){
         window._reqCache=rows;
         var h='';
         rows.forEach(function(r,i){
+            // عرض المرفق إذا وجد
+            var attachHtml = '';
+            if(r.fileUrl && r.fileType){
+                if(r.fileType.indexOf('image/')===0){
+                    attachHtml = '<div style="margin-top:6px"><a href="'+r.fileUrl+'" target="_blank"><img src="'+r.fileUrl+'" style="max-width:160px;max-height:120px;border-radius:6px;display:block"></a></div>';
+                } else if(r.fileType.indexOf('video/')===0){
+                    attachHtml = '<div style="margin-top:6px"><video src="'+r.fileUrl+'" controls style="max-width:200px;border-radius:6px"></video></div>';
+                } else {
+                    attachHtml = '<div style="margin-top:6px"><a href="'+r.fileUrl+'" target="_blank" style="color:var(--nv);font-weight:700;text-decoration:underline">📎 '+esc(r.fileName||'ملف مرفق')+'</a></div>';
+                }
+            }
             h+='<div class="rq-row"><div class="rq-t">'+esc(r.type||'طلب')+' '+badgeReq(r.status)+
                ' <button class="bt bt-o" style="padding:2px 8px;font-size:10px;margin-right:8px" onclick="printRequest(window._reqCache['+i+'])">🖨 طباعة</button></div>'+
                (r.details?'<div class="pj-meta">'+esc(r.details)+'</div>':'')+
                (r.fromDate?('<div class="pj-meta">من '+esc(r.fromDate)+(r.toDate?(' إلى '+esc(r.toDate)):'')+'</div>'):'')+
+               attachHtml+
                '</div>';
         });
         box.innerHTML=h;
@@ -650,8 +712,51 @@ function submitRequest(){
     var details=(document.getElementById('reqDetails').value||'').trim();
     var from=document.getElementById('reqFrom').value||'';
     var to=document.getElementById('reqTo').value||'';
+    var fileInput = document.getElementById('reqFile');
+    var file = fileInput && fileInput.files && fileInput.files[0];
     var msg=document.getElementById('reqMsg');
     if(!details){ msg.style.color='var(--no)'; msg.textContent='من فضلك اكتب تفاصيل الطلب.'; return; }
+
+    if(file){
+        var MAX_MB = 20;
+        if(file.size > MAX_MB * 1024 * 1024){ msg.style.color='var(--no)'; msg.textContent='الملف كبير جداً (الحد الأقصى '+MAX_MB+' MB).'; return; }
+        var prog = document.getElementById('reqUploadProg');
+        if(prog) { prog.style.display = 'block'; prog.textContent = '⏳ جاري رفع المرفق... 0%'; }
+        var path = 'requests/' + TG_USER.uid + '/' + Date.now() + '_' + file.name;
+        var ref = storage.ref(path);
+        var task = ref.put(file);
+        task.on('state_changed',
+            function(snap){
+                var pct = Math.round(snap.bytesTransferred/snap.totalBytes*100);
+                if(prog) prog.textContent = '⏳ جاري رفع المرفق... ' + pct + '%';
+            },
+            function(err){
+                if(prog) prog.style.display='none';
+                msg.style.color='var(--no)'; msg.textContent='❌ تعذر رفع الملف: '+err.message;
+            },
+            function(){
+                task.snapshot.ref.getDownloadURL().then(function(url){
+                    return db.collection('requests').add({
+                        uid:TG_USER.uid, type:type, details:details, fromDate:from, toDate:to,
+                        status:'pending', fileUrl:url, fileName:file.name, fileType:file.type,
+                        createdAt:firebase.firestore.FieldValue.serverTimestamp()
+                    });
+                }).then(function(){
+                    if(prog) { prog.style.display='none'; prog.textContent=''; }
+                    msg.style.color='var(--ok)'; msg.textContent='✅ تم إرسال الطلب مع المرفق';
+                    document.getElementById('reqDetails').value='';
+                    if(fileInput) fileInput.value='';
+                    document.getElementById('reqFileName').textContent='';
+                    loadMyRequests();
+                }).catch(function(err){
+                    if(prog) prog.style.display='none';
+                    msg.style.color='var(--no)'; msg.textContent='❌ '+err.message;
+                });
+            }
+        );
+        return;
+    }
+
     db.collection('requests').add({
         uid:TG_USER.uid, type:type, details:details, fromDate:from, toDate:to,
         status:'pending', createdAt:firebase.firestore.FieldValue.serverTimestamp()
@@ -663,10 +768,10 @@ function submitRequest(){
 }
 
 // ── تقاريري الأسبوعية ───────────────────────────────────────────────
-function mondayOf(d){
+function sundayOf(d){
     var dt=new Date(d);
     var day=dt.getDay(); // 0=Sun...6=Sat
-    var diff=(day===0)?-6:(1-day); // رجّع لأقرب اثنين
+    var diff= -day; // رجّع للأحد
     dt.setDate(dt.getDate()+diff);
     return dt.toISOString().split('T')[0];
 }
@@ -687,7 +792,7 @@ function loadMyWeeklyReports(){
     }).catch(function(err){ box.innerHTML='<div class="empty-hint" style="color:var(--no)">تعذر التحميل: '+esc(err.message)+'</div>'; });
 }
 function submitWeeklyReport(){
-    var weekStart=document.getElementById('wkrStart').value||mondayOf(new Date());
+    var weekStart=document.getElementById('wkrStart').value||sundayOf(new Date());
     var content=(document.getElementById('wkrContent').value||'').trim();
     var msg=document.getElementById('wkrMsg');
     if(!content){ msg.style.color='var(--no)'; msg.textContent='من فضلك اكتب ملخص الأسبوع.'; return; }
@@ -700,7 +805,7 @@ function submitWeeklyReport(){
         loadMyWeeklyReports();
     }).catch(function(err){ msg.style.color='var(--no)'; msg.textContent='❌ '+err.message; });
 }
-document.getElementById('wkrStart').value=mondayOf(new Date());
+document.getElementById('wkrStart').value=sundayOf(new Date());
 
 // ── حماية الصفحة: لازم تسجيل دخول بصلاحية موظف ──────────────────
 tgRequireAuth('employee', function(u){

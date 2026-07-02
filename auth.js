@@ -4,7 +4,7 @@
 var TG_USER = null; // { uid, email, name, role, empId, jobTitle }
 
 // يتحقق من تسجيل الدخول والصلاحية المطلوبة، وينفّذ onOk(userDoc) لو كل شيء تمام.
-// requiredRole: 'admin' أو 'employee' — لو null يقبل أي دور مسجّل دخول.
+// requiredRole: 'admin' | 'assistant_admin' | 'employee' | null (أي دور)
 function tgRequireAuth(requiredRole, onOk) {
     auth.onAuthStateChanged(function (user) {
         if (!user) { location.href = 'login.html'; return; }
@@ -20,11 +20,31 @@ function tgRequireAuth(requiredRole, onOk) {
                 auth.signOut().then(function () { location.href = 'login.html'; });
                 return;
             }
-            TG_USER = { uid: user.uid, email: user.email, name: data.name || user.email, role: data.role, empId: data.empId || '', jobTitle: data.jobTitle || '' };
-            if (requiredRole && data.role !== requiredRole) {
-                location.href = (data.role === 'admin') ? 'index.html' : 'employee.html';
+            TG_USER = {
+                uid: user.uid, email: user.email,
+                name: data.name || user.email,
+                role: data.role,
+                empId: data.empId || '',
+                jobTitle: data.jobTitle || ''
+            };
+
+            // ── منطق التحويل حسب الدور ──
+            if (requiredRole === 'admin') {
+                // يقبل admin و assistant_admin كلاهما في لوحة الأدمن
+                if (data.role !== 'admin' && data.role !== 'assistant_admin') {
+                    location.href = 'employee.html';
+                    return;
+                }
+            } else if (requiredRole === 'employee') {
+                if (data.role !== 'employee') {
+                    location.href = 'index.html';
+                    return;
+                }
+            } else if (requiredRole && data.role !== requiredRole) {
+                location.href = (data.role === 'admin' || data.role === 'assistant_admin') ? 'index.html' : 'employee.html';
                 return;
             }
+
             document.documentElement.classList.remove('tg-auth-pending');
             onOk(TG_USER);
         }).catch(function (err) {
@@ -34,14 +54,28 @@ function tgRequireAuth(requiredRole, onOk) {
     });
 }
 
+// هل المستخدم الحالي لديه صلاحية الأدمن الكاملة؟
+function isFullAdmin() {
+    return TG_USER && TG_USER.role === 'admin';
+}
+// هل المستخدم الحالي أدمن مساعد؟
+function isAssistantAdmin() {
+    return TG_USER && TG_USER.role === 'assistant_admin';
+}
+
 function tgLogout() {
     if (!confirm('تسجيل الخروج من النظام؟')) return;
     auth.signOut().then(function () { location.href = 'login.html'; });
 }
 
 // إنشاء حساب دخول لموظف جديد بدون تسجيل خروج المدير الحالي
-// (باستخدام تطبيق Firebase ثانوي مؤقت — حيلة معروفة وآمنة على جانب العميل)
-function tgCreateEmployeeAccount(name, email, password, empId, jobTitle, onDone, onError) {
+function tgCreateEmployeeAccount(name, email, password, empId, jobTitle, role, onDone, onError) {
+    // للتوافق مع الاستدعاء القديم (بدون role)
+    if (typeof role === 'function') {
+        onError = onDone;
+        onDone = role;
+        role = 'employee';
+    }
     var secondaryApp;
     try {
         secondaryApp = firebase.apps.find(function (a) { return a.name === 'secondary'; })
@@ -51,16 +85,15 @@ function tgCreateEmployeeAccount(name, email, password, empId, jobTitle, onDone,
     secAuth.createUserWithEmailAndPassword(email, password).then(function (cred) {
         var uid = cred.user.uid;
         return db.collection('users').doc(uid).set({
-            name: name, email: email, role: 'employee', empId: empId || '', jobTitle: jobTitle || '',
+            name: name, email: email,
+            role: role || 'employee',
+            empId: empId || '', jobTitle: jobTitle || '',
             createdAt: firebase.firestore.FieldValue.serverTimestamp()
         }).then(function () { return secAuth.signOut(); }).then(function () { onDone(uid); });
     }).catch(function (err) { onError(err); });
 }
 
-// ─── إعداد أول تشغيل: إنشاء أول حساب أدمن من واجهة الموقع ─────────────
-// يتحقق أولاً هل تم الإعداد من قبل (system/meta.setupDone)، ولو لأ
-// بينشئ حساب الدخول + ملف المستخدم بدور admin + يعلّم الإعداد كمكتمل،
-// كل ده في عملية واحدة ذرّية (batch) عشان مفيش سباق بين شخصين في نفس الوقت.
+// ─── إعداد أول تشغيل ───────────────────────────────────────────────────────
 function tgCheckSetupDone(onResult, onError) {
     db.collection('system').doc('meta').get().then(function (doc) {
         onResult(!!(doc.exists && doc.data().setupDone === true));
@@ -79,7 +112,6 @@ function tgCreateFirstAdmin(name, email, password, onDone, onError) {
             setupDone: true, setupAt: firebase.firestore.FieldValue.serverTimestamp()
         });
         batch.commit().then(function () { onDone(uid); }).catch(function (err) {
-            // فشل الحفظ (غالباً لأن حد تاني كمّل الإعداد في نفس اللحظة) — نلغي حساب الدخول اللي اتعمل
             cred.user.delete().catch(function () {});
             onError(err);
         });
