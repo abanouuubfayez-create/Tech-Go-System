@@ -336,6 +336,10 @@ function startAdminNotifications(){
                 lastReqTime = Date.now();
                 playAdminNotif();
                 incrementAdminBadge('notif-req-badge', 'notif-req-badge-sb');
+                // Push Notification للأدمن
+                if(typeof tgShowNotification === 'function'){
+                    tgShowNotification('📨 طلب جديد', 'وصلك طلب جديد من أحد الموظفين.');
+                }
             }
         });
 
@@ -351,6 +355,10 @@ function startAdminNotifications(){
                     lastWkrTime = Date.now();
                     playAdminNotif();
                     incrementAdminBadge('notif-wkr-badge', 'notif-wkr-badge-sb');
+                    // Push Notification للأدمن
+                    if(typeof tgShowNotification === 'function'){
+                        tgShowNotification('📝 تقرير أسبوعي جديد', 'تم إرسال تقرير أسبوعي جديد من موظف.');
+                    }
                 }
             });
         });
@@ -751,25 +759,79 @@ function createProject(){
     var priority=document.getElementById('pmPriority').value;
     var status=document.getElementById('pmStatus').value;
     var deadline=document.getElementById('pmDeadline').value||'';
+    var linkUrl=(document.getElementById('pmLink').value||'').trim();
     var msg=document.getElementById('pmCreateMsg');
+    var fileInput=document.getElementById('pmFile');
+    var file=fileInput && fileInput.files && fileInput.files[0];
     var checked=Array.prototype.slice.call(document.querySelectorAll('#pmgmtAssignees .pm-assignee-chk:checked')).map(function(c){return c.value;});
     if(!title){ msg.style.color='var(--no)'; msg.textContent='من فضلك اكتب عنوان المشروع.'; return; }
     msg.style.color='var(--tx3)'; msg.textContent='⏳ جارٍ إنشاء المشروع...';
-    db.collection('projects').add({
+
+    var projectData = {
         title:title, description:desc, assignees:checked, progressMap:{},
         priority:priority, status:status, deadline:deadline,
         createdAt:firebase.firestore.FieldValue.serverTimestamp(),
         createdBy:(TG_USER?TG_USER.name:''), createdByUid:(TG_USER?TG_USER.uid:'')
-    }).then(function(){
+    };
+    if(linkUrl) projectData.linkUrl = linkUrl;
+
+    var onDone = function(){
         msg.style.color='var(--ok)'; msg.textContent='✅ تم إنشاء المشروع بنجاح.';
         document.getElementById('pmTitle').value='';
         document.getElementById('pmDesc').value='';
         document.getElementById('pmDeadline').value='';
         document.getElementById('pmPriority').value='متوسطة';
         document.getElementById('pmStatus').value='مخطط له';
+        if(document.getElementById('pmLink')) document.getElementById('pmLink').value='';
+        if(fileInput) fileInput.value='';
+        var fnSpan = document.getElementById('pmFileName');
+        if(fnSpan) fnSpan.textContent='';
         document.querySelectorAll('#pmgmtAssignees .pm-assignee-chk').forEach(function(c){c.checked=false;});
         loadPmgmtData();
-    }).catch(function(err){
+        // إرسال Push Notification لكل موظف مسؤول عن المشروع
+        if(typeof tgSendPushToUser === 'function'){
+            checked.forEach(function(empUid){
+                tgSendPushToUser(empUid, '📁 مشروع جديد', 'تمت إضافتك لمشروع: ' + title, 'project-new');
+            });
+        }
+    };
+
+    if(file){
+        var MAX_MB = 20;
+        if(file.size > MAX_MB * 1024 * 1024){ msg.style.color='var(--no)'; msg.textContent='الملف كبير جداً (الحد الأقصى '+MAX_MB+' MB).'; return; }
+        var prog = document.getElementById('pmUploadProg');
+        if(prog) { prog.style.display = 'block'; prog.textContent = '⏳ جاري رفع المرفق... 0%'; }
+        var path = 'projects/' + Date.now() + '_' + file.name;
+        var ref = storage.ref(path);
+        var uploadTask = ref.put(file);
+        uploadTask.on('state_changed',
+            function(snap){
+                var pct = Math.round(snap.bytesTransferred/snap.totalBytes*100);
+                if(prog) prog.textContent = '⏳ جاري رفع المرفق... ' + pct + '%';
+            },
+            function(err){
+                if(prog) prog.style.display='none';
+                msg.style.color='var(--no)'; msg.textContent='❌ تعذر رفع الملف: '+err.message;
+            },
+            function(){
+                uploadTask.snapshot.ref.getDownloadURL().then(function(url){
+                    projectData.fileUrl = url;
+                    projectData.fileName = file.name;
+                    projectData.fileType = file.type;
+                    return db.collection('projects').add(projectData);
+                }).then(function(){
+                    if(prog) { prog.style.display='none'; prog.textContent=''; }
+                    onDone();
+                }).catch(function(err){
+                    if(prog) prog.style.display='none';
+                    msg.style.color='var(--no)'; msg.textContent='❌ '+err.message;
+                });
+            }
+        );
+        return;
+    }
+
+    db.collection('projects').add(projectData).then(onDone).catch(function(err){
         msg.style.color='var(--no)'; msg.textContent='❌ تعذر إنشاء المشروع: '+err.message;
     });
 }
@@ -864,6 +926,10 @@ function createTask(){
         var fnSpan = document.getElementById('tkFileName');
         if(fnSpan) fnSpan.textContent='';
         loadTasksMgmt();
+        // إرسال Push Notification للموظف المكلَّف
+        if(typeof tgSendPushToUser === 'function' && uid){
+            tgSendPushToUser(uid, '📋 مهمة جديدة', 'تم تكليفك بمهمة: ' + title, 'task-new');
+        }
     };
 
     if(file){

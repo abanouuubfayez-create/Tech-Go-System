@@ -888,6 +888,8 @@ tgRequireAuth('employee', function(u){
     loadMyRequests();
     tgChatMount();
     tgChatWatch();
+    // تفعيل استقبال Push Notifications من Firestore
+    if(typeof tgListenMyNotifications === 'function') tgListenMyNotifications(u.uid);
     // PWA Service Worker
     if('serviceWorker' in navigator){
       navigator.serviceWorker.register('./sw.js').catch(function(){});

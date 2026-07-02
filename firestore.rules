@@ -122,5 +122,18 @@ service cloud.firestore {
       allow create: if isSignedIn() && request.resource.data.uid == myUid();
       allow update, delete: if isAdmin();
     }
+
+    // الإشعارات (Push Notifications عبر Firestore)
+    match /notifications/{notifId} {
+      // المستلم يقرأ إشعاراته فقط
+      allow read: if isSignedIn() && resource.data.toUid == myUid();
+      // أي مستخدم مسجّل يبعت إشعار
+      allow create: if isSignedIn();
+      // المستلم بس يقدر يعلمها مقروءة
+      allow update: if isSignedIn() && resource.data.toUid == myUid()
+                    && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['read']);
+      // الأدمن أو المستلم يحذف
+      allow delete: if isAdmin() || (isSignedIn() && resource.data.toUid == myUid());
+    }
   }
 }

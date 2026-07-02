@@ -315,6 +315,8 @@
       tgChatWatch();
     }
     applyAssistantAdminRestrictions(u);
+    // تفعيل استقبال Push Notifications من Firestore
+    if(typeof tgListenMyNotifications === 'function') tgListenMyNotifications(u.uid);
   });
 
   // PWA Service Worker
