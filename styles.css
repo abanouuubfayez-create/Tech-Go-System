@@ -494,7 +494,7 @@ body { font-family: 'Cairo', sans-serif; direction: rtl; background: var(--bg); 
 
     /* علامة مائية خفيفة جداً تتكرر في خلفية كل صفحة — لمسة رسمية دون التأثير على وضوح القراءة */
     body::before {
-        content: 'TECH-GO';
+        content: 'TECH GO';
         position: fixed; top: 48%; left: 50%; z-index: 0;
         transform: translate(-50%,-50%) rotate(-30deg);
         font-size: 92px; font-weight: 900; letter-spacing: 12px;
@@ -1159,3 +1159,91 @@ html.tg-auth-pending body { visibility: hidden; }
 }
 .emp-topbar .who { font-size: 12.5px; font-weight: 700; color: var(--nv); }
 .emp-topbar .who small { display: block; font-size: 9.5px; color: var(--tx3); font-weight: 400; }
+
+/* ─── تحسينات "متابعة الموظفين": شريط بحث + حالة الحساب ─────────────── */
+.staff-toolbar {
+    display: flex; gap: 10px; align-items: center; margin-bottom: 14px;
+    flex-wrap: wrap;
+}
+.staff-search {
+    flex: 1; min-width: 200px; padding: 10px 14px; border: 1.5px solid var(--bd);
+    border-radius: 8px; font-size: 12px; font-family: inherit; background: var(--w);
+}
+.staff-search:focus { outline: none; border-color: var(--gd); }
+.staff-count { font-size: 11px; color: var(--tx3); font-weight: 700; white-space: nowrap; }
+
+.staff-card.is-disabled { opacity: .65; }
+.staff-card.is-disabled .staff-card-h { background: #fbeaea; }
+.staff-name-row { display: flex; align-items: center; gap: 8px; }
+.badge-disabled { background: #fdecea; color: var(--no); }
+.badge-active { background: #e5f4ea; color: var(--ok); }
+
+.staff-actions-row { display: flex; gap: 8px; margin-top: 14px; flex-wrap: wrap; }
+.staff-actions-row .bt { padding: 6px 12px; font-size: 10.5px; }
+
+.emp-inline-edit { display: flex; gap: 8px; margin-top: 10px; align-items: center; flex-wrap: wrap; }
+.emp-inline-edit input { flex: 1; min-width: 160px; padding: 8px 10px; border: 1.5px solid var(--bd); border-radius: 6px; font-size: 11.5px; font-family: inherit; }
+
+/* ─── نافذة تأكيد منبثقة (Modal) عامة — تُستخدم لتأكيد الحذف/التعطيل ── */
+.tg-modal-backdrop {
+    position: fixed; inset: 0; background: rgba(14,26,48,.55);
+    display: flex; align-items: center; justify-content: center;
+    z-index: 9999; padding: 20px;
+}
+.tg-modal {
+    background: var(--w); border-radius: 10px; max-width: 440px; width: 100%;
+    padding: 22px 22px 18px; box-shadow: 0 10px 40px rgba(0,0,0,.25);
+}
+.tg-modal-title { font-size: 14.5px; font-weight: 800; color: var(--nv); margin-bottom: 10px; }
+.tg-modal-body { font-size: 12px; color: var(--tx2); line-height: 1.8; margin-bottom: 18px; }
+.tg-modal-actions { display: flex; flex-direction: column; gap: 8px; }
+.tg-modal-actions .bt { width: 100%; padding: 10px; font-size: 12px; }
+
+/* ─── تفاصيل مشروع إضافية: الأولوية / الحالة / تاريخ الاستحقاق ──────── */
+.badge-prio-low { background: #eaf1fb; color: var(--inf); }
+.badge-prio-med { background: #fff4dc; color: var(--wn); }
+.badge-prio-high { background: #fdecea; color: var(--no); }
+.badge-pstatus-plan { background: #eef0f5; color: var(--tx2); }
+.badge-pstatus-progress { background: #eaf1fb; color: var(--inf); }
+.badge-pstatus-hold { background: #fff4dc; color: var(--wn); }
+.badge-pstatus-done { background: #e5f4ea; color: var(--ok); }
+.badge-overdue { background: #fdecea; color: var(--no); }
+.pj-tags { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 6px; }
+
+/* ─── نقاش/شات كل مشروع ─────────────────────────────────────────────── */
+.proj-sec { background: #f8f9fc; border: 1px solid var(--bd2); border-radius: 10px; padding: 12px 14px; margin-bottom: 14px; }
+.proj-sec-title { font-size: 11px; font-weight: 800; color: var(--nv); margin-bottom: 8px; display: flex; align-items: center; gap: 6px; }
+.proj-sec:last-child { margin-bottom: 0; }
+.proj-card-top { padding-bottom: 12px; margin-bottom: 14px; border-bottom: 1px solid var(--bd2); }
+
+.pj-chat { margin-top: 0; border: 1px solid var(--bd2); border-radius: 8px; background: #fbfbfd; }
+.pj-chat-log { max-height: 260px; overflow-y: auto; padding: 10px 12px; display: flex; flex-direction: column; gap: 8px; }
+.pj-chat-msg { background: var(--w); border: 1px solid var(--bd2); border-radius: 8px; padding: 7px 10px; font-size: 11px; max-width: 92%; }
+.pj-chat-msg.mine { align-self: flex-start; background: var(--gdl); border-color: var(--gdl2); }
+.pj-chat-msg-h { display: flex; align-items: center; gap: 6px; margin-bottom: 3px; }
+.pj-chat-name { font-weight: 800; color: var(--nv); font-size: 10.5px; }
+.pj-chat-role { font-size: 8.5px; font-weight: 700; padding: 1px 6px; border-radius: 10px; background: var(--gdl2); color: var(--gd2); }
+.pj-chat-time { font-size: 9px; color: var(--tx3); margin-right: auto; }
+.pj-chat-text { color: var(--tx); white-space: pre-wrap; word-break: break-word; }
+.pj-chat-del { cursor: pointer; color: var(--tx3); font-size: 10px; }
+.pj-chat-del:hover { color: var(--no); }
+.pj-chat-input-row { display: flex; gap: 8px; padding: 10px 12px; border-top: 1px solid var(--bd2); }
+.pj-chat-input-row input { flex: 1; padding: 8px 10px; border: 1.5px solid var(--bd); border-radius: 6px; font-size: 11.5px; font-family: inherit; }
+.pj-chat-input-row .bt { padding: 8px 14px; font-size: 11px; white-space: nowrap; }
+.pj-chat-empty { font-size: 10.5px; color: var(--tx3); text-align: center; padding: 12px; }
+
+/* ═══════════════════════════════════════════ */
+/*            الشات العام (Realtime)           */
+/* ═══════════════════════════════════════════ */
+.tgChatBadge {
+    margin-right: auto; background: var(--no); color: #fff;
+    font-size: 9px; font-weight: 800; padding: 1px 6px; border-radius: 10px;
+    min-width: 15px; text-align: center; line-height: 1.5;
+}
+.tg-chat-wrap { border: 1px solid var(--bd2); border-radius: 10px; background: #fbfbfd; display: flex; flex-direction: column; height: 62vh; min-height: 380px; }
+.tg-chat-log { flex: 1; overflow-y: auto; padding: 14px 16px; display: flex; flex-direction: column; gap: 10px; }
+.tg-chat-input-row { display: flex; gap: 10px; padding: 12px 14px; border-top: 1px solid var(--bd2); background: var(--w); border-radius: 0 0 10px 10px; }
+.tg-chat-input-row textarea { flex: 1; resize: none; padding: 9px 12px; border: 1.5px solid var(--bd); border-radius: 8px; font-size: 12px; font-family: inherit; line-height: 1.5; max-height: 90px; }
+.tg-chat-input-row .bt { align-self: flex-end; padding: 9px 18px; font-size: 11.5px; white-space: nowrap; }
+.tg-chat-log .pj-chat-msg { font-size: 12px; max-width: 78%; }
+.tg-chat-log .pj-chat-name { font-size: 11px; }

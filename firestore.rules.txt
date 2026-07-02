@@ -64,11 +64,50 @@ service cloud.firestore {
           request.resource.data.diff(resource.data).affectedKeys().hasOnly(['progressMap']) ||
           (
             resource.data.createdByUid == myUid() &&
-            request.resource.data.diff(resource.data).affectedKeys().hasOnly(['title','description'])
+            request.resource.data.diff(resource.data).affectedKeys().hasOnly(['title','description','priority','deadline','status'])
           )
         )
       );
       allow delete: if isAdmin() || (isSignedIn() && resource.data.createdByUid == myUid());
+    }
+
+    // نقاش/تعليقات كل مشروع: يقرأ ويكتب فيها الأدمن وكل موظف مُسند على نفس المشروع فقط
+    match /projectComments/{commentId} {
+      allow read: if isAdmin() || (
+        isSignedIn() &&
+        myUid() in get(/databases/$(database)/documents/projects/$(resource.data.projectId)).data.assignees
+      );
+      allow create: if isSignedIn() && request.resource.data.uid == myUid() && (
+        isAdmin() ||
+        myUid() in get(/databases/$(database)/documents/projects/$(request.resource.data.projectId)).data.assignees
+      );
+      allow update: if false;
+      allow delete: if isAdmin() || (isSignedIn() && resource.data.uid == myUid());
+    }
+
+    // الشات العام: غرفة واحدة يشترك فيها كل المستخدمين المسجّلين (أدمن وموظفين).
+    // أي شخص مسجّل دخول يقرأ كل الرسائل، وينشئ رسالة باسمه هو فقط، ولا تعديل بعد الإرسال.
+    // الحذف مسموح فقط لصاحب الرسالة نفسه أو للأدمن (تعديل/إشراف).
+    match /chatMessages/{msgId} {
+      allow read: if isSignedIn();
+      allow create: if isSignedIn() && request.resource.data.uid == myUid()
+                    && request.resource.data.text is string
+                    && request.resource.data.text.size() > 0
+                    && request.resource.data.text.size() <= 2000;
+      allow update: if false;
+      allow delete: if isAdmin() || (isSignedIn() && resource.data.uid == myUid());
+    }
+
+    // المهام: الأدمن هو الوحيد اللي يكلّف/يحذف مهمة. الموظف المُكلَّف يقرأ مهامه
+    // فقط، ويقدر يحدّث حقل "status" بس (حالة تنفيذه للمهمة) من بوابته.
+    match /tasks/{taskId} {
+      allow read: if isAdmin() || (isSignedIn() && resource.data.assignedTo == myUid());
+      allow create: if isAdmin();
+      allow update: if isAdmin() || (
+        isSignedIn() && resource.data.assignedTo == myUid() &&
+        request.resource.data.diff(resource.data).affectedKeys().hasOnly(['status'])
+      );
+      allow delete: if isAdmin();
     }
 
     // الإنجازات: كل موظف يقرأ/يضيف إنجازاته فقط، الأدمن يقرأ كل شيء

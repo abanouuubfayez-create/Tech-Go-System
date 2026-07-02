@@ -18,12 +18,12 @@
 
 <!-- ترويسة وتذييل الطباعة (مخفية على الشاشة) -->
 <div class="print-header" aria-hidden="true">
-    <span class="ph-r">TECH-GO · شركة تيك جو</span>
+    <span class="ph-r">TECH GO · شركة تيك جو</span>
     <span class="ph-l" id="phTitle">نظام الإدارة الشامل</span>
 </div>
 <div class="print-footer" aria-hidden="true">
     <span class="pf-r">وثيقة سرية · شركة تيك جو</span>
-    <span class="pf-l">TECH-GO · نظام الإدارة الشامل</span>
+    <span class="pf-l">TECH GO · نظام الإدارة الشامل</span>
 </div>
 <aside class="S" id="sb">
 <div class="S-h">
@@ -64,7 +64,10 @@
     <div class="S-i" onclick="go('comp',this)"><span class="ic">📝</span> الشكاوى والمقترحات</div>
     <div class="S-s">متابعة الأداء</div>
     <div class="S-i" onclick="go('pmgmt',this)" style="border-right:2px solid var(--gd)"><span class="ic">📁</span> إدارة المشاريع <span class="S-b">جديد</span></div>
+    <div class="S-i" onclick="go('tasksmgmt',this)" style="border-right:2px solid var(--gd)"><span class="ic">🗂</span> توزيع المهام <span class="S-b">جديد</span></div>
     <div class="S-i" onclick="go('staff',this)" style="border-right:2px solid var(--gd)"><span class="ic">👥</span> متابعة الموظفين <span class="S-b">جديد</span></div>
+    <div class="S-s">التواصل</div>
+    <div class="S-i" onclick="go('chat',this)" style="border-right:2px solid var(--gd)"><span class="ic">💬</span> الشات العام <span class="tgChatBadge" style="display:none"></span></div>
     <div class="S-s">الإعدادات</div>
     <div class="S-i" onclick="go('set',this)"><span class="ic">⚙️</span> تخصيص النظام</div>
     <div class="S-i" onclick="go('account',this)" style="border-right:2px solid var(--gd)"><span class="ic">👤</span> حسابي <span class="S-b">جديد</span></div>
@@ -102,6 +105,7 @@
 <div class="DC" onclick="go('mexp')" style="border:2px solid var(--gd)"><div class="di">💵</div><div class="dt2">شيت المصروفات الشهري</div><div class="dd">مسلسل · صارف · بند · مبلغ · إجمالي تلقائي</div></div>
 <div class="DC" onclick="go('att')"><div class="di">⏱</div><div class="dt2">الحضور والانصراف</div><div class="dd">نظام متكامل</div></div>
 <div class="DC" onclick="go('pmgmt')" style="border:2px solid var(--gd)"><div class="di">📁</div><div class="dt2">إدارة المشاريع</div><div class="dd">إنشاء مشاريع وتعيين الموظفين المسؤولين عنها</div></div>
+<div class="DC" onclick="go('tasksmgmt')" style="border:2px solid var(--gd)"><div class="di">🗂</div><div class="dt2">توزيع المهام</div><div class="dd">تكليف كل موظف بمهمة يتابعها من بوابته</div></div>
 <div class="DC" onclick="go('staff')" style="border:2px solid var(--gd)"><div class="di">👥</div><div class="dt2">متابعة الموظفين</div><div class="dd">حسابات الدخول، المشاريع، الإنجازات، الطلبات</div></div>
 <div class="DC" onclick="go('comp')"><div class="di">📝</div><div class="dt2">شكاوى ومقترحات</div><div class="dd">بسرية تامة</div></div>
 </div>
@@ -112,7 +116,7 @@
 <div class="pg" id="pg-exp"></div><div class="pg" id="pg-clr"></div><div class="pg" id="pg-task"></div><div class="pg" id="pg-sal"></div>
 <div class="pg" id="pg-res"></div><div class="pg" id="pg-promo"></div><div class="pg" id="pg-raise"></div><div class="pg" id="pg-contract"></div>
 <div class="pg" id="pg-att"></div><div class="pg" id="pg-comp"></div><div class="pg" id="pg-set"></div><div class="pg" id="pg-proj"></div><div class="pg" id="pg-mexp"></div>
-<div class="pg" id="pg-staff"></div><div class="pg" id="pg-pmgmt"></div><div class="pg" id="pg-account"></div>
+<div class="pg" id="pg-staff"></div><div class="pg" id="pg-pmgmt"></div><div class="pg" id="pg-account"></div><div class="pg" id="pg-chat"></div>
 </div>
 </div>
 <datalist id="tgEmpDL"></datalist>
@@ -287,6 +291,7 @@
     var box = document.getElementById('sbUser');
     if (box) box.innerHTML = '👤 <strong style="color:#fff">' + (u.name || u.email) + '</strong><br>' + u.email;
     loadDashboardSummary();
+    tgChatWatch();
   });
 </script>
 </body>

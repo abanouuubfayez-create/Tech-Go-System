@@ -1,7 +1,7 @@
 // ─── مصادقة وصلاحيات مشتركة ────────────────────────────────────────────
 // يُستخدم في index.html (لوحة الأدمن) و employee.html (بوابة الموظف)
 
-var TG_USER = null; // { uid, email, name, role, empId }
+var TG_USER = null; // { uid, email, name, role, empId, jobTitle }
 
 // يتحقق من تسجيل الدخول والصلاحية المطلوبة، وينفّذ onOk(userDoc) لو كل شيء تمام.
 // requiredRole: 'admin' أو 'employee' — لو null يقبل أي دور مسجّل دخول.
@@ -15,7 +15,12 @@ function tgRequireAuth(requiredRole, onOk) {
                 return;
             }
             var data = doc.data();
-            TG_USER = { uid: user.uid, email: user.email, name: data.name || user.email, role: data.role, empId: data.empId || '' };
+            if (data.disabled === true) {
+                alert('تم تعطيل هذا الحساب من قبل الإدارة. تواصل مع مدير النظام لمزيد من التفاصيل.');
+                auth.signOut().then(function () { location.href = 'login.html'; });
+                return;
+            }
+            TG_USER = { uid: user.uid, email: user.email, name: data.name || user.email, role: data.role, empId: data.empId || '', jobTitle: data.jobTitle || '' };
             if (requiredRole && data.role !== requiredRole) {
                 location.href = (data.role === 'admin') ? 'index.html' : 'employee.html';
                 return;
@@ -36,7 +41,7 @@ function tgLogout() {
 
 // إنشاء حساب دخول لموظف جديد بدون تسجيل خروج المدير الحالي
 // (باستخدام تطبيق Firebase ثانوي مؤقت — حيلة معروفة وآمنة على جانب العميل)
-function tgCreateEmployeeAccount(name, email, password, empId, onDone, onError) {
+function tgCreateEmployeeAccount(name, email, password, empId, jobTitle, onDone, onError) {
     var secondaryApp;
     try {
         secondaryApp = firebase.apps.find(function (a) { return a.name === 'secondary'; })
@@ -46,7 +51,7 @@ function tgCreateEmployeeAccount(name, email, password, empId, onDone, onError) 
     secAuth.createUserWithEmailAndPassword(email, password).then(function (cred) {
         var uid = cred.user.uid;
         return db.collection('users').doc(uid).set({
-            name: name, email: email, role: 'employee', empId: empId || '',
+            name: name, email: email, role: 'employee', empId: empId || '', jobTitle: jobTitle || '',
             createdAt: firebase.firestore.FieldValue.serverTimestamp()
         }).then(function () { return secAuth.signOut(); }).then(function () { onDone(uid); });
     }).catch(function (err) { onError(err); });
