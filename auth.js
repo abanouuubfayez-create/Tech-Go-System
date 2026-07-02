@@ -62,12 +62,67 @@ function tgRequestNotificationPermission(){
     }
 }
 
-function tgShowNotification(title, body) {
-    if ("Notification" in window && Notification.permission === "granted") {
-        try {
-            new Notification(title, { body: body });
-        } catch(e) {}
+function tgShowNotification(title, body, opts) {
+    var options = Object.assign({
+        body: body,
+        icon: './icon-192.png',
+        badge: './icon-192.png',
+        dir: 'rtl',
+        lang: 'ar',
+        vibrate: [150, 50, 150],
+        tag: 'techgo-' + Date.now(),
+        requireInteraction: false
+    }, opts || {});
+
+    if ('serviceWorker' in navigator && navigator.serviceWorker.controller) {
+        // Use SW for richer notifications
+        navigator.serviceWorker.ready.then(function(reg) {
+            reg.showNotification(title, options);
+        }).catch(function() {
+            // Fallback to basic Notification
+            if ('Notification' in window && Notification.permission === 'granted') {
+                try { new Notification(title, options); } catch(e) {}
+            }
+        });
+    } else if ('Notification' in window && Notification.permission === 'granted') {
+        try { new Notification(title, options); } catch(e) {}
     }
+
+    // Always show in-app toast as well
+    if (typeof tgToast === 'function') {
+        tgToast('\uD83D\uDD14 ' + title + (body ? ' — ' + body : ''), 'ok');
+    }
+}
+
+// \u0625\u0631\u0633\u0627\u0644 \u0625\u0634\u0639\u0627\u0631 \u0644\u0645\u0633\u062a\u062e\u062f\u0645 \u0645\u062d\u062f\u062f \u0639\u0628\u0631 Firestore (\u064a\u0642\u0631\u0623\u0647 \u0645\u0646 onSnapshot \u0639\u0646\u062f \u0641\u062a\u062d \u0627\u0644\u0628\u0648\u0627\u0628\u0629)
+function tgSendPushToUser(toUid, title, body, tag) {
+    if (!db) return;
+    db.collection('notifications').add({
+        toUid: toUid,
+        title: title,
+        body: body,
+        tag: tag || 'techgo',
+        read: false,
+        createdAt: firebase.firestore.FieldValue.serverTimestamp()
+    }).catch(function() {});
+}
+
+// \u0627\u0633\u062a\u0645\u0627\u0639 \u0644\u0644\u0625\u0634\u0639\u0627\u0631\u0627\u062a \u0627\u0644\u0648\u0627\u0631\u062f\u0629 \u0644\u0644\u0645\u0633\u062a\u062e\u062f\u0645 \u0627\u0644\u062d\u0627\u0644\u064a
+function tgListenMyNotifications(uid) {
+    if (!uid) return;
+    var isFirst = true;
+    db.collection('notifications').where('toUid', '==', uid).where('read', '==', false)
+        .onSnapshot(function(snap) {
+            if (isFirst) { isFirst = false; return; } // \u062a\u062c\u0627\u0647\u0644 \u0627\u0644\u0623\u0648\u0644\u064a
+            snap.docChanges().forEach(function(change) {
+                if (change.type === 'added') {
+                    var d = change.doc.data();
+                    tgShowNotification(d.title || '\u0625\u0634\u0639\u0627\u0631', d.body || '');
+                    // \u062a\u0645\u064a\u064a\u0632\u0647\u0627 \u0643\u0645\u0642\u0631\u0648\u0621\u0629 \u0641\u0648\u0631\u0627\u064b
+                    db.collection('notifications').doc(change.doc.id).update({ read: true }).catch(function() {});
+                }
+            });
+        }, function() {});
 }
 
 // هل المستخدم الحالي لديه صلاحية الأدمن الكاملة؟

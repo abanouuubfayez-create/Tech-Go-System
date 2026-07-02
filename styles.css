@@ -398,7 +398,7 @@ body { font-family: 'Cairo', sans-serif; direction: rtl; background: var(--bg); 
 
 /* Settings */
 .SP {
-    max-width: 600px; margin: 0 auto; background: var(--w);
+    max-width: 1200px; margin: 0 auto; background: var(--w);
     border-radius: 8px; border: 1px solid var(--bd); padding: 24px;
 }
 .SP h3 {

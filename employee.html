@@ -372,14 +372,22 @@ function renderProjectsHtml(projects){
         var pm = (p.progressMap && p.progressMap[TG_USER.uid]) || {progress:0, status:'لم يبدأ', note:''};
         var prog = pm.progress || 0;
         var mine = (p.createdByUid === TG_USER.uid);
+        var isCompleted = (p.status === 'مكتمل') || (pm.status === 'مكتمل');
         // Stripe color by priority
         var stripeColor = p.priority === 'عالية' ? 'linear-gradient(90deg,var(--no),#e87272)'
             : p.priority === 'منخفضة' ? 'linear-gradient(90deg,var(--ok),#40c674)'
             : 'linear-gradient(90deg,var(--nv),var(--gd))';
-        h += '<div class="emp-proj-card" onclick="openProjectDetail(\''+p.id+'\')">';
-        h += '<div class="emp-proj-card-stripe" style="background:'+stripeColor+'"></div>';
+        // تمييز المشاريع ذات الملاحظات/التعليقات
+        var hasComments = (p.comments && p.comments.length > 0);
+        var commentBadge = hasComments
+            ? '<span style="background:var(--no);color:#fff;border-radius:12px;padding:1px 7px;font-size:9px;font-weight:800;margin-right:4px">💬 '+p.comments.length+'</span>'
+            : '';
+        // بطاقة مكتملة بتصميم مختلف
+        var cardStyle = isCompleted ? 'opacity:.7;border:1.5px solid var(--ok)' : '';
+        h += '<div class="emp-proj-card" onclick="openProjectDetail(\''+p.id+'\')" style="'+cardStyle+'">';
+        h += '<div class="emp-proj-card-stripe" style="background:'+(isCompleted?'linear-gradient(90deg,var(--ok),#40c674)':stripeColor)+'"></div>';
         h += '<div class="emp-proj-card-top">';
-        h += '<div class="emp-proj-card-title">'+esc(p.title||'بدون عنوان')+(mine?' <span class="badge" style="background:var(--gd);color:#1b2a4a;font-size:8.5px">مشروعي</span>':'')+'</div>';
+        h += '<div class="emp-proj-card-title">'+esc(p.title||'بدون عنوان')+(mine?' <span class="badge" style="background:var(--gd);color:#1b2a4a;font-size:8.5px">مشروعي</span>':'')+(isCompleted?' <span style="background:var(--ok);color:#fff;border-radius:12px;padding:1px 7px;font-size:9px;font-weight:800">✅ مكتمل</span>':'')+commentBadge+'</div>';
         if(p.description) h += '<div class="emp-proj-card-desc">'+esc(p.description)+'</div>';
         h += '<div class="emp-proj-card-bar"><div class="emp-proj-card-bar-in" style="width:'+prog+'%"></div></div>';
         h += '<div class="emp-proj-card-meta">'+projectTagsHtml(p)+'</div>';
@@ -652,8 +660,11 @@ function loadMyTasks(){
 
 function renderTasksHtml(rows){
     var box=document.getElementById('myTasksList');
-    var h='';
-    rows.forEach(function(t){
+    // فصل المكتملة عن النشطة
+    var active = rows.filter(function(t){ return t.status !== 'مكتمل'; });
+    var done   = rows.filter(function(t){ return t.status === 'مكتمل'; });
+
+    function taskCard(t){
         var attachHtml = '';
         if(t.fileUrl && t.fileType){
             if(t.fileType.indexOf('image/')===0){
@@ -664,19 +675,50 @@ function renderTasksHtml(rows){
                 attachHtml = '<div style="margin-top:6px"><a href="'+t.fileUrl+'" target="_blank" style="color:var(--nv);font-weight:700;text-decoration:underline">📎 '+esc(t.fileName||'ملف مرفق')+'</a></div>';
             }
         }
-        h+='<div class="pj-row"><div class="pj-t">'+esc(t.title||'بدون عنوان')+
-           ' <span class="badge">'+esc(t.priority||'متوسطة')+'</span></div>'+
-           (t.description?'<div class="pj-meta">'+esc(t.description)+'</div>':'')+
-           (t.deadline?'<div class="pj-meta">تاريخ التسليم: '+esc(t.deadline)+'</div>':'')+
-           attachHtml+
-           '<div class="fg" style="max-width:220px;margin:8px 0"><label>حالة المهمة</label><select id="tks_'+t.id+'">'+
-           ['لم يبدأ','جاري العمل','متوقف','مكتمل'].map(function(s){return '<option'+(s===(t.status||'لم يبدأ')?' selected':'')+'>'+s+'</option>';}).join('')+
-           '</select></div>'+
-           '<button class="bt bt-p" onclick="saveTaskStatus(\''+t.id+'\')">💾 حفظ الحالة</button>'+
-           ' <span id="tkmsg_'+t.id+'" style="font-size:10.5px"></span>'+
-           '</div>';
-    });
-    box.innerHTML=h;
+        var isDone = t.status === 'مكتمل';
+        var isOverdue = t.deadline && !isDone && new Date(t.deadline) < new Date();
+        var cardStyle = isDone ? 'opacity:.65;border-right-color:var(--ok)' : (isOverdue ? 'border-right-color:var(--no)' : '');
+        return '<div class="pj-row" style="'+cardStyle+'">'+
+            '<div class="pj-t">'+esc(t.title||'بدون عنوان')+
+            ' <span class="badge"'+(isDone?' style="background:var(--ok);color:#fff"':'')+(isOverdue?' style="background:var(--no);color:#fff"':'')+'>'+esc(t.priority||'متوسطة')+'</span>'+
+            (isDone?' <span style="background:var(--ok);color:#fff;border-radius:10px;padding:1px 8px;font-size:9px;font-weight:800">✅ مكتملة</span>':'')+(isOverdue?' <span style="background:var(--no);color:#fff;border-radius:10px;padding:1px 8px;font-size:9px;font-weight:800">⏰ متأخرة</span>':'')+
+            '</div>'+
+            (t.description?'<div class="pj-meta">'+esc(t.description)+'</div>':'')+
+            (t.deadline?'<div class="pj-meta"'+(isOverdue?' style="color:var(--no);font-weight:700"':'')+'>📅 تاريخ التسليم: '+esc(t.deadline)+'</div>':'')+
+            attachHtml+
+            (isDone?'<div style="font-size:11px;color:var(--ok);font-weight:700;margin-top:8px">✅ تم إنجاز هذه المهمة</div>':
+            '<div class="fg" style="max-width:220px;margin:8px 0"><label>حالة المهمة</label><select id="tks_'+t.id+'">'+
+            ['لم يبدأ','جاري العمل','متوقف','مكتمل'].map(function(s){return '<option'+(s===(t.status||'لم يبدأ')?' selected':'')+'>'+s+'</option>';}).join('')+
+            '</select></div>'+
+            '<button class="bt bt-p" onclick="saveTaskStatus(\''+t.id+'\')">💾 حفظ الحالة</button>'+
+            ' <span id="tkmsg_'+t.id+'" style="font-size:10.5px"></span>')+
+            '</div>';
+    }
+
+    var h = '';
+
+    // ── المهام النشطة ──
+    if(active.length){
+        h += '<div style="font-size:11px;font-weight:800;color:var(--nv);margin-bottom:10px;padding-bottom:6px;border-bottom:2px solid var(--gd)">⚡ المهام الجارية ('+active.length+')</div>';
+        active.forEach(function(t){ h += taskCard(t); });
+    } else {
+        h += '<div class="empty-hint">لا توجد مهام جارية حالياً.</div>';
+    }
+
+    // ── أرشيف المكتملة ──
+    if(done.length){
+        var archId = 'archiveSec_tasks';
+        h += '<div style="margin-top:20px">';
+        h += '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;padding-bottom:6px;border-bottom:2px solid var(--ok)">';
+        h += '<span style="font-size:11px;font-weight:800;color:var(--ok)">✅ سجل المكتملة ('+done.length+')</span>';
+        h += '<button class="bt bt-o" style="padding:3px 12px;font-size:10px" onclick="var s=document.getElementById(\''+archId+'\');s.style.display=s.style.display===\'none\'?\'block\':\'none\'">📂 عرض / إخفاء</button>';
+        h += '</div>';
+        h += '<div id="'+archId+'" style="display:none">';
+        done.forEach(function(t){ h += taskCard(t); });
+        h += '</div></div>';
+    }
+
+    box.innerHTML = h;
 }
 function saveTaskStatus(id){
     var status=document.getElementById('tks_'+id).value;
@@ -684,7 +726,16 @@ function saveTaskStatus(id){
     msg.style.color='var(--tx3)'; msg.textContent='⏳ جارٍ الحفظ...';
     db.collection('tasks').doc(id).update({status:status}).then(function(){
         msg.style.color='var(--ok)'; msg.textContent='✅ تم الحفظ';
-        setTimeout(function(){msg.textContent='';},2500);
+        // Push notification عند اكتمال المهمة
+        if(status === 'مكتمل'){
+            tgShowNotification('✅ مهمة مكتملة', 'أنهيت مهمة بنجاح! أحسنت 🎉');
+            // إعادة تحميل القائمة لتأرشف المهمة تلقائياً
+            setTimeout(function(){
+                var box=document.getElementById('myTasksList');
+                if(box){ /* سيتم التحديث تلقائياً من onSnapshot */ }
+            }, 500);
+        }
+        setTimeout(function(){if(msg)msg.textContent='';},2500);
     }).catch(function(err){ msg.style.color='var(--no)'; msg.textContent='❌ '+err.message; });
 }
 

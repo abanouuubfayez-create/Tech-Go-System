@@ -94,6 +94,7 @@ function go(id,nav){
     if(window.innerWidth<=900)document.getElementById("sb").classList.remove("opn");
     var c=document.getElementById("pg-"+id);
     if(id!=="dash"&&c.innerHTML.trim()===""){load(id,c);upCN();setD(c)}
+    if(typeof onPageChange === "function") onPageChange(id);
 }
 function ts(b){var p=b.parentNode;p.querySelectorAll(".stb").forEach(function(x){x.classList.remove("a")});b.classList.add("a")}
 function sct(c){c.parentNode.querySelectorAll(".ctc").forEach(function(x){x.classList.remove("sel")});c.classList.add("sel")}
@@ -2195,6 +2196,7 @@ function load(id,c){
         h='<div class="SP"><h3>📁 إدارة المشاريع</h3>';
         h+='<div class="set-hint">أنشئ مشروعاً جديداً وحدد الموظفين المسؤولين عنه مباشرة من هنا، بدل الدخول على Firebase Console يدوياً. كل موظف بعدها يقدر يحدّث نسبة تقدّمه في المشروع من بوابته الخاصة (employee.html)، ويقدر يتواصل مع باقي الفريق والأدمن من خلال نقاش المشروع.</div>';
 
+        h+='<div id="pmgmtListViewContainer">';
         h+='<div class="set-sec"><div class="set-sec-title">➕ إنشاء مشروع جديد</div>';
         h+='<div class="fg" style="margin-bottom:10px"><label>عنوان المشروع</label><input type="text" id="pmTitle" placeholder="مثلاً: تطوير نظام إدارة المخازن"></div>';
         h+='<div class="fg fg-full" style="margin-bottom:10px"><label>وصف مختصر</label><textarea rows="2" id="pmDesc" placeholder="نبذة مختصرة عن المشروع وأهدافه..."></textarea></div>';
@@ -2222,6 +2224,8 @@ function load(id,c){
 
         h+='<div class="set-sec-title" style="margin:18px 0 10px">📁 المشاريع الحالية</div>';
         h+='<div id="pmgmtList"><div class="empty-hint">⏳ جارٍ تحميل المشاريع...</div></div>';
+        h+='</div>'; // close pmgmtListViewContainer
+        h+='<div id="pmgmtDetailViewContainer" style="display:none"></div>';
         h+='</div>';
     }
 
@@ -2264,6 +2268,7 @@ function load(id,c){
         h+='<div class="set-hint">نظرة شاملة على كل موظف: المشاريع المُسندة إليه ونسبة تقدّمه فيها، الإنجازات، وطلباته — مع إمكانية الموافقة أو الرفض مباشرة.</div>';
 
         // إشعار بادج
+        h+='<div id="staffListViewContainer">';
         h+='<div style="display:flex;gap:12px;margin-bottom:14px;flex-wrap:wrap">';
         h+='<div style="display:flex;align-items:center;gap:8px;background:rgba(231,76,60,.08);border:1.5px solid rgba(231,76,60,.25);padding:10px 16px;border-radius:10px;cursor:pointer" onclick="clearAdminBadge(\'notif-req-badge\',\'notif-req-badge-sb\')">';
         h+='📨 طلبات جديدة <span id="notif-req-badge" style="display:none;background:var(--no);color:#fff;border-radius:50%;min-width:20px;height:20px;font-size:11px;font-weight:800;align-items:center;justify-content:center;padding:0 4px">0</span></div>';
@@ -2294,6 +2299,8 @@ function load(id,c){
         h+='<span class="staff-count" id="staffCount"></span>';
         h+='</div>';
         h+='<div id="staffList"><div class="empty-hint">⏳ جارٍ تحميل بيانات الموظفين...</div></div>';
+        h+='</div>'; // close staffListViewContainer
+        h+='<div id="staffDetailViewContainer" style="display:none"></div>';
         h+='</div>';
     }
 
@@ -2362,3 +2369,339 @@ function load(id,c){
     if(id==="pmgmt") loadPmgmtData();
     if(id==="tasksmgmt") loadTasksMgmt();
 }
+// ═══════════════════════════════════════════════════════════════
+// ─── صفحة تفاصيل المشروع للأدمن ──────────────────────────────
+// ═══════════════════════════════════════════════════════════════
+function openAdminProjectDetail(idx) {
+    var p = (window._pmgmtProjectsCache || [])[idx];
+    if (!p) return;
+    window._activeProjDetailIdx = idx;
+    var listView = document.getElementById('pmgmtListViewContainer');
+    var detailView = document.getElementById('pmgmtDetailViewContainer');
+    if (listView) listView.style.display = 'none';
+    if (detailView) {
+        detailView.style.display = 'block';
+        var assignees = p.assignees || [];
+        var sum = 0;
+        assignees.forEach(function(uid){
+            var pm = (p.progressMap && p.progressMap[uid]) ? p.progressMap[uid].progress : 0;
+            sum += (pm || 0);
+        });
+        var avgProg = assignees.length ? Math.round(sum / assignees.length) : 0;
+        var hasNotes = (p.comments && p.comments.length > 0);
+        var over = isOverdue(p.deadline, p.status);
+        var h = '<div class="emp-proj-detail">';
+        h += '<button class="emp-proj-back" onclick="closeAdminProjectDetail()">🔙 العودة لقائمة المشاريع</button>';
+        h += '<div class="emp-proj-detail-header">';
+        h += '  <div class="emp-proj-detail-title">' + escH(p.title || 'بدون عنوان') + '</div>';
+        if (p.description) h += '  <div class="emp-proj-detail-desc">' + escH(p.description) + '</div>';
+        h += '  <div>' + projectTagsHtml(p) + '</div>';
+        if (p.createdBy) h += '  <div style="font-size:10.5px;color:var(--tx3);margin-top:6px">أُنشئ بواسطة: <strong>' + escH(p.createdBy) + '</strong></div>';
+        h += '</div>';
+        h += '<div class="proj-sec"><div class="proj-sec-title">👥 الموظفون المسؤولون عن المشروع</div>';
+        if (assignees.length) {
+            assignees.forEach(function(uid) {
+                var e = PMGMT_EMPLOYEES.find(function(x) { return x.uid === uid; });
+                var nm = e ? (e.name || e.email) : '(موظف غير موجود حالياً)';
+                var pm = (p.progressMap && p.progressMap[uid]) || {progress:0, status:'لم يبدأ', note:''};
+                h += '<div class="pj-row" style="background:var(--bg);padding:12px;border-radius:10px;margin-bottom:8px;">' +
+                     '  <div style="display:flex;justify-content:space-between;font-weight:700;color:var(--nv);margin-bottom:4px;">' +
+                     '    <span>' + escH(nm) + '</span>' +
+                     '    <span style="color:var(--gd);margin-right:auto;">' + (pm.progress || 0) + '%</span>' +
+                     '  </div>' +
+                     '  <div class="pj-bar"><div class="pj-bar-in" style="width:' + (pm.progress || 0) + '%"></div></div>' +
+                     '  <div class="pj-meta" style="margin-top:6px;">الحالة: <span class="badge ' + badgeClassForStatus(pm.status) + '">' + escH(pm.status || 'لم يبدأ') + '</span>' +
+                     (pm.note ? (' · ملاحظة: ' + escH(pm.note)) : '') + '</div>' +
+                     '</div>';
+            });
+        } else {
+            h += '<div class="empty-hint">لم يتم تعيين أي موظف على هذا المشروع بعد.</div>';
+        }
+        h += '</div>';
+        h += '<div class="proj-sec">' + projectChatHtml(p.id, 'pmChatLog' + idx, 'pmChatInput' + idx) + '</div>';
+        h += '<div class="proj-sec"><div class="proj-sec-title">⚙️ إدارة المشروع</div>';
+        h += '<div style="display:flex;gap:8px">' +
+             '  <button class="bt bt-o" onclick="toggleProjEdit(' + idx + ')">✏️ تعديل المشروع</button>' +
+             '  <button class="bt bt-d" onclick="deleteProject(\'' + p.id + '\')">🗑 حذف المشروع</button>' +
+             '</div>';
+        h += '<div id="pmEdit' + idx + '" style="display:none;margin-top:14px;padding-top:14px;border-top:1px dashed var(--bd2)">' +
+             '  <div class="fg" style="margin-bottom:10px"><label>عنوان المشروع</label><input type="text" id="pmEditTitle' + idx + '" value="' + escH(p.title || '') + '"></div>' +
+             '  <div class="fg fg-full" style="margin-bottom:10px"><label>وصف مختصر</label><textarea rows="2" id="pmEditDesc' + idx + '">' + escH(p.description || '') + '</textarea></div>' +
+             '  <div class="fr fr3" style="margin-bottom:10px">' +
+             '    <div class="fg"><label>الأولوية</label><select id="pmEditPriority' + idx + '">' +
+                    ['منخفضة','متوسطة','عالية'].map(function(s){ return '<option' + ((p.priority || 'متوسطة') === s ? ' selected' : '') + '>' + s + '</option>'; }).join('') +
+             '    </select></div>' +
+             '    <div class="fg"><label>حالة المشروع</label><select id="pmEditStatus' + idx + '">' +
+                    ['مخطط له','جاري العمل','متوقف','مكتمل'].map(function(s){ return '<option' + ((p.status || 'مخطط له') === s ? ' selected' : '') + '>' + s + '</option>'; }).join('') +
+             '    </select></div>' +
+             '    <div class="fg"><label>تاريخ الاستحقاق</label><input type="date" id="pmEditDeadline' + idx + '" value="' + escH(p.deadline || '') + '"></div>' +
+             '  </div>' +
+             '  <div class="fg fg-full" style="margin-bottom:6px"><label>الموظفون المسؤولون</label></div>' +
+             '  <div class="chk-grid" id="pmEditAssignees' + idx + '">' + PMGMT_EMPLOYEES.map(function(e){
+                  var checked = assignees.indexOf(e.uid) > -1 ? ' checked' : '';
+                  return '<label><input type="checkbox" class="pm-edit-assignee-chk" ' + checked + ' value="' + e.uid + '"> ' + escH(e.name || e.email) + '</label>';
+             }).join('') + '</div>' +
+             '  <div style="display:flex;gap:8px;margin-top:10px">' +
+             '    <button class="bt bt-p" onclick="saveProjectEdit(\'' + p.id + '\',' + idx + ')">💾 حفظ التعديلات</button>' +
+             '    <button class="bt bt-o" onclick="toggleProjEdit(' + idx + ')">إلغاء</button>' +
+             '  </div>' +
+             '  <div id="pmEditMsg' + idx + '" style="margin-top:8px;font-size:11px"></div>' +
+             '</div>';
+        h += '</div>';
+        h += '</div>';
+        detailView.innerHTML = h;
+        renderProjectChat(p.id, p.comments || [], 'pmChatLog' + idx);
+    }
+}
+
+function closeAdminProjectDetail() {
+    window._activeProjDetailIdx = null;
+    var listView = document.getElementById('pmgmtListViewContainer');
+    var detailView = document.getElementById('pmgmtDetailViewContainer');
+    if (listView) listView.style.display = 'block';
+    if (detailView) detailView.style.display = 'none';
+}
+
+// ═══════════════════════════════════════════════════════════════
+// ─── صفحة تفاصيل الموظف للأدمن ───────────────────────────────
+// ═══════════════════════════════════════════════════════════════
+function openAdminEmployeeDetail(idx) {
+    var emp = (window._staffEmpCache || [])[idx];
+    if (!emp) return;
+    window._activeStaffDetailIdx = idx;
+    var listView = document.getElementById('staffListViewContainer');
+    var detailView = document.getElementById('staffDetailViewContainer');
+    if (listView) listView.style.display = 'none';
+    if (detailView) {
+        detailView.style.display = 'block';
+        var pending = emp.requests.filter(function(r){return r.status==='pending';}).length;
+        var avgProg = emp.projects.length ? Math.round(emp.projects.reduce(function(s,p){
+            var pm = (p.progressMap && p.progressMap[emp.uid]) ? p.progressMap[emp.uid].progress : 0;
+            return s + (pm || 0);
+        }, 0) / emp.projects.length) : 0;
+        var h = '<div class="emp-proj-detail">';
+        h += '<button class="emp-proj-back" onclick="closeAdminEmployeeDetail()">🔙 العودة لقائمة الموظفين</button>';
+        h += '<div class="emp-proj-detail-header">';
+        h += '  <div class="emp-proj-detail-title">' + escH(emp.name || emp.email);
+        if (emp.jobTitle) h += ' <span class="badge" style="background:var(--gd);color:#1b2a4a">' + escH(emp.jobTitle) + '</span>';
+        h += (emp.disabled ? ' <span class="badge badge-disabled">🚫 معطّل</span>' : ' <span class="badge badge-active">✅ نشط</span>');
+        h += '  </div>';
+        h += '  <div class="emp-proj-detail-desc">' + escH(emp.email || '') + (emp.employeeCode ? ' · كود: <strong>' + escH(emp.employeeCode) + '</strong>' : '') + '</div>';
+        h += '</div>';
+        h += '<div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:16px">';
+        h += '  <button class="bt bt-o" onclick="toggleEmpNameEdit(' + idx + ')">✏️ تعديل الاسم</button>';
+        h += '  <button class="bt bt-o" onclick="toggleEmpJobEdit(' + idx + ')">🏷 تعديل المسمى</button>';
+        h += '  <button class="bt ' + (emp.disabled ? 'bt-p' : 'bt-o') + '" onclick="toggleEmpDisabled(\'' + emp.uid + '\',' + (!!emp.disabled) + ')">' + (emp.disabled ? '✅ تفعيل الحساب' : '🚫 تعطيل الحساب') + '</button>';
+        h += '  <button class="bt bt-d" onclick="openDeleteEmpModal(\'' + emp.uid + '\',' + idx + ')">🗑 حذف الموظف</button>';
+        h += '  <button class="bt bt-o" style="background:linear-gradient(135deg,#1b2a4a,#2980b9);color:#fff;border:0" onclick="printEmployeeWorkReport(' + idx + ')">🖨 طباعة تقرير الشغل</button>';
+        h += '</div>';
+        h += '<div class="emp-inline-edit" id="empNameEdit' + idx + '" style="display:none">' +
+             '  <input type="text" id="empNameInput' + idx + '" value="' + escH(emp.name || '') + '">' +
+             '  <button class="bt bt-p" onclick="saveEmpName(\'' + emp.uid + '\',' + idx + ')">💾 حفظ</button>' +
+             '  <span id="empNameMsg' + idx + '" style="font-size:10.5px"></span>' +
+             '</div>';
+        h += '<div class="emp-inline-edit" id="empJobEdit' + idx + '" style="display:none">' +
+             '  <input type="text" id="empJobInput' + idx + '" value="' + escH(emp.jobTitle || '') + '" placeholder="مثلاً: مصمم جرافيك">' +
+             '  <button class="bt bt-p" onclick="saveEmpJob(\'' + emp.uid + '\',' + idx + ')">💾 حفظ</button>' +
+             '  <span id="empJobMsg' + idx + '" style="font-size:10.5px"></span>' +
+             '</div>';
+        h += '<div class="proj-sec"><div class="proj-sec-title">📁 المشاريع المُسندة (' + emp.projects.length + ')</div>';
+        if (emp.projects.length) {
+            emp.projects.forEach(function(p) {
+                var pm = (p.progressMap && p.progressMap[emp.uid]) || {progress:0, status:'لم يبدأ', note:''};
+                h += '<div class="pj-row" style="background:var(--bg);padding:12px;border-radius:10px;margin-bottom:8px;">' +
+                     '  <div style="display:flex;justify-content:space-between;font-weight:700;color:var(--nv);margin-bottom:4px;">' +
+                     '    <span>' + escH(p.title || 'بدون عنوان') + '</span>' +
+                     '    <span style="color:var(--gd);">' + (pm.progress || 0) + '%</span>' +
+                     '  </div>' +
+                     '  <div class="pj-bar"><div class="pj-bar-in" style="width:' + (pm.progress || 0) + '%"></div></div>' +
+                     '  <div class="pj-meta" style="margin-top:6px;">الحالة: <span class="badge ' + badgeClassForStatus(pm.status) + '">' + escH(pm.status || 'لم يبدأ') + '</span>' +
+                     (pm.note ? (' · ملاحظة: ' + escH(pm.note)) : '') + '</div>' +
+                     '</div>';
+            });
+        } else {
+            h += '<div class="empty-hint">لا توجد مشاريع مُسندة حالياً.</div>';
+        }
+        h += '</div>';
+        h += '<div class="proj-sec"><div class="proj-sec-title">📨 الطلبات (' + emp.requests.length + ')</div>';
+        if (emp.requests.length) {
+            emp.requests.forEach(function(r) {
+                h += '<div class="rq-row" style="background:var(--bg);padding:12px;border-radius:10px;margin-bottom:8px;">' +
+                     '  <div class="rq-t" style="font-weight:700;">' + escH(r.type || 'طلب') + ' <span class="badge ' + badgeClassForReq(r.status) + '">' + reqStatusLabel(r.status) + '</span></div>' +
+                     (r.details ? ('  <div class="pj-meta" style="margin-top:4px;">' + escH(r.details) + '</div>') : '') +
+                     (r.status === 'pending' ? ('  <div class="rq-actions" style="margin-top:8px"><button class="bt bt-p" onclick="reviewRequest(\'' + r.id + '\',\'approved\')">✔ موافقة</button><button class="bt bt-d" onclick="reviewRequest(\'' + r.id + '\',\'rejected\')">✕ رفض</button></div>') : '') +
+                     '</div>';
+            });
+        } else {
+            h += '<div class="empty-hint">لا توجد طلبات بعد.</div>';
+        }
+        h += '</div>';
+        h += '</div>';
+        detailView.innerHTML = h;
+    }
+}
+
+function closeAdminEmployeeDetail() {
+    window._activeStaffDetailIdx = null;
+    var listView = document.getElementById('staffListViewContainer');
+    var detailView = document.getElementById('staffDetailViewContainer');
+    if (listView) listView.style.display = 'block';
+    if (detailView) detailView.style.display = 'none';
+}
+
+// ═══════════════════════════════════════════════════════════════
+// ─── طباعة تقرير شغل الموظف (مشاريع + مهام + حالاتهم) ────────
+// ═══════════════════════════════════════════════════════════════
+function printEmployeeWorkReport(empIdx) {
+    var emp = (window._staffEmpCache || [])[empIdx];
+    if (!emp) return;
+    var today = new Date().toLocaleDateString('ar-EG', {year:'numeric',month:'long',day:'numeric'});
+    var overallAvg = emp.projects.length ? Math.round(emp.projects.reduce(function(s,p){
+        var pm = (p.progressMap && p.progressMap[emp.uid]) ? p.progressMap[emp.uid].progress : 0;
+        return s + (pm || 0);
+    }, 0) / emp.projects.length) : 0;
+    var projRows = '';
+    emp.projects.forEach(function(p) {
+        var pm = (p.progressMap && p.progressMap[emp.uid]) || {progress:0, status:'لم يبدأ', note:''};
+        var statusColor = pm.status==='مكتمل'?'#27ae60':pm.status==='جاري العمل'?'#2980b9':'#7f8c8d';
+        projRows += '<tr>' +
+            '<td style="padding:8px 10px;border-bottom:1px solid #eee;font-weight:700">' + escH(p.title||'—') + '</td>' +
+            '<td style="padding:8px 10px;border-bottom:1px solid #eee;color:#888">' + escH(p.description||'—') + '</td>' +
+            '<td style="padding:8px 10px;border-bottom:1px solid #eee;text-align:center"><span style="background:' + statusColor + ';color:#fff;border-radius:20px;padding:2px 10px;font-size:11px">' + escH(pm.status||'لم يبدأ') + '</span></td>' +
+            '<td style="padding:8px 10px;border-bottom:1px solid #eee;text-align:center;font-weight:800;color:#c9a227">' + (pm.progress||0) + '%</td>' +
+            '<td style="padding:8px 10px;border-bottom:1px solid #eee;font-size:11px;color:#888">' + escH(pm.note||'—') + '</td>' +
+            '<td style="padding:8px 10px;border-bottom:1px solid #eee;text-align:center">' + escH(p.deadline||'—') + '</td>' +
+            '</tr>';
+    });
+    db.collection('tasks').where('assignedTo','==',emp.uid).get().then(function(snap) {
+        var tasks = snap.docs.map(function(d){return Object.assign({id:d.id},d.data());});
+        tasks.sort(function(a,b){
+            var am=(a.createdAt&&a.createdAt.toMillis)?a.createdAt.toMillis():0;
+            var bm=(b.createdAt&&b.createdAt.toMillis)?b.createdAt.toMillis():0;
+            return bm-am;
+        });
+        var taskRows = '';
+        tasks.forEach(function(t) {
+            var sc = t.status==='مكتمل'?'#27ae60':t.status==='جاري العمل'?'#2980b9':'#7f8c8d';
+            var pc = t.priority==='عالية'?'#e74c3c':t.priority==='متوسطة'?'#f39c12':'#95a5a6';
+            taskRows += '<tr>' +
+                '<td style="padding:8px 10px;border-bottom:1px solid #eee;font-weight:700">' + escH(t.title||'—') + '</td>' +
+                '<td style="padding:8px 10px;border-bottom:1px solid #eee;color:#888">' + escH(t.description||'—') + '</td>' +
+                '<td style="padding:8px 10px;border-bottom:1px solid #eee;text-align:center"><span style="background:'+pc+';color:#fff;border-radius:20px;padding:2px 10px;font-size:11px">' + escH(t.priority||'—') + '</span></td>' +
+                '<td style="padding:8px 10px;border-bottom:1px solid #eee;text-align:center"><span style="background:'+sc+';color:#fff;border-radius:20px;padding:2px 10px;font-size:11px">' + escH(t.status||'لم يبدأ') + '</span></td>' +
+                '<td style="padding:8px 10px;border-bottom:1px solid #eee;text-align:center">' + escH(t.deadline||'—') + '</td>' +
+                '</tr>';
+        });
+        var win = window.open('','_blank');
+        win.document.write('<html dir="rtl"><head><title>تقرير شغل - '+escH(emp.name||emp.email)+'</title>' +
+            '<style>@import url("https://fonts.googleapis.com/css2?family=Cairo:wght@400;700;900&display=swap");' +
+            'body{font-family:"Cairo",sans-serif;padding:40px;color:#1b2a4a;max-width:900px;margin:auto}' +
+            '.header{text-align:center;margin-bottom:30px;padding-bottom:20px;border-bottom:3px solid #c9a227}' +
+            '.header h1{font-size:22px;margin:0 0 4px}' +
+            '.header h2{font-size:14px;color:#888;margin:0}' +
+            '.stats{display:flex;gap:16px;justify-content:center;margin:20px 0}' +
+            '.stat-card{background:linear-gradient(135deg,#1b2a4a,#2c3e6b);color:#fff;border-radius:12px;padding:14px 24px;text-align:center;min-width:80px}' +
+            '.stat-num{font-size:24px;font-weight:900}.stat-lbl{font-size:11px;opacity:.8}' +
+            '.section{margin-top:24px}' +
+            '.sec-title{font-weight:900;font-size:14px;margin-bottom:10px;padding-bottom:6px;border-bottom:2px solid #c9a227}' +
+            'table{width:100%;border-collapse:collapse;margin-top:8px}' +
+            'th{background:#1b2a4a;color:#fff;padding:10px;font-size:11px;text-align:right}' +
+            '.footer{margin-top:40px;text-align:center;font-size:11px;color:#aaa;border-top:2px solid #eee;padding-top:16px}' +
+            '@media print{body{padding:20px}}</style></head><body>' +
+            '<div class="header"><h1>تقرير أداء وشغل الموظف</h1><h2>' + escH(emp.name||emp.email) + (emp.jobTitle ? ' — '+escH(emp.jobTitle) : '') + '</h2><div style="font-size:12px;color:#aaa;margin-top:6px">'+today+'</div>' +
+            '<div style="background:linear-gradient(135deg,#c9a227,#e8c547);color:#1b2a4a;border-radius:8px;padding:4px 12px;margin-top:6px;font-size:13px;font-weight:800;display:inline-block">'+overallAvg+'% متوسط الإنجاز</div>' +
+            '</div>' +
+            '<div class="stats">' +
+            '<div class="stat-card"><div class="stat-num">'+emp.projects.length+'</div><div class="stat-lbl">مشروع</div></div>' +
+            '<div class="stat-card"><div class="stat-num">'+tasks.length+'</div><div class="stat-lbl">مهمة</div></div>' +
+            '<div class="stat-card"><div class="stat-num">'+emp.achievements.length+'</div><div class="stat-lbl">إنجاز</div></div>' +
+            '</div>' +
+            (emp.projects.length ?
+                '<div class="section"><div class="sec-title">📁 المشاريع المُسندة وحالة الإنجاز</div>' +
+                '<table><thead><tr><th>اسم المشروع</th><th>الوصف</th><th>الحالة</th><th>التقدم</th><th>ملاحظة</th><th>تاريخ الاستحقاق</th></tr></thead>' +
+                '<tbody>'+projRows+'</tbody></table></div>':
+                '<div class="section"><div class="sec-title">📁 المشاريع</div><p style="color:#aaa;text-align:center;padding:20px">لا توجد مشاريع مُسندة</p></div>')+
+            (tasks.length ?
+                '<div class="section"><div class="sec-title">📋 المهام الموكّلة</div>' +
+                '<table><thead><tr><th>عنوان المهمة</th><th>الوصف</th><th>الأولوية</th><th>الحالة</th><th>تاريخ التسليم</th></tr></thead>' +
+                '<tbody>'+taskRows+'</tbody></table></div>':
+                '<div class="section"><div class="sec-title">📋 المهام</div><p style="color:#aaa;text-align:center;padding:20px">لا توجد مهام موكّلة</p></div>')+
+            '<div class="footer">تقرير آلي صادر من نظام Tech Go — '+today+'</div>' +
+            '</body></html>');
+        win.document.close();
+        setTimeout(function(){ win.print(); }, 600);
+    });
+}
+
+// ═══════════════════════════════════════════════════════════════
+// ─── كود وظيفي فريد (لا يتكرر) ──────────────────────────────
+// ═══════════════════════════════════════════════════════════════
+function generateUniqueEmpCode(name) {
+    var prefix = 'TG';
+    var namePart = (name || '').replace(/\s+/g,'').toUpperCase().substring(0,3) || 'EMP';
+    namePart = namePart.replace(/[^\x00-\x7F]/g, function(c){ return String(c.charCodeAt(0)%9+1); });
+    var num = String(Math.floor(Math.random()*9000)+1000);
+    return prefix + '-' + namePart + num;
+}
+function ensureEmployeeCode(uid, name, callback) {
+    db.collection('users').doc(uid).get().then(function(doc) {
+        if (!doc.exists) { if(callback) callback(null); return; }
+        var data = doc.data();
+        if (data.employeeCode) { if(callback) callback(data.employeeCode); return; }
+        function tryCode() {
+            var code = generateUniqueEmpCode(name);
+            db.collection('users').where('employeeCode','==',code).get().then(function(snap){
+                if (snap.empty) {
+                    db.collection('users').doc(uid).update({ employeeCode: code }).then(function(){
+                        if(callback) callback(code);
+                    });
+                } else {
+                    tryCode();
+                }
+            });
+        }
+        tryCode();
+    });
+}
+
+// ═══════════════════════════════════════════════════════════════
+// ─── ربط الشيتات بحسابات الموظفين (autofill) ─────────────────
+// ═══════════════════════════════════════════════════════════════
+function autofillEmployeeFields() {
+    if (!TG_USER) return;
+    var name = TG_USER.name || '';
+    var email = TG_USER.email || '';
+    var jobTitle = TG_USER.jobTitle || '';
+    var code = TG_USER.employeeCode || '';
+    document.querySelectorAll('.emp-name-fld:not([data-autofilled])').forEach(function(f) {
+        if (!f.value) { f.value = name; f.setAttribute('data-autofilled','1'); }
+    });
+    document.querySelectorAll('.emp-code-fld:not([data-autofilled])').forEach(function(f) {
+        if (!f.value && code) { f.value = code; f.setAttribute('data-autofilled','1'); }
+    });
+    document.querySelectorAll('.emp-job-fld:not([data-autofilled])').forEach(function(f) {
+        if (!f.value && jobTitle) { f.value = jobTitle; f.setAttribute('data-autofilled','1'); }
+    });
+    document.querySelectorAll('.emp-email-fld:not([data-autofilled])').forEach(function(f) {
+        if (!f.value && email) { f.value = email; f.setAttribute('data-autofilled','1'); }
+    });
+}
+
+// ─── خطاف تبديل الصفحات لتشغيل autofill والتحقق من الكود ─────
+function onPageChange(id) {
+    setTimeout(function() {
+        autofillEmployeeFields();
+        if (TG_USER && TG_USER.uid && !TG_USER.employeeCode && TG_USER.role === 'employee') {
+            ensureEmployeeCode(TG_USER.uid, TG_USER.name, function(code) {
+                if (code) {
+                    TG_USER.employeeCode = code;
+                    autofillEmployeeFields();
+                }
+            });
+        }
+    }, 150);
+}
+document.addEventListener('DOMContentLoaded', function(){
+    setTimeout(autofillEmployeeFields, 800);
+});
+
