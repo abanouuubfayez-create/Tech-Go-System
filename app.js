@@ -2435,10 +2435,16 @@ function load(id,c){
         h+='<button class="bt bt-d" onclick="resetSeq()">↺ تصفير أرقام المستندات</button>';
         h+='</div></div>';
 
-        // ── إعادة ضبط النظام (أدمن رئيسي فقط) ──
         h+='<div class="set-sec"><div class="set-sec-title"><span>🗑</span> إعادة ضبط النظام</div>';
         h+='<div class="set-hint" style="color:#b91c1c;font-weight:600">تحذير: هذا الإجراء يحذف جميع البيانات الديناميكية نهائياً (مشاريع، مهام، تقارير، رسائل...).<br>لن يُؤثر على حسابات المستخدمين أو الإعدادات.</div>';
         h+='<button class="bt bt-d" onclick="resetSystem()">🗑 إعادة ضبط كل البيانات</button>';
+        h+='</div>';
+
+        // ── منطقة الخطر (حذف كل البيانات بما فيها الموظفين) ──
+        h+='<div class="SP" style="margin-top:20px;border:2px solid var(--no)">';
+        h+='<h3 style="color:var(--no)">&#9888;&#65039; منطقة الخطر</h3>';
+        h+='<p style="font-size:13px;color:var(--tx);margin-bottom:16px">سيؤدي هذا إلى حذف <strong>جميع بيانات النظام</strong> بشكل نهائي لا يمكن التراجع عنه، بما في ذلك الموظفون، المشاريع، المهام، الطلبات، والإشعارات.</p>';
+        h+='<button class="bt bt-d" style="padding:10px 24px;font-size:13px;font-weight:800" onclick="deleteAllSystemData()">&#128465; حذف جميع بيانات النظام</button>';
         h+='</div>';
 
         h+='<div style="text-align:left;margin-top:20px">'+
