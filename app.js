@@ -885,7 +885,7 @@ function renderTasksMgmtList(list){
            '<div class="pj-meta">👤 مكلَّف إلى: '+escH(t.assignedToName||'')+(t.deadline?(' · تاريخ التسليم: '+escH(t.deadline)):'')+'</div>'+
            (t.description?'<div class="pj-meta">'+escH(t.description)+'</div>':'')+
            attachHtml+
-           '<button class="bt bt-d" style="margin-top:6px" onclick="deleteTask(\''+t.id+'\')">🗑 حذف المهمة</button>'+
+           '<div style="text-align:right;margin-top:12px"><button class="bt bt-d" style="padding:4px 12px;font-size:11px;border-radius:6px" onclick="deleteTask(\''+t.id+'\')">🗑 حذف المهمة</button></div>'+
            '</div>';
     });
     box.innerHTML=h;

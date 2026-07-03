@@ -1591,8 +1591,8 @@ html.tg-auth-pending body { visibility: hidden; }
 .emp-proj-card-desc { font-size: 12px !important; color: #64748b !important; line-height: 1.6 !important; margin-bottom: 16px !important; }
 .emp-proj-card-bar { height: 8px !important; border-radius: 8px !important; box-shadow: inset 0 1px 2px rgba(0,0,0,0.05) !important; }
 .emp-proj-card-bar-in { transition: width 1s cubic-bezier(0.4, 0, 0.2, 1) !important; }
-.tasks-grid, #archiveSec_tasks, .emp-proj-grid { display: grid !important; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)) !important; gap: 16px !important; }
-.pj-row { background: #ffffff !important; border: 1px solid #e2e8f0 !important; border-radius: 14px !important; padding: 18px !important; margin-bottom: 0 !important; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -1px rgba(0, 0, 0, 0.03) !important; display: flex !important; flex-direction: column !important; justify-content: space-between !important; }
+.tasks-grid, .emp-proj-grid { display: grid !important; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)) !important; gap: 16px !important; }
+.pj-row { border: 1px solid #e2e8f0 !important; border-radius: 14px !important; padding: 18px !important; margin-bottom: 0 !important; box-shadow: 0 6px 12px rgba(27,42,74,0.06), 0 2px 4px rgba(27,42,74,0.04) !important; display: flex !important; flex-direction: column !important; justify-content: space-between !important; }
 .pj-row:hover { transform: translateY(-4px) !important; box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05) !important; }
 .pj-t { font-size: 14px !important; display: flex !important; align-items: flex-start !important; justify-content: space-between !important; gap: 8px !important; flex-wrap: wrap !important; }
 .pj-meta { font-size: 11px !important; color: #64748b !important; margin-top: 6px !important; line-height: 1.5 !important; }

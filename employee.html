@@ -663,8 +663,9 @@ function renderTasksHtml(rows){
         h += '<button class="bt bt-o" style="padding:3px 12px;font-size:10px" onclick="var s=document.getElementById(\''+archId+'\');s.style.display=s.style.display===\'none\'?\'block\':\'none\'">📂 عرض / إخفاء</button>';
         h += '</div>';
         h += '<div id="'+archId+'" style="display:none">';
+        h += '<div class="tasks-grid">';
         done.forEach(function(t){ h += taskCard(t); });
-        h += '</div></div>';
+        h += '</div></div></div>';
     }
 
     box.innerHTML = h;
