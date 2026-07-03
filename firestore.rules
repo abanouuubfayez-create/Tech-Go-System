@@ -61,7 +61,7 @@ service cloud.firestore {
         isSignedIn() && myUid() in resource.data.assignees &&
         request.resource.data.diff(resource.data).affectedKeys().hasOnly(['progressMap'])
       );
-      allow delete: if isAnyAdmin();
+      allow delete: if isAdmin();
     }
 
     // نقاش/تعليقات كل مشروع
@@ -75,7 +75,7 @@ service cloud.firestore {
         myUid() in get(/databases/$(database)/documents/projects/$(request.resource.data.projectId)).data.assignees
       );
       allow update: if false;
-      allow delete: if isAnyAdmin() || (isSignedIn() && resource.data.uid == myUid());
+      allow delete: if isAdmin() || (isSignedIn() && resource.data.uid == myUid());
     }
 
     // الشات العام
@@ -86,18 +86,18 @@ service cloud.firestore {
                     && request.resource.data.text.size() > 0
                     && request.resource.data.text.size() <= 2000;
       allow update: if false;
-      allow delete: if isAnyAdmin() || (isSignedIn() && resource.data.uid == myUid());
+      allow delete: if isAdmin() || (isSignedIn() && resource.data.uid == myUid());
     }
 
-    // المهام: الأدمن أو الأدمن المساعد يكلّف بالمهام ويحذفها. الموظف يقرأ مهامه ويعدّل الحالة فقط
+    // المهام: الأدمن أو الأدمن المساعد يكلّف بالمهام، والأدمن الرئيسي وحده يحذفها. الموظف يقرأ مهامه ويعدّل الحالة فقط
     match /tasks/{taskId} {
       allow read: if isAnyAdmin() || (isSignedIn() && resource.data.assignedTo == myUid());
       allow create: if isAnyAdmin();
       allow update: if isAnyAdmin() || (
         isSignedIn() && resource.data.assignedTo == myUid() &&
-        request.resource.data.diff(resource.data).affectedKeys().hasOnly(['status'])
+        request.resource.data.diff(resource.data).affectedKeys().hasOnly(['status', 'statusUpdatedAt'])
       );
-      allow delete: if isAnyAdmin();
+      allow delete: if isAdmin();
     }
 
     // الإنجازات
@@ -136,12 +136,25 @@ service cloud.firestore {
       allow delete: if isAdmin() || (isSignedIn() && resource.data.toUid == myUid());
     }
 
-    // الإعلانات: الأدمن أو الأدمن المساعد يكتب ويحذف. كل المستخدمين يقرؤون
+    // الإعلانات: الأدمن أو الأدمن المساعد يكتب ويعدّل. الأدمن الرئيسي وحده يحذف
     match /announcements/{annId} {
       allow read: if isSignedIn();
       allow create: if isAnyAdmin();
       allow update: if isAnyAdmin();
-      allow delete: if isAnyAdmin();
+      allow delete: if isAdmin();
+    }
+
+    // نماذج تُرسل لموظف مُحدَّد ليملأها ويعيدها للأدمن (📨 إرسال نموذج للموظف)
+    match /formRequests/{reqId} {
+      allow read: if isAdmin() || (isSignedIn() && resource.data.targetUid == myUid());
+      allow create: if isAdmin() && request.resource.data.sentByUid == myUid()
+                    && request.resource.data.status == 'pending';
+      // الموظف يملأ ويرسل (status + values + submittedAt فقط)، والأدمن يقدر يعدّل أي حقل
+      allow update: if isAdmin() || (
+        isSignedIn() && resource.data.targetUid == myUid() && resource.data.status == 'pending' &&
+        request.resource.data.diff(resource.data).affectedKeys().hasOnly(['status', 'values', 'submittedAt'])
+      );
+      allow delete: if isAdmin();
     }
   }
 }
