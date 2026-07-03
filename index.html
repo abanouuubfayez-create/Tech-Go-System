@@ -242,12 +242,19 @@
     });
 
     // ختم الحالة (موافق/مرفوض/قيد المراجعة) فوق المستندات التي بها حالة طلب
+    // الختم يظهر فقط عند اختيار "طباعة البيانات المكتوبة" — وإلا يُخفى
     document.querySelectorAll('.stg').forEach(function (stg) {
       var active = stg.querySelector('.stb.a');
       var fl = stg.closest('.FL');
-      if (!fl || !active) return;
-      var st = fl.querySelector('.print-stamp');
-      if (!st) { st = document.createElement('div'); st.className = 'print-stamp'; fl.appendChild(st); }
+      if (!fl) return;
+      // إزالة أي ختم موجود أولاً
+      var existingSt = fl.querySelector('.print-stamp');
+      if (existingSt) { existingSt.remove(); }
+      // إضافة الختم فقط إذا اختار المستخدم طباعة البيانات المكتوبة
+      if (!PRINT_KEEP_DATA || !active) return;
+      var st = document.createElement('div');
+      st.className = 'print-stamp';
+      fl.appendChild(st);
       st.classList.remove('st-ok', 'st-no', 'st-pn');
       if (active.classList.contains('ok')) { st.classList.add('st-ok'); st.textContent = '✓ معتمد'; }
       else if (active.classList.contains('no')) { st.classList.add('st-no'); st.textContent = '✗ مرفوض'; }
@@ -288,6 +295,8 @@
   window.addEventListener('afterprint', function () {
     document.querySelectorAll('.FL-foot-ts').forEach(function (el) { el.textContent = ''; });
     document.querySelectorAll('.FL-foot-ref').forEach(function (el) { el.textContent = ''; });
+    // إزالة الختم بعد الطباعة
+    document.querySelectorAll('.print-stamp').forEach(function (el) { el.remove(); });
     document.querySelectorAll('input[type="date"]').forEach(function (el) {
       if (el._pv !== undefined) {
         el.type = 'date';
