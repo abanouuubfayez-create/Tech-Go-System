@@ -189,5 +189,32 @@ function tgCreateFirstAdmin(name, email, password, onDone, onError) {
     }).catch(function (err) { onError(err); });
 }
 
+// ─── مسح سجلات متعددة ────────────────────────────────────────────────────────
+function tgDeleteAllRecords(collectionName, label, filterField, filterValue, callback) {
+    if(!confirm('هل أنت متأكد من حذف جميع ' + label + ' نهائياً؟ لا يمكن التراجع عن هذا الإجراء.')) return;
+    var msg = document.createElement('div');
+    msg.style.cssText = 'position:fixed;top:20px;left:50%;transform:translateX(-50%);background:#1b2a4a;color:#fff;padding:14px 28px;border-radius:10px;z-index:99999;font-size:14px;font-weight:700;box-shadow:0 8px 24px rgba(0,0,0,.3)';
+    msg.textContent = '⏳ جاري الحذف...';
+    document.body.appendChild(msg);
+
+    var query = db.collection(collectionName);
+    if(filterField && filterValue) query = query.where(filterField, '==', filterValue);
+
+    query.get().then(function(snap) {
+        var batch = db.batch();
+        snap.forEach(function(d) { batch.delete(d.ref); });
+        return batch.commit();
+    }).then(function() {
+        if(document.body.contains(msg)) document.body.removeChild(msg);
+        if(typeof tgToast === 'function') tgToast('✅ تم حذف جميع ' + label + ' بنجاح', 'ok');
+        else if(typeof showToast === 'function') showToast('✅ تم الحذف بنجاح');
+        else alert('✅ تم الحذف بنجاح');
+        if(callback) callback();
+    }).catch(function(err) {
+        if(document.body.contains(msg)) document.body.removeChild(msg);
+        alert('❌ خطأ أثناء الحذف: ' + err.message);
+    });
+}
+
 // يمنع وميض عرض المحتوى قبل التأكد من تسجيل الدخول
 document.documentElement.classList.add('tg-auth-pending');

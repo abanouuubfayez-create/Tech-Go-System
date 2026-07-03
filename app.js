@@ -518,7 +518,10 @@ function renderStaffList(list){
             });
         }else h+='<div class="empty-hint">لا توجد مشاريع مُسندة حالياً.</div>';
 
-        h+='<div class="staff-sub-title">📆 التقارير الأسبوعية</div>';
+        h+='<div style="display:flex;justify-content:space-between;align-items:center;margin-top:16px">';
+        h+='<div class="staff-sub-title" style="margin:0;border:none">📆 التقارير الأسبوعية</div>';
+        if(emp.weeklyReports.length) h+='<button class="bt bt-d" style="padding:4px 10px;font-size:10px" onclick="event.stopPropagation();tgDeleteAllRecords(\'weeklyReports\', \'تقارير الموظف\', \'uid\', \''+emp.uid+'\', loadStaffOverview)">🗑 حذف الكل</button>';
+        h+='</div>';
         if(emp.weeklyReports.length){
             window._staffWkrCache=window._staffWkrCache||{};
             window._staffWkrCache[idx]=emp.weeklyReports;
@@ -529,7 +532,10 @@ function renderStaffList(list){
             });
         }else h+='<div class="empty-hint">لم يُرسل الموظف أي تقرير أسبوعي بعد.</div>';
 
-        h+='<div class="staff-sub-title">🏆 الإنجازات</div>';
+        h+='<div style="display:flex;justify-content:space-between;align-items:center;margin-top:16px">';
+        h+='<div class="staff-sub-title" style="margin:0;border:none">🏆 الإنجازات</div>';
+        if(emp.achievements.length) h+='<button class="bt bt-d" style="padding:4px 10px;font-size:10px" onclick="event.stopPropagation();tgDeleteAllRecords(\'achievements\', \'إنجازات الموظف\', \'uid\', \''+emp.uid+'\', loadStaffOverview)">🗑 حذف الكل</button>';
+        h+='</div>';
         if(emp.achievements.length){
             window._staffAchCache=window._staffAchCache||{};
             window._staffAchCache[idx]=emp.achievements;
@@ -541,7 +547,10 @@ function renderStaffList(list){
             });
         }else h+='<div class="empty-hint">لا توجد إنجازات مسجّلة بعد.</div>';
 
-        h+='<div class="staff-sub-title">📨 الطلبات</div>';
+        h+='<div style="display:flex;justify-content:space-between;align-items:center;margin-top:16px">';
+        h+='<div class="staff-sub-title" style="margin:0;border:none">📨 الطلبات</div>';
+        if(emp.requests.length) h+='<button class="bt bt-d" style="padding:4px 10px;font-size:10px" onclick="event.stopPropagation();tgDeleteAllRecords(\'requests\', \'طلبات الموظف\', \'uid\', \''+emp.uid+'\', loadStaffOverview)">🗑 حذف الكل</button>';
+        h+='</div>';
         if(emp.requests.length){
             window._staffReqCache=window._staffReqCache||{};
             window._staffReqCache[idx]=emp.requests;
@@ -1310,6 +1319,24 @@ function renderProjectsList(list){
            '</div></div>';
         h+='<div class="staff-card-body">';
 
+        if(p.fileUrl || p.linkUrl){
+            h+='<div class="proj-sec"><div class="proj-sec-title">📎 المرفقات والروابط</div>';
+            if(p.fileUrl){
+                var fType = p.fileType || '';
+                if(fType.indexOf('image/')===0){
+                    h+='<a href="'+p.fileUrl+'" target="_blank"><img src="'+p.fileUrl+'" style="max-width:100%;max-height:200px;border-radius:6px;display:block;margin-bottom:8px"></a>';
+                } else if(fType.indexOf('video/')===0){
+                    h+='<video src="'+p.fileUrl+'" controls style="max-width:100%;max-height:200px;border-radius:6px;margin-bottom:8px"></video>';
+                } else {
+                    h+='<a href="'+p.fileUrl+'" target="_blank" style="color:var(--nv);font-weight:700;text-decoration:underline;display:block;margin-bottom:8px">📎 '+escH(p.fileName||'ملف مرفق')+'</a>';
+                }
+            }
+            if(p.linkUrl){
+                h+='<a href="'+escH(p.linkUrl)+'" target="_blank" style="color:var(--gd);font-weight:700;text-decoration:underline;font-size:13px;display:block">🔗 رابط خارجي للمشروع</a>';
+            }
+            h+='</div>';
+        }
+
         h+='<div class="proj-sec"><div class="proj-sec-title">👥 الموظفون المسؤولون</div>';
         if(assignees.length){
             assignees.forEach(function(uid){
@@ -1435,8 +1462,11 @@ function FT(copies){
     '<span class="FL-foot-ts print-only-ts"></span>'+
     '<span class="FL-foot-ref print-only-ts"></span>'+
     '<span class="FL-foot-copies">'+sp+'</span>'+
-    '</div></div>';
+    '</div>'+
+    '<div style="text-align:center;font-size:8px;color:#bbb;padding:4px 0 2px;border-top:1px solid #eee;margin-top:2px">تطوير وتصميم: أبانوب فايز</div>'+
+    '</div>';
 }
+
 function SC(n,t){return '<div class="sec"><div class="num">'+n+'</div><div class="stx">'+t+'</div></div>'}
 
 function _sig(title,name,sub,id){
@@ -2309,7 +2339,10 @@ function load(id,c){
         h+='<div id="pmCreateMsg" style="margin-top:8px;font-size:11px"></div>';
         h+='</div>';
 
-        h+='<div class="set-sec-title" style="margin:18px 0 10px">📁 المشاريع الحالية</div>';
+        h+='<div style="display:flex;justify-content:space-between;align-items:center;margin:18px 0 10px">';
+        h+='<div class="set-sec-title" style="margin:0">📁 المشاريع الحالية</div>';
+        h+='<button class="bt bt-d" style="padding:5px 14px;font-size:11px" onclick="tgDeleteAllRecords(\'projects\', \'المشاريع\', null, null, loadPmgmtData)">🗑 حذف الكل</button>';
+        h+='</div>';
         h+='<div id="pmgmtList"><div class="empty-hint">⏳ جارٍ تحميل المشاريع...</div></div>';
         h+='</div>'; // close pmgmtListViewContainer
         h+='<div id="pmgmtDetailViewContainer" style="display:none"></div>';
@@ -2343,7 +2376,10 @@ function load(id,c){
         h+='<div id="tkCreateMsg" style="margin-top:8px;font-size:11px"></div>';
         h+='</div>';
 
-        h+='<div class="set-sec-title" style="margin:18px 0 10px">🗂 المهام الحالية</div>';
+        h+='<div style="display:flex;justify-content:space-between;align-items:center;margin:18px 0 10px">';
+        h+='<div class="set-sec-title" style="margin:0">🗂 المهام الحالية</div>';
+        h+='<button class="bt bt-d" style="padding:5px 14px;font-size:11px" onclick="tgDeleteAllRecords(\'tasks\', \'المهام\', null, null, loadTasksMgmt)">🗑 حذف الكل</button>';
+        h+='</div>';
         h+='<div id="tasksMgmtList"><div class="empty-hint">⏳ جارٍ تحميل المهام...</div></div>';
         h+='</div>';
     }
