@@ -300,10 +300,6 @@ function playTaskProjNotification() {
         toneFn(ctx, 523.25, now, 0.15, 0.15);
         toneFn(ctx, 783.99, now + 0.12, 0.25, 0.15);
         
-        // إشعار سطح المكتب للموظف
-        if(typeof tgShowNotification === 'function') {
-            tgShowNotification("مهمة أو مشروع جديد 🔔", "تم تكليفك بمهمة أو مشروع جديد في نظام Tech Go.");
-        }
     } catch(e) {
         console.error("Audio error:", e);
     }
@@ -447,6 +443,21 @@ function openProjectDetail(pid){
     h += '<div class="emp-proj-detail-title">'+esc(p.title||'بدون عنوان')+(mine?' <span class="badge" style="background:rgba(201,162,39,.25);color:#fde47f;font-size:9px">مشروعي</span>':'')+'</div>';
     if(p.description) h += '<div class="emp-proj-detail-desc">'+esc(p.description)+'</div>';
     h += '<div class="emp-proj-detail-tags">'+projectTagsHtml(p)+'</div>';
+    if(p.fileUrl){
+        var fType = p.fileType || '';
+        h += '<div style="margin-top:12px;padding-top:12px;border-top:1px dashed var(--bd)">';
+        if(fType.indexOf('image/')===0){
+            h += '<a href="'+p.fileUrl+'" target="_blank"><img src="'+p.fileUrl+'" style="max-width:100%;max-height:200px;border-radius:6px;display:block"></a>';
+        } else if(fType.indexOf('video/')===0){
+            h += '<video src="'+p.fileUrl+'" controls style="max-width:100%;max-height:200px;border-radius:6px"></video>';
+        } else {
+            h += '<a href="'+p.fileUrl+'" target="_blank" style="color:var(--nv);font-weight:700;text-decoration:underline;display:inline-block">📎 '+esc(p.fileName||'ملف مرفق')+'</a>';
+        }
+        h += '</div>';
+    }
+    if(p.linkUrl){
+        h += '<div style="margin-top:8px"><a href="'+esc(p.linkUrl)+'" target="_blank" style="color:var(--gd);font-weight:700;text-decoration:underline;font-size:13px">🔗 رابط خارجي للمشروع</a></div>';
+    }
     h += '</div>'; // end header
 
     // Section 1: Progress

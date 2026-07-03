@@ -2593,6 +2593,21 @@ function openAdminProjectDetail(idx) {
         if (p.description) h += '  <div class="emp-proj-detail-desc">' + escH(p.description) + '</div>';
         h += '  <div>' + projectTagsHtml(p) + '</div>';
         if (p.createdBy) h += '  <div style="font-size:10.5px;color:var(--tx3);margin-top:6px">أُنشئ بواسطة: <strong>' + escH(p.createdBy) + '</strong></div>';
+        if(p.fileUrl){
+            var fType = p.fileType || '';
+            h += '<div style="margin-top:12px;padding-top:12px;border-top:1px dashed var(--bd,#ccd)">';
+            if(fType.indexOf('image/')===0){
+                h += '<a href="'+p.fileUrl+'" target="_blank"><img src="'+p.fileUrl+'" style="max-width:100%;max-height:200px;border-radius:6px;display:block"></a>';
+            } else if(fType.indexOf('video/')===0){
+                h += '<video src="'+p.fileUrl+'" controls style="max-width:100%;max-height:200px;border-radius:6px"></video>';
+            } else {
+                h += '<a href="'+p.fileUrl+'" target="_blank" style="color:var(--nv);font-weight:700;text-decoration:underline;display:inline-block">📎 '+escH(p.fileName||'ملف مرفق')+'</a>';
+            }
+            h += '</div>';
+        }
+        if(p.linkUrl){
+            h += '<div style="margin-top:8px"><a href="'+escH(p.linkUrl)+'" target="_blank" style="color:var(--gd);font-weight:700;text-decoration:underline;font-size:13px">🔗 رابط خارجي للمشروع</a></div>';
+        }
         h += '</div>';
         h += '<div class="proj-sec"><div class="proj-sec-title">👥 الموظفون المسؤولون عن المشروع</div>';
         if (assignees.length) {
