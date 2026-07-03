@@ -136,29 +136,12 @@
 <div class="pg" id="pg-exp"></div><div class="pg" id="pg-clr"></div><div class="pg" id="pg-task"></div><div class="pg" id="pg-sal"></div>
 <div class="pg" id="pg-res"></div><div class="pg" id="pg-promo"></div><div class="pg" id="pg-raise"></div><div class="pg" id="pg-contract"></div>
 <div class="pg" id="pg-att"></div><div class="pg" id="pg-comp"></div><div class="pg" id="pg-set"></div><div class="pg" id="pg-proj"></div><div class="pg" id="pg-mexp"></div>
-<div class="pg" id="pg-staff"></div><div class="pg" id="pg-pmgmt"></div><div class="pg" id="pg-tasksmgmt"></div><div class="pg" id="pg-account"></div>
+<div class="pg" id="pg-staff"></div><div class="pg" id="pg-pmgmt"></div><div class="pg" id="pg-tasksmgmt"></div><div class="pg" id="pg-account"></div><div class="pg" id="pg-announcements"></div>
 </div>
 </div>
 <datalist id="tgEmpDL"></datalist>
 <script src="app.js"></script>
 
-<!-- ── الإعلانات ──────────────────────── -->
-<div class="pg" id="pg-announcements">
-  <div class="SP">
-    <h3>📢 إدارة الإعلانات</h3>
-    <div class="fr fr2" style="margin-bottom:12px">
-        <div class="fg"><label>عنوان الإعلان</label><input type="text" id="annTitle"></div>
-        <div class="fg"><label>التاريخ (اختياري)</label><input type="text" id="annDate" placeholder="مثال: 1 أكتوبر 2026"></div>
-    </div>
-    <div class="fg fg-full" style="margin-bottom:12px"><label>محتوى الإعلان</label><textarea id="annContent" rows="4"></textarea></div>
-    <button class="bt bt-p" onclick="addAnnouncement()">نشر الإعلان</button>
-    <div id="annMsg" style="margin-top:10px; font-weight:bold; font-size:12px;"></div>
-    
-    <hr style="margin:30px 0; border:0; border-top:2px solid var(--bd2)">
-    <h3>📑 الإعلانات السابقة</h3>
-    <div id="annList" style="display:flex;flex-direction:column;gap:12px;"></div>
-  </div>
-</div>
 
 <script>
   // ── معاينة الطباعة المحسّنة ──────────────────

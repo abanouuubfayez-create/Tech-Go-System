@@ -94,7 +94,6 @@ function go(id,nav){
     if(window.innerWidth<=900)document.getElementById("sb").classList.remove("opn");
     var c=document.getElementById("pg-"+id);
     if(id!=="dash"&&c.innerHTML.trim()===""){load(id,c);upCN();setD(c)}
-    if(id==="announcements"){loadAdminAnnouncements()}
     if(typeof onPageChange === "function") onPageChange(id);
 }
 function ts(b){var p=b.parentNode;p.querySelectorAll(".stb").forEach(function(x){x.classList.remove("a")});b.classList.add("a")}
@@ -2450,12 +2449,29 @@ function load(id,c){
     else if(id==="account"){
         h=myAccountHTML();
     }
+    // ── إدارة الإعلانات ──────────────────────────────────────────────────────
+    else if(id==="announcements"){
+        h='<div class="SP">';
+        h+='<h3>📢 إدارة الإعلانات</h3>';
+        h+='<div class="fr fr2" style="margin-bottom:12px">';
+        h+='<div class="fg"><label>عنوان الإعلان</label><input type="text" id="annTitle"></div>';
+        h+='<div class="fg"><label>التاريخ (اختياري)</label><input type="text" id="annDate" placeholder="مثال: 1 أكتوبر 2026"></div>';
+        h+='</div>';
+        h+='<div class="fg fg-full" style="margin-bottom:12px"><label>محتوى الإعلان</label><textarea id="annContent" rows="4"></textarea></div>';
+        h+='<button class="bt bt-p" onclick="addAnnouncement()">📢 نشر الإعلان</button>';
+        h+='<div id="annMsg" style="margin-top:10px;font-weight:bold;font-size:12px;"></div>';
+        h+='<hr style="margin:30px 0;border:0;border-top:2px solid var(--bd2)">';
+        h+='<h3>📑 الإعلانات السابقة</h3>';
+        h+='<div id="annList" style="display:flex;flex-direction:column;gap:12px;"></div>';
+        h+='</div>';
+    }
 
     c.innerHTML=h;
     if(id==="mexp") mexpInit();
     if(id==="staff") loadStaffOverview();
     if(id==="pmgmt") loadPmgmtData();
     if(id==="tasksmgmt") loadTasksMgmt();
+    if(id==="announcements") loadAdminAnnouncements();
 }
 // ═══════════════════════════════════════════════════════════════
 // ─── صفحة تفاصيل المشروع للأدمن ──────────────────────────────
