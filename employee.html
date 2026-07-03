@@ -473,29 +473,7 @@ function openProjectDetail(pid){
     h += projectChatHtml(p.id, 'empChatLog_'+p.id, 'empChatInput_'+p.id);
     h += '</div>';
 
-    // Section 3: Manage (mine only)
-    if(mine){
-        h += '<div class="proj-sec">';
-        h += '<div class="proj-sec-title">⚙️ إدارة المشروع</div>';
-        h += '<div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:12px">';
-        h += '<button class="bt bt-o" onclick="document.getElementById(\'dEdit_'+p.id+'\').style.display=document.getElementById(\'dEdit_'+p.id+'\').style.display===\'none\'?\'block\':\'none\'">✏️ تعديل</button>';
-        h += '<button class="bt bt-d" onclick="deleteMyProject(\''+p.id+'\')">🗑 حذف المشروع</button>';
-        h += '</div>';
-        h += '<div id="dEdit_'+p.id+'" style="display:none;padding:16px;background:var(--bg);border-radius:10px">';
-        h += '<div class="fg" style="margin-bottom:10px"><label>عنوان المشروع</label><input type="text" id="deTitle_'+p.id+'" value="'+esc(p.title||'')+'"></div>';
-        h += '<div class="fg fg-full" style="margin-bottom:10px"><label>وصف مختصر</label><textarea rows="2" id="deDesc_'+p.id+'">'+esc(p.description||'')+'</textarea></div>';
-        h += '<div class="fr fr3" style="margin-bottom:10px">';
-        h += '<div class="fg"><label>الأولوية</label><select id="dePriority_'+p.id+'">'+['منخفضة','متوسطة','عالية'].map(function(s){return '<option'+((p.priority||'متوسطة')===s?' selected':'')+'>'+s+'</option>';}).join('')+'</select></div>';
-        h += '<div class="fg"><label>حالة المشروع</label><select id="deStatus_'+p.id+'">'+['مخطط له','جاري العمل','متوقف','مكتمل'].map(function(s){return '<option'+((p.status||'مخطط له')===s?' selected':'')+'>'+s+'</option>';}).join('')+'</select></div>';
-        h += '<div class="fg"><label>تاريخ الاستحقاق</label><input type="date" id="deDeadline_'+p.id+'" value="'+esc(p.deadline||'')+'"></div>';
-        h += '</div>';
-        h += '<div style="display:flex;gap:8px">';
-        h += '<button class="bt bt-p" onclick="saveMyProjDetailEdit(\''+p.id+'\')">💾 حفظ التعديلات</button>';
-        h += '<button class="bt bt-o" onclick="document.getElementById(\'dEdit_'+p.id+'\').style.display=\'none\'">إلغاء</button>';
-        h += '</div><div id="deMsg_'+p.id+'" style="margin-top:8px;font-size:11px"></div>';
-        h += '</div>';
-        h += '</div>';
-    }
+    // Section 3: Manage (mine only) - Removed due to Firestore rules (employees cannot edit/delete projects)
 
     h += '</div>'; // end emp-proj-detail
     dv.innerHTML = h;
@@ -517,69 +495,10 @@ function saveProjDetailProgress(id){
         .then(function(){ msg.style.color='var(--ok)'; msg.textContent='✅ تم حفظ التحديث.'; })
         .catch(function(e){ msg.style.color='var(--no)'; msg.textContent='❌ '+e.message; });
 }
-function saveMyProjDetailEdit(id){
-    var title = (document.getElementById('deTitle_'+id).value||'').trim();
-    var desc = document.getElementById('deDesc_'+id).value;
-    var priority = document.getElementById('dePriority_'+id).value;
-    var status = document.getElementById('deStatus_'+id).value;
-    var deadline = document.getElementById('deDeadline_'+id).value;
-    var msg = document.getElementById('deMsg_'+id);
-    if(!title){ msg.style.color='var(--no)'; msg.textContent='العنوان مطلوب.'; return; }
-    db.collection('projects').doc(id).update({title:title, description:desc, priority:priority, status:status, deadline:deadline})
-        .then(function(){ msg.style.color='var(--ok)'; msg.textContent='✅ تم حفظ التعديلات.'; })
-        .catch(function(e){ msg.style.color='var(--no)'; msg.textContent='❌ '+e.message; });
-}
+// saveMyProjDetailEdit removed
 
 
-// إنشاء مشروع جديد خاص بالموظف (مُسند لنفسه) — يقدر يعدّله أو يحذفه لاحقاً بنفسه
-function empCreateProject(){
-    var title=(document.getElementById('newProjTitle').value||'').trim();
-    var desc=(document.getElementById('newProjDesc').value||'').trim();
-    var priority=document.getElementById('newProjPriority').value;
-    var status=document.getElementById('newProjStatus').value;
-    var deadline=document.getElementById('newProjDeadline').value||'';
-    var msg=document.getElementById('newProjMsg');
-    if(!title){ msg.style.color='var(--no)'; msg.textContent='من فضلك اكتب عنوان المشروع.'; return; }
-    msg.style.color='var(--tx3)'; msg.textContent='⏳ جارٍ الإنشاء...';
-    db.collection('projects').add({
-        title:title, description:desc, assignees:[TG_USER.uid], progressMap:{},
-        priority:priority, status:status, deadline:deadline,
-        createdAt:firebase.firestore.FieldValue.serverTimestamp(),
-        createdBy:TG_USER.name, createdByUid:TG_USER.uid
-    }).then(function(){
-        msg.style.color='var(--ok)'; msg.textContent='✅ تم إنشاء المشروع بنجاح.';
-        document.getElementById('newProjTitle').value='';
-        document.getElementById('newProjDesc').value='';
-        document.getElementById('newProjDeadline').value='';
-        document.getElementById('newProjPriority').value='متوسطة';
-        document.getElementById('newProjStatus').value='مخطط له';
-        loadMyProjects();
-    }).catch(function(err){ msg.style.color='var(--no)'; msg.textContent='❌ '+err.message; });
-}
-function toggleMyProjEdit(id){
-    var e=document.getElementById('mpEdit_'+id);
-    if(!e)return;
-    e.style.display=(e.style.display==='none'||!e.style.display)?'block':'none';
-}
-function saveMyProjectEdit(id){
-    var title=(document.getElementById('mpEditTitle_'+id).value||'').trim();
-    var desc=(document.getElementById('mpEditDesc_'+id).value||'').trim();
-    var priority=document.getElementById('mpEditPriority_'+id).value;
-    var status=document.getElementById('mpEditStatus_'+id).value;
-    var deadline=document.getElementById('mpEditDeadline_'+id).value||'';
-    var msg=document.getElementById('mpEditMsg_'+id);
-    if(!title){ msg.style.color='var(--no)'; msg.textContent='من فضلك اكتب عنوان المشروع.'; return; }
-    msg.style.color='var(--tx3)'; msg.textContent='⏳ جارٍ الحفظ...';
-    db.collection('projects').doc(id).update({title:title,description:desc,priority:priority,status:status,deadline:deadline}).then(function(){
-        loadMyProjects();
-    }).catch(function(err){ msg.style.color='var(--no)'; msg.textContent='❌ تعذر الحفظ: '+err.message; });
-}
-function deleteMyProject(id){
-    if(!confirm('حذف هذا المشروع نهائياً؟ لا يمكن التراجع عن هذا الإجراء.'))return;
-    db.collection('projects').doc(id).delete().then(loadMyProjects).catch(function(err){
-        alert('تعذر حذف المشروع: '+err.message);
-    });
-}
+// legacy employee project creation/editing functions removed
 function saveProjectProgress(id){
     var progress=parseInt(document.getElementById('pr_'+id).value,10)||0;
     var status=document.getElementById('ps_'+id).value;
@@ -728,7 +647,9 @@ function renderTasksHtml(rows){
     // ── المهام النشطة ──
     if(active.length){
         h += '<div style="font-size:11px;font-weight:800;color:var(--nv);margin-bottom:10px;padding-bottom:6px;border-bottom:2px solid var(--gd)">⚡ المهام الجارية ('+active.length+')</div>';
+        h += '<div class="tasks-grid">';
         active.forEach(function(t){ h += taskCard(t); });
+        h += '</div>';
     } else {
         h += '<div class="empty-hint">لا توجد مهام جارية حالياً.</div>';
     }
