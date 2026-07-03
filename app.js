@@ -2452,17 +2452,25 @@ function load(id,c){
     // ── إدارة الإعلانات ──────────────────────────────────────────────────────
     else if(id==="announcements"){
         h='<div class="SP">';
-        h+='<h3>📢 إدارة الإعلانات</h3>';
+        h+='<h3>&#128226; إدارة الإعلانات</h3>';
         h+='<div class="fr fr2" style="margin-bottom:12px">';
         h+='<div class="fg"><label>عنوان الإعلان</label><input type="text" id="annTitle"></div>';
         h+='<div class="fg"><label>التاريخ (اختياري)</label><input type="text" id="annDate" placeholder="مثال: 1 أكتوبر 2026"></div>';
         h+='</div>';
         h+='<div class="fg fg-full" style="margin-bottom:12px"><label>محتوى الإعلان</label><textarea id="annContent" rows="4"></textarea></div>';
-        h+='<button class="bt bt-p" onclick="addAnnouncement()">📢 نشر الإعلان</button>';
+        h+='<button class="bt bt-p" onclick="addAnnouncement()">&#128226; نشر الإعلان</button>';
         h+='<div id="annMsg" style="margin-top:10px;font-weight:bold;font-size:12px;"></div>';
         h+='<hr style="margin:30px 0;border:0;border-top:2px solid var(--bd2)">';
-        h+='<h3>📑 الإعلانات السابقة</h3>';
+        h+='<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">';
+        h+='<h3 style="margin:0">&#128209; الإعلانات السابقة</h3>';
+        h+='<button class="bt bt-d" style="padding:5px 14px;font-size:11px" onclick="deleteAllAnnouncements()">&#128465; حذف الكل</button>';
+        h+='</div>';
         h+='<div id="annList" style="display:flex;flex-direction:column;gap:12px;"></div>';
+        h+='</div>';
+        h+='<div class="SP" style="margin-top:20px;border:2px solid var(--no)">';
+        h+='<h3 style="color:var(--no)">&#9888;&#65039; منطقة الخطر</h3>';
+        h+='<p style="font-size:13px;color:var(--tx);margin-bottom:16px">سيؤدي هذا إلى حذف <strong>جميع بيانات النظام</strong> بشكل نهائي لا يمكن التراجع عنه، بما في ذلك الموظفون، المشاريع، المهام، الطلبات، والإشعارات.</p>';
+        h+='<button class="bt bt-d" style="padding:10px 24px;font-size:13px;font-weight:800" onclick="deleteAllSystemData()">&#128465; حذف جميع بيانات النظام</button>';
         h+='</div>';
     }
 
@@ -2473,6 +2481,91 @@ function load(id,c){
     if(id==="tasksmgmt") loadTasksMgmt();
     if(id==="announcements") loadAdminAnnouncements();
 }
+// ═══════════════════════════════════════════════════════════════
+// ── الإعلانات ─────────────────────────────────────────────────
+// ═══════════════════════════════════════════════════════════════
+function loadAdminAnnouncements() {
+    var box = document.getElementById('annList');
+    if(!box) return;
+    box.innerHTML = '<div class="empty-hint" style="color:var(--tx3)">&#9203; جارٍ التحميل...</div>';
+    db.collection('announcements').orderBy('createdAt', 'desc').limit(20).get().then(function(snap) {
+        if(snap.empty) { box.innerHTML = '<div class="empty-hint">لا توجد إعلانات سابقة.</div>'; return; }
+        var h = '';
+        snap.forEach(function(d) {
+            var a = d.data();
+            var ts = (a.createdAt && a.createdAt.seconds) ? new Date(a.createdAt.seconds*1000).toLocaleDateString('ar-EG') : '';
+            h += '<div class="pj-row" style="border-right:4px solid var(--nv)">';
+            h += '<div class="pj-t" style="font-size:14px;font-weight:800">'+escH(a.title)+'</div>';
+            h += '<div class="pj-meta" style="margin:6px 0 10px;font-size:12px;color:var(--tx);line-height:1.6">'+escH(a.content)+'</div>';
+            h += '<div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:6px">';
+            h += '<div class="pj-meta" style="display:flex;gap:12px">';
+            h += (a.date ? '<span>&#128197; '+escH(a.date)+'</span>' : '');
+            h += (ts ? '<span style="color:var(--tx3)">&#128336; نُشر: '+ts+'</span>' : '');
+            h += (a.createdBy ? '<span style="color:var(--tx3)">&#128100; '+escH(a.createdBy)+'</span>' : '');
+            h += '</div>';
+            h += '<button class="bt bt-d" style="padding:4px 10px;font-size:11px" onclick="deleteAnnouncement(\''+d.id+'\')">&#128465; حذف</button>';
+            h += '</div></div>';
+        });
+        box.innerHTML = h;
+    }).catch(function(err) {
+        box.innerHTML = '<div class="empty-hint" style="color:var(--no)">&#10060; تعذر التحميل: '+err.message+'<br><small style="color:var(--tx3)">تأكد من نشر قواعد Firestore في Firebase Console</small></div>';
+    });
+}
+function deleteAnnouncement(id) {
+    if(!confirm('هل أنت متأكد من حذف هذا الإعلان؟')) return;
+    db.collection('announcements').doc(id).delete().then(loadAdminAnnouncements).catch(function(err){ alert('تعذر الحذف: '+err.message); });
+}
+function deleteAllAnnouncements() {
+    if(!confirm('هل أنت متأكد من حذف جميع الإعلانات نهائياً؟ لا يمكن التراجع عن هذا الإجراء.')) return;
+    var box = document.getElementById('annList');
+    if(box) box.innerHTML = '<div class="empty-hint" style="color:var(--tx3)">&#9203; جارٍ حذف الكل...</div>';
+    db.collection('announcements').get().then(function(snap) {
+        var batch = db.batch();
+        snap.forEach(function(d) { batch.delete(d.ref); });
+        return batch.commit();
+    }).then(function() {
+        loadAdminAnnouncements();
+    }).catch(function(err) {
+        if(box) box.innerHTML = '<div class="empty-hint" style="color:var(--no)">&#10060; '+err.message+'</div>';
+    });
+}
+function deleteAllSystemData() {
+    var first = confirm('تحذير: سيتم حذف جميع بيانات النظام نهائياً بما في ذلك الموظفون، المشاريع، المهام، الطلبات، والإعلانات.\n\nهل أنت متأكد تماماً؟');
+    if(!first) return;
+    var second = confirm('تأكيد أخير: لا يمكن استرداد البيانات بعد الحذف. هل تريد المتابعة؟');
+    if(!second) return;
+    var collections = ['projects','tasks','announcements','requests','notifications','weeklyReports','achievements','chatMessages','projectComments'];
+    var msg = document.createElement('div');
+    msg.style.cssText = 'position:fixed;top:20px;left:50%;transform:translateX(-50%);background:#1b2a4a;color:#fff;padding:14px 28px;border-radius:10px;z-index:99999;font-size:14px;font-weight:700;box-shadow:0 8px 24px rgba(0,0,0,.3)';
+    msg.textContent = '⏳ جارٍ حذف البيانات...';
+    document.body.appendChild(msg);
+    var done = 0;
+    var errors = [];
+    collections.forEach(function(col) {
+        db.collection(col).get().then(function(snap) {
+            var batch = db.batch();
+            snap.forEach(function(d) { batch.delete(d.ref); });
+            return batch.commit();
+        }).then(function() {
+            done++;
+            msg.textContent = '⏳ جارٍ الحذف... ('+done+'/'+collections.length+')';
+            if(done+errors.length === collections.length) {
+                msg.style.background = '#1d7a4f';
+                msg.textContent = '✅ تم حذف جميع البيانات بنجاح.';
+                setTimeout(function(){ document.body.removeChild(msg); }, 3000);
+            }
+        }).catch(function(err) {
+            errors.push(col+': '+err.message);
+            done++;
+            if(done+errors.length >= collections.length) {
+                msg.style.background = '#c0392b';
+                msg.textContent = '❌ تعذر حذف بعض البيانات. تحقق من الصلاحيات.';
+                setTimeout(function(){ document.body.removeChild(msg); }, 4000);
+            }
+        });
+    });
+}
+
 // ═══════════════════════════════════════════════════════════════
 // ─── صفحة تفاصيل المشروع للأدمن ──────────────────────────────
 // ═══════════════════════════════════════════════════════════════

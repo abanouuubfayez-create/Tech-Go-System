@@ -135,5 +135,13 @@ service cloud.firestore {
       // الأدمن أو المستلم يحذف
       allow delete: if isAdmin() || (isSignedIn() && resource.data.toUid == myUid());
     }
+
+    // الإعلانات: الأدمن أو الأدمن المساعد يكتب ويحذف. كل المستخدمين يقرؤون
+    match /announcements/{annId} {
+      allow read: if isSignedIn();
+      allow create: if isAnyAdmin();
+      allow update: if isAnyAdmin();
+      allow delete: if isAnyAdmin();
+    }
   }
 }
