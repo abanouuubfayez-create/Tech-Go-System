@@ -2535,7 +2535,7 @@ function deleteAllSystemData() {
     if(!first) return;
     var second = confirm('\u062A\u0623\u0643\u064A\u062F \u0623\u062E\u064A\u0631: \u0644\u0627 \u064A\u0645\u0643\u0646 \u0627\u0633\u062A\u0631\u062F\u0627\u062F \u0627\u0644\u0628\u064A\u0627\u0646\u0627\u062A \u0628\u0639\u062F \u0627\u0644\u062D\u0630\u0641. \u0647\u0644 \u062A\u0631\u064A\u062F \u0627\u0644\u0645\u062A\u0627\u0628\u0639\u0629\u061F');
     if(!second) return;
-    var collections = ['projects','tasks','announcements','requests','notifications','weeklyReports','achievements','chatMessages','projectComments','employees','users'];
+    var collections = ['projects','tasks','announcements','requests','notifications','weeklyReports','achievements','chatMessages','projectComments','employees','users','system'];
     var msg = document.createElement('div');
     msg.style.cssText = 'position:fixed;top:20px;left:50%;transform:translateX(-50%);background:#1b2a4a;color:#fff;padding:14px 28px;border-radius:10px;z-index:99999;font-size:14px;font-weight:700;box-shadow:0 8px 24px rgba(0,0,0,.3)';
     msg.textContent = '\u23F3 \u062C\u0627\u0631\u064D \u062D\u0630\u0641 \u0627\u0644\u0628\u064A\u0627\u0646\u0627\u062A...';
