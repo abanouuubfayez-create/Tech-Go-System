@@ -124,6 +124,7 @@
 <div class="DC" onclick="go('att')"><div class="di">⏱</div><div class="dt2">الحضور والانصراف</div><div class="dd">نظام متكامل</div></div>
 <div class="DC" onclick="go('pmgmt')" style="border:2px solid var(--gd)"><div class="di">📁</div><div class="dt2">إدارة المشاريع</div><div class="dd">إنشاء مشاريع وتعيين الموظفين المسؤولين عنها</div></div>
 <div class="DC" onclick="go('tasksmgmt')" style="border:2px solid var(--gd)"><div class="di">🗂</div><div class="dt2">توزيع المهام</div><div class="dd">تكليف كل موظف بمهمة يتابعها من بوابته</div></div>
+<div class="DC" onclick="go('announcements')" style="border:2px solid var(--gd)"><div class="di">📢</div><div class="dt2">إدارة الإعلانات</div><div class="dd">نشر وتعديل الإعلانات للموظفين</div></div>
 <div class="DC" onclick="go('staff')" style="border:2px solid var(--gd)"><div class="di">👥</div><div class="dt2">متابعة الموظفين</div><div class="dd">حسابات الدخول، المشاريع، الإنجازات، الطلبات</div></div>
 <div class="DC" onclick="go('comp')"><div class="di">📝</div><div class="dt2">شكاوى ومقترحات</div><div class="dd">بسرية تامة</div></div>
 </div>
@@ -139,6 +140,23 @@
 </div>
 <datalist id="tgEmpDL"></datalist>
 <script src="app.js"></script>
+
+<!-- ── الإعلانات ──────────────────────── -->
+<div class="pg" id="pg-announcements">
+    <div class="set-sec-title">📢 إدارة الإعلانات</div>
+    <div class="fr fr2" style="margin-bottom:12px">
+        <div class="fg"><label>عنوان الإعلان</label><input type="text" id="annTitle"></div>
+        <div class="fg"><label>التاريخ (اختياري)</label><input type="text" id="annDate" placeholder="مثال: 1 أكتوبر 2026"></div>
+    </div>
+    <div class="fg fg-full" style="margin-bottom:12px"><label>محتوى الإعلان</label><textarea id="annContent" rows="4"></textarea></div>
+    <button class="bt bt-p" onclick="addAnnouncement()">نشر الإعلان</button>
+    <div id="annMsg" style="margin-top:10px; font-weight:bold; font-size:12px;"></div>
+    
+    <hr style="margin:30px 0; border:0; border-top:2px solid var(--bd2)">
+    <div class="set-sec-title">📑 الإعلانات السابقة</div>
+    <div id="annList" style="display:flex;flex-direction:column;gap:12px;"></div>
+</div>
+
 <script>
   // ── معاينة الطباعة المحسّنة ──────────────────
   function openPrintPreview() {

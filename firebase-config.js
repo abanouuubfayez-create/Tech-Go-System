@@ -39,7 +39,8 @@ function tgUploadFile(folder, fileName, file, onProgress, onError, onDone) {
     xhr.setRequestHeader('Authorization', 'Bearer ' + SUPABASE_ANON_KEY);
     xhr.setRequestHeader('apikey', SUPABASE_ANON_KEY);
     xhr.setRequestHeader('x-upsert', 'true');
-    // لا نضع Content-Type لأن XHR سيضعه تلقائياً مع الملف
+    xhr.setRequestHeader('Content-Type', file.type || 'application/octet-stream');
+    
     xhr.upload.onprogress = function(e) {
         if (e.lengthComputable && onProgress) {
             onProgress(Math.round(e.loaded / e.total * 100));

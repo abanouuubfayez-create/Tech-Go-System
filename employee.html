@@ -86,7 +86,35 @@
 
     <!-- قائمة المشاريع (تظهر افتراضياً) -->
     <div id="projListView">
+      <!-- لوحة الإعلانات -->
+      <div id="empAnnouncementsPanel" style="background:linear-gradient(135deg, #1b2a4a, #2a3f6c); border-radius:12px; padding:20px; color:#fff; margin-bottom:20px; display:none; box-shadow:0 6px 16px rgba(27,42,74,.15);">
+        <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px">
+          <span style="font-size:20px">📢</span>
+          <div style="font-size:16px;font-weight:800;color:var(--gd)">إعلانات الإدارة</div>
+        </div>
+        <div id="empAnnouncementsList" style="display:flex;flex-direction:column;gap:12px"></div>
+      </div>
+
       <div class="set-hint" style="margin-bottom:16px">المشاريع المُسندة إليك من الإدارة — حدّث نسبة تقدّمك وحالتك أولاً بأول ليراها المدير.</div>
+
+      <!-- نموذج إضافة مشروع (للمساعد الإداري) -->
+      <div id="astAdminProjectSection" style="display:none; background:var(--w); padding:16px; border-radius:10px; margin-bottom:20px; border:1px solid var(--bd2)">
+        <div class="set-sec-title">➕ إضافة مشروع جديد (أدمن مساعد)</div>
+        <div class="fr fr2" style="margin-top:8px">
+          <div class="fg"><label>عنوان المشروع</label><input type="text" id="newAstProjTitle"></div>
+          <div class="fg"><label>الموظفون (اختر موظفاً أو أكثر بالمؤشر)</label>
+            <select id="newAstProjAssignees" multiple size="3" style="padding:4px;font-size:12px;height:75px"></select>
+          </div>
+        </div>
+        <div class="fg fg-full" style="margin-top:8px"><label>وصف المشروع</label><textarea id="newAstProjDesc" rows="2"></textarea></div>
+        <div class="fr fr3" style="margin-top:8px">
+          <div class="fg"><label>الأولوية</label><select id="newAstProjPriority"><option>منخفضة</option><option selected>متوسطة</option><option>عالية</option></select></div>
+          <div class="fg"><label>الحالة الأولية</label><select id="newAstProjStatus"><option selected>مخطط له</option><option>جاري العمل</option></select></div>
+          <div class="fg"><label>تاريخ الاستحقاق</label><input type="date" id="newAstProjDeadline"></div>
+        </div>
+        <button class="bt bt-p" style="margin-top:12px" onclick="astCreateProject()">➕ تكليف المشروع</button>
+        <div id="newAstProjMsg" style="font-size:11px;margin-top:6px"></div>
+      </div>
 
       <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px">
         <div style="font-size:14px;font-weight:800;color:var(--nv)">📁 مشاريعي الحالية</div>
@@ -883,6 +911,7 @@ tgRequireAuth('employee', function(u){
     loadMyRequests();
     tgChatMount();
     tgChatWatch();
+    if(typeof loadEmpAnnouncements === 'function') loadEmpAnnouncements();
     // تفعيل استقبال Push Notifications من Firestore
     if(typeof tgListenMyNotifications === 'function') tgListenMyNotifications(u.uid);
     // PWA Service Worker

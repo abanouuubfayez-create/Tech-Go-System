@@ -41,7 +41,7 @@ function tgRequireAuth(requiredRole, onOk) {
                     return;
                 }
             } else if (requiredRole && data.role !== requiredRole) {
-                location.href = (data.role === 'admin' || data.role === 'assistant_admin') ? 'index.html' : 'employee.html';
+                location.href = (data.role === 'admin') ? 'index.html' : 'employee.html';
                 return;
             }
 

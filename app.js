@@ -94,6 +94,7 @@ function go(id,nav){
     if(window.innerWidth<=900)document.getElementById("sb").classList.remove("opn");
     var c=document.getElementById("pg-"+id);
     if(id!=="dash"&&c.innerHTML.trim()===""){load(id,c);upCN();setD(c)}
+    if(id==="announcements"){loadAdminAnnouncements()}
     if(typeof onPageChange === "function") onPageChange(id);
 }
 function ts(b){var p=b.parentNode;p.querySelectorAll(".stb").forEach(function(x){x.classList.remove("a")});b.classList.add("a")}
@@ -257,7 +258,7 @@ function loadDashboardSummary(){
     var box=document.getElementById('dashSummary');
     if(!box)return;
     Promise.all([
-        db.collection('users').where('role','==','employee').get(),
+        db.collection('users').where('role','in',['employee','assistant_admin']).get(),
         db.collection('projects').get(),
         db.collection('requests').where('status','==','pending').get()
     ]).then(function(res){
@@ -406,7 +407,7 @@ function clearAdminBadge(badgeId, sbBadgeId){
 function loadStaffOverview(){
     var box=document.getElementById('staffList');
     if(!box)return;
-    db.collection('users').where('role','==','employee').get().then(function(snap){
+    db.collection('users').where('role','in',['employee','assistant_admin']).get().then(function(snap){
         if(snap.empty){
             box.innerHTML='<div class="empty-hint">لا يوجد موظفون مسجّلون بعد. أنشئ أول حساب من الأعلى.</div>';
             return;
@@ -717,7 +718,7 @@ function loadPmgmtData(){
     var assigneesBox=document.getElementById('pmgmtAssignees');
     var listBox=document.getElementById('pmgmtList');
     if(!assigneesBox||!listBox)return;
-    db.collection('users').where('role','==','employee').get().then(function(snap){
+    db.collection('users').where('role','in',['employee','assistant_admin']).get().then(function(snap){
         PMGMT_EMPLOYEES=[];
         snap.forEach(function(doc){PMGMT_EMPLOYEES.push(Object.assign({uid:doc.id},doc.data()));});
         PMGMT_EMPLOYEES.sort(function(a,b){return (a.name||a.email||'').localeCompare((b.name||b.email||''),'ar');});
@@ -836,7 +837,7 @@ function loadTasksMgmt(){
     var assigneeSel=document.getElementById('tkAssignee');
     var listBox=document.getElementById('tasksMgmtList');
     if(!assigneeSel||!listBox)return;
-    db.collection('users').where('role','==','employee').get().then(function(snap){
+    db.collection('users').where('role','in',['employee','assistant_admin']).get().then(function(snap){
         var employees=[];
         snap.forEach(function(doc){employees.push(Object.assign({uid:doc.id},doc.data()));});
         employees.sort(function(a,b){return (a.name||a.email||'').localeCompare((b.name||b.email||''),'ar');});
@@ -2792,3 +2793,83 @@ document.addEventListener('DOMContentLoaded', function(){
     setTimeout(autofillEmployeeFields, 800);
 });
 
+
+// ── الإعلانات (Announcements) ──────────────────────────────────────
+function addAnnouncement() {
+    var title = (document.getElementById('annTitle').value||'').trim();
+    var date = (document.getElementById('annDate').value||'').trim();
+    var content = (document.getElementById('annContent').value||'').trim();
+    var msg = document.getElementById('annMsg');
+    
+    if(!title || !content) { msg.style.color = 'var(--no)'; msg.textContent = 'عنوان ومحتوى الإعلان مطلوبان.'; return; }
+    
+    msg.style.color = 'var(--tx3)'; msg.textContent = '⏳ جارٍ النشر...';
+    
+    db.collection('announcements').add({
+        title: title,
+        date: date,
+        content: content,
+        createdAt: firebase.firestore.FieldValue.serverTimestamp(),
+        createdBy: TG_USER ? TG_USER.name : 'الإدارة'
+    }).then(function() {
+        msg.style.color = 'var(--ok)'; msg.textContent = '✅ تم نشر الإعلان.';
+        document.getElementById('annTitle').value = '';
+        document.getElementById('annDate').value = '';
+        document.getElementById('annContent').value = '';
+        setTimeout(function(){ msg.textContent = ''; }, 3000);
+        loadAdminAnnouncements();
+    }).catch(function(err) {
+        msg.style.color = 'var(--no)'; msg.textContent = '❌ ' + err.message;
+    });
+}
+
+function loadAdminAnnouncements() {
+    var box = document.getElementById('annList');
+    if(!box) return;
+    
+    db.collection('announcements').orderBy('createdAt', 'desc').limit(20).get().then(function(snap) {
+        if(snap.empty) { box.innerHTML = '<div class="empty-hint">لا توجد إعلانات سابقة.</div>'; return; }
+        var h = '';
+        snap.forEach(function(d) {
+            var a = d.data();
+            h += '<div class="pj-row" style="background:#f8f9fc">';
+            h += '<div class="pj-t">'+esc(a.title)+'</div>';
+            h += '<div class="pj-meta" style="margin-bottom:8px;font-size:12px;color:var(--tx)">'+esc(a.content)+'</div>';
+            h += '<div style="display:flex;justify-content:space-between;align-items:center;">';
+            h += '<div class="pj-meta">'+(a.date?'📅 '+esc(a.date):'')+'</div>';
+            h += '<button class="bt bt-d" style="padding:4px 10px;font-size:10px" onclick="deleteAnnouncement(\''+d.id+'\')">🗑 حذف</button>';
+            h += '</div></div>';
+        });
+        box.innerHTML = h;
+    });
+}
+
+function deleteAnnouncement(id) {
+    if(!confirm('هل أنت متأكد من حذف هذا الإعلان؟')) return;
+    db.collection('announcements').doc(id).delete().then(loadAdminAnnouncements);
+}
+
+// Loads announcements in employee dashboard
+function loadEmpAnnouncements() {
+    var box = document.getElementById('empAnnouncementsList');
+    var panel = document.getElementById('empAnnouncementsPanel');
+    if(!box || !panel) return;
+    
+    db.collection('announcements').orderBy('createdAt', 'desc').limit(5).onSnapshot(function(snap) {
+        if(snap.empty) {
+            panel.style.display = 'none';
+            return;
+        }
+        panel.style.display = 'block';
+        var h = '';
+        snap.forEach(function(d) {
+            var data = d.data();
+            h += '<div style="background:rgba(255,255,255,.1);padding:14px 18px;border-radius:10px;border-right:4px solid var(--gd);margin-bottom:8px">';
+            h += '<div style="font-size:15px;font-weight:800;margin-bottom:6px">'+esc(data.title)+'</div>';
+            h += '<div style="font-size:13px;opacity:.9;line-height:1.6">'+esc(data.content)+'</div>';
+            if(data.date) h += '<div style="font-size:11px;opacity:.6;margin-top:8px">📅 '+esc(data.date)+'</div>';
+            h += '</div>';
+        });
+        box.innerHTML = h;
+    });
+}

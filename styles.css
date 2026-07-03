@@ -4,10 +4,10 @@
     --nv: #1b2a4a;
     --nv2: #263d66;
     --nv3: #0e1a30;
-    --gd: #c9a227;
-    --gd2: #a8871c;
-    --gdl: #faf5e4;
-    --gdl2: #f0e9cc;
+    --gd: #e5be49;
+    --gd2: #c59f20;
+    --gdl: #fcf8eb;
+    --gdl2: #f4ecce;
     --bg: #eef0f6;
     --w: #ffffff;
     --tx: #1b2a4a;
@@ -536,8 +536,8 @@ body { font-family: 'Cairo', sans-serif; direction: rtl; background: var(--bg); 
         background: rgba(201,162,39,.08) !important;
         padding: 8px 16px;
     }
-    .F-hd .logo-box .en { color: #c9a227 !important; font-size: 10px; font-weight: 800; }
-    .F-hd .logo-box .ar { color: #c9a227 !important; font-size: 9px; }
+    .F-hd .logo-box .en { color: #e5be49 !important; font-size: 10px; font-weight: 800; }
+    .F-hd .logo-box .ar { color: #e5be49 !important; font-size: 9px; }
     .F-hd .center .title { font-size: 15px !important; color: #fff !important; font-weight: 800; }
     .F-hd .center .en2 { color: rgba(255,255,255,.55) !important; font-size: 8px; }
     .F-hd .center .sub2 { color: rgba(255,255,255,.75) !important; font-size: 9px; }
@@ -1581,3 +1581,20 @@ html.tg-auth-pending body { visibility: hidden; }
     to { opacity: 0; pointer-events: none; }
 }
 
+
+/* --- Professional UI Overrides --- */
+.emp-proj-card { background: rgba(255, 255, 255, 0.7) !important; backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px); border: 1px solid rgba(255, 255, 255, 0.5) !important; border-radius: 16px !important; box-shadow: 0 8px 32px rgba(31, 38, 135, 0.07) !important; transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1) !important; overflow: hidden; cursor: pointer; display: flex; flex-direction: column; }
+.emp-proj-card:hover { transform: translateY(-5px) scale(1.02) !important; box-shadow: 0 12px 40px rgba(31, 38, 135, 0.15) !important; border-color: rgba(201,162,39,0.5) !important; }
+.emp-proj-card-top { padding: 20px !important; border-bottom: 1px solid rgba(0,0,0,0.04) !important; flex-grow: 1; }
+.emp-proj-card-stripe { height: 6px !important; }
+.emp-proj-card-title { font-size: 16px !important; font-weight: 900 !important; margin-bottom: 6px !important; letter-spacing: -0.3px; }
+.emp-proj-card-desc { font-size: 12px !important; color: #64748b !important; line-height: 1.6 !important; margin-bottom: 16px !important; }
+.emp-proj-card-bar { height: 8px !important; border-radius: 8px !important; box-shadow: inset 0 1px 2px rgba(0,0,0,0.05) !important; }
+.emp-proj-card-bar-in { transition: width 1s cubic-bezier(0.4, 0, 0.2, 1) !important; }
+#myTasksList, #archiveSec_tasks { display: grid !important; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)) !important; gap: 16px !important; }
+.pj-row { background: #ffffff !important; border: 1px solid #e2e8f0 !important; border-radius: 14px !important; padding: 18px !important; margin-bottom: 0 !important; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -1px rgba(0, 0, 0, 0.03) !important; display: flex !important; flex-direction: column !important; justify-content: space-between !important; }
+.pj-row:hover { transform: translateY(-4px) !important; box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05) !important; }
+.pj-t { font-size: 14px !important; display: flex !important; align-items: flex-start !important; justify-content: space-between !important; gap: 8px !important; flex-wrap: wrap !important; }
+.pj-meta { font-size: 11px !important; color: #64748b !important; margin-top: 6px !important; line-height: 1.5 !important; }
+
+.logo { filter: brightness(1.25); }
