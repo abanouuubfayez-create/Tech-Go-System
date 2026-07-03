@@ -2467,11 +2467,6 @@ function load(id,c){
         h+='</div>';
         h+='<div id="annList" style="display:flex;flex-direction:column;gap:12px;"></div>';
         h+='</div>';
-        h+='<div class="SP" style="margin-top:20px;border:2px solid var(--no)">';
-        h+='<h3 style="color:var(--no)">&#9888;&#65039; منطقة الخطر</h3>';
-        h+='<p style="font-size:13px;color:var(--tx);margin-bottom:16px">سيؤدي هذا إلى حذف <strong>جميع بيانات النظام</strong> بشكل نهائي لا يمكن التراجع عنه، بما في ذلك الموظفون، المشاريع، المهام، الطلبات، والإشعارات.</p>';
-        h+='<button class="bt bt-d" style="padding:10px 24px;font-size:13px;font-weight:800" onclick="deleteAllSystemData()">&#128465; حذف جميع بيانات النظام</button>';
-        h+='</div>';
     }
 
     c.innerHTML=h;
@@ -2530,17 +2525,16 @@ function deleteAllAnnouncements() {
     });
 }
 function deleteAllSystemData() {
-    var first = confirm('تحذير: سيتم حذف جميع بيانات النظام نهائياً بما في ذلك الموظفون، المشاريع، المهام، الطلبات، والإعلانات.\n\nهل أنت متأكد تماماً؟');
+    var first = confirm('\u062A\u062D\u0630\u064A\u0631: \u0633\u064A\u062A\u0645 \u062D\u0630\u0641 \u062C\u0645\u064A\u0639 \u0628\u064A\u0627\u0646\u0627\u062A \u0627\u0644\u0646\u0638\u0627\u0645 \u0646\u0647\u0627\u0626\u064A\u0627\u064B. \u0647\u0644 \u0623\u0646\u062A \u0645\u062A\u0623\u0643\u062F\u061F');
     if(!first) return;
-    var second = confirm('تأكيد أخير: لا يمكن استرداد البيانات بعد الحذف. هل تريد المتابعة؟');
+    var second = confirm('\u062A\u0623\u0643\u064A\u062F \u0623\u062E\u064A\u0631: \u0644\u0627 \u064A\u0645\u0643\u0646 \u0627\u0633\u062A\u0631\u062F\u0627\u062F \u0627\u0644\u0628\u064A\u0627\u0646\u0627\u062A \u0628\u0639\u062F \u0627\u0644\u062D\u0630\u0641. \u0647\u0644 \u062A\u0631\u064A\u062F \u0627\u0644\u0645\u062A\u0627\u0628\u0639\u0629\u061F');
     if(!second) return;
-    var collections = ['projects','tasks','announcements','requests','notifications','weeklyReports','achievements','chatMessages','projectComments'];
+    var collections = ['projects','tasks','announcements','requests','notifications','weeklyReports','achievements','chatMessages','projectComments','employees','users'];
     var msg = document.createElement('div');
     msg.style.cssText = 'position:fixed;top:20px;left:50%;transform:translateX(-50%);background:#1b2a4a;color:#fff;padding:14px 28px;border-radius:10px;z-index:99999;font-size:14px;font-weight:700;box-shadow:0 8px 24px rgba(0,0,0,.3)';
-    msg.textContent = '⏳ جارٍ حذف البيانات...';
+    msg.textContent = '\u23F3 \u062C\u0627\u0631\u064D \u062D\u0630\u0641 \u0627\u0644\u0628\u064A\u0627\u0646\u0627\u062A...';
     document.body.appendChild(msg);
-    var done = 0;
-    var errors = [];
+    var done = 0; var errors = [];
     collections.forEach(function(col) {
         db.collection(col).get().then(function(snap) {
             var batch = db.batch();
@@ -2548,18 +2542,17 @@ function deleteAllSystemData() {
             return batch.commit();
         }).then(function() {
             done++;
-            msg.textContent = '⏳ جارٍ الحذف... ('+done+'/'+collections.length+')';
+            msg.textContent = '\u23F3 \u062C\u0627\u0631\u064D \u0627\u0644\u062D\u0630\u0641... ('+done+'/'+collections.length+')';
             if(done+errors.length === collections.length) {
                 msg.style.background = '#1d7a4f';
-                msg.textContent = '✅ تم حذف جميع البيانات بنجاح.';
+                msg.textContent = '\u2705 \u062A\u0645 \u062D\u0630\u0641 \u062C\u0645\u064A\u0639 \u0627\u0644\u0628\u064A\u0627\u0646\u0627\u062A \u0628\u0646\u062C\u0627\u062D.';
                 setTimeout(function(){ document.body.removeChild(msg); }, 3000);
             }
         }).catch(function(err) {
-            errors.push(col+': '+err.message);
-            done++;
+            errors.push(col+': '+err.message); done++;
             if(done+errors.length >= collections.length) {
                 msg.style.background = '#c0392b';
-                msg.textContent = '❌ تعذر حذف بعض البيانات. تحقق من الصلاحيات.';
+                msg.textContent = '\u274C \u062A\u0639\u0630\u0631 \u062D\u0630\u0641 \u0628\u0639\u0636 \u0627\u0644\u0628\u064A\u0627\u0646\u0627\u062A. \u062A\u062D\u0642\u0642 \u0645\u0646 \u0627\u0644\u0635\u0644\u0627\u062D\u064A\u0627\u062A.';
                 setTimeout(function(){ document.body.removeChild(msg); }, 4000);
             }
         });
@@ -2930,32 +2923,6 @@ function addAnnouncement() {
     }).catch(function(err) {
         msg.style.color = 'var(--no)'; msg.textContent = '❌ ' + err.message;
     });
-}
-
-function loadAdminAnnouncements() {
-    var box = document.getElementById('annList');
-    if(!box) return;
-    
-    db.collection('announcements').orderBy('createdAt', 'desc').limit(20).get().then(function(snap) {
-        if(snap.empty) { box.innerHTML = '<div class="empty-hint">لا توجد إعلانات سابقة.</div>'; return; }
-        var h = '';
-        snap.forEach(function(d) {
-            var a = d.data();
-            h += '<div class="pj-row" style="background:#f8f9fc">';
-            h += '<div class="pj-t">'+esc(a.title)+'</div>';
-            h += '<div class="pj-meta" style="margin-bottom:8px;font-size:12px;color:var(--tx)">'+esc(a.content)+'</div>';
-            h += '<div style="display:flex;justify-content:space-between;align-items:center;">';
-            h += '<div class="pj-meta">'+(a.date?'📅 '+esc(a.date):'')+'</div>';
-            h += '<button class="bt bt-d" style="padding:4px 10px;font-size:10px" onclick="deleteAnnouncement(\''+d.id+'\')">🗑 حذف</button>';
-            h += '</div></div>';
-        });
-        box.innerHTML = h;
-    });
-}
-
-function deleteAnnouncement(id) {
-    if(!confirm('هل أنت متأكد من حذف هذا الإعلان؟')) return;
-    db.collection('announcements').doc(id).delete().then(loadAdminAnnouncements);
 }
 
 // Loads announcements in employee dashboard
