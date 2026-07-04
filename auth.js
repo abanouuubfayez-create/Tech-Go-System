@@ -159,7 +159,7 @@ function tgCreateEmployeeAccount(name, email, password, empId, jobTitle, role, o
             name: name, email: email,
             role: role || 'employee',
             empId: empId || '', jobTitle: jobTitle || '',
-            createdAt: firebase.firestore.FieldValue.serverTimestamp()
+            createdAt: new Date()
         }).then(function () { return secAuth.signOut(); }).then(function () { onDone(uid); });
     }).catch(function (err) { onError(err); });
 }
