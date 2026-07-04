@@ -888,11 +888,13 @@ function createProject(){
     if(!title){ msg.style.color='var(--no)'; msg.textContent='من فضلك اكتب عنوان المشروع.'; return; }
     msg.style.color='var(--tx3)'; msg.textContent='⏳ جارٍ إنشاء المشروع...';
 
+    var createdByRole = (TG_USER && TG_USER.role === 'tech_admin') ? 'أدمن تقني' : 'أدمن إداري';
     var projectData = {
         title:title, description:desc, assignees:checked, progressMap:{},
         priority:priority, status:status, deadline:deadline,
         createdAt:firebase.firestore.FieldValue.serverTimestamp(),
-        createdBy:(TG_USER?TG_USER.name:''), createdByUid:(TG_USER?TG_USER.uid:'')
+        createdBy:(TG_USER?TG_USER.name:''), createdByUid:(TG_USER?TG_USER.uid:''),
+        createdByRole: createdByRole
     };
     if(linkUrl) projectData.linkUrl = linkUrl;
 
@@ -948,7 +950,9 @@ function createProject(){
     }
 
     db.collection('projects').add(projectData).then(onDone).catch(function(err){
+        console.error("Project Create Error:", err);
         msg.style.color='var(--no)'; msg.textContent='❌ تعذر إنشاء المشروع: '+err.message;
+        tgToast('❌ تعذر إنشاء المشروع: ' + err.message, 'err');
     });
 }
 
@@ -1004,6 +1008,7 @@ function renderTasksMgmtList(list){
            ' <span class="badge '+pstatusBadgeClass(t.status)+'">'+escH(t.status||'لم يبدأ')+'</span></div>'+
            '<div class="pj-meta">👤 مكلَّف إلى: '+escH(t.assignedToName||'')+(t.deadline?(' · تاريخ التسليم: '+escH(t.deadline)):'')+'</div>'+
            (t.description?'<div class="pj-meta">'+escH(t.description)+'</div>':'')+
+           '<div class="pj-meta" style="margin-top:2px;font-size:10px;color:var(--tx3)">بواسطة: '+escH(t.createdBy||'الإدارة')+' ('+escH(t.createdByRole||'أدمن إداري')+')</div>'+
            attachHtml+
            '<div style="text-align:right;margin-top:12px"><button class="bt bt-d" style="padding:4px 12px;font-size:11px;border-radius:6px" onclick="deleteTask(\''+t.id+'\')">🗑 حذف المهمة</button></div>'+
            '</div>';
@@ -1025,11 +1030,13 @@ function createTask(){
     if(!title){ msg.style.color='var(--no)'; msg.textContent='من فضلك اكتب عنوان المهمة.'; return; }
     msg.style.color='var(--tx3)'; msg.textContent='⏳ جارٍ التكليف...';
 
+    var createdByRole = (TG_USER && TG_USER.role === 'tech_admin') ? 'أدمن تقني' : 'أدمن إداري';
     var taskData = {
         title:title, description:desc, assignedTo:uid, assignedToName:name||'',
         priority:priority, deadline:deadline, status:'لم يبدأ',
         createdAt:firebase.firestore.FieldValue.serverTimestamp(),
-        createdBy:(TG_USER?TG_USER.name:''), createdByUid:(TG_USER?TG_USER.uid:'')
+        createdBy:(TG_USER?TG_USER.name:''), createdByUid:(TG_USER?TG_USER.uid:''),
+        createdByRole: createdByRole
     };
 
     var onDone = function(){
@@ -1079,7 +1086,9 @@ function createTask(){
     }
 
     db.collection('tasks').add(taskData).then(onDone).catch(function(err){
+        console.error("Task Create Error:", err);
         msg.style.color='var(--no)'; msg.textContent='❌ تعذر تكليف المهمة: '+err.message;
+        tgToast('❌ تعذر تكليف المهمة: ' + err.message, 'err');
     });
 }
 function deleteTask(id){
@@ -1442,6 +1451,7 @@ function renderProjectsList(list){
            '<div><div class="staff-name">'+escH(p.title||'بدون عنوان')+'</div>'+
            (p.description?'<div class="staff-email">'+escH(p.description)+'</div>':'')+
            projectTagsHtml(p)+
+           '<div class="pj-meta" style="margin-top:4px;font-size:10px;color:var(--tx3)">بواسطة: '+escH(p.createdBy||'الإدارة')+' ('+escH(p.createdByRole||'أدمن إداري')+')</div>'+
            '</div>'+
            '<div class="staff-stats">'+
            '<span class="staff-stat">👥 '+assignees.length+' موظف</span>'+
@@ -2668,7 +2678,7 @@ function loadAdminAnnouncements() {
             h += '<div class="pj-meta" style="display:flex;gap:12px">';
             h += (a.date ? '<span>&#128197; '+escH(a.date)+'</span>' : '');
             h += (ts ? '<span style="color:var(--tx3)">&#128336; نُشر: '+ts+'</span>' : '');
-            h += (a.createdBy ? '<span style="color:var(--tx3)">&#128100; '+escH(a.createdBy)+'</span>' : '');
+            h += (a.createdBy ? '<span style="color:var(--tx3)">&#128100; '+escH(a.createdBy)+' ('+escH(a.createdByRole||'أدمن إداري')+')</span>' : '');
             h += '</div>';
             h += '<button class="bt bt-d" style="padding:4px 10px;font-size:11px" onclick="deleteAnnouncement(\''+d.id+'\')">&#128465; حذف</button>';
             h += '</div></div>';
@@ -3105,12 +3115,14 @@ function addAnnouncement() {
     
     msg.style.color = 'var(--tx3)'; msg.textContent = '⏳ جارٍ النشر...';
     
+    var createdByRole = (TG_USER && TG_USER.role === 'tech_admin') ? 'أدمن تقني' : 'أدمن إداري';
     db.collection('announcements').add({
         title: title,
         date: date,
         content: content,
         createdAt: firebase.firestore.FieldValue.serverTimestamp(),
-        createdBy: TG_USER ? TG_USER.name : 'الإدارة'
+        createdBy: TG_USER ? TG_USER.name : 'الإدارة',
+        createdByRole: createdByRole
     }).then(function() {
         msg.style.color = 'var(--ok)'; msg.textContent = '✅ تم نشر الإعلان.';
         document.getElementById('annTitle').value = '';
