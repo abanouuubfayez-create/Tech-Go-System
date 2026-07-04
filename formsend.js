@@ -425,10 +425,15 @@
     fsSentCache.forEach(function (r) {
       var pending = r.status === 'pending';
       h += '<div class="pj-row">' +
-        '<div class="pj-t">' + escH(r.templateLabel || 'نموذج') +
-          ' <span class="badge ' + (pending ? 'badge-pending' : 'badge-approved') + '">' + (pending ? 'قيد الانتظار' : 'تم الرد') + '</span>' +
+        '<div style="display:flex;align-items:flex-start;justify-content:space-between;gap:8px">' +
+          '<div style="flex:1">' +
+            '<div class="pj-t">' + escH(r.templateLabel || 'نموذج') +
+              ' <span class="badge ' + (pending ? 'badge-pending' : 'badge-approved') + '">' + (pending ? 'قيد الانتظار' : 'تم الرد') + '</span>' +
+            '</div>' +
+            '<div class="pj-meta">👤 ' + escH(r.targetName || '') + '</div>' +
+          '</div>' +
+          '<button type="button" class="bt bt-d" style="padding:4px 10px;font-size:11px;flex-shrink:0;margin-top:2px" onclick="fsDeleteForm(\'' + r.id + '\')">🗑 حذف</button>' +
         '</div>' +
-        '<div class="pj-meta">👤 ' + escH(r.targetName || '') + '</div>' +
         (pending ? '' :
           '<div style="margin-top:8px">' +
             (r.fields || []).map(function (f) {
@@ -440,6 +445,32 @@
     });
     box.innerHTML = h;
   }
+
+  // حذف نموذج مُرسل (مع تأكيد)
+  window.fsDeleteForm = function (reqId) {
+    var r = fsSentCache.filter(function (x) { return x.id === reqId; })[0];
+    var label = r ? escH(r.templateLabel || 'النموذج') : 'النموذج';
+    if (typeof tgConfirmModal === 'function') {
+      tgConfirmModal(
+        '🗑 حذف النموذج',
+        'هل أنت متأكد من حذف «' + label + '»؟<br><small style="color:var(--tx3)">سيُحذف النموذج بشكل نهائي من قائمتك ومن بوابة الموظف.</small>',
+        [
+          { label: 'إلغاء', cls: 'bt-o', onClick: function () { if (typeof tgCloseModal === 'function') tgCloseModal(); } },
+          { label: '🗑 حذف', cls: 'bt-d', onClick: function () {
+            if (typeof tgCloseModal === 'function') tgCloseModal();
+            db.collection('formRequests').doc(reqId).delete()
+              .then(function () { if (typeof tgToast === 'function') tgToast('✅ تم حذف النموذج', 'ok'); })
+              .catch(function (err) { if (typeof tgToast === 'function') tgToast('❌ ' + err.message, 'err'); });
+          }}
+        ]
+      );
+    } else {
+      if (!confirm('هل تريد حذف هذا النموذج نهائياً؟')) return;
+      db.collection('formRequests').doc(reqId).delete()
+        .then(function () { if (typeof tgToast === 'function') tgToast('✅ تم حذف النموذج', 'ok'); })
+        .catch(function (err) { if (typeof tgToast === 'function') tgToast('❌ ' + err.message, 'err'); });
+    }
+  };
 
   // يطبع رد الموظف على النموذج بنفس التصميم الرسمي للنظام (لوجو + رقم مستند + تنسيق موحّد)
   window.fsPrintSubmittedForm = function (reqId) {

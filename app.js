@@ -131,6 +131,46 @@ function ts(b){var p=b.parentNode;p.querySelectorAll(".stb").forEach(function(x)
 function sct(c){c.parentNode.querySelectorAll(".ctc").forEach(function(x){x.classList.remove("sel")});c.classList.add("sel")}
 function spr(p){p.parentNode.querySelectorAll(".ppl").forEach(function(x){x.classList.remove("a")});p.classList.add("a")}
 
+// ─── Sidebar Search & Quick Nav ──────────────────────────────────────────
+function sbFilterNav(val){
+    var v = (val||'').toLowerCase().trim();
+    var items = document.querySelectorAll('#sidebarNav .S-i');
+    var headers = document.querySelectorAll('#sidebarNav .S-s');
+    var noRes = document.getElementById('sbNoResults');
+    var hasAny = false;
+    
+    if(!v) {
+        items.forEach(function(el){ el.style.display = ''; });
+        headers.forEach(function(el){ el.style.display = ''; });
+        if(noRes) noRes.style.display = 'none';
+        return;
+    }
+    
+    headers.forEach(function(el){ el.style.display = 'none'; });
+    items.forEach(function(el){
+        var text = el.textContent.toLowerCase();
+        if(text.indexOf(v) > -1) {
+            el.style.display = '';
+            hasAny = true;
+        } else {
+            el.style.display = 'none';
+        }
+    });
+    
+    if(noRes) noRes.style.display = hasAny ? 'none' : 'block';
+}
+
+document.addEventListener('DOMContentLoaded', function(){
+    var sb = document.getElementById('sb');
+    var btn = document.getElementById('sbScrollTop');
+    if(sb && btn) {
+        sb.addEventListener('scroll', function(){
+            if(sb.scrollTop > 150) btn.classList.add('vis');
+            else btn.classList.remove('vis');
+        });
+    }
+});
+
 // ─── Toast Notification Helper ────────────────────────────────────────────
 function tgToast(msg, type){
     var t=document.createElement('div');
