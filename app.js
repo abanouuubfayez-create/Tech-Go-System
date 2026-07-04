@@ -702,7 +702,7 @@ function reviewRequest(reqId,newStatus){
         return db.collection('requests').doc(reqId).update({
             status:newStatus,
             reviewedBy:(TG_USER?TG_USER.name:''),
-            reviewedAt:firebase.firestore.FieldValue.serverTimestamp()
+            reviewedAt:new Date()
         }).then(function(){
             // إشعار الموظف بنتيجة طلبه فور المراجعة
             if(req.uid && typeof tgSendPushToUser === 'function'){
@@ -892,7 +892,7 @@ function createProject(){
     var projectData = {
         title:title, description:desc, assignees:checked, progressMap:{},
         priority:priority, status:status, deadline:deadline,
-        createdAt:firebase.firestore.FieldValue.serverTimestamp(),
+        createdAt:new Date(),
         createdBy:(TG_USER?(TG_USER.name||TG_USER.email||'الأدمن'):''), createdByUid:(TG_USER?TG_USER.uid:''),
         createdByRole: createdByRole
     };
@@ -1315,7 +1315,7 @@ function tgChatSend(){
     inp.style.height='';
     db.collection('chatMessages').add({
         uid: TG_USER.uid, name: TG_USER.name||TG_USER.email, role: TG_USER.role||'employee',
-        text: text, createdAt: firebase.firestore.FieldValue.serverTimestamp()
+        text: text, createdAt: new Date()
     }).catch(function(err){ alert('تعذر إرسال الرسالة: '+err.message); });
 }
 
@@ -1414,7 +1414,7 @@ function postProjectComment(projectId,inputId){
     input.disabled=true;
     db.collection('projectComments').add({
         projectId:projectId, uid:TG_USER.uid, name:TG_USER.name, role:TG_USER.role,
-        text:text, createdAt:firebase.firestore.FieldValue.serverTimestamp()
+        text:text, createdAt:new Date()
     }).then(function(){
         input.value=''; input.disabled=false; input.focus();
         reloadProjectChat(projectId);
@@ -3133,7 +3133,7 @@ function addAnnouncement() {
             title: title,
             date: date,
             content: content,
-            createdAt: firebase.firestore.FieldValue.serverTimestamp(),
+            createdAt: new Date(),
             createdBy: TG_USER ? (TG_USER.name || TG_USER.email || 'الإدارة') : 'الإدارة',
             createdByRole: createdByRole
         }).then(function() {

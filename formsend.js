@@ -386,7 +386,7 @@
       sentByName: TG_USER.name,
       status: 'pending',
       values: {},
-      createdAt: firebase.firestore.FieldValue.serverTimestamp()
+      createdAt: new Date()
     }).then(function () {
       msg.style.color = 'var(--ok)'; msg.textContent = '✅ تم إرسال النموذج للموظف';
       document.getElementById('fsTargetEmp').value = '';
@@ -598,7 +598,7 @@
     db.collection('formRequests').doc(reqId).update({
       status: 'submitted',
       values: values,
-      submittedAt: firebase.firestore.FieldValue.serverTimestamp()
+      submittedAt: new Date()
     }).then(function () {
       msg.style.color = 'var(--ok)'; msg.textContent = '✅ تم الإرسال للأدمن';
       var reqData = fsMyCache.filter(function (r) { return r.id === reqId; })[0];

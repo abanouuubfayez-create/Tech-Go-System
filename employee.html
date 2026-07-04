@@ -516,7 +516,7 @@ function saveProjDetailProgress(id){
     var note = document.getElementById('dpn_'+id).value;
     var msg = document.getElementById('dpmsg_'+id);
     msg.style.color='var(--tx3)'; msg.textContent='⏳ جارٍ الحفظ...';
-    var upd = {}; upd['progressMap.'+TG_USER.uid] = {progress:prog, status:status, note:note, updatedAt:firebase.firestore.FieldValue.serverTimestamp()};
+    var upd = {}; upd['progressMap.'+TG_USER.uid] = {progress:prog, status:status, note:note, updatedAt:new Date()};
     db.collection('projects').doc(id).update(upd)
         .then(function(){ msg.style.color='var(--ok)'; msg.textContent='✅ تم حفظ التحديث.'; })
         .catch(function(e){ msg.style.color='var(--no)'; msg.textContent='❌ '+e.message; });
@@ -530,7 +530,7 @@ function saveProjectProgress(id){
     var status=document.getElementById('ps_'+id).value;
     var note=document.getElementById('pn_'+id).value||'';
     var msg=document.getElementById('pmsg_'+id);
-    var field={}; field['progressMap.'+TG_USER.uid]={progress:progress,status:status,note:note,updatedAt:firebase.firestore.FieldValue.serverTimestamp()};
+    var field={}; field['progressMap.'+TG_USER.uid]={progress:progress,status:status,note:note,updatedAt:new Date()};
     db.collection('projects').doc(id).update(field).then(function(){
         msg.style.color='var(--ok)'; msg.textContent='✅ تم الحفظ';
         setTimeout(function(){msg.textContent='';},2500);
@@ -563,7 +563,7 @@ function addAchievement(){
     if(!title){ msg.style.color='var(--no)'; msg.textContent='من فضلك اكتب عنوان الإنجاز.'; return; }
     db.collection('achievements').add({
         uid:TG_USER.uid, title:title, description:desc, date:date,
-        createdAt:firebase.firestore.FieldValue.serverTimestamp()
+        createdAt:new Date()
     }).then(function(){
         msg.style.color='var(--ok)'; msg.textContent='✅ تمت الإضافة';
         document.getElementById('achTitle').value=''; document.getElementById('achDesc').value='';
@@ -778,7 +778,7 @@ function submitRequest(){
                 db.collection('requests').add({
                     uid:TG_USER.uid, type:type, details:details, fromDate:from, toDate:to,
                     status:'pending', fileUrl:publicUrl, fileName:file.name, fileType:file.type,
-                    createdAt:firebase.firestore.FieldValue.serverTimestamp()
+                    createdAt:new Date()
                 }).then(function(){
                     if(prog) { prog.style.display='none'; prog.textContent=''; }
                     msg.style.color='var(--ok)'; msg.textContent='✅ تم إرسال الطلب مع المرفق';
@@ -797,7 +797,7 @@ function submitRequest(){
 
     db.collection('requests').add({
         uid:TG_USER.uid, type:type, details:details, fromDate:from, toDate:to,
-        status:'pending', createdAt:firebase.firestore.FieldValue.serverTimestamp()
+        status:'pending', createdAt:new Date()
     }).then(function(){
         msg.style.color='var(--ok)'; msg.textContent='✅ تم إرسال الطلب';
         document.getElementById('reqDetails').value='';
@@ -836,7 +836,7 @@ function submitWeeklyReport(){
     if(!content){ msg.style.color='var(--no)'; msg.textContent='من فضلك اكتب ملخص الأسبوع.'; return; }
     db.collection('weeklyReports').add({
         uid:TG_USER.uid, weekStart:weekStart, content:content,
-        createdAt:firebase.firestore.FieldValue.serverTimestamp()
+        createdAt:new Date()
     }).then(function(){
         msg.style.color='var(--ok)'; msg.textContent='✅ تم إرسال التقرير';
         document.getElementById('wkrContent').value='';

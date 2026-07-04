@@ -103,7 +103,7 @@ function tgSendPushToUser(toUid, title, body, tag) {
         body: body,
         tag: tag || 'techgo',
         read: false,
-        createdAt: firebase.firestore.FieldValue.serverTimestamp()
+        createdAt: new Date()
     }).catch(function() {});
 }
 
@@ -177,10 +177,10 @@ function tgCreateFirstAdmin(name, email, password, onDone, onError) {
         var batch = db.batch();
         batch.set(db.collection('users').doc(uid), {
             name: name, email: email, role: 'admin',
-            createdAt: firebase.firestore.FieldValue.serverTimestamp()
+            createdAt: new Date()
         });
         batch.set(db.collection('system').doc('meta'), {
-            setupDone: true, setupAt: firebase.firestore.FieldValue.serverTimestamp()
+            setupDone: true, setupAt: new Date()
         });
         batch.commit().then(function () { onDone(uid); }).catch(function (err) {
             cred.user.delete().catch(function () {});
