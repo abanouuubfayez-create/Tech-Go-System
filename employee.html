@@ -428,6 +428,7 @@ function renderProjectsHtml(projects){
         h += '<div class="emp-proj-card-top">';
         h += '<div class="emp-proj-card-title">'+esc(p.title||'بدون عنوان')+(mine?' <span class="badge" style="background:var(--gd);color:#1b2a4a;font-size:8.5px">مشروعي</span>':'')+(isCompleted?' <span style="background:var(--ok);color:#fff;border-radius:12px;padding:1px 7px;font-size:9px;font-weight:800">✅ مكتمل</span>':'')+commentBadge+'</div>';
         if(p.description) h += '<div class="emp-proj-card-desc">'+esc(p.description)+'</div>';
+        if(p.createdBy) h += '<div style="font-size:10px;opacity:.7;margin:2px 0 4px">👤 '+esc(p.createdBy)+(p.createdByRole?' <span style="opacity:.8">('+esc(p.createdByRole)+')</span>':'')+'</div>';
         h += '<div class="emp-proj-card-bar"><div class="emp-proj-card-bar-in" style="width:'+prog+'%"></div></div>';
         h += '<div class="emp-proj-card-meta">'+projectTagsHtml(p)+'</div>';
         h += '</div>';
@@ -458,6 +459,7 @@ function openProjectDetail(pid){
     h += '<div class="emp-proj-detail-title">'+esc(p.title||'بدون عنوان')+(mine?' <span class="badge" style="background:rgba(201,162,39,.25);color:#fde47f;font-size:9px">مشروعي</span>':'')+'</div>';
     if(p.description) h += '<div class="emp-proj-detail-desc">'+esc(p.description)+'</div>';
     h += '<div class="emp-proj-detail-tags">'+projectTagsHtml(p)+'</div>';
+    if(p.createdBy) h += '<div style="font-size:11px;color:var(--tx3);margin-top:6px">👤 أُنشئ بواسطة: <strong>'+esc(p.createdBy)+'</strong>'+(p.createdByRole?' ('+esc(p.createdByRole)+')':'')+'</div>';
     if(p.fileUrl){
         var fType = p.fileType || '';
         h += '<div style="margin-top:12px;padding-top:12px;border-top:1px dashed var(--bd)">';
@@ -658,6 +660,7 @@ function renderTasksHtml(rows){
             '</div>'+
             (t.description?'<div class="pj-meta">'+esc(t.description)+'</div>':'')+
             (t.deadline?'<div class="pj-meta"'+(isOverdue?' style="color:var(--no);font-weight:700"':'')+'>📅 تاريخ التسليم: '+esc(t.deadline)+'</div>':'')+
+            (t.createdBy?'<div class="pj-meta" style="font-size:10.5px;color:var(--tx3);margin-top:2px">👤 كلّفك بها: <strong>'+esc(t.createdBy)+'</strong>'+(t.createdByRole?' <span style="opacity:.75">('+esc(t.createdByRole)+')</span>':'')+'</div>':'')+
             attachHtml+
             (isDone?'<div style="font-size:11px;color:var(--ok);font-weight:700;margin-top:8px">✅ تم إنجاز هذه المهمة</div>':
             '<div class="fg" style="max-width:220px;margin:8px 0"><label>حالة المهمة</label><select id="tks_'+t.id+'">'+

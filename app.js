@@ -3171,7 +3171,8 @@ function loadEmpAnnouncements() {
             h += '<div style="background:rgba(255,255,255,.1);padding:14px 18px;border-radius:10px;border-right:4px solid var(--gd);margin-bottom:8px">';
             h += '<div style="font-size:15px;font-weight:800;margin-bottom:6px">'+esc(data.title)+'</div>';
             h += '<div style="font-size:13px;opacity:.9;line-height:1.6">'+esc(data.content)+'</div>';
-            if(data.date) h += '<div style="font-size:11px;opacity:.6;margin-top:8px">📅 '+esc(data.date)+'</div>';
+            if(data.createdBy) h += '<div style="font-size:11px;opacity:.75;margin-top:8px">👤 '+esc(data.createdBy)+(data.createdByRole?' <span style="opacity:.8">('+esc(data.createdByRole)+')</span>':'')+'</div>';
+            if(data.date) h += '<div style="font-size:11px;opacity:.6;margin-top:4px">📅 '+esc(data.date)+'</div>';
             h += '</div>';
         });
         box.innerHTML = h;
