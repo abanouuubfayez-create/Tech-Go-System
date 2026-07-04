@@ -949,11 +949,17 @@ function createProject(){
         return;
     }
 
-    db.collection('projects').add(projectData).then(onDone).catch(function(err){
-        console.error("Project Create Error:", err);
-        msg.style.color='var(--no)'; msg.textContent='❌ تعذر إنشاء المشروع: '+err.message;
-        tgToast('❌ تعذر إنشاء المشروع: ' + err.message, 'err');
-    });
+    try {
+        db.collection('projects').add(projectData).then(onDone).catch(function(err){
+            console.error("Project Create Error:", err);
+            msg.style.color='var(--no)'; msg.textContent='❌ تعذر إنشاء المشروع: '+err.message;
+            tgToast('❌ تعذر إنشاء المشروع: ' + err.message, 'err');
+        });
+    } catch(syncErr) {
+        console.error("Sync Error in createProject:", syncErr);
+        msg.style.color='var(--no)'; msg.textContent='❌ خطأ تقني: '+syncErr.message;
+        tgToast('❌ خطأ تقني: ' + syncErr.message, 'err');
+    }
 }
 
 // ─── توزيع المهام (الأدمن يكلّف موظفاً بمهمة، والموظف يتابع حالتها من بوابته) ───
@@ -1085,11 +1091,17 @@ function createTask(){
         return;
     }
 
-    db.collection('tasks').add(taskData).then(onDone).catch(function(err){
-        console.error("Task Create Error:", err);
-        msg.style.color='var(--no)'; msg.textContent='❌ تعذر تكليف المهمة: '+err.message;
-        tgToast('❌ تعذر تكليف المهمة: ' + err.message, 'err');
-    });
+    try {
+        db.collection('tasks').add(taskData).then(onDone).catch(function(err){
+            console.error("Task Create Error:", err);
+            msg.style.color='var(--no)'; msg.textContent='❌ تعذر تكليف المهمة: '+err.message;
+            tgToast('❌ تعذر تكليف المهمة: ' + err.message, 'err');
+        });
+    } catch(syncErr) {
+        console.error("Sync Error in createTask:", syncErr);
+        msg.style.color='var(--no)'; msg.textContent='❌ خطأ تقني: '+syncErr.message;
+        tgToast('❌ خطأ تقني: ' + syncErr.message, 'err');
+    }
 }
 function deleteTask(id){
     if(!confirm('حذف هذه المهمة نهائياً؟'))return;
@@ -3116,23 +3128,29 @@ function addAnnouncement() {
     msg.style.color = 'var(--tx3)'; msg.textContent = '⏳ جارٍ النشر...';
     
     var createdByRole = (TG_USER && TG_USER.role === 'tech_admin') ? 'أدمن تقني' : 'أدمن إداري';
-    db.collection('announcements').add({
-        title: title,
-        date: date,
-        content: content,
-        createdAt: firebase.firestore.FieldValue.serverTimestamp(),
-        createdBy: TG_USER ? (TG_USER.name || TG_USER.email || 'الإدارة') : 'الإدارة',
-        createdByRole: createdByRole
-    }).then(function() {
-        msg.style.color = 'var(--ok)'; msg.textContent = '✅ تم نشر الإعلان.';
-        document.getElementById('annTitle').value = '';
-        document.getElementById('annDate').value = '';
-        document.getElementById('annContent').value = '';
-        setTimeout(function(){ msg.textContent = ''; }, 3000);
-        loadAdminAnnouncements();
-    }).catch(function(err) {
-        msg.style.color = 'var(--no)'; msg.textContent = '❌ ' + err.message;
-    });
+    try {
+        db.collection('announcements').add({
+            title: title,
+            date: date,
+            content: content,
+            createdAt: firebase.firestore.FieldValue.serverTimestamp(),
+            createdBy: TG_USER ? (TG_USER.name || TG_USER.email || 'الإدارة') : 'الإدارة',
+            createdByRole: createdByRole
+        }).then(function() {
+            msg.style.color = 'var(--ok)'; msg.textContent = '✅ تم نشر الإعلان.';
+            document.getElementById('annTitle').value = '';
+            document.getElementById('annDate').value = '';
+            document.getElementById('annContent').value = '';
+            setTimeout(function(){ msg.textContent = ''; }, 3000);
+            loadAdminAnnouncements();
+        }).catch(function(err) {
+            msg.style.color = 'var(--no)'; msg.textContent = '❌ ' + err.message;
+        });
+    } catch(syncErr) {
+        console.error("Sync Error in addAnnouncement:", syncErr);
+        msg.style.color = 'var(--no)'; msg.textContent = '❌ خطأ تقني: ' + syncErr.message;
+        if(typeof tgToast === 'function') tgToast('❌ خطأ تقني: ' + syncErr.message, 'err');
+    }
 }
 
 // Loads announcements in employee dashboard
