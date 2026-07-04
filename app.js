@@ -1316,6 +1316,12 @@ function tgChatSend(){
     db.collection('chatMessages').add({
         uid: TG_USER.uid, name: TG_USER.name||TG_USER.email, role: TG_USER.role||'employee',
         text: text, createdAt: new Date()
+    }).then(function(){
+        // إشعار كل المستخدمين الآخرين برسالة جديدة في الشات العام
+        if(typeof tgBroadcastPush === 'function'){
+            var preview = text.length > 60 ? text.slice(0, 60) + '…' : text;
+            tgBroadcastPush('💬 رسالة من ' + (TG_USER.name||TG_USER.email), preview, 'chat-new', TG_USER.uid);
+        }
     }).catch(function(err){ alert('تعذر إرسال الرسالة: '+err.message); });
 }
 
@@ -3143,6 +3149,11 @@ function addAnnouncement() {
             document.getElementById('annContent').value = '';
             setTimeout(function(){ msg.textContent = ''; }, 3000);
             loadAdminAnnouncements();
+            // إرسال إشعار لكل المستخدمين (الموظفين والأدمنز) بالإعلان الجديد
+            if (typeof tgBroadcastPush === 'function') {
+                var preview = content.length > 70 ? content.slice(0, 70) + '…' : content;
+                tgBroadcastPush('📢 إعلان جديد: ' + title, preview, 'announcement-new', TG_USER ? TG_USER.uid : '');
+            }
         }).catch(function(err) {
             msg.style.color = 'var(--no)'; msg.textContent = '❌ ' + err.message;
         });

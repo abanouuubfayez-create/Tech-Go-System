@@ -107,6 +107,16 @@ function tgSendPushToUser(toUid, title, body, tag) {
     }).catch(function() {});
 }
 
+// إرسال إشعار لكل المستخدمين في النظام ما عدا شخص واحد (المُرسِل نفسه) — تُستخدم للإعلانات ورسائل الشات العام
+function tgBroadcastPush(title, body, tag, excludeUid) {
+    if (!db) return;
+    db.collection('users').get().then(function(snap) {
+        snap.forEach(function(d) {
+            if (d.id !== excludeUid) tgSendPushToUser(d.id, title, body, tag);
+        });
+    }).catch(function() {});
+}
+
 // \u0627\u0633\u062a\u0645\u0627\u0639 \u0644\u0644\u0625\u0634\u0639\u0627\u0631\u0627\u062a \u0627\u0644\u0648\u0627\u0631\u062f\u0629 \u0644\u0644\u0645\u0633\u062a\u062e\u062f\u0645 \u0627\u0644\u062d\u0627\u0644\u064a
 function tgListenMyNotifications(uid) {
     if (!uid) return;
