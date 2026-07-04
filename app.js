@@ -132,32 +132,49 @@ function sct(c){c.parentNode.querySelectorAll(".ctc").forEach(function(x){x.clas
 function spr(p){p.parentNode.querySelectorAll(".ppl").forEach(function(x){x.classList.remove("a")});p.classList.add("a")}
 
 // ─── Sidebar Search & Quick Nav ──────────────────────────────────────────
+function tgToggleNavGroup(el) {
+    var group = el.parentElement;
+    group.classList.toggle('open');
+}
+
 function sbFilterNav(val){
     var v = (val||'').toLowerCase().trim();
-    var items = document.querySelectorAll('#sidebarNav .S-i');
-    var headers = document.querySelectorAll('#sidebarNav .S-s');
+    var groups = document.querySelectorAll('#sidebarNav .sb-group');
     var noRes = document.getElementById('sbNoResults');
-    var hasAny = false;
+    var hasAnyGlobal = false;
     
     if(!v) {
-        items.forEach(function(el){ el.style.display = ''; });
-        headers.forEach(function(el){ el.style.display = ''; });
+        groups.forEach(function(g){
+            g.style.display = '';
+            var items = g.querySelectorAll('.S-i');
+            items.forEach(function(el){ el.style.display = ''; });
+        });
         if(noRes) noRes.style.display = 'none';
         return;
     }
     
-    headers.forEach(function(el){ el.style.display = 'none'; });
-    items.forEach(function(el){
-        var text = el.textContent.toLowerCase();
-        if(text.indexOf(v) > -1) {
-            el.style.display = '';
-            hasAny = true;
+    groups.forEach(function(g){
+        var items = g.querySelectorAll('.S-i');
+        var hasAnyInGroup = false;
+        items.forEach(function(el){
+            var text = el.textContent.toLowerCase();
+            if(text.indexOf(v) > -1) {
+                el.style.display = '';
+                hasAnyInGroup = true;
+                hasAnyGlobal = true;
+            } else {
+                el.style.display = 'none';
+            }
+        });
+        if(hasAnyInGroup) {
+            g.style.display = '';
+            g.classList.add('open');
         } else {
-            el.style.display = 'none';
+            g.style.display = 'none';
         }
     });
     
-    if(noRes) noRes.style.display = hasAny ? 'none' : 'block';
+    if(noRes) noRes.style.display = hasAnyGlobal ? 'none' : 'block';
 }
 
 document.addEventListener('DOMContentLoaded', function(){
@@ -185,10 +202,16 @@ function applyAssistantAdminRestrictions(u){
     if(!u || u.role !== 'assistant_admin') return;
     // أخفِ بنود الشريط الجانبي غير المسموح بها للأدمن المساعد
     var allowed = ['dash','pmgmt','account'];
-    document.querySelectorAll('.S-i').forEach(function(el){
-        var onclick = el.getAttribute('onclick') || '';
-        var allowed_item = allowed.some(function(id){ return onclick.indexOf("'"+id+"'")>-1||onclick.indexOf('"'+id+'"')>-1; });
-        if(!allowed_item && onclick.indexOf('tgLogout')===-1){ el.style.display='none'; }
+    document.querySelectorAll('.sb-group').forEach(function(g){
+        var items = g.querySelectorAll('.S-i');
+        var hasVisible = false;
+        items.forEach(function(el){
+            var onclick = el.getAttribute('onclick') || '';
+            var allowed_item = allowed.some(function(id){ return onclick.indexOf("'"+id+"'")>-1||onclick.indexOf('"'+id+'"')>-1; });
+            if(!allowed_item && onclick.indexOf('tgLogout')===-1){ el.style.display='none'; }
+            else { hasVisible = true; }
+        });
+        if(!hasVisible) g.style.display = 'none';
     });
 }
 
