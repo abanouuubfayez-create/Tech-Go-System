@@ -99,25 +99,6 @@
 
       <div class="set-hint" style="margin-bottom:16px">المشاريع المُسندة إليك من الإدارة — حدّث نسبة تقدّمك وحالتك أولاً بأول ليراها المدير.</div>
 
-      <!-- نموذج إضافة مشروع (للمساعد الإداري) -->
-      <div id="astAdminProjectSection" style="display:none; background:var(--w); padding:16px; border-radius:10px; margin-bottom:20px; border:1px solid var(--bd2)">
-        <div class="set-sec-title">➕ إضافة مشروع جديد (أدمن تقني)</div>
-        <div class="fr fr2" style="margin-top:8px">
-          <div class="fg"><label>عنوان المشروع</label><input type="text" id="newAstProjTitle"></div>
-          <div class="fg"><label>الموظفون (اختر موظفاً أو أكثر بالمؤشر)</label>
-            <select id="newAstProjAssignees" multiple size="3" style="padding:4px;font-size:12px;height:75px"></select>
-          </div>
-        </div>
-        <div class="fg fg-full" style="margin-top:8px"><label>وصف المشروع</label><textarea id="newAstProjDesc" rows="2"></textarea></div>
-        <div class="fr fr3" style="margin-top:8px">
-          <div class="fg"><label>الأولوية</label><select id="newAstProjPriority"><option>منخفضة</option><option selected>متوسطة</option><option>عالية</option></select></div>
-          <div class="fg"><label>الحالة الأولية</label><select id="newAstProjStatus"><option selected>مخطط له</option><option>جاري العمل</option></select></div>
-          <div class="fg"><label>تاريخ الاستحقاق</label><input type="date" id="newAstProjDeadline"></div>
-        </div>
-        <button class="bt bt-p" style="margin-top:12px" onclick="astCreateProject()">➕ تكليف المشروع</button>
-        <div id="newAstProjMsg" style="font-size:11px;margin-top:6px"></div>
-      </div>
-
       <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px">
         <div style="font-size:14px;font-weight:800;color:var(--nv)">📁 مشاريعي الحالية</div>
         <div id="projCountLabel" style="font-size:11px;color:var(--tx3);font-weight:600"></div>
@@ -550,7 +531,7 @@ function loadMyAchievements(){
         var h='';
         rows.forEach(function(a,i){
             h+='<div class="ac-row"><div class="ac-t">'+esc(a.title)+
-               ' <button class="bt bt-o" style="padding:2px 8px;font-size:10px;margin-right:8px" onclick="printAchievement(window._achCache['+i+'])">🖨 طباعة</button></div>'+
+               ' <button class="bt bt-o" style="padding:2px 8px;font-size:10px;margin-right:8px" onclick="printAchievementDoc(TG_USER,window._achCache['+i+'])">🖨 طباعة</button></div>'+
                (a.description?'<div class="ac-meta">'+esc(a.description)+'</div>':'')+
                (a.date?'<div class="ac-meta">📅 '+esc(a.date)+'</div>':'')+'</div>';
         });
@@ -744,7 +725,7 @@ function loadMyRequests(){
                 }
             }
             h+='<div class="rq-row"><div class="rq-t">'+esc(r.type||'طلب')+' '+badgeReq(r.status)+
-               ' <button class="bt bt-o" style="padding:2px 8px;font-size:10px;margin-right:8px" onclick="printRequest(window._reqCache['+i+'])">🖨 طباعة</button></div>'+
+               ' <button class="bt bt-o" style="padding:2px 8px;font-size:10px;margin-right:8px" onclick="printRequestDoc(TG_USER,window._reqCache['+i+'])">🖨 طباعة</button></div>'+
                (r.details?'<div class="pj-meta">'+esc(r.details)+'</div>':'')+
                (r.fromDate?('<div class="pj-meta">من '+esc(r.fromDate)+(r.toDate?(' إلى '+esc(r.toDate)):'')+'</div>'):'')+
                attachHtml+
@@ -826,7 +807,7 @@ function loadMyWeeklyReports(){
         var h='';
         rows.forEach(function(r,i){
             h+='<div class="ac-row"><div class="ac-t">📆 أسبوع '+esc(r.weekStart||'')+
-               ' <button class="bt bt-o" style="padding:2px 8px;font-size:10px;margin-right:8px" onclick="printWeeklyReport(window._wkrCache['+i+'])">🖨 طباعة</button></div>'+
+               ' <button class="bt bt-o" style="padding:2px 8px;font-size:10px;margin-right:8px" onclick="printWeeklyReportDoc(TG_USER,window._wkrCache['+i+'])">🖨 طباعة</button></div>'+
                (r.content?'<div class="ac-meta">'+esc(r.content)+'</div>':'')+'</div>';
         });
         box.innerHTML=h;

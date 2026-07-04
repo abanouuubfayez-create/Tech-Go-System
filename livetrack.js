@@ -18,6 +18,36 @@
   var ltLastPushed = {}; // id -> آخر status اتعمله push في الفيد (تفادي التكرار)
   var ltTickTimer = null;
 
+  // ── سجل النشاط: يتخزن محليًا (localStorage) ويُحتفظ به يوم واحد بس ──────
+  var LT_RETENTION_MS = 24 * 60 * 60 * 1000; // 24 ساعة
+  var LT_MAX_ITEMS = 300; // سقف أمان لعدد العناصر المخزّنة
+  var LT_STORAGE_KEY = 'tg_livetrack_feed';
+
+  // يحمّل السجل من localStorage ويشيل أي حدث أقدم من 24 ساعة
+  function ltLoadFeed() {
+    try {
+      var raw = localStorage.getItem(LT_STORAGE_KEY);
+      var arr = raw ? JSON.parse(raw) : [];
+      var now = Date.now();
+      ltFeed = (arr || []).filter(function (f) { return f && f.ts && (now - f.ts) < LT_RETENTION_MS; });
+    } catch (e) {
+      ltFeed = [];
+    }
+    ltRenderFeed();
+  }
+  // يحفظ السجل الحالي في localStorage
+  function ltSaveFeed() {
+    try { localStorage.setItem(LT_STORAGE_KEY, JSON.stringify(ltFeed)); } catch (e) {}
+  }
+  // يشيل من ltFeed أي حدث أقدم من 24 ساعة (وسقف أمان للعدد) — بيرجع true لو اتغيّر شيء
+  function ltPruneFeed() {
+    var now = Date.now();
+    var before = ltFeed.length;
+    ltFeed = ltFeed.filter(function (f) { return f && f.ts && (now - f.ts) < LT_RETENTION_MS; });
+    if (ltFeed.length > LT_MAX_ITEMS) ltFeed = ltFeed.slice(0, LT_MAX_ITEMS);
+    return ltFeed.length !== before;
+  }
+
   // ── وقت نسبي دقيق بالعربي من Firestore Timestamp (أو تاريخ عادي) ───────
   function ltRelTime(ts) {
     if (!ts) return 'الآن';
@@ -56,6 +86,7 @@
     if (!c.dataset.mounted) {
       ltInjectStyle();
       ltRenderShell(c);
+      ltLoadFeed();
       ltMountListeners();
       c.dataset.mounted = '1';
     }
@@ -111,7 +142,12 @@
       '</div>' +
       '<div class="lt-grid">' +
         '<div class="lt-panel">' +
-          '<div class="lt-panel-h"><h3>سجل النشاط اللحظي</h3><span class="lt-live-pill"><i></i> مباشر</span></div>' +
+          '<div class="lt-panel-h"><h3>سجل النشاط اللحظي</h3>' +
+            '<div style="display:flex;align-items:center;gap:8px">' +
+              '<button class="bt bt-o" style="padding:4px 10px;font-size:10.5px" onclick="ltPrintFeed()">🖨 طباعة</button>' +
+              '<span class="lt-live-pill"><i></i> مباشر</span>' +
+            '</div>' +
+          '</div>' +
           '<div class="lt-feed" id="ltFeed"><div class="empty-hint">في انتظار أول تحديث من الفريق...</div></div>' +
         '</div>' +
         '<div class="lt-panel">' +
@@ -164,6 +200,7 @@
     // بدون انتظار حدث جديد من Firestore، عشان الصفحة تفضل "لحظية" فعلاً
     if (!ltTickTimer) {
       ltTickTimer = setInterval(function () {
+        if (ltPruneFeed()) ltSaveFeed(); // شيل أي حدث بقى عمره أكتر من 24 ساعة
         ltRenderFeed();
         ltRenderTeam();
       }, 30000);
@@ -180,22 +217,29 @@
     var verb = t.status === 'مكتمل' ? 'أنهى مهمة'
       : t.status === 'جاري العمل' ? 'بدأ العمل على'
       : 'أعاد فتح مهمة';
+    // لو موجود statusUpdatedAt (سيرفر تايم ستامب) بنحوّله لرقم (millis) عشان يتخزن في localStorage بسهولة
+    var tsMillis = (t.statusUpdatedAt && typeof t.statusUpdatedAt.toMillis === 'function')
+      ? t.statusUpdatedAt.toMillis() : Date.now();
     ltFeed.unshift({
       name: t.assignedToName || 'موظف',
       verb: verb,
       title: t.title || 'بدون عنوان',
       status: t.status || 'لم يبدأ',
-      // لو موجود statusUpdatedAt (سيرفر تايم ستامب) بنستخدمه، وإلا وقت الجهاز الحالي
-      ts: t.statusUpdatedAt || new Date()
+      ts: tsMillis
     });
-    if (ltFeed.length > 10) ltFeed.pop();
+    ltPruneFeed();
+    ltSaveFeed();
     ltRenderFeed();
   }
 
   // ── رسم سجل النشاط بالوقت النسبي المحسوب لحظة الرسم (يُستدعى كل ٣٠ ث أيضًا) ─
   function ltRenderFeed() {
     var box = document.getElementById('ltFeed');
-    if (!box || !ltFeed.length) return;
+    if (!box) return;
+    if (!ltFeed.length) {
+      box.innerHTML = '<div class="empty-hint">في انتظار أول تحديث من الفريق...</div>';
+      return;
+    }
     box.innerHTML = ltFeed.map(function (f) {
       return '<div class="lt-feed-item">' +
         '<div class="lt-feed-av">' + escH((f.name || '?').slice(0, 1)) + '</div>' +
@@ -284,4 +328,22 @@
     });
     box.innerHTML = h;
   }
+
+  // ── طباعة سجل النشاط اللحظي بنفس فورمات مستندات النظام (تعتمد على H/SC/tgLine/FT/printDoc من app.js) ──
+  window.ltPrintFeed = function () {
+    if (typeof H !== 'function' || typeof printDoc !== 'function') return;
+    var h = H('سجل النشاط اللحظي', 'كشف بأحدث تحديثات حالة المهام (آخر 24 ساعة)', 'LIVE ACTIVITY LOG');
+    h += SC('١', 'الأحداث المسجّلة');
+    if (!ltFeed.length) {
+      h += tgLine('—', 'لا توجد أحداث مسجّلة خلال آخر 24 ساعة.');
+    } else {
+      ltFeed.forEach(function (f, i) {
+        var d = new Date(f.ts);
+        var timeStr = d.toLocaleDateString('ar-EG') + ' · ' + d.toLocaleTimeString('ar-EG', { hour: '2-digit', minute: '2-digit' });
+        h += tgLine((i + 1) + '. ' + timeStr, (f.name || '') + ' ' + f.verb + ' «' + (f.title || '') + '» — ' + (f.status || ''));
+      });
+    }
+    h += FT(['نسخة الإدارة']);
+    printDoc(h);
+  };
 })();
