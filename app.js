@@ -576,9 +576,11 @@ function renderStaffList(list){
            '<div class="staff-stats">'+
            '<span class="staff-stat">📁 '+emp.projects.length+' مشروع</span>'+
            '<span class="staff-stat">📊 متوسط تقدم '+avgProg+'%</span>'+
-           '<span class="staff-stat">📆 '+emp.weeklyReports.length+' تقرير أسبوعي</span>'+
-           '<span class="staff-stat">🏆 '+emp.achievements.length+' إنجاز</span>'+
-           (pending?('<span class="staff-stat pending">⏳ '+pending+' طلب معلّق</span>'):'<span class="staff-stat">✅ لا طلبات معلّقة</span>')+
+           (emp.role === 'tech_admin' ? '' :
+               '<span class="staff-stat">📆 '+emp.weeklyReports.length+' تقرير أسبوعي</span>'+
+               '<span class="staff-stat">🏆 '+emp.achievements.length+' إنجاز</span>'+
+               (pending?('<span class="staff-stat pending">⏳ '+pending+' طلب معلّق</span>'):'<span class="staff-stat">✅ لا طلبات معلّقة</span>')
+           )+
            '</div></div>';
         h+='<div class="staff-card-body">';
 
@@ -612,63 +614,65 @@ function renderStaffList(list){
             });
         }else h+='<div class="empty-hint">لا توجد مشاريع مُسندة حالياً.</div>';
 
-        h+='<div style="display:flex;justify-content:space-between;align-items:center;margin-top:16px">';
-        h+='<div class="staff-sub-title" style="margin:0;border:none">📆 التقارير الأسبوعية</div>';
-        if(emp.weeklyReports.length) h+='<button class="bt bt-d" style="padding:4px 10px;font-size:10px" onclick="event.stopPropagation();tgDeleteAllRecords(\'weeklyReports\', \'تقارير الموظف\', \'uid\', \''+emp.uid+'\', loadStaffOverview)">🗑 حذف الكل</button>';
-        h+='</div>';
-        if(emp.weeklyReports.length){
-            window._staffWkrCache=window._staffWkrCache||{};
-            window._staffWkrCache[idx]=emp.weeklyReports;
-            emp.weeklyReports.forEach(function(r,ri){
-                h+='<div class="ac-row"><div class="ac-t">أسبوع '+escH(r.weekStart||'')+
-                   ' <button class="bt bt-o" style="padding:2px 8px;font-size:10px;margin-right:8px" onclick="printWeeklyReportDoc(window._staffEmpCache['+idx+'],window._staffWkrCache['+idx+']['+ri+'])">🖨 طباعة</button></div>'+
-                   (r.content?'<div class="ac-meta">'+escH(r.content)+'</div>':'')+'</div>';
-            });
-        }else h+='<div class="empty-hint">لم يُرسل الموظف أي تقرير أسبوعي بعد.</div>';
+        if(emp.role !== 'tech_admin'){
+            h+='<div style="display:flex;justify-content:space-between;align-items:center;margin-top:16px">';
+            h+='<div class="staff-sub-title" style="margin:0;border:none">📆 التقارير الأسبوعية</div>';
+            if(emp.weeklyReports.length) h+='<button class="bt bt-d" style="padding:4px 10px;font-size:10px" onclick="event.stopPropagation();tgDeleteAllRecords(\'weeklyReports\', \'تقارير الموظف\', \'uid\', \''+emp.uid+'\', loadStaffOverview)">🗑 حذف الكل</button>';
+            h+='</div>';
+            if(emp.weeklyReports.length){
+                window._staffWkrCache=window._staffWkrCache||{};
+                window._staffWkrCache[idx]=emp.weeklyReports;
+                emp.weeklyReports.forEach(function(r,ri){
+                    h+='<div class="ac-row"><div class="ac-t">أسبوع '+escH(r.weekStart||'')+
+                       ' <button class="bt bt-o" style="padding:2px 8px;font-size:10px;margin-right:8px" onclick="printWeeklyReportDoc(window._staffEmpCache['+idx+'],window._staffWkrCache['+idx+']['+ri+'])">🖨 طباعة</button></div>'+
+                       (r.content?'<div class="ac-meta">'+escH(r.content)+'</div>':'')+'</div>';
+                });
+            }else h+='<div class="empty-hint">لم يُرسل الموظف أي تقرير أسبوعي بعد.</div>';
 
-        h+='<div style="display:flex;justify-content:space-between;align-items:center;margin-top:16px">';
-        h+='<div class="staff-sub-title" style="margin:0;border:none">🏆 الإنجازات</div>';
-        if(emp.achievements.length) h+='<button class="bt bt-d" style="padding:4px 10px;font-size:10px" onclick="event.stopPropagation();tgDeleteAllRecords(\'achievements\', \'إنجازات الموظف\', \'uid\', \''+emp.uid+'\', loadStaffOverview)">🗑 حذف الكل</button>';
-        h+='</div>';
-        if(emp.achievements.length){
-            window._staffAchCache=window._staffAchCache||{};
-            window._staffAchCache[idx]=emp.achievements;
-            emp.achievements.forEach(function(a,ai){
-                h+='<div class="ac-row"><div class="ac-t">'+escH(a.title||'')+
-                   ' <button class="bt bt-o" style="padding:2px 8px;font-size:10px;margin-right:8px" onclick="printAchievementDoc(window._staffEmpCache['+idx+'],window._staffAchCache['+idx+']['+ai+'])">🖨 طباعة</button></div>'+
-                   (a.description?'<div class="ac-meta">'+escH(a.description)+'</div>':'')+
-                   (a.date?'<div class="ac-meta">📅 '+escH(a.date)+'</div>':'')+'</div>';
-            });
-        }else h+='<div class="empty-hint">لا توجد إنجازات مسجّلة بعد.</div>';
+            h+='<div style="display:flex;justify-content:space-between;align-items:center;margin-top:16px">';
+            h+='<div class="staff-sub-title" style="margin:0;border:none">🏆 الإنجازات</div>';
+            if(emp.achievements.length) h+='<button class="bt bt-d" style="padding:4px 10px;font-size:10px" onclick="event.stopPropagation();tgDeleteAllRecords(\'achievements\', \'إنجازات الموظف\', \'uid\', \''+emp.uid+'\', loadStaffOverview)">🗑 حذف الكل</button>';
+            h+='</div>';
+            if(emp.achievements.length){
+                window._staffAchCache=window._staffAchCache||{};
+                window._staffAchCache[idx]=emp.achievements;
+                emp.achievements.forEach(function(a,ai){
+                    h+='<div class="ac-row"><div class="ac-t">'+escH(a.title||'')+
+                       ' <button class="bt bt-o" style="padding:2px 8px;font-size:10px;margin-right:8px" onclick="printAchievementDoc(window._staffEmpCache['+idx+'],window._staffAchCache['+idx+']['+ai+'])">🖨 طباعة</button></div>'+
+                       (a.description?'<div class="ac-meta">'+escH(a.description)+'</div>':'')+
+                       (a.date?'<div class="ac-meta">📅 '+escH(a.date)+'</div>':'')+'</div>';
+                });
+            }else h+='<div class="empty-hint">لا توجد إنجازات مسجّلة بعد.</div>';
 
-        h+='<div style="display:flex;justify-content:space-between;align-items:center;margin-top:16px">';
-        h+='<div class="staff-sub-title" style="margin:0;border:none">📨 الطلبات</div>';
-        if(emp.requests.length) h+='<button class="bt bt-d" style="padding:4px 10px;font-size:10px" onclick="event.stopPropagation();tgDeleteAllRecords(\'requests\', \'طلبات الموظف\', \'uid\', \''+emp.uid+'\', loadStaffOverview)">🗑 حذف الكل</button>';
-        h+='</div>';
-        if(emp.requests.length){
-            window._staffReqCache=window._staffReqCache||{};
-            window._staffReqCache[idx]=emp.requests;
-            emp.requests.forEach(function(r,qi){
-                var attachHtml = '';
-                if(r.fileUrl && r.fileType){
-                    if(r.fileType.indexOf('image/')===0){
-                        attachHtml = '<div style="margin-top:6px"><a href="'+r.fileUrl+'" target="_blank"><img src="'+r.fileUrl+'" style="max-width:140px;max-height:100px;border-radius:6px;display:block"></a></div>';
-                    } else if(r.fileType.indexOf('video/')===0){
-                        attachHtml = '<div style="margin-top:6px"><video src="'+r.fileUrl+'" controls style="max-width:180px;border-radius:6px"></video></div>';
-                    } else {
-                        attachHtml = '<div style="margin-top:6px"><a href="'+r.fileUrl+'" target="_blank" style="color:var(--nv);font-weight:700;text-decoration:underline">📎 '+escH(r.fileName||'ملف مرفق')+'</a></div>';
+            h+='<div style="display:flex;justify-content:space-between;align-items:center;margin-top:16px">';
+            h+='<div class="staff-sub-title" style="margin:0;border:none">📨 الطلبات</div>';
+            if(emp.requests.length) h+='<button class="bt bt-d" style="padding:4px 10px;font-size:10px" onclick="event.stopPropagation();tgDeleteAllRecords(\'requests\', \'طلبات الموظف\', \'uid\', \''+emp.uid+'\', loadStaffOverview)">🗑 حذف الكل</button>';
+            h+='</div>';
+            if(emp.requests.length){
+                window._staffReqCache=window._staffReqCache||{};
+                window._staffReqCache[idx]=emp.requests;
+                emp.requests.forEach(function(r,qi){
+                    var attachHtml = '';
+                    if(r.fileUrl && r.fileType){
+                        if(r.fileType.indexOf('image/')===0){
+                            attachHtml = '<div style="margin-top:6px"><a href="'+r.fileUrl+'" target="_blank"><img src="'+r.fileUrl+'" style="max-width:140px;max-height:100px;border-radius:6px;display:block"></a></div>';
+                        } else if(r.fileType.indexOf('video/')===0){
+                            attachHtml = '<div style="margin-top:6px"><video src="'+r.fileUrl+'" controls style="max-width:180px;border-radius:6px"></video></div>';
+                        } else {
+                            attachHtml = '<div style="margin-top:6px"><a href="'+r.fileUrl+'" target="_blank" style="color:var(--nv);font-weight:700;text-decoration:underline">📎 '+escH(r.fileName||'ملف مرفق')+'</a></div>';
+                        }
                     }
-                }
-                h+='<div class="rq-row"><div class="rq-t">'+escH(r.type||'طلب')+' <span class="badge '+badgeClassForReq(r.status)+'">'+reqStatusLabel(r.status)+'</span>'+
-                   ' <button class="bt bt-o" style="padding:2px 8px;font-size:10px;margin-right:8px" onclick="printRequestDoc(window._staffEmpCache['+idx+'],window._staffReqCache['+idx+']['+qi+'])">🖨 طباعة</button></div>'+
-                   (r.details?'<div class="pj-meta">'+escH(r.details)+'</div>':'')+
-                   (r.fromDate?('<div class="pj-meta">من '+escH(r.fromDate)+(r.toDate?(' إلى '+escH(r.toDate)):'')+'</div>'):'')+
-                   (r.reviewedBy?('<div class="pj-meta">تمت المراجعة بواسطة: '+escH(r.reviewedBy)+'</div>'):'')+
-                   attachHtml+
-                   (r.status==='pending'?('<div class="rq-actions" style="margin-top:8px"><button class="bt bt-p" onclick="reviewRequest(\''+r.id+'\',\'approved\')">✔ موافقة</button><button class="bt bt-d" onclick="reviewRequest(\''+r.id+'\',\'rejected\')">✕ رفض</button></div>'):'')+
-                   '</div>';
-            });
-        }else h+='<div class="empty-hint">لا توجد طلبات بعد.</div>';
+                    h+='<div class="rq-row"><div class="rq-t">'+escH(r.type||'طلب')+' <span class="badge '+badgeClassForReq(r.status)+'">'+reqStatusLabel(r.status)+'</span>'+
+                       ' <button class="bt bt-o" style="padding:2px 8px;font-size:10px;margin-right:8px" onclick="printRequestDoc(window._staffEmpCache['+idx+'],window._staffReqCache['+idx+']['+qi+'])">🖨 طباعة</button></div>'+
+                       (r.details?'<div class="pj-meta">'+escH(r.details)+'</div>':'')+
+                       (r.fromDate?('<div class="pj-meta">من '+escH(r.fromDate)+(r.toDate?(' إلى '+escH(r.toDate)):'')+'</div>'):'')+
+                       (r.reviewedBy?('<div class="pj-meta">تمت المراجعة بواسطة: '+escH(r.reviewedBy)+'</div>'):'')+
+                       attachHtml+
+                       (r.status==='pending'?('<div class="rq-actions" style="margin-top:8px"><button class="bt bt-p" onclick="reviewRequest(\''+r.id+'\',\'approved\')">✔ موافقة</button><button class="bt bt-d" onclick="reviewRequest(\''+r.id+'\',\'rejected\')">✕ رفض</button></div>'):'')+
+                       '</div>';
+                });
+            }else h+='<div class="empty-hint">لا توجد طلبات بعد.</div>';
+        }
 
         h+='</div></div>';
     });
@@ -2902,19 +2906,21 @@ function openAdminEmployeeDetail(idx) {
             h += '<div class="empty-hint">لا توجد مشاريع مُسندة حالياً.</div>';
         }
         h += '</div>';
-        h += '<div class="proj-sec"><div class="proj-sec-title">📨 الطلبات (' + emp.requests.length + ')</div>';
-        if (emp.requests.length) {
-            emp.requests.forEach(function(r) {
-                h += '<div class="rq-row" style="background:var(--bg);padding:12px;border-radius:10px;margin-bottom:8px;">' +
-                     '  <div class="rq-t" style="font-weight:700;">' + escH(r.type || 'طلب') + ' <span class="badge ' + badgeClassForReq(r.status) + '">' + reqStatusLabel(r.status) + '</span></div>' +
-                     (r.details ? ('  <div class="pj-meta" style="margin-top:4px;">' + escH(r.details) + '</div>') : '') +
-                     (r.status === 'pending' ? ('  <div class="rq-actions" style="margin-top:8px"><button class="bt bt-p" onclick="reviewRequest(\'' + r.id + '\',\'approved\')">✔ موافقة</button><button class="bt bt-d" onclick="reviewRequest(\'' + r.id + '\',\'rejected\')">✕ رفض</button></div>') : '') +
-                     '</div>';
-            });
-        } else {
-            h += '<div class="empty-hint">لا توجد طلبات بعد.</div>';
+        if(emp.role !== 'tech_admin'){
+            h += '<div class="proj-sec"><div class="proj-sec-title">📨 الطلبات (' + emp.requests.length + ')</div>';
+            if (emp.requests.length) {
+                emp.requests.forEach(function(r) {
+                    h += '<div class="rq-row" style="background:var(--bg);padding:12px;border-radius:10px;margin-bottom:8px;">' +
+                         '  <div class="rq-t" style="font-weight:700;">' + escH(r.type || 'طلب') + ' <span class="badge ' + badgeClassForReq(r.status) + '">' + reqStatusLabel(r.status) + '</span></div>' +
+                         (r.details ? ('  <div class="pj-meta" style="margin-top:4px;">' + escH(r.details) + '</div>') : '') +
+                         (r.status === 'pending' ? ('  <div class="rq-actions" style="margin-top:8px"><button class="bt bt-p" onclick="reviewRequest(\'' + r.id + '\',\'approved\')">✔ موافقة</button><button class="bt bt-d" onclick="reviewRequest(\'' + r.id + '\',\'rejected\')">✕ رفض</button></div>') : '') +
+                         '</div>';
+                });
+            } else {
+                h += '<div class="empty-hint">لا توجد طلبات بعد.</div>';
+            }
+            h += '</div>';
         }
-        h += '</div>';
         h += '</div>';
         detailView.innerHTML = h;
     }
