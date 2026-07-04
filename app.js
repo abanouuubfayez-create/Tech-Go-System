@@ -75,7 +75,7 @@ function tgCloseModal(){
 
 // ─── NAVIGATION ───────────────────────────────────────────────────────────
 // الصفحات التي يمكن للأدمن التقني الوصول إليها
-var TECH_ALLOWED = ['dash','pmgmt','tasksmgmt','livetrack','account','announcements'];
+var TECH_ALLOWED = ['pmgmt','tasksmgmt','livetrack','account','announcements'];
 
 function hasUnsavedText() {
     var p = document.querySelector('.pg.a, .emp-pg.a');
@@ -207,7 +207,10 @@ function applyTechAdminRestrictions(u){
         var hasVisible = false;
         items.forEach(function(el){
             var onclick = el.getAttribute('onclick') || '';
-            var allowed_item = allowed.some(function(id){ return onclick.indexOf("'"+id+"'")>-1||onclick.indexOf('"'+id+'"')>-1; });
+            var allowed_item = allowed.some(function(id){ 
+                if(id === 'livetrack' && onclick.indexOf('goLiveTrack') > -1) return true;
+                return onclick.indexOf("'"+id+"'")>-1||onclick.indexOf('"'+id+'"')>-1; 
+            });
             if(!allowed_item && onclick.indexOf('tgLogout')===-1){ el.style.display='none'; }
             else { hasVisible = true; }
         });
