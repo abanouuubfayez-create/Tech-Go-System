@@ -391,14 +391,21 @@
     var roleLabel = u.role === 'tech_admin' ? 'أدمن تقني' : 'أدمن';
     var box = document.getElementById('sbUser');
     if (box) box.innerHTML = '👤 <strong style="color:#fff">' + (u.name || u.email) + '</strong><br><small style="color:rgba(255,255,255,.5)">' + u.email + '</small><br><small style="color:var(--gd);font-weight:700">' + roleLabel + '</small>';
-    loadDashboardSummary();
-    if(u.role !== 'tech_admin') {
+
+    if (u.role === 'tech_admin') {
+      // الأدمن التقني: تخطّى لوحة التحكم — اعرض المتابعة اللحظية مباشرةً
+      applyTechAdminRestrictions(u);
+      if (typeof tgListenMyNotifications === 'function') tgListenMyNotifications(u.uid);
+      // goLiveTrack تتولى كل شيء: إخفاء pg-dash، تفعيل pg-livetrack، تحميل المحتوى
+      if (typeof goLiveTrack === 'function') goLiveTrack();
+    } else {
+      // الأدمن الرئيسي: السلوك الطبيعي
+      loadDashboardSummary();
       tgChatMount();
       tgChatWatch();
+      applyTechAdminRestrictions(u);
+      if (typeof tgListenMyNotifications === 'function') tgListenMyNotifications(u.uid);
     }
-    applyTechAdminRestrictions(u);
-    // تفعيل استقبال Push Notifications من Firestore
-    if(typeof tgListenMyNotifications === 'function') tgListenMyNotifications(u.uid);
   });
 
   // PWA Service Worker

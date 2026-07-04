@@ -135,7 +135,7 @@
 
   // ── ربط المستمعين اللحظيين بـ Firestore ─────────────────────────────────
   function ltMountListeners() {
-    db.collection('users').where('role', 'in', ['employee', 'tech_admin'])
+    db.collection('users').where('role', '==', 'employee')
       .onSnapshot(function (snap) {
         ltEmployees = snap.docs.map(function (d) { return Object.assign({ uid: d.id }, d.data()); });
         ltRenderTeam();

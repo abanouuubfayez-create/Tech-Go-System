@@ -835,7 +835,7 @@ function loadPmgmtData(){
     var assigneesBox=document.getElementById('pmgmtAssignees');
     var listBox=document.getElementById('pmgmtList');
     if(!assigneesBox||!listBox)return;
-    db.collection('users').where('role','in',['employee','tech_admin']).get().then(function(snap){
+    db.collection('users').where('role','==','employee').get().then(function(snap){
         PMGMT_EMPLOYEES=[];
         snap.forEach(function(doc){PMGMT_EMPLOYEES.push(Object.assign({uid:doc.id},doc.data()));});
         PMGMT_EMPLOYEES.sort(function(a,b){return (a.name||a.email||'').localeCompare((b.name||b.email||''),'ar');});
@@ -954,7 +954,7 @@ function loadTasksMgmt(){
     var assigneeSel=document.getElementById('tkAssignee');
     var listBox=document.getElementById('tasksMgmtList');
     if(!assigneeSel||!listBox)return;
-    db.collection('users').where('role','in',['employee','tech_admin']).get().then(function(snap){
+    db.collection('users').where('role','==','employee').get().then(function(snap){
         var employees=[];
         snap.forEach(function(doc){employees.push(Object.assign({uid:doc.id},doc.data()));});
         employees.sort(function(a,b){return (a.name||a.email||'').localeCompare((b.name||b.email||''),'ar');});
