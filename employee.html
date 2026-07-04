@@ -663,7 +663,7 @@ function renderTasksHtml(rows){
             (t.createdBy?'<div class="pj-meta" style="font-size:10.5px;color:var(--tx3);margin-top:2px">👤 كلّفك بها: <strong>'+esc(t.createdBy)+'</strong>'+(t.createdByRole?' <span style="opacity:.75">('+esc(t.createdByRole)+')</span>':'')+'</div>':'')+
             attachHtml+
             (isDone?'<div style="font-size:11px;color:var(--ok);font-weight:700;margin-top:8px">✅ تم إنجاز هذه المهمة</div>':
-            '<div class="fg" style="max-width:220px;margin:8px 0"><label>حالة المهمة</label><select id="tks_'+t.id+'">'+
+            '<div class="fg" style="max-width:220px;margin:8px 0"><label>حالة المهمة</label><select id="tks_'+t.id+'" onchange="saveTaskStatus(\''+t.id+'\')">'+
             ['لم يبدأ','جاري العمل','متوقف','مكتمل'].map(function(s){return '<option'+(s===(t.status||'لم يبدأ')?' selected':'')+'>'+s+'</option>';}).join('')+
             '</select></div>'+
             '<button class="bt bt-p" onclick="saveTaskStatus(\''+t.id+'\')">💾 حفظ الحالة</button>'+
