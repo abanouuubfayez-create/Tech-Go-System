@@ -19,6 +19,7 @@
 <script src="firebase-config.js"></script>
 <script src="auth.js"></script>
 <script src="app.js"></script>
+<script src="formsend.js"></script>
 <style>
 .emp-body{margin:0; background:var(--bg);}
 .emp-nav{
@@ -76,6 +77,7 @@
   <div class="emp-tab" data-pg="wkr" onclick="empGo('wkr',this)">📆 تقاريري الأسبوعية</div>
   <div class="emp-tab" data-pg="ach" onclick="empGo('ach',this)">🏆 إنجازاتي</div>
   <div class="emp-tab" data-pg="req" onclick="empGo('req',this)">📨 طلباتي</div>
+  <div class="emp-tab" data-pg="forms" onclick="empGo('forms',this)">📝 نماذج مطلوبة مني <span class="tab-badge" id="forms-badge" style="display:none">0</span></div>
   <div class="emp-tab" data-pg="acct" onclick="empGo('acct',this)">👤 حسابي</div>
 </div>
 
@@ -200,6 +202,12 @@
     <div id="myReqList"><div class="empty-hint">⏳ جارٍ التحميل...</div></div>
   </div>
 
+  <!-- نماذج مطلوبة مني من الأدمن -->
+  <div class="emp-pg" id="epg-forms">
+    <div class="set-hint" style="margin-bottom:14px">نماذج أرسلها لك الأدمن لتعبئتها وإرسالها مرة أخرى.</div>
+    <div id="myFormsList"><div class="empty-hint">⏳ جارٍ التحميل...</div></div>
+  </div>
+
   <!-- حسابي -->
   <div class="emp-pg" id="epg-acct">
     <div class="set-hint" style="margin-bottom:14px">عدّل اسمك الظاهر في النظام، أو غيّر كلمة مرور حسابك.</div>
@@ -231,7 +239,14 @@ function badgeReq(s){
     var lbl = s === 'approved' ? 'موافق عليه' : (s === 'rejected' ? 'مرفوض' : 'قيد المراجعة');
     return '<span class="badge ' + cls + '">' + lbl + '</span>';
 }
-function empGo(id,el){
+function empGo(id, el, force) {
+    if(!force && window.hasUnsavedText && hasUnsavedText()) {
+        tgConfirmModal('مغادرة الصفحة؟', 'يوجد نص غير محفوظ في هذه الصفحة. هل أنت متأكد من المغادرة وتجاهل التغييرات؟', [
+            {label: 'بقاء', cls: 'bt-o', onClick: tgCloseModal},
+            {label: 'مغادرة', cls: 'bt-d', onClick: function(){ tgCloseModal(); window.clearUnsavedText && clearUnsavedText(); empGo(id, el, true); }}
+        ]);
+        return;
+    }
     document.querySelectorAll('.emp-tab').forEach(function(t){t.classList.remove('a');});
     document.querySelectorAll('.emp-pg').forEach(function(p){p.classList.remove('a');});
     if(el)el.classList.add('a');
@@ -826,6 +841,14 @@ function submitWeeklyReport(){
         msg.style.color='var(--ok)'; msg.textContent='✅ تم إرسال التقرير';
         document.getElementById('wkrContent').value='';
         loadMyWeeklyReports();
+        // إشعار كل الأدمن/الأدمن المساعد بوصول تقرير أسبوعي جديد
+        if(typeof tgSendPushToUser === 'function'){
+            db.collection('users').where('role','in',['admin','assistant_admin']).get().then(function(snap){
+                snap.forEach(function(d){
+                    tgSendPushToUser(d.id, '📆 تقرير أسبوعي جديد', (TG_USER.name||'موظف') + ' أرسل تقريره الأسبوعي', 'weekly-report-new');
+                });
+            }).catch(function(){});
+        }
     }).catch(function(err){ msg.style.color='var(--no)'; msg.textContent='❌ '+err.message; });
 }
 document.getElementById('wkrStart').value=sundayOf(new Date());
@@ -845,6 +868,8 @@ tgRequireAuth('employee', function(u){
     tgChatMount();
     tgChatWatch();
     if(typeof loadEmpAnnouncements === 'function') loadEmpAnnouncements();
+    // نماذج مطلوبة من الأدمن لملئها وإرسالها
+    if(typeof loadMyFormRequests === 'function') loadMyFormRequests(u.uid);
     // تفعيل استقبال Push Notifications من Firestore
     if(typeof tgListenMyNotifications === 'function') tgListenMyNotifications(u.uid);
     // PWA Service Worker

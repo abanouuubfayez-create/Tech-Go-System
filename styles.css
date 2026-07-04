@@ -423,6 +423,7 @@ body { font-family: 'Cairo', sans-serif; direction: rtl; background: var(--bg); 
     .S { transform: translateX(100%); }
     .S.opn { transform: translateX(0); }
     .M { margin-right: 0; }
+    .TB { padding-right: 60px; }
     .mtg { display: flex; align-items: center; justify-content: center; }
     .CT { padding: 12px; }
     .F-bd { padding: 16px; }
@@ -1388,7 +1389,7 @@ html.tg-auth-pending body { visibility: hidden; }
 .tg-chat-log .pj-chat-name { font-size: 10.5px; }
 
 @media (max-width:560px){
-    .tg-chat-panel { left: 10px; right: 10px; width: auto; bottom: 84px; }
+    .tg-chat-panel { left: 0; right: 0; width: 100%; bottom: 0; border-radius: 16px 16px 0 0; border-bottom: none; }
     .tg-chat-bubble { left: 14px; bottom: 14px; }
 }
 

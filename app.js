@@ -77,7 +77,38 @@ function tgCloseModal(){
 // الصفحات التي يمكن للأدمن المساعد الوصول إليها فقط
 var ASSISTANT_ALLOWED = ['pmgmt','proj','account','dash'];
 
-function go(id,nav){
+function hasUnsavedText() {
+    var p = document.querySelector('.pg.a, .emp-pg.a');
+    if(!p) return false;
+    var chatInputs = p.querySelectorAll('.pj-chat-input-row input');
+    for(var i=0; i<chatInputs.length; i++) {
+        if(chatInputs[i].value.trim() !== '') return true;
+    }
+    var textareas = p.querySelectorAll('textarea:not([readonly])');
+    for(var i=0; i<textareas.length; i++) {
+        if(textareas[i].id !== 'tgChatInput' && textareas[i].value.trim() !== '') return true;
+    }
+    return false;
+}
+function clearUnsavedText() {
+    var p = document.querySelector('.pg.a, .emp-pg.a');
+    if(!p) return;
+    var chatInputs = p.querySelectorAll('.pj-chat-input-row input');
+    for(var i=0; i<chatInputs.length; i++) chatInputs[i].value = '';
+    var textareas = p.querySelectorAll('textarea:not([readonly])');
+    for(var i=0; i<textareas.length; i++) {
+        if(textareas[i].id !== 'tgChatInput') textareas[i].value = '';
+    }
+}
+
+function go(id, nav, force){
+    if(!force && hasUnsavedText()){
+        tgConfirmModal('مغادرة الصفحة؟', 'يوجد نص غير محفوظ. هل أنت متأكد من المغادرة وتجاهل التغييرات؟', [
+            {label: 'بقاء', cls: 'bt-o', onClick: tgCloseModal},
+            {label: 'مغادرة', cls: 'bt-d', onClick: function(){ tgCloseModal(); clearUnsavedText(); go(id, nav, true); }}
+        ]);
+        return;
+    }
     // قيود الأدمن المساعد
     if(TG_USER && TG_USER.role==='assistant_admin' && ASSISTANT_ALLOWED.indexOf(id)===-1){
         tgConfirmModal('🔒 وصول محدود',
@@ -134,7 +165,7 @@ function resetSystem(){
             { label:'❌ إلغاء', cls:'bt-o', onClick: function(){} },
             { label:'🗑 تأكيد الحذف', cls:'bt-d', onClick: function(){
                 var batch = db.batch();
-                var collections = ['projects','tasks','weeklyReports','achievements','requests','chatMessages','projectComments'];
+                var collections = ['projects','tasks','weeklyReports','achievements','requests','chatMessages','projectComments','formRequests'];
                 var proms = collections.map(function(col){
                     return db.collection(col).get().then(function(snap){
                         snap.forEach(function(doc){ batch.delete(doc.ref); });
@@ -596,10 +627,21 @@ function filterStaffCards(){
     if(countEl)countEl.textContent=visible+' موظف'+(q?(' من '+(window._staffEmpCache?window._staffEmpCache.length:0)):'');
 }
 function reviewRequest(reqId,newStatus){
-    db.collection('requests').doc(reqId).update({
-        status:newStatus,
-        reviewedBy:(TG_USER?TG_USER.name:''),
-        reviewedAt:firebase.firestore.FieldValue.serverTimestamp()
+    db.collection('requests').doc(reqId).get().then(function(snap){
+        var req = snap.exists ? snap.data() : {};
+        return db.collection('requests').doc(reqId).update({
+            status:newStatus,
+            reviewedBy:(TG_USER?TG_USER.name:''),
+            reviewedAt:firebase.firestore.FieldValue.serverTimestamp()
+        }).then(function(){
+            // إشعار الموظف بنتيجة طلبه فور المراجعة
+            if(req.uid && typeof tgSendPushToUser === 'function'){
+                var okStatus = newStatus === 'approved';
+                var title = okStatus ? '✅ تمت الموافقة على طلبك' : '❌ تم رفض طلبك';
+                var body = (req.type || 'طلب') + (req.fromDate ? (' — من ' + req.fromDate + (req.toDate ? (' إلى ' + req.toDate) : '')) : '');
+                tgSendPushToUser(req.uid, title, body, 'request-reviewed');
+            }
+        });
     }).then(loadStaffOverview).catch(function(err){ alert('تعذر تحديث الطلب: '+err.message); });
 }
 
@@ -1060,6 +1102,24 @@ function tgChatToggle(force){
     var panel=document.getElementById('tgChatPanel');
     var bubble=document.getElementById('tgChatBubble');
     if(!panel) return;
+    
+    var willClose = (typeof force === 'boolean') ? !force : _chatWidgetOpen;
+    var inp = document.getElementById('tgChatInput');
+    
+    if (willClose && inp && inp.value.trim() !== '') {
+        tgConfirmModal('إغلاق الشات؟', 'لديك نص غير مُرسل في الشات، هل أنت متأكد من إغلاقه؟', [
+            {label: 'إلغاء', cls: 'bt-o', onClick: tgCloseModal},
+            {label: 'إغلاق وتجاهل', cls: 'bt-d', onClick: function(){
+                tgCloseModal();
+                inp.value = '';
+                _chatWidgetOpen = false;
+                panel.classList.remove('open');
+                if(bubble) bubble.classList.toggle('hide', window.innerWidth<=560);
+            }}
+        ]);
+        return;
+    }
+
     _chatWidgetOpen = (typeof force==='boolean') ? force : !_chatWidgetOpen;
     panel.classList.toggle('open', _chatWidgetOpen);
     if(bubble) bubble.classList.toggle('hide', _chatWidgetOpen && window.innerWidth<=560);
@@ -2479,7 +2539,7 @@ function load(id,c){
         // ── منطقة الخطر (حذف كل البيانات بما فيها الموظفين) ──
         h+='<div class="SP" style="margin-top:20px;border:2px solid var(--no)">';
         h+='<h3 style="color:var(--no)">&#9888;&#65039; منطقة الخطر</h3>';
-        h+='<p style="font-size:13px;color:var(--tx);margin-bottom:16px">سيؤدي هذا إلى حذف <strong>جميع بيانات النظام</strong> بشكل نهائي لا يمكن التراجع عنه، بما في ذلك الموظفون، المشاريع، المهام، الطلبات، والإشعارات.</p>';
+        h+='<p style="font-size:13px;color:var(--tx);margin-bottom:16px">سيؤدي هذا إلى حذف <strong>جميع بيانات النظام</strong> بشكل نهائي لا يمكن التراجع عنه، بما في ذلك الموظفون، المشاريع، المهام، الطلبات، والإشعارات.<br><strong>باستثناء حسابك الحالي (المدير)</strong> — هيفضل موجوداً عشان تقدر تدخل على النظام بعد الحذف.</p>';
         h+='<button class="bt bt-d" style="padding:10px 24px;font-size:13px;font-weight:800" onclick="deleteAllSystemData()">&#128465; حذف جميع بيانات النظام</button>';
         h+='</div>';
 
@@ -2571,7 +2631,13 @@ function deleteAllSystemData() {
     if(!first) return;
     var second = confirm('\u062A\u0623\u0643\u064A\u062F \u0623\u062E\u064A\u0631: \u0644\u0627 \u064A\u0645\u0643\u0646 \u0627\u0633\u062A\u0631\u062F\u0627\u062F \u0627\u0644\u0628\u064A\u0627\u0646\u0627\u062A \u0628\u0639\u062F \u0627\u0644\u062D\u0630\u0641. \u0647\u0644 \u062A\u0631\u064A\u062F \u0627\u0644\u0645\u062A\u0627\u0628\u0639\u0629\u061F');
     if(!second) return;
-    var collections = ['projects','tasks','announcements','requests','notifications','weeklyReports','achievements','chatMessages','projectComments','employees','users','system'];
+    // ملحوظة: 'system' غير مدرجة عمداً — تحتوي فقط على system/meta (حالة الإعداد الأول)
+    // وحذفها كان يفصّل حالة setupDone بشكل عشوائي حسب ترتيب تنفيذ الحذف، ويجبرك ترجع لصفحة setup.html.
+    var collections = ['projects','tasks','announcements','requests','notifications','weeklyReports','achievements','chatMessages','projectComments','employees','users'];
+    // حساب الأدمن الحالي (اللي بيضغط على الزرار) يُستثنى دائماً من حذف مجموعة users
+    // عشان ميتقفلش برّه النظام بعد الحذف بدون أي طريقة قانونية للرجوع (حساب Firebase Auth بيفضل موجود
+    // لكن ملفه في Firestore كان بيتمسح، فيتحول لحساب معلّق مش قادر يدخل ولا يعمل setup تاني بنفس الإيميل).
+    var myUid = (window.TG_USER && TG_USER.uid) || null;
     var msg = document.createElement('div');
     msg.style.cssText = 'position:fixed;top:20px;left:50%;transform:translateX(-50%);background:#1b2a4a;color:#fff;padding:14px 28px;border-radius:10px;z-index:99999;font-size:14px;font-weight:700;box-shadow:0 8px 24px rgba(0,0,0,.3)';
     msg.textContent = '\u23F3 \u062C\u0627\u0631\u064D \u062D\u0630\u0641 \u0627\u0644\u0628\u064A\u0627\u0646\u0627\u062A...';
@@ -2580,7 +2646,10 @@ function deleteAllSystemData() {
     collections.forEach(function(col) {
         db.collection(col).get().then(function(snap) {
             var batch = db.batch();
-            snap.forEach(function(d) { batch.delete(d.ref); });
+            snap.forEach(function(d) {
+                if (col === 'users' && myUid && d.id === myUid) return; // احتفظ بحساب الأدمن الحالي
+                batch.delete(d.ref);
+            });
             return batch.commit();
         }).then(function() {
             done++;
