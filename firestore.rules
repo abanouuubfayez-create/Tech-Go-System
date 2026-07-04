@@ -89,7 +89,7 @@ service cloud.firestore {
       allow delete: if isAdmin() || (isSignedIn() && resource.data.uid == myUid());
     }
 
-    // المهام: الأدمن أو الأدمن التقني يكلّف بالمهام، والأدمن الرئيسي وحده يحذفها. الموظف يقرأ مهامه ويعدّل الحالة فقط
+    // المهام: الأدمن أو الأدمن التقني يكلّف بالمهام ويحذفها. الموظف يقرأ مهامه ويعدّل الحالة فقط
     match /tasks/{taskId} {
       allow read: if isAnyAdmin() || (isSignedIn() && resource.data.assignedTo == myUid());
       allow create: if isAnyAdmin();
@@ -97,7 +97,7 @@ service cloud.firestore {
         isSignedIn() && resource.data.assignedTo == myUid() &&
         request.resource.data.diff(resource.data).affectedKeys().hasOnly(['status', 'statusUpdatedAt'])
       );
-      allow delete: if isAdmin();
+      allow delete: if isAnyAdmin();
     }
 
     // الإنجازات
