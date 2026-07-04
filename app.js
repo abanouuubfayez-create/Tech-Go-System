@@ -893,7 +893,7 @@ function createProject(){
         title:title, description:desc, assignees:checked, progressMap:{},
         priority:priority, status:status, deadline:deadline,
         createdAt:firebase.firestore.FieldValue.serverTimestamp(),
-        createdBy:(TG_USER?TG_USER.name:''), createdByUid:(TG_USER?TG_USER.uid:''),
+        createdBy:(TG_USER?(TG_USER.name||TG_USER.email||'الأدمن'):''), createdByUid:(TG_USER?TG_USER.uid:''),
         createdByRole: createdByRole
     };
     if(linkUrl) projectData.linkUrl = linkUrl;
@@ -1035,7 +1035,7 @@ function createTask(){
         title:title, description:desc, assignedTo:uid, assignedToName:name||'',
         priority:priority, deadline:deadline, status:'لم يبدأ',
         createdAt:firebase.firestore.FieldValue.serverTimestamp(),
-        createdBy:(TG_USER?TG_USER.name:''), createdByUid:(TG_USER?TG_USER.uid:''),
+        createdBy:(TG_USER?(TG_USER.name||TG_USER.email||'الأدمن'):''), createdByUid:(TG_USER?TG_USER.uid:''),
         createdByRole: createdByRole
     };
 
@@ -3121,7 +3121,7 @@ function addAnnouncement() {
         date: date,
         content: content,
         createdAt: firebase.firestore.FieldValue.serverTimestamp(),
-        createdBy: TG_USER ? TG_USER.name : 'الإدارة',
+        createdBy: TG_USER ? (TG_USER.name || TG_USER.email || 'الإدارة') : 'الإدارة',
         createdByRole: createdByRole
     }).then(function() {
         msg.style.color = 'var(--ok)'; msg.textContent = '✅ تم نشر الإعلان.';
