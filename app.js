@@ -1040,7 +1040,7 @@ function createTask(){
     var taskData = {
         title:title, description:desc, assignedTo:uid, assignedToName:name||'',
         priority:priority, deadline:deadline, status:'لم يبدأ',
-        createdAt:firebase.firestore.FieldValue.serverTimestamp(),
+        createdAt: new Date(),
         createdBy:(TG_USER?(TG_USER.name||TG_USER.email||'الأدمن'):''), createdByUid:(TG_USER?TG_USER.uid:''),
         createdByRole: createdByRole
     };
