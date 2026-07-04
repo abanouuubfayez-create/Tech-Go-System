@@ -386,17 +386,17 @@
     });
   });
 
-  // ── حماية الصفحة: لازم تسجيل دخول بصلاحية أدمن أو أدمن مساعد ──────────────────
+  // ── حماية الصفحة: لازم تسجيل دخول بصلاحية أدمن أو أدمن تقني ──────────────────
   tgRequireAuth('admin', function (u) {
-    var roleLabel = u.role === 'assistant_admin' ? 'أدمن مساعد' : 'أدمن';
+    var roleLabel = u.role === 'tech_admin' ? 'أدمن تقني' : 'أدمن';
     var box = document.getElementById('sbUser');
     if (box) box.innerHTML = '👤 <strong style="color:#fff">' + (u.name || u.email) + '</strong><br><small style="color:rgba(255,255,255,.5)">' + u.email + '</small><br><small style="color:var(--gd);font-weight:700">' + roleLabel + '</small>';
     loadDashboardSummary();
-    if(u.role !== 'assistant_admin') {
+    if(u.role !== 'tech_admin') {
       tgChatMount();
       tgChatWatch();
     }
-    applyAssistantAdminRestrictions(u);
+    applyTechAdminRestrictions(u);
     // تفعيل استقبال Push Notifications من Firestore
     if(typeof tgListenMyNotifications === 'function') tgListenMyNotifications(u.uid);
   });

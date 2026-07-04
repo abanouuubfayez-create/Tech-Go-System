@@ -74,8 +74,8 @@ function tgCloseModal(){
 }
 
 // ─── NAVIGATION ───────────────────────────────────────────────────────────
-// الصفحات التي يمكن للأدمن المساعد الوصول إليها فقط
-var ASSISTANT_ALLOWED = ['pmgmt','proj','account','dash'];
+// الصفحات التي يمكن للأدمن التقني الوصول إليها
+var TECH_ALLOWED = ['dash','pmgmt','tasksmgmt','livetrack','account','announcements'];
 
 function hasUnsavedText() {
     var p = document.querySelector('.pg.a, .emp-pg.a');
@@ -109,10 +109,10 @@ function go(id, nav, force){
         ]);
         return;
     }
-    // قيود الأدمن المساعد
-    if(TG_USER && TG_USER.role==='assistant_admin' && ASSISTANT_ALLOWED.indexOf(id)===-1){
+    // قيود الأدمن التقني
+    if(TG_USER && TG_USER.role==='tech_admin' && TECH_ALLOWED.indexOf(id)===-1){
         tgConfirmModal('🔒 وصول محدود',
-            'الأدمن المساعد يمكنه فقط الوصول إلى صفحة <b>إدارة المشاريع</b>.<br>تواصل مع الأدمن الرئيسي لو احتجت صلاحيات أعلى.',
+            'الأدمن التقني يمكنه فقط الوصول إلى صفحات الإدارة التقنية للمشاريع والمهام والمتابعة اللحظية.<br>تواصل مع الإدارة لو احتجت صلاحيات أعلى.',
             [{label:'حسناً', cls:'bt-p', onClick:tgCloseModal}]);
         return;
     }
@@ -197,11 +197,11 @@ function tgToast(msg, type){
     setTimeout(function(){ if(t.parentNode) t.parentNode.removeChild(t); }, 3100);
 }
 
-// ─── تقييد صلاحيات الأدمن المساعد ────────────────────────────────────────
-function applyAssistantAdminRestrictions(u){
-    if(!u || u.role !== 'assistant_admin') return;
-    // أخفِ بنود الشريط الجانبي غير المسموح بها للأدمن المساعد
-    var allowed = ['dash','pmgmt','account'];
+// ─── تقييد صلاحيات الأدمن التقني ────────────────────────────────────────
+function applyTechAdminRestrictions(u){
+    if(!u || u.role !== 'tech_admin') return;
+    // أخفِ بنود الشريط الجانبي غير المسموح بها للأدمن التقني
+    var allowed = TECH_ALLOWED;
     document.querySelectorAll('.sb-group').forEach(function(g){
         var items = g.querySelectorAll('.S-i');
         var hasVisible = false;
@@ -351,7 +351,7 @@ function loadDashboardSummary(){
     var box=document.getElementById('dashSummary');
     if(!box)return;
     Promise.all([
-        db.collection('users').where('role','in',['employee','assistant_admin']).get(),
+        db.collection('users').where('role','in',['employee','tech_admin']).get(),
         db.collection('projects').get(),
         db.collection('requests').where('status','==','pending').get()
     ]).then(function(res){
@@ -369,11 +369,11 @@ function loadDashboardSummary(){
 
 // ─── تقييد القائمة الجانبية للأدمن المساعد ──────────────────────────────
 function applyAssistantAdminRestrictions(){
-    if(!TG_USER || TG_USER.role !== 'assistant_admin') return;
+    if(!TG_USER || TG_USER.role !== 'tech_admin') return;
     // إخفاء كل عناصر القائمة التي لا علاقة لها بالمشاريع
     document.querySelectorAll('.S-n .S-i').forEach(function(el){
         var onclick = el.getAttribute('onclick') || '';
-        var allowed = ASSISTANT_ALLOWED.some(function(id){ return onclick.indexOf("'"+id+"'") > -1; });
+        var allowed = TECH_ALLOWED.some(function(id){ return onclick.indexOf("'"+id+"'") > -1; });
         if(!allowed && onclick.indexOf('tgLogout') === -1) {
             el.style.display = 'none';
         }
@@ -390,7 +390,7 @@ function applyAssistantAdminRestrictions(){
     });
     // عرض رسالة ترحيب مخصصة
     var subEl = document.querySelector('.S-h .sub');
-    if(subEl) subEl.textContent = 'أدمن مساعد — إدارة المشاريع';
+    if(subEl) subEl.textContent = 'أدمن تقني — إدارة المشاريع';
 }
 
 // ─── إشعارات الأدمن اللحظية من الموظفين (طلبات + تقارير + مشاريع جديدة) ───
@@ -500,7 +500,7 @@ function clearAdminBadge(badgeId, sbBadgeId){
 function loadStaffOverview(){
     var box=document.getElementById('staffList');
     if(!box)return;
-    db.collection('users').where('role','in',['employee','assistant_admin']).get().then(function(snap){
+    db.collection('users').where('role','in',['employee','tech_admin']).get().then(function(snap){
         if(snap.empty){
             box.innerHTML='<div class="empty-hint">لا يوجد موظفون مسجّلون بعد. أنشئ أول حساب من الأعلى.</div>';
             return;
@@ -812,7 +812,7 @@ function createStaffAccount(){
     msg.style.color='var(--tx3)'; msg.textContent='⏳ جارٍ إنشاء الحساب...';
     tgCreateEmployeeAccount(name,email,pass,'',jobTitle,role,function(){
         if(role==='employee') addEmployeeName(name);
-        var roleAr = role==='assistant_admin' ? 'أدمن مساعد' : 'موظف';
+        var roleAr = role==='tech_admin' ? 'أدمن تقني' : 'موظف';
         msg.style.color='var(--ok)'; msg.textContent='✅ تم إنشاء حساب '+roleAr+' بنجاح.';
         document.getElementById('newAccName').value='';
         document.getElementById('newAccEmail').value='';
@@ -831,7 +831,7 @@ function loadPmgmtData(){
     var assigneesBox=document.getElementById('pmgmtAssignees');
     var listBox=document.getElementById('pmgmtList');
     if(!assigneesBox||!listBox)return;
-    db.collection('users').where('role','in',['employee','assistant_admin']).get().then(function(snap){
+    db.collection('users').where('role','in',['employee','tech_admin']).get().then(function(snap){
         PMGMT_EMPLOYEES=[];
         snap.forEach(function(doc){PMGMT_EMPLOYEES.push(Object.assign({uid:doc.id},doc.data()));});
         PMGMT_EMPLOYEES.sort(function(a,b){return (a.name||a.email||'').localeCompare((b.name||b.email||''),'ar');});
@@ -950,7 +950,7 @@ function loadTasksMgmt(){
     var assigneeSel=document.getElementById('tkAssignee');
     var listBox=document.getElementById('tasksMgmtList');
     if(!assigneeSel||!listBox)return;
-    db.collection('users').where('role','in',['employee','assistant_admin']).get().then(function(snap){
+    db.collection('users').where('role','in',['employee','tech_admin']).get().then(function(snap){
         var employees=[];
         snap.forEach(function(doc){employees.push(Object.assign({uid:doc.id},doc.data()));});
         employees.sort(function(a,b){return (a.name||a.email||'').localeCompare((b.name||b.email||''),'ar');});
@@ -1336,8 +1336,8 @@ function renderProjectChat(projectId, comments, containerId){
     }else{
         comments.forEach(function(c){
             var mine=TG_USER&&c.uid===TG_USER.uid;
-            var canDelete=mine||(TG_USER&&(TG_USER.role==='admin'||TG_USER.role==='assistant_admin'));
-            var roleLabel=c.role==='admin'||c.role==='assistant_admin'?'أدمن':'موظف';
+            var canDelete=mine||(TG_USER&&(TG_USER.role==='admin'||TG_USER.role==='tech_admin'));
+            var roleLabel=c.role==='admin'||c.role==='tech_admin'?'أدمن':'موظف';
             var timeStr='';
             if(c.createdAt&&c.createdAt.toDate){
                 try{ timeStr=c.createdAt.toDate().toLocaleString('ar-EG',{day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'}); }catch(e){}
@@ -2523,7 +2523,7 @@ function load(id,c){
         h+='</div>';
 
         h+='<div class="set-sec"><div class="set-sec-title">➕ إضافة حساب جديد</div>';
-        h+='<div class="set-hint">أنشئ بريد إلكتروني وكلمة مرور للموظف حتى يدخل بوابته، أو أنشئ حساب أدمن مساعد يملك صلاحية إضافة المشاريع فقط.</div>';
+        h+='<div class="set-hint">أنشئ بريد إلكتروني وكلمة مرور للموظف حتى يدخل بوابته، أو أنشئ حساب أدمن تقني يملك صلاحية إضافة المشاريع فقط.</div>';
         h+='<div class="fr fr3" style="margin-top:10px">';
         h+='<div class="fg"><label>اسم المستخدم</label><input type="text" id="newAccName" class="emp-name-fld" list="tgEmpDL" autocomplete="off"></div>';
         h+='<div class="fg"><label>البريد الإلكتروني</label><input type="email" id="newAccEmail" placeholder="name@techgo.com"></div>';
@@ -2531,7 +2531,7 @@ function load(id,c){
         h+='</div>';
         h+='<div class="fr fr2" style="margin-top:10px">';
         h+='<div class="fg"><label>المسمى الوظيفي (اختياري)</label><input type="text" id="newAccJobTitle" placeholder="مثلاً: مصمم جرافيك"></div>';
-        h+='<div class="fg"><label>دور الحساب</label><select id="newAccRole"><option value="employee">موظف (employee)</option><option value="assistant_admin">أدمن مساعد — إدارة مشاريع فقط</option></select></div>';
+        h+='<div class="fg"><label>دور الحساب</label><select id="newAccRole"><option value="employee">موظف (employee)</option><option value="tech_admin">أدمن تقني (بدون صلاحيات إدارية)</option></select></div>';
         h+='</div>';
         h+='<button class="bt bt-p" onclick="createStaffAccount()">➕ إنشاء الحساب</button>';
         h+='<div id="newAccMsg" style="margin-top:8px;font-size:11px"></div>';

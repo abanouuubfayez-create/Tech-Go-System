@@ -14,7 +14,7 @@ service cloud.firestore {
     }
     
     function isAnyAdmin() {
-      return isSignedIn() && (myRole() == 'admin' || myRole() == 'assistant_admin');
+      return isSignedIn() && (myRole() == 'admin' || myRole() == 'tech_admin');
     }
 
     // هل تم إعداد أول أدمن للنظام بالفعل؟ (يُسند في صفحة setup.html)
@@ -35,9 +35,9 @@ service cloud.firestore {
     // ملفات المستخدمين
     match /users/{uid} {
       allow read: if isSignedIn() && (myUid() == uid || isAnyAdmin());
-      // يسمح للأدمن الرئيسي بإنشاء حساب موظف أو أدمن مساعد جديد
+      // يسمح للأدمن الرئيسي بإنشاء حساب موظف أو أدمن تقني جديد
       allow create: if isSignedIn() && (
-                      (isAdmin() && (request.resource.data.role == 'employee' || request.resource.data.role == 'assistant_admin')) ||
+                      (isAdmin() && (request.resource.data.role == 'employee' || request.resource.data.role == 'tech_admin')) ||
                       (myUid() == uid && request.resource.data.role == 'admin' && !setupDone())
                     );
       // يسمح للأدمن بتعديل أي مستخدم، أو الموظف بتعديل اسمه فقط
@@ -48,7 +48,7 @@ service cloud.firestore {
       allow delete: if isAdmin();
     }
 
-    // المشاريع: الأدمن أو الأدمن المساعد يملك التحكم الكامل.
+    // المشاريع: الأدمن أو الأدمن التقني يملك التحكم الكامل.
     // الموظف يقرأ فقط المشاريع المسندة إليه، ولا يملك صلاحية الإنشاء أو الحذف، ويعدّل فقط تقدّمه (progressMap)
     match /projects/{projectId} {
       allow read: if isAnyAdmin() || (isSignedIn() && myUid() in resource.data.assignees);
@@ -85,7 +85,7 @@ service cloud.firestore {
       allow delete: if isAdmin() || (isSignedIn() && resource.data.uid == myUid());
     }
 
-    // المهام: الأدمن أو الأدمن المساعد يكلّف بالمهام، والأدمن الرئيسي وحده يحذفها. الموظف يقرأ مهامه ويعدّل الحالة فقط
+    // المهام: الأدمن أو الأدمن التقني يكلّف بالمهام، والأدمن الرئيسي وحده يحذفها. الموظف يقرأ مهامه ويعدّل الحالة فقط
     match /tasks/{taskId} {
       allow read: if isAnyAdmin() || (isSignedIn() && resource.data.assignedTo == myUid());
       allow create: if isAnyAdmin();
@@ -132,7 +132,7 @@ service cloud.firestore {
       allow delete: if isAdmin() || (isSignedIn() && resource.data.toUid == myUid());
     }
 
-    // الإعلانات: الأدمن أو الأدمن المساعد يكتب ويعدّل. الأدمن الرئيسي وحده يحذف
+    // الإعلانات: الأدمن أو الأدمن التقني يكتب ويعدّل. الأدمن الرئيسي وحده يحذف
     match /announcements/{annId} {
       allow read: if isSignedIn();
       allow create: if isAnyAdmin();

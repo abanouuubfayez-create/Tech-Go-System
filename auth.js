@@ -4,7 +4,7 @@
 var TG_USER = null; // { uid, email, name, role, empId, jobTitle }
 
 // يتحقق من تسجيل الدخول والصلاحية المطلوبة، وينفّذ onOk(userDoc) لو كل شيء تمام.
-// requiredRole: 'admin' | 'assistant_admin' | 'employee' | null (أي دور)
+// requiredRole: 'admin' | 'tech_admin' | 'employee' | null (أي دور)
 function tgRequireAuth(requiredRole, onOk) {
     auth.onAuthStateChanged(function (user) {
         if (!user) { location.href = 'login.html'; return; }
@@ -30,8 +30,8 @@ function tgRequireAuth(requiredRole, onOk) {
 
             // ── منطق التحويل حسب الدور ──
             if (requiredRole === 'admin') {
-                // يقبل admin و assistant_admin كلاهما في لوحة الأدمن
-                if (data.role !== 'admin' && data.role !== 'assistant_admin') {
+                // يقبل admin و tech_admin كلاهما في لوحة الأدمن
+                if (data.role !== 'admin' && data.role !== 'tech_admin') {
                     location.href = 'employee.html';
                     return;
                 }
@@ -129,9 +129,9 @@ function tgListenMyNotifications(uid) {
 function isFullAdmin() {
     return TG_USER && TG_USER.role === 'admin';
 }
-// هل المستخدم الحالي أدمن مساعد؟
+// هل المستخدم الحالي أدمن تقني؟
 function isAssistantAdmin() {
-    return TG_USER && TG_USER.role === 'assistant_admin';
+    return TG_USER && TG_USER.role === 'tech_admin';
 }
 
 function tgLogout() {

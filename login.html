@@ -105,7 +105,7 @@ function doLogin(){
             return;
         }
         var role=doc.data().role;
-        location.href = (role==='admin'||role==='assistant_admin') ? 'index.html' : 'employee.html';
+        location.href = (role==='admin'||role==='tech_admin') ? 'index.html' : 'employee.html';
     }).catch(function(err){
         btn.disabled=false; btn.textContent='🔐 دخول';
         showErr(friendlyErr(err.code));

@@ -101,7 +101,7 @@
 
       <!-- نموذج إضافة مشروع (للمساعد الإداري) -->
       <div id="astAdminProjectSection" style="display:none; background:var(--w); padding:16px; border-radius:10px; margin-bottom:20px; border:1px solid var(--bd2)">
-        <div class="set-sec-title">➕ إضافة مشروع جديد (أدمن مساعد)</div>
+        <div class="set-sec-title">➕ إضافة مشروع جديد (أدمن تقني)</div>
         <div class="fr fr2" style="margin-top:8px">
           <div class="fg"><label>عنوان المشروع</label><input type="text" id="newAstProjTitle"></div>
           <div class="fg"><label>الموظفون (اختر موظفاً أو أكثر بالمؤشر)</label>
@@ -841,9 +841,9 @@ function submitWeeklyReport(){
         msg.style.color='var(--ok)'; msg.textContent='✅ تم إرسال التقرير';
         document.getElementById('wkrContent').value='';
         loadMyWeeklyReports();
-        // إشعار كل الأدمن/الأدمن المساعد بوصول تقرير أسبوعي جديد
+        // إشعار كل الأدمن/الأدمن التقني بوصول تقرير أسبوعي جديد
         if(typeof tgSendPushToUser === 'function'){
-            db.collection('users').where('role','in',['admin','assistant_admin']).get().then(function(snap){
+            db.collection('users').where('role','in',['admin','tech_admin']).get().then(function(snap){
                 snap.forEach(function(d){
                     tgSendPushToUser(d.id, '📆 تقرير أسبوعي جديد', (TG_USER.name||'موظف') + ' أرسل تقريره الأسبوعي', 'weekly-report-new');
                 });

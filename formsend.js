@@ -336,7 +336,7 @@
   };
 
   function fsLoadEmployees() {
-    db.collection('users').where('role', 'in', ['employee', 'assistant_admin']).get().then(function (snap) {
+    db.collection('users').where('role', 'in', ['employee', 'tech_admin']).get().then(function (snap) {
       fsEmployees = snap.docs.map(function (d) { return Object.assign({ uid: d.id }, d.data()); });
       var sel = document.getElementById('fsTargetEmp');
       if (!sel) return;
