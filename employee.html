@@ -684,7 +684,7 @@ function saveTaskStatus(id){
     var status=document.getElementById('tks_'+id).value;
     var msg=document.getElementById('tkmsg_'+id);
     msg.style.color='var(--tx3)'; msg.textContent='⏳ جارٍ الحفظ...';
-    db.collection('tasks').doc(id).update({status:status}).then(function(){
+    db.collection('tasks').doc(id).update({status:status, statusUpdatedAt: new Date()}).then(function(){
         msg.style.color='var(--ok)'; msg.textContent='✅ تم الحفظ';
         // Push notification عند اكتمال المهمة
         if(status === 'مكتمل'){

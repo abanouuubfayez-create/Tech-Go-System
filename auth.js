@@ -120,10 +120,8 @@ function tgBroadcastPush(title, body, tag, excludeUid) {
 // \u0627\u0633\u062a\u0645\u0627\u0639 \u0644\u0644\u0625\u0634\u0639\u0627\u0631\u0627\u062a \u0627\u0644\u0648\u0627\u0631\u062f\u0629 \u0644\u0644\u0645\u0633\u062a\u062e\u062f\u0645 \u0627\u0644\u062d\u0627\u0644\u064a
 function tgListenMyNotifications(uid) {
     if (!uid) return;
-    var isFirst = true;
     db.collection('notifications').where('toUid', '==', uid).where('read', '==', false)
         .onSnapshot(function(snap) {
-            if (isFirst) { isFirst = false; return; } // \u062a\u062c\u0627\u0647\u0644 \u0627\u0644\u0623\u0648\u0644\u064a
             snap.docChanges().forEach(function(change) {
                 if (change.type === 'added') {
                     var d = change.doc.data();

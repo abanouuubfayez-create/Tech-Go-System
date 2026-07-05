@@ -184,8 +184,33 @@
             ltPushFeed(Object.assign({ id: ch.doc.id }, ch.doc.data()));
           }
         });
-        ltTasksFirstSnap = false;
         ltTasks = snap.docs.map(function (d) { return Object.assign({ id: d.id }, d.data()); });
+        if (ltTasksFirstSnap) {
+          var now = Date.now();
+          ltTasks.forEach(function(t) {
+            if(t.statusUpdatedAt) {
+              var tsMillis = (typeof t.statusUpdatedAt.toMillis === 'function') ? t.statusUpdatedAt.toMillis() : (typeof t.statusUpdatedAt.getTime === 'function' ? t.statusUpdatedAt.getTime() : now);
+              if (now - tsMillis < LT_RETENTION_MS) {
+                var exists = ltFeed.some(function(f) { return f.ts === tsMillis && f.title === t.title; });
+                if (!exists) {
+                  ltFeed.push({
+                    name: t.assignedToName || 'موظف',
+                    verb: t.status === 'مكتمل' ? 'أنهى مهمة' : t.status === 'جاري العمل' ? 'بدأ العمل على' : 'أعاد فتح مهمة',
+                    title: t.title || 'بدون عنوان',
+                    status: t.status || 'لم يبدأ',
+                    ts: tsMillis
+                  });
+                  ltLastPushed[t.id] = t.status;
+                }
+              }
+            }
+          });
+          ltFeed.sort(function(a,b) { return b.ts - a.ts; });
+          ltPruneFeed();
+          ltSaveFeed();
+          ltRenderFeed();
+        }
+        ltTasksFirstSnap = false;
         ltRenderKpis();
         ltRenderTeam();
         ltRenderTasks();
