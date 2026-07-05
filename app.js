@@ -3808,3 +3808,60 @@ function initAdminCalendar() {
     });
     calendar.render();
 }
+
+window.fetchLiveAttendance = async function() {
+    var tbody = document.getElementById('liveAttBody');
+    var dateInput = document.getElementById('liveAttDate');
+    if(!tbody || !dateInput) return;
+    
+    var selectedDate = dateInput.value;
+    if(!selectedDate) return;
+    
+    tbody.innerHTML = '<tr><td colspan="5" style="padding:20px;color:#888">جارٍ جلب البيانات...</td></tr>';
+    
+    try {
+        var snap = await db.collection('attendance_logs').where('date', '==', selectedDate).get();
+        if(snap.empty) {
+            tbody.innerHTML = '<tr><td colspan="5" style="padding:20px;color:#888">لا يوجد سجلات حضور مسجلة في هذا اليوم.</td></tr>';
+            return;
+        }
+        
+        var logs = snap.docs.map(function(d){ return d.data(); });
+        // ترتيب أبجدي حسب الاسم
+        logs.sort(function(a,b) {
+            var nA = a.name || '';
+            var nB = b.name || '';
+            return nA.localeCompare(nB);
+        });
+
+        var html = '';
+        
+        logs.forEach(function(log) {
+            var checkIn = log.checkIn || '—';
+            var checkOut = log.checkOut || '—';
+            var hours = '—';
+            
+            if(log.checkIn && log.checkOut) {
+                var t1 = new Date("2000-01-01T" + log.checkIn + ":00");
+                var t2 = new Date("2000-01-01T" + log.checkOut + ":00");
+                var diff = (t2 - t1) / 3600000;
+                if(diff < 0) diff += 24;
+                hours = diff > 0 ? diff.toFixed(1) + ' ساعة' : '—';
+            }
+            
+            html += '<tr>' +
+                '<td style="font-weight:bold;color:var(--nv)">' + (log.name || 'مجهول') + '</td>' +
+                '<td>' + log.date + '</td>' +
+                '<td style="color:#059669;font-weight:bold">' + checkIn + '</td>' +
+                '<td style="color:#dc2626;font-weight:bold">' + checkOut + '</td>' +
+                '<td style="font-weight:bold">' + hours + '</td>' +
+                '</tr>';
+        });
+        
+        tbody.innerHTML = html;
+        
+    } catch(e) {
+        console.error("fetchLiveAttendance error:", e);
+        tbody.innerHTML = '<tr><td colspan="5" style="padding:20px;color:red">حدث خطأ أثناء جلب البيانات</td></tr>';
+    }
+};
