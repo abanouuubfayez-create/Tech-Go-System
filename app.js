@@ -2550,6 +2550,22 @@ function load(id,c){
         h+='</div>';
     }
 
+    // ── الحضور الحي (مباشر) ───────────────────────────────────────────
+    else if(id==="att_live"){
+        var todayDate = new Date().toISOString().split('T')[0];
+        h='<div style="background:var(--w);border:1px solid var(--bd);border-radius:6px;padding:20px">';
+        h+='<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px;flex-wrap:wrap;gap:10px">';
+        h+='<div><h2 style="margin:0;color:var(--nv);font-size:18px">📡 سجل الحضور الحي (مباشر)</h2><p style="margin:4px 0 0;color:#666;font-size:13px">يعرض حركات تسجيل الدخول والخروج من حسابات الموظفين مباشرة</p></div>';
+        h+='<div style="display:flex;gap:10px;align-items:center"><input type="date" id="liveAttDate" value="'+todayDate+'" onchange="fetchLiveAttendance()" style="padding:8px 12px;border-radius:6px;border:1px solid var(--bd);outline:none;font-family:inherit"><button class="bt bt-o" onclick="fetchLiveAttendance()">🔄 تحديث</button></div>';
+        h+='</div>';
+        h+='<div style="overflow-x:auto"><table class="dt" style="width:100%;text-align:center" id="liveAttTable">';
+        h+='<thead><tr><th style="text-align:center">اسم الموظف</th><th style="text-align:center">تاريخ اليوم</th><th style="text-align:center">وقت الدخول</th><th style="text-align:center">وقت الخروج</th><th style="text-align:center">ساعات العمل</th></tr></thead>';
+        h+='<tbody id="liveAttBody"><tr><td colspan="5" style="padding:20px;color:#888">جارٍ جلب البيانات...</td></tr></tbody>';
+        h+='</table></div>';
+        h+='</div>';
+        setTimeout(function(){ if(typeof window.fetchLiveAttendance === 'function') window.fetchLiveAttendance(); }, 100);
+    }
+
     // ── الشكاوى والمقترحات ─────────────────────────────────────────────
     else if(id==="comp"){
         h=H('الشكاوى والمقترحات','صوتك مسموع — نحن نهتم برأيك','COMPLAINTS & SUGGESTIONS','comp');
