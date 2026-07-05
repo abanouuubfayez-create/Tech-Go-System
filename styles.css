@@ -1,35 +1,35 @@
-@import url('https://fonts.googleapis.com/css2?family=Cairo:wght@300;400;500;600;700;800;900&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Alexandria:wght@300;400;500;600;700;800;900&family=Inter:wght@400;500;600;700&display=swap');
 
 :root {
-    --nv: #1b2a4a;
-    --nv2: #263d66;
-    --nv3: #0e1a30;
-    --gd: #e5be49;
-    --gd2: #c59f20;
-    --gdl: #fcf8eb;
-    --gdl2: #f4ecce;
-    --bg: #eef0f6;
+    --nv: #0f172a;
+    --nv2: #1e293b;
+    --nv3: #020617;
+    --gd: #f59e0b;
+    --gd2: #d97706;
+    --gdl: #fef3c7;
+    --gdl2: #fde68a;
+    --bg: #f8fafc;
     --w: #ffffff;
-    --tx: #1b2a4a;
-    --tx2: #3d4f6f;
-    --tx3: #7a869a;
-    --bd: #d0d5de;
-    --bd2: #e4e7ed;
-    --ok: #1a7a42;
-    --no: #b91c1c;
-    --wn: #a07d16;
-    --inf: #1d5fa0;
-    --r: 10px;
-    --sb: 256px;
-    --sh-sm: 0 2px 8px rgba(27,42,74,.05);
-    --sh-md: 0 6px 24px rgba(27,42,74,.09);
-    --sh-lg: 0 16px 48px rgba(27,42,74,.14);
-    --tr: all .22s cubic-bezier(.4,0,.2,1);
+    --tx: #0f172a;
+    --tx2: #334155;
+    --tx3: #64748b;
+    --bd: #e2e8f0;
+    --bd2: #cbd5e1;
+    --ok: #10b981;
+    --no: #ef4444;
+    --wn: #eab308;
+    --inf: #3b82f6;
+    --r: 12px;
+    --sb: 260px;
+    --sh-sm: 0 4px 12px rgba(15, 23, 42, 0.04);
+    --sh-md: 0 10px 30px rgba(15, 23, 42, 0.08);
+    --sh-lg: 0 20px 50px rgba(15, 23, 42, 0.12);
+    --tr: all .3s cubic-bezier(.4,0,.2,1);
 }
 
 *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
 html { font-size: 14.5px; -webkit-text-size-adjust: 100%; }
-body { font-family: 'Cairo', sans-serif; direction: rtl; background: var(--bg); color: var(--tx); line-height: 1.6; }
+body { font-family: 'Alexandria', 'Inter', sans-serif; direction: rtl; background: var(--bg); color: var(--tx); line-height: 1.6; }
 
 /* ═══════════════════════════════════════════ */
 /*                  SIDEBAR                    */
@@ -106,7 +106,7 @@ body { font-family: 'Cairo', sans-serif; direction: rtl; background: var(--bg); 
 .sb-search {
     width: 100%; padding: 6px 10px 6px 30px;
     background: rgba(255,255,255,.08); border: 1px solid rgba(255,255,255,.1);
-    border-radius: 8px; color: #fff; font-family: 'Cairo'; font-size: 11px;
+    border-radius: 8px; color: #fff; font-family: 'Alexandria', 'Inter'; font-size: 11px;
     outline: none; transition: var(--tr);
     direction: rtl;
 }
@@ -146,11 +146,11 @@ body { font-family: 'Cairo', sans-serif; direction: rtl; background: var(--bg); 
 .bt {
     display: inline-flex; align-items: center; gap: 6px;
     padding: 7px 18px; border-radius: 8px;
-    font-family: 'Cairo'; font-size: 11px; font-weight: 700;
+    font-family: 'Alexandria', 'Inter'; font-size: 11px; font-weight: 700;
     border: none; cursor: pointer; transition: var(--tr);
     letter-spacing: .3px; white-space: nowrap;
 }
-.bt:active { transform: scale(.97); }
+.bt:active { transform: scale(.95); }
 .bt-p { background: var(--nv); color: #fff; box-shadow: 0 2px 8px rgba(27,42,74,.25); }
 .bt-p:hover { background: var(--nv2); box-shadow: 0 4px 14px rgba(27,42,74,.35); transform: translateY(-1px); }
 .bt-d { background: #b91c1c; color: #fff; box-shadow: 0 2px 8px rgba(185,28,28,.2); }
@@ -224,7 +224,7 @@ body { font-family: 'Cairo', sans-serif; direction: rtl; background: var(--bg); 
 .F-hd .meta input {
     display: block; background: transparent; border: none;
     border-bottom: 1px dashed rgba(255,255,255,.25);
-    color: #fff; font-family: 'Cairo'; font-size: 11px;
+    color: #fff; font-family: 'Alexandria', 'Inter'; font-size: 11px;
     width: 110px; text-align: left; padding: 3px 0; margin-bottom: 6px;
 }
 
@@ -264,7 +264,7 @@ body { font-family: 'Cairo', sans-serif; direction: rtl; background: var(--bg); 
     width: 100%; box-sizing: border-box;
     padding: 8px 11px; border: 1.5px solid var(--bd2);
     border-radius: 8px;
-    font-family: 'Cairo'; font-size: 13px;
+    font-family: 'Alexandria', 'Inter'; font-size: 13px;
     background: #fafbfd; color: var(--tx);
     transition: var(--tr);
     line-height: 1.5;
@@ -273,7 +273,7 @@ body { font-family: 'Cairo', sans-serif; direction: rtl; background: var(--bg); 
     width: 100%; box-sizing: border-box;
     padding: 9px 11px; border: 1.5px solid var(--bd2);
     border-radius: 8px;
-    font-family: 'Cairo'; font-size: 13px;
+    font-family: 'Alexandria', 'Inter'; font-size: 13px;
     background: #fafbfd; color: var(--tx);
     transition: var(--tr);
     line-height: 1.6;
@@ -307,7 +307,7 @@ body { font-family: 'Cairo', sans-serif; direction: rtl; background: var(--bg); 
 .stg { display: flex; gap: 10px; padding: 8px 0; justify-content: center; }
 .stb {
     padding: 6px 20px; border-radius: var(--r);
-    font-family: 'Cairo'; font-size: 12px; font-weight: 600;
+    font-family: 'Alexandria', 'Inter'; font-size: 12px; font-weight: 600;
     border: 1.5px solid; cursor: pointer; transition: all .2s;
     background: transparent;
 }
@@ -381,7 +381,7 @@ body { font-family: 'Cairo', sans-serif; direction: rtl; background: var(--bg); 
 .dt tr:hover { background: #f0f2f6; }
 .dt input {
     width: 100%; border: none; background: transparent;
-    text-align: center; font-family: 'Cairo'; font-size: 12px; padding: 3px;
+    text-align: center; font-family: 'Alexandria', 'Inter'; font-size: 12px; padding: 3px;
 }
 .dt input:focus {
     outline: none; background: #fff;
@@ -411,11 +411,11 @@ body { font-family: 'Cairo', sans-serif; direction: rtl; background: var(--bg); 
 .cert { padding: 36px 50px; font-size: 15px; line-height: 2.4; text-align: justify; }
 .cert input[type="text"] {
     border: none; border-bottom: 1px dashed #555; background: transparent;
-    font-family: 'Cairo'; font-size: 15px; text-align: center;
+    font-family: 'Alexandria', 'Inter'; font-size: 15px; text-align: center;
 }
 .cert input[type="date"] {
     border: none; border-bottom: 1px dashed #555; background: transparent;
-    font-family: 'Cairo'; font-size: 13px;
+    font-family: 'Alexandria', 'Inter'; font-size: 13px;
 }
 
 /* ═══════════════════════════════════════════ */
@@ -532,7 +532,7 @@ body { font-family: 'Cairo', sans-serif; direction: rtl; background: var(--bg); 
     body {
         background: #fff !important;
         margin: 0; padding: 0;
-        font-family: 'Cairo', 'Tahoma', sans-serif !important;
+        font-family: 'Alexandria', 'Inter', 'Tahoma', sans-serif !important;
         font-weight: 500;
         line-height: 1.45;
         color: #0d1b3a !important;
@@ -645,7 +645,7 @@ body { font-family: 'Cairo', sans-serif; direction: rtl; background: var(--bg); 
         background: #fafbfd !important;
         direction: rtl !important;
         text-align: right !important;
-        font-family: 'Cairo', 'Tahoma', sans-serif !important;
+        font-family: 'Alexandria', 'Inter', 'Tahoma', sans-serif !important;
     }
     .fg textarea {
         font-size: 10px !important; padding: 6px 10px !important;
@@ -656,7 +656,7 @@ body { font-family: 'Cairo', sans-serif; direction: rtl; background: var(--bg); 
         background: #fafbfd !important;
         direction: rtl !important;
         text-align: right !important;
-        font-family: 'Cairo', 'Tahoma', sans-serif !important;
+        font-family: 'Alexandria', 'Inter', 'Tahoma', sans-serif !important;
     }
     .fr, .fr2, .fr3, .fr4 { gap: 8px 14px; margin-bottom: 8px; }
 
@@ -866,7 +866,7 @@ body { font-family: 'Cairo', sans-serif; direction: rtl; background: var(--bg); 
 /*        DOCUMENT NUMBER FIELD               */
 /* ═══════════════════════════════════════════ */
 .doc-num-fld {
-    font-family: 'Cairo', monospace;
+    font-family: 'Alexandria', 'Inter', monospace;
     font-weight: 800 !important;
     font-size: 11px !important;
     letter-spacing: 1px;
@@ -1033,21 +1033,21 @@ body { font-family: 'Cairo', sans-serif; direction: rtl; background: var(--bg); 
 .FL-meta { display: flex; justify-content: flex-start; gap: 44px; padding: 0 36px; margin-bottom: 20px; }
 .FL-meta-item { display: flex; align-items: baseline; gap: 7px; }
 .FL-meta-lbl { font-size: 10px; font-weight: 700; color: var(--tx3); flex-shrink: 0; }
-.FL-meta-val { border: none; border-bottom: 1px solid var(--bd); background: transparent; font-size: 11.5px; font-weight: 700; color: var(--nv); padding: 2px 4px; min-width: 120px; font-family: 'Cairo'; }
+.FL-meta-val { border: none; border-bottom: 1px solid var(--bd); background: transparent; font-size: 11.5px; font-weight: 700; color: var(--nv); padding: 2px 4px; min-width: 120px; font-family: 'Alexandria', 'Inter'; }
 .FL-meta-val:focus { outline: none; border-bottom-color: var(--gd); }
 .FL-body { padding: 0 36px; }
 .FL-line { display: flex; align-items: baseline; gap: 10px; margin-bottom: 12px; }
 .FL-line-lbl { font-size: 11.5px; font-weight: 700; color: var(--tx2); flex-shrink: 0; }
-.FL-line-val { flex: 1; border: none; border-bottom: 1px solid var(--bd); background: transparent; font-size: 12.5px; color: var(--tx); padding: 4px 4px; font-family: 'Cairo'; }
+.FL-line-val { flex: 1; border: none; border-bottom: 1px solid var(--bd); background: transparent; font-size: 12.5px; color: var(--tx); padding: 4px 4px; font-family: 'Alexandria', 'Inter'; }
 .FL-line-val:focus { outline: none; border-bottom-color: var(--gd); }
 .FL-subject { font-weight: 800; color: var(--nv); }
 .FL-types { display: flex; flex-wrap: wrap; gap: 12px 20px; margin: 4px 0 20px; padding: 10px 2px; border-top: 1px solid var(--bd2); border-bottom: 1px solid var(--bd2); }
 .FL-types label { display: flex; align-items: center; gap: 5px; font-size: 10.5px; color: var(--tx2); cursor: pointer; }
-.FL-open { display: block; border: none; background: transparent; font-size: 12.5px; color: var(--tx); font-family: 'Cairo'; padding: 2px 0; width: 100%; margin-bottom: 12px; }
+.FL-open { display: block; border: none; background: transparent; font-size: 12.5px; color: var(--tx); font-family: 'Alexandria', 'Inter'; padding: 2px 0; width: 100%; margin-bottom: 12px; }
 .FL-open:focus { outline: none; }
-.FL-textbody { width: 100%; border: none; border-top: 1px solid var(--bd2); border-bottom: 1px solid var(--bd2); background: repeating-linear-gradient(to bottom, transparent, transparent 27px, var(--bd2) 28px); line-height: 28px; font-size: 12.5px; color: var(--tx); font-family: 'Cairo'; resize: vertical; padding: 4px 2px; }
+.FL-textbody { width: 100%; border: none; border-top: 1px solid var(--bd2); border-bottom: 1px solid var(--bd2); background: repeating-linear-gradient(to bottom, transparent, transparent 27px, var(--bd2) 28px); line-height: 28px; font-size: 12.5px; color: var(--tx); font-family: 'Alexandria', 'Inter'; resize: vertical; padding: 4px 2px; }
 .FL-textbody:focus { outline: none; }
-.FL-close { display: block; border: none; background: transparent; font-size: 12.5px; color: var(--tx); font-family: 'Cairo'; padding: 14px 0 0; width: 100%; }
+.FL-close { display: block; border: none; background: transparent; font-size: 12.5px; color: var(--tx); font-family: 'Alexandria', 'Inter'; padding: 14px 0 0; width: 100%; }
 .FL-close:focus { outline: none; }
 .FL-extra { display: flex; gap: 34px; margin: 20px 0 6px; padding-top: 14px; border-top: 1px dashed var(--bd); }
 .FL-extra .FL-line { flex: 1; margin-bottom: 0; }
@@ -1133,7 +1133,7 @@ body { font-family: 'Cairo', sans-serif; direction: rtl; background: var(--bg); 
 /*      MONTHLY EXPENSE SHEET — شيت المصروفات    */
 /* ═══════════════════════════════════════════ */
 #mexp-table .mexp-idx { text-align: center; font-weight: 700; color: var(--tx3); }
-#mexp-table input { width: 100%; border: none; background: transparent; font-family: 'Cairo'; font-size: 12px; color: var(--tx); padding: 4px 2px; }
+#mexp-table input { width: 100%; border: none; background: transparent; font-family: 'Alexandria', 'Inter'; font-size: 12px; color: var(--tx); padding: 4px 2px; }
 #mexp-table input:focus { outline: none; background: var(--gdl); }
 #mexp-table input.mexp-amt { text-align: center; font-weight: 700; color: var(--nv); }
 #mexp-table td { vertical-align: middle; }
@@ -1476,7 +1476,7 @@ html.tg-auth-pending body { visibility: hidden; }
     display: flex; align-items: center; justify-content: center; gap: 8px;
     width: 100%; padding: 9px 14px; border-radius: 8px; border: none;
     background: rgba(185,28,28,.12); color: #ef9a9a;
-    font-family: 'Cairo'; font-size: 12px; font-weight: 700;
+    font-family: 'Alexandria', 'Inter'; font-size: 12px; font-weight: 700;
     cursor: pointer; transition: var(--tr);
     border: 1px solid rgba(185,28,28,.2);
 }
@@ -1499,7 +1499,7 @@ html.tg-auth-pending body { visibility: hidden; }
 }
 .pwa-install-bar .pwa-install-btn {
     background: var(--gd); color: var(--nv3); border: none;
-    padding: 6px 16px; border-radius: 6px; font-family: 'Cairo';
+    padding: 6px 16px; border-radius: 6px; font-family: 'Alexandria', 'Inter';
     font-size: 11.5px; font-weight: 800; cursor: pointer; white-space: nowrap;
     transition: var(--tr);
 }

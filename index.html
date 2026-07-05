@@ -217,7 +217,7 @@
       bar = document.createElement('div');
       bar.id = 'ppBar';
       bar.className = 'np';
-      bar.style.cssText = 'position:fixed;top:12px;left:12px;z-index:99999;display:flex;gap:8px;background:#1b2a4a;color:#fff;padding:10px 14px;border-radius:8px;box-shadow:0 8px 24px rgba(0,0,0,.25);font-family:Cairo,sans-serif;direction:rtl;align-items:center;flex-wrap:wrap';
+      bar.style.cssText = 'position:fixed;top:12px;left:12px;z-index:99999;display:flex;gap:8px;background:var(--nv);color:#fff;padding:10px 14px;border-radius:8px;box-shadow:0 8px 24px rgba(0,0,0,.25);font-family:Alexandria,sans-serif;direction:rtl;align-items:center;flex-wrap:wrap';
       var savedPaper = localStorage.getItem('tg_paper_size') || 'A4';
       var paperOpts = ['A4', 'Legal', 'Letter'].map(function (sz) {
         return '<option value="' + sz + '"' + (sz === savedPaper ? ' selected' : '') + '>' + sz + '</option>';
