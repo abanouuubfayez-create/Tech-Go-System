@@ -188,6 +188,23 @@
         if (ltTasksFirstSnap) {
           var now = Date.now();
           ltTasks.forEach(function(t) {
+            // Task Creation
+            if(t.createdAt) {
+              var tsMillis = (typeof t.createdAt.toMillis === 'function') ? t.createdAt.toMillis() : (typeof t.createdAt.getTime === 'function' ? t.createdAt.getTime() : now);
+              if (now - tsMillis < LT_RETENTION_MS) {
+                var exists = ltFeed.some(function(f) { return f.ts === tsMillis && f.title === t.title && f.verb.indexOf('كلّف') > -1; });
+                if (!exists) {
+                  ltFeed.push({
+                    name: t.createdBy || 'الإدارة',
+                    verb: 'كلّف الموظف (' + (t.assignedToName || '?') + ') بمهمة',
+                    title: t.title || 'بدون عنوان',
+                    status: 'جديدة',
+                    ts: tsMillis
+                  });
+                }
+              }
+            }
+            // Task Status Update
             if(t.statusUpdatedAt) {
               var tsMillis = (typeof t.statusUpdatedAt.toMillis === 'function') ? t.statusUpdatedAt.toMillis() : (typeof t.statusUpdatedAt.getTime === 'function' ? t.statusUpdatedAt.getTime() : now);
               if (now - tsMillis < LT_RETENTION_MS) {
@@ -200,10 +217,10 @@
                     status: t.status || 'لم يبدأ',
                     ts: tsMillis
                   });
-                  ltLastPushed[t.id] = t.status;
                 }
               }
             }
+            ltLastPushed[t.id] = t.status;
           });
           ltFeed.sort(function(a,b) { return b.ts - a.ts; });
           ltPruneFeed();
@@ -237,19 +254,25 @@
     // Firestore بيبعث onSnapshot مرتين لنفس الكتابة أحيانًا (نسخة محلية فورية
     // ثم تأكيد من الخادم) — نتفادى تكرار نفس الحدث لنفس المهمة بنفس الحالة
     if (ltLastPushed[t.id] === t.status) return;
+    var isNew = !ltLastPushed[t.id] && t.status === 'لم يبدأ';
     ltLastPushed[t.id] = t.status;
 
-    var verb = t.status === 'مكتمل' ? 'أنهى مهمة'
+    var verb = isNew ? 'كلّف الموظف (' + (t.assignedToName || '?') + ') بمهمة'
+      : t.status === 'مكتمل' ? 'أنهى مهمة'
       : t.status === 'جاري العمل' ? 'بدأ العمل على'
       : 'أعاد فتح مهمة';
-    // لو موجود statusUpdatedAt (سيرفر تايم ستامب) بنحوّله لرقم (millis) عشان يتخزن في localStorage بسهولة
-    var tsMillis = (t.statusUpdatedAt && typeof t.statusUpdatedAt.toMillis === 'function')
-      ? t.statusUpdatedAt.toMillis() : Date.now();
+      
+    var name = isNew ? (t.createdBy || 'الإدارة') : (t.assignedToName || 'موظف');
+    var status = isNew ? 'جديدة' : (t.status || 'لم يبدأ');
+
+    var tsMillis = (t.statusUpdatedAt && typeof t.statusUpdatedAt.toMillis === 'function') ? t.statusUpdatedAt.toMillis() : 
+                   (isNew && t.createdAt && typeof t.createdAt.toMillis === 'function') ? t.createdAt.toMillis() : Date.now();
+                   
     ltFeed.unshift({
-      name: t.assignedToName || 'موظف',
+      name: name,
       verb: verb,
       title: t.title || 'بدون عنوان',
-      status: t.status || 'لم يبدأ',
+      status: status,
       ts: tsMillis
     });
     ltPruneFeed();
