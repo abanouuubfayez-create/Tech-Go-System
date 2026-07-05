@@ -26,7 +26,8 @@ function tgRequireAuth(requiredRole, onOk) {
                 role: data.role,
                 empId: data.empId || '',
                 jobTitle: data.jobTitle || '',
-                chatAccess: data.chatAccess !== false
+                chatAccess: data.chatAccess !== false,
+                workMode: data.workMode || 'office'
             };
 
             // ── منطق التحويل حسب الدور ──
@@ -156,12 +157,17 @@ function tgLogout() {
 }
 
 // إنشاء حساب دخول لموظف جديد بدون تسجيل خروج المدير الحالي
-function tgCreateEmployeeAccount(name, email, password, empId, jobTitle, role, onDone, onError) {
-    // للتوافق مع الاستدعاء القديم (بدون role)
+function tgCreateEmployeeAccount(name, email, password, empId, jobTitle, role, workMode, onDone, onError) {
+    // للتوافق مع الاستدعاء القديم
     if (typeof role === 'function') {
         onError = onDone;
         onDone = role;
         role = 'employee';
+        workMode = 'office';
+    } else if (typeof workMode === 'function') {
+        onError = onDone;
+        onDone = workMode;
+        workMode = 'office';
     }
     var secondaryApp;
     try {
@@ -175,6 +181,7 @@ function tgCreateEmployeeAccount(name, email, password, empId, jobTitle, role, o
             name: name, email: email,
             role: role || 'employee',
             empId: empId || '', jobTitle: jobTitle || '',
+            workMode: workMode || 'office',
             createdAt: new Date()
         }).then(function () { return secAuth.signOut(); }).then(function () { onDone(uid); });
     }).catch(function (err) { onError(err); });

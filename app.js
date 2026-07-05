@@ -773,6 +773,21 @@ function saveEmpJob(uid,idx){
     }).catch(function(err){ msg.style.color='var(--no)'; msg.textContent='❌ '+err.message; });
 }
 
+// ─── تعديل نظام العمل من "متابعة الموظفين" ─────────────────────────
+function toggleEmpWorkMode(idx){
+    var e=document.getElementById('empWorkModeEdit'+idx);
+    if(!e)return;
+    e.style.display=(e.style.display==='none'||!e.style.display)?'flex':'none';
+}
+function saveEmpWorkMode(uid,idx){
+    var workMode=(document.getElementById('empWorkModeInput'+idx).value||'office');
+    var msg=document.getElementById('empWorkModeMsg'+idx);
+    msg.style.color='var(--tx3)'; msg.textContent='⏳ جارٍ الحفظ...';
+    db.collection('users').doc(uid).update({workMode:workMode}).then(function(){
+        loadStaffOverview();
+    }).catch(function(err){ msg.style.color='var(--no)'; msg.textContent='❌ '+err.message; });
+}
+
 // ─── تعطيل / إعادة تفعيل حساب موظف (يمنع الدخول بدون فقد أي بيانات) ────
 function toggleEmpDisabled(uid,currentlyDisabled){
     db.collection('users').doc(uid).update({disabled:!currentlyDisabled}).then(loadStaffOverview)
@@ -849,11 +864,13 @@ function createStaffAccount(){
     var jobTitle=(document.getElementById('newAccJobTitle').value||'').trim();
     var roleEl=document.getElementById('newAccRole');
     var role=roleEl?roleEl.value:'employee';
+    var wmEl=document.getElementById('newAccWorkMode');
+    var workMode=wmEl?wmEl.value:'office';
     var msg=document.getElementById('newAccMsg');
     if(!name||!email||!pass){ msg.style.color='var(--no)'; msg.textContent='من فضلك املأ الاسم والبريد الإلكتروني وكلمة المرور.'; return; }
     if(pass.length<6){ msg.style.color='var(--no)'; msg.textContent='كلمة المرور يجب أن تكون 6 أحرف على الأقل.'; return; }
     msg.style.color='var(--tx3)'; msg.textContent='⏳ جارٍ إنشاء الحساب...';
-    tgCreateEmployeeAccount(name,email,pass,'',jobTitle,role,function(){
+    tgCreateEmployeeAccount(name,email,pass,'',jobTitle,role,workMode,function(){
         if(role==='employee') addEmployeeName(name);
         var roleAr = role==='tech_admin' ? 'أدمن تقني' : 'موظف';
         msg.style.color='var(--ok)'; msg.textContent='✅ تم إنشاء حساب '+roleAr+' بنجاح.';
@@ -2669,8 +2686,9 @@ function load(id,c){
         h+='<div class="fg"><label>البريد الإلكتروني</label><input type="email" id="newAccEmail" placeholder="name@techgo.com"></div>';
         h+='<div class="fg"><label>كلمة مرور مبدئية</label><input type="text" id="newAccPass" placeholder="6 أحرف على الأقل"></div>';
         h+='</div>';
-        h+='<div class="fr fr2" style="margin-top:10px">';
+        h+='<div class="fr fr3" style="margin-top:10px">';
         h+='<div class="fg"><label>المسمى الوظيفي (اختياري)</label><input type="text" id="newAccJobTitle" placeholder="مثلاً: مصمم جرافيك"></div>';
+        h+='<div class="fg"><label>نظام العمل</label><select id="newAccWorkMode"><option value="office">من المكتب</option><option value="remote">عن بُعد (ريموتلي)</option></select></div>';
         h+='<div class="fg"><label>دور الحساب</label><select id="newAccRole"><option value="employee">موظف (employee)</option><option value="tech_admin">أدمن تقني (بدون صلاحيات إدارية)</option></select></div>';
         h+='</div>';
         h+='<button class="bt bt-p" onclick="createStaffAccount()">➕ إنشاء الحساب</button>';
@@ -3030,6 +3048,7 @@ function openAdminEmployeeDetail(idx) {
         h += '<div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:16px">';
         h += '  <button class="bt bt-o" onclick="toggleEmpNameEdit(' + idx + ')">✏️ تعديل الاسم</button>';
         h += '  <button class="bt bt-o" onclick="toggleEmpJobEdit(' + idx + ')">🏷 تعديل المسمى</button>';
+        h += '  <button class="bt bt-o" onclick="toggleEmpWorkMode(' + idx + ')">🏢 نظام العمل (' + (emp.workMode === 'remote' ? 'ريموتلي' : 'مكتب') + ')</button>';
         h += '  <button class="bt ' + (emp.disabled ? 'bt-p' : 'bt-o') + '" onclick="toggleEmpDisabled(\'' + emp.uid + '\',' + (!!emp.disabled) + ')">' + (emp.disabled ? '✅ تفعيل الحساب' : '🚫 تعطيل الحساب') + '</button>';
         h += '  <button class="bt bt-d" onclick="openDeleteEmpModal(\'' + emp.uid + '\',' + idx + ')">🗑 حذف الموظف</button>';
         h += '  <button class="bt bt-o" style="background:linear-gradient(135deg,#1b2a4a,#2980b9);color:#fff;border:0" onclick="printEmployeeWorkReport(' + idx + ')">🖨 طباعة تقرير الشغل</button>';
@@ -3043,6 +3062,11 @@ function openAdminEmployeeDetail(idx) {
              '  <input type="text" id="empJobInput' + idx + '" value="' + escH(emp.jobTitle || '') + '" placeholder="مثلاً: مصمم جرافيك">' +
              '  <button class="bt bt-p" onclick="saveEmpJob(\'' + emp.uid + '\',' + idx + ')">💾 حفظ</button>' +
              '  <span id="empJobMsg' + idx + '" style="font-size:10.5px"></span>' +
+             '</div>';
+        h += '<div class="emp-inline-edit" id="empWorkModeEdit' + idx + '" style="display:none">' +
+             '  <select id="empWorkModeInput' + idx + '"><option value="office" '+(emp.workMode !== 'remote' ? 'selected' : '')+'>من المكتب</option><option value="remote" '+(emp.workMode === 'remote' ? 'selected' : '')+'>عن بُعد (ريموتلي)</option></select>' +
+             '  <button class="bt bt-p" onclick="saveEmpWorkMode(\'' + emp.uid + '\',' + idx + ')">💾 حفظ</button>' +
+             '  <span id="empWorkModeMsg' + idx + '" style="font-size:10.5px"></span>' +
              '</div>';
         h += '<div class="proj-sec"><div class="proj-sec-title">📁 المشاريع المُسندة (' + emp.projects.length + ')</div>';
         if (emp.projects.length) {

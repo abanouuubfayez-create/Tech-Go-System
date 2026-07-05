@@ -72,7 +72,7 @@
 </div>
 
 <div class="emp-nav">
-  <div class="emp-tab" data-pg="att" onclick="empGo('att',this)">⏱️ الحضور والانصراف</div>
+  <div class="emp-tab" id="empTabAtt" data-pg="att" onclick="empGo('att',this)" style="display:none">⏱️ الحضور والانصراف</div>
   <div class="emp-tab a" data-pg="proj" onclick="empGo('proj',this)">📁 مشاريعي <span class="tab-badge" id="proj-badge" style="display:none">0</span></div>
   <div class="emp-tab" data-pg="tasks" onclick="empGo('tasks',this)">🗂 مهامي <span class="tab-badge" id="tasks-badge" style="display:none">0</span></div>
   <div class="emp-tab" data-pg="wkr" onclick="empGo('wkr',this)">📆 تقاريري الأسبوعية</div>
@@ -876,6 +876,12 @@ document.getElementById('wkrStart').value=sundayOf(new Date());
 
 // ── حماية الصفحة: لازم تسجيل دخول بصلاحية موظف ──────────────────
 tgRequireAuth('employee', function(u){
+    if (u.workMode === 'remote') {
+        var tab = document.getElementById('empTabAtt');
+        if (tab) tab.style.display = 'flex';
+    } else {
+        if(window.location.hash === '#att') window.location.hash = '';
+    }
     loadEmpAttendance();
     document.getElementById('empWhoName').textContent=u.name;
     document.getElementById('empWhoRole').textContent=(u.jobTitle?(u.jobTitle+' · '):'')+'بوابة الموظف · '+u.email;
