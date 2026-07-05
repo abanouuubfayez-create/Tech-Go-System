@@ -10,6 +10,14 @@ var LOGO_URI = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAnkAAACgCAYAAABwp3
     var m=localStorage.getItem('tg_mgrs'); if(m) try{MGRS=JSON.parse(m);}catch(e){}
     var e=localStorage.getItem('tg_employees'); if(e) try{EMPLOYEES=JSON.parse(e);}catch(err){}
     refreshEmpDatalist();
+
+    // Auto-expand textareas
+    document.addEventListener('input', function(e) {
+        if(e.target.tagName.toLowerCase() === 'textarea') {
+            e.target.style.height = 'auto';
+            e.target.style.height = (e.target.scrollHeight) + 'px';
+        }
+    });
 })();
 
 // ─── TITLES ───────────────────────────────────────────────────────────────
@@ -25,7 +33,7 @@ var T={
     mexp:"شيت المصروفات الشهري",
     res:"طلب استقالة", promo:"قرار ترقية", contract:"عقد عمل", raise:"زيادة راتب / علاوة",
     staff:"متابعة الموظفين", pmgmt:"إدارة المشاريع", account:"حسابي",
-    tasksmgmt:"توزيع المهام", announcements:"إدارة الإعلانات"
+    tasksmgmt:"توزيع المهام", announcements:"إدارة الإعلانات", empdocs:"ملفات الموظفين"
 };
 
 // ─── DOCUMENT NUMBERING ───────────────────────────────────────────────────
@@ -2669,12 +2677,22 @@ function load(id,c){
         h+='</div>';
     }
 
+    // ── ملفات الموظفين ──────────────────────────────────────────────────
+    else if(id==="empdocs"){
+        h='<div class="SP"><h3>📂 ملفات الموظفين</h3>';
+        h+='<div class="set-hint">اختر الموظف لعرض وإدارة المستندات الرقمية الخاصة به (عقود، بطاقة شخصية، شهادات، إلخ).</div>';
+        h+='<div class="search-bar" style="margin-bottom:16px"><input type="text" placeholder="🔍 ابحث بالاسم..." onkeyup="filterEmpDocsList(this.value)"></div>';
+        h+='<div id="empDocsList"><div class="empty-hint">⏳ جارٍ تحميل الموظفين...</div></div>';
+        h+='</div>';
+    }
+
     c.innerHTML=h;
     if(id==="mexp") mexpInit();
     if(id==="staff") loadStaffOverview();
     if(id==="pmgmt") loadPmgmtData();
     if(id==="tasksmgmt") loadTasksMgmt();
     if(id==="announcements") loadAdminAnnouncements();
+    if(id==="empdocs") loadEmpDocsOverview();
 }
 // ═══════════════════════════════════════════════════════════════
 // ── الإعلانات ─────────────────────────────────────────────────
@@ -3187,5 +3205,148 @@ function loadEmpAnnouncements() {
             h += '</div>';
         });
         box.innerHTML = h;
+    });
+}
+
+// ═══════════════════════════════════════════════════════════════
+// ── ملفات الموظفين (المستندات الرقمية) ─────────────────────────
+function loadEmpDocsOverview() {
+    var box = document.getElementById('empDocsList');
+    if(!box) return;
+    db.collection('users').where('role','in',['employee','tech_admin']).get().then(function(snap){
+        if(snap.empty){
+            box.innerHTML = '<div class="empty-hint">لا يوجد موظفون مسجّلون بعد.</div>';
+            return;
+        }
+        var employees = [];
+        snap.forEach(function(doc){ employees.push(Object.assign({uid:doc.id},doc.data())); });
+        window._empDocsCache = employees;
+        renderEmpDocsList(employees);
+    }).catch(function(err){
+        box.innerHTML = '<div class="empty-hint" style="color:var(--no)">تعذر تحميل قائمة الموظفين: '+escH(err.message)+'</div>';
+    });
+}
+
+function renderEmpDocsList(list) {
+    var box = document.getElementById('empDocsList');
+    if(!box) return;
+    var h = '';
+    list.forEach(function(emp, idx) {
+        var searchKey = ((emp.name||'')+' '+(emp.email||'')).toLowerCase();
+        h += '<div class="staff-card" data-search="'+escH(searchKey)+'" id="empDocCard_'+idx+'">';
+        h += '<div class="staff-card-h" onclick="toggleEmpDocCard('+idx+', \''+emp.uid+'\')">';
+        h += '<div><div class="staff-name-row"><span class="staff-name">'+escH(emp.name||emp.email)+'</span>'+
+             (emp.jobTitle?'<span class="badge" style="background:var(--gd);color:#1b2a4a">'+escH(emp.jobTitle)+'</span>':'')+'</div>';
+        h += '<div class="staff-email">'+escH(emp.email||'')+'</div></div>';
+        h += '<div class="staff-stats"><span class="bt bt-o" style="pointer-events:none">📂 فتح الملف الرقمي</span></div>';
+        h += '</div>';
+        h += '<div class="staff-card-body" id="empDocBody_'+idx+'" style="display:none">';
+        h += '<div class="form-grid" style="background:rgba(255,255,255,.05);padding:16px;border-radius:10px;margin-bottom:16px">';
+        h += '<div class="fg"><label>اسم المستند (مثال: عقد العمل)</label><input type="text" id="newDocTitle_'+idx+'"></div>';
+        h += '<div class="fg"><label>ملف المستند</label><input type="file" id="newDocFile_'+idx+'"></div>';
+        h += '<div class="fg" style="display:flex;align-items:flex-end"><button class="bt bt-p" style="width:100%" onclick="uploadEmpDoc(\''+emp.uid+'\', '+idx+')">⬆ رفع المستند</button></div>';
+        h += '</div><div id="docUploadMsg_'+idx+'" style="font-size:12px;margin-bottom:12px"></div>';
+        h += '<h4 style="margin-bottom:8px">📄 المستندات المحفوظة</h4>';
+        h += '<div id="empDocsFolderList_'+idx+'"><div class="empty-hint">اضغط لعرض المستندات.</div></div>';
+        h += '</div></div>';
+    });
+    box.innerHTML = h;
+}
+
+function filterEmpDocsList(val) {
+    var v = val.toLowerCase().trim();
+    var cards = document.querySelectorAll('#empDocsList .staff-card');
+    cards.forEach(function(c){
+        if(c.getAttribute('data-search').indexOf(v) > -1) c.style.display = 'block';
+        else c.style.display = 'none';
+    });
+}
+
+window._empDocsListeners = window._empDocsListeners || {};
+
+function toggleEmpDocCard(idx, uid) {
+    var body = document.getElementById('empDocBody_'+idx);
+    var card = document.getElementById('empDocCard_'+idx);
+    if(body.style.display === 'none') {
+        body.style.display = 'block';
+        card.classList.add('open');
+        var box = document.getElementById('empDocsFolderList_'+idx);
+        box.innerHTML = '<div class="empty-hint">⏳ جارٍ التحميل...</div>';
+        if(window._empDocsListeners[uid]) { window._empDocsListeners[uid](); }
+        window._empDocsListeners[uid] = db.collection('employeeDocuments').where('uid','==',uid).orderBy('createdAt','desc').onSnapshot(function(snap){
+            var b = document.getElementById('empDocsFolderList_'+idx);
+            if(!b) return;
+            if(snap.empty){
+                b.innerHTML = '<div class="empty-hint">لا توجد مستندات مرفوعة لهذا الموظف.</div>';
+                return;
+            }
+            var h = '<div style="display:flex;flex-direction:column;gap:8px">';
+            snap.forEach(function(doc){
+                var d = doc.data();
+                h += '<div style="background:rgba(0,0,0,.3);padding:12px;border-radius:8px;display:flex;justify-content:space-between;align-items:center;border-right:3px solid var(--gd)">';
+                h += '<div><div style="font-weight:bold;margin-bottom:4px">'+escH(d.title)+'</div>';
+                h += '<div style="font-size:11px;opacity:.6">بواسطة: '+(d.uploadedBy==='admin'?'الإدارة':'الموظف نفسه')+' · '+(d.createdAt&&d.createdAt.toDate?d.createdAt.toDate().toLocaleString('ar-EG'):'')+'</div></div>';
+                h += '<div style="display:flex;gap:8px"><a href="'+d.fileUrl+'" target="_blank" class="bt bt-p" style="padding:4px 10px;font-size:11px;text-decoration:none">👁 عرض</a>';
+                h += '<button class="bt bt-d" style="padding:4px 10px;font-size:11px" onclick="deleteEmpDoc(\''+doc.id+'\', \''+d.fileUrl+'\')">🗑 حذف</button></div>';
+                h += '</div>';
+            });
+            h += '</div>';
+            b.innerHTML = h;
+        }, function(err){
+            var b = document.getElementById('empDocsFolderList_'+idx);
+            if(b) b.innerHTML = '<div class="empty-hint" style="color:var(--no)">خطأ في تحميل المستندات: '+escH(err.message)+'</div>';
+        });
+    } else {
+        body.style.display = 'none';
+        card.classList.remove('open');
+        if(window._empDocsListeners[uid]) {
+            window._empDocsListeners[uid]();
+            delete window._empDocsListeners[uid];
+        }
+    }
+}
+
+function uploadEmpDoc(uid, idx) {
+    var titleInp = document.getElementById('newDocTitle_'+idx);
+    var fileInp = document.getElementById('newDocFile_'+idx);
+    var msg = document.getElementById('docUploadMsg_'+idx);
+    var title = (titleInp.value||'').trim();
+    if(!title){ msg.style.color='var(--no)'; msg.textContent='❌ يرجى كتابة اسم المستند.'; return; }
+    if(!fileInp.files || fileInp.files.length===0){ msg.style.color='var(--no)'; msg.textContent='❌ يرجى اختيار ملف.'; return; }
+    
+    var file = fileInp.files[0];
+    msg.style.color = '#fff'; msg.textContent = '⏳ جارٍ الرفع... يرجى الانتظار';
+    tgUploadFile(file, 'employeeDocuments/'+uid, function(url) {
+        db.collection('employeeDocuments').add({
+            uid: uid,
+            title: title,
+            fileName: file.name,
+            fileType: file.type,
+            fileUrl: url,
+            uploadedBy: 'admin',
+            createdAt: new Date()
+        }).then(function(){
+            titleInp.value = '';
+            fileInp.value = '';
+            msg.style.color = 'var(--ok)'; msg.textContent = '✅ تم رفع المستند بنجاح.';
+            setTimeout(function(){ msg.textContent=''; }, 3000);
+        }).catch(function(err){
+            msg.style.color = 'var(--no)'; msg.textContent = '❌ تعذر حفظ بيانات المستند: '+err.message;
+        });
+    }, function(err){
+        msg.style.color = 'var(--no)'; msg.textContent = '❌ تعذر رفع الملف: '+err.message;
+    });
+}
+
+function deleteEmpDoc(docId, fileUrl) {
+    if(!confirm('هل أنت متأكد من حذف هذا المستند نهائياً؟')) return;
+    db.collection('employeeDocuments').doc(docId).delete().then(function(){
+        // Note: we let the UI update automatically via onSnapshot
+        // For best practice, we could also delete from storage, but we will leave it for now or delete if needed.
+        if(fileUrl) {
+            try { firebase.storage().refFromURL(fileUrl).delete(); } catch(e){}
+        }
+    }).catch(function(err){
+        alert('❌ خطأ أثناء الحذف: '+err.message);
     });
 }

@@ -37,6 +37,13 @@ service firebase.storage {
                    && request.resource.size < 20 * 1024 * 1024;
     }
 
+    // ملفات الموظفين
+    match /employeeDocuments/{uid}/{allPaths=**} {
+      allow read: if isSignedIn();
+      allow write: if isSignedIn()
+                   && request.resource.size < 20 * 1024 * 1024;
+    }
+
     // أي ملفات أخرى — منع بشكل افتراضي
     match /{allPaths=**} {
       allow read, write: if false;

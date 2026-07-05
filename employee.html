@@ -76,6 +76,7 @@
   <div class="emp-tab" data-pg="tasks" onclick="empGo('tasks',this)">🗂 مهامي <span class="tab-badge" id="tasks-badge" style="display:none">0</span></div>
   <div class="emp-tab" data-pg="wkr" onclick="empGo('wkr',this)">📆 تقاريري الأسبوعية</div>
   <div class="emp-tab" data-pg="ach" onclick="empGo('ach',this)">🏆 إنجازاتي</div>
+  <div class="emp-tab" data-pg="docs" onclick="empGo('docs',this)">📄 مستنداتي</div>
   <div class="emp-tab" data-pg="req" onclick="empGo('req',this)">📨 طلباتي</div>
   <div class="emp-tab" data-pg="forms" onclick="empGo('forms',this)">📝 نماذج مطلوبة مني <span class="tab-badge" id="forms-badge" style="display:none">0</span></div>
   <div class="emp-tab" data-pg="acct" onclick="empGo('acct',this)">👤 حسابي</div>
@@ -150,7 +151,18 @@
     <div id="myAchList"><div class="empty-hint">⏳ جارٍ التحميل...</div></div>
   </div>
 
-  <!-- طلباتي -->
+  <div class="emp-pg" id="epg-docs">
+    <div class="ac-hdr">📄 مستنداتي</div>
+    <div class="form-grid" style="background:rgba(255,255,255,.05);padding:16px;border-radius:10px;margin-bottom:16px">
+      <div class="fg"><label>اسم المستند (مثال: بطاقة شخصية، شهادة ميلاد)</label><input type="text" id="empNewDocTitle"></div>
+      <div class="fg"><label>ملف المستند</label><input type="file" id="empNewDocFile"></div>
+      <div class="fg" style="display:flex;align-items:flex-end"><button class="bt bt-p" style="width:100%" onclick="empUploadDoc()">⬆ رفع المستند لملفي</button></div>
+    </div>
+    <div id="empDocUploadMsg" style="font-size:12px;margin-bottom:12px"></div>
+    <div id="empDocsViewList"><div class="empty-hint">⏳ جارٍ التحميل...</div></div>
+  </div>
+
+  <!-- 📨 الطلبات -->
   <div class="emp-pg" id="epg-req">
     <div class="set-sec">
       <div class="set-sec-title">➕ تقديم طلب جديد</div>
@@ -860,7 +872,88 @@ tgRequireAuth('employee', function(u){
     if('serviceWorker' in navigator){
       navigator.serviceWorker.register('./sw.js').catch(function(){});
     }
+    loadMyDocs();
+    
+    // Auto-expand textareas
+    document.addEventListener('input', function(e) {
+        if(e.target.tagName.toLowerCase() === 'textarea') {
+            e.target.style.height = 'auto';
+            e.target.style.height = (e.target.scrollHeight) + 'px';
+        }
+    });
 });
+
+// ── مستنداتي ────────────────────────────────────────────────────────
+function loadMyDocs() {
+    db.collection('employeeDocuments').where('uid','==',TG_USER.uid).orderBy('createdAt','desc').onSnapshot(function(snap){
+        var box = document.getElementById('empDocsViewList');
+        if(!box) return;
+        if(snap.empty){
+            box.innerHTML = '<div class="empty-hint">لم يتم رفع أي مستندات بعد.</div>';
+            return;
+        }
+        var h = '<div style="display:flex;flex-direction:column;gap:8px">';
+        snap.forEach(function(doc){
+            var d = doc.data();
+            h += '<div style="background:rgba(0,0,0,.3);padding:12px;border-radius:8px;display:flex;justify-content:space-between;align-items:center;border-right:3px solid var(--gd)">';
+            h += '<div><div style="font-weight:bold;margin-bottom:4px">'+escH(d.title)+'</div>';
+            h += '<div style="font-size:11px;opacity:.6">بواسطة: '+(d.uploadedBy==='admin'?'الإدارة':'أنت')+' · '+(d.createdAt&&d.createdAt.toDate?d.createdAt.toDate().toLocaleString('ar-EG'):'')+'</div></div>';
+            h += '<div style="display:flex;gap:8px"><a href="'+d.fileUrl+'" target="_blank" class="bt bt-p" style="padding:4px 10px;font-size:11px;text-decoration:none">👁 عرض</a>';
+            if(d.uploadedBy === 'employee'){
+                h += '<button class="bt bt-d" style="padding:4px 10px;font-size:11px" onclick="empDeleteDoc(\''+doc.id+'\', \''+d.fileUrl+'\')">🗑 حذف</button>';
+            }
+            h += '</div></div>';
+        });
+        h += '</div>';
+        box.innerHTML = h;
+    }, function(err){
+        var box = document.getElementById('empDocsViewList');
+        if(box) box.innerHTML = '<div class="empty-hint" style="color:var(--no)">خطأ في تحميل المستندات: '+escH(err.message)+'</div>';
+    });
+}
+
+function empUploadDoc() {
+    var titleInp = document.getElementById('empNewDocTitle');
+    var fileInp = document.getElementById('empNewDocFile');
+    var msg = document.getElementById('empDocUploadMsg');
+    var title = (titleInp.value||'').trim();
+    if(!title){ msg.style.color='var(--no)'; msg.textContent='❌ يرجى كتابة اسم المستند.'; return; }
+    if(!fileInp.files || fileInp.files.length===0){ msg.style.color='var(--no)'; msg.textContent='❌ يرجى اختيار ملف.'; return; }
+    
+    var file = fileInp.files[0];
+    msg.style.color = '#fff'; msg.textContent = '⏳ جارٍ الرفع... يرجى الانتظار';
+    tgUploadFile(file, 'employeeDocuments/'+TG_USER.uid, function(url) {
+        db.collection('employeeDocuments').add({
+            uid: TG_USER.uid,
+            title: title,
+            fileName: file.name,
+            fileType: file.type,
+            fileUrl: url,
+            uploadedBy: 'employee',
+            createdAt: new Date()
+        }).then(function(){
+            titleInp.value = '';
+            fileInp.value = '';
+            msg.style.color = 'var(--ok)'; msg.textContent = '✅ تم رفع المستند بنجاح.';
+            setTimeout(function(){ msg.textContent=''; }, 3000);
+        }).catch(function(err){
+            msg.style.color = 'var(--no)'; msg.textContent = '❌ تعذر حفظ بيانات المستند: '+err.message;
+        });
+    }, function(err){
+        msg.style.color = 'var(--no)'; msg.textContent = '❌ تعذر رفع الملف: '+err.message;
+    });
+}
+
+function empDeleteDoc(docId, fileUrl) {
+    if(!confirm('هل أنت متأكد من حذف هذا المستند؟')) return;
+    db.collection('employeeDocuments').doc(docId).delete().then(function(){
+        if(fileUrl) {
+            try { firebase.storage().refFromURL(fileUrl).delete(); } catch(e){}
+        }
+    }).catch(function(err){
+        alert('❌ خطأ أثناء الحذف: '+err.message);
+    });
+}
 </script>
 <div style="position:fixed;bottom:4px;left:50%;transform:translateX(-50%);font-size:9px;color:rgba(255,255,255,0.2);z-index:9999;pointer-events:none;white-space:nowrap;font-family:inherit">تطوير وتصميم: أبانوب فايز</div>
 </body>

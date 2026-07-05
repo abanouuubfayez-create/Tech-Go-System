@@ -119,6 +119,15 @@ service cloud.firestore {
       allow update, delete: if isAdmin();
     }
 
+    // ملفات الموظفين
+    match /employeeDocuments/{docId} {
+      allow read: if isAnyAdmin() || (isSignedIn() && resource.data.uid == myUid());
+      allow create: if isAnyAdmin() || (isSignedIn() && request.resource.data.uid == myUid());
+      allow update: if isAnyAdmin() || (isSignedIn() && resource.data.uid == myUid());
+      allow delete: if isAnyAdmin() || (isSignedIn() && resource.data.uid == myUid());
+    }
+
+
     // الإشعارات (Push Notifications عبر Firestore)
     match /notifications/{notifId} {
       // المستلم يقرأ إشعاراته فقط
