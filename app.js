@@ -598,6 +598,8 @@ function renderStaffList(list){
         h+='<div class="staff-actions-row">'+
            '<button class="bt bt-o" onclick="event.stopPropagation();toggleEmpNameEdit('+idx+')">✏️ تعديل الاسم</button>'+
            '<button class="bt bt-o" onclick="event.stopPropagation();toggleEmpJobEdit('+idx+')">🏷 تعديل المسمى الوظيفي</button>'+
+           '<button class="bt '+(emp.chatAccess===false?'bt-p':'bt-o')+'" onclick="event.stopPropagation();tgToggleEmpChatAccess(\''+emp.uid+'\','+(emp.chatAccess!==false)+')">'+
+           (emp.chatAccess===false?'💬 السماح بالشات':'💬 منع الشات')+'</button>'+
            '<button class="bt '+(emp.disabled?'bt-p':'bt-o')+'" onclick="event.stopPropagation();toggleEmpDisabled(\''+emp.uid+'\','+(!!emp.disabled)+')">'+
            (emp.disabled?'✅ إعادة تفعيل الحساب':'🚫 تعطيل الحساب')+'</button>'+
            '<button class="bt bt-d" onclick="event.stopPropagation();openDeleteEmpModal(\''+emp.uid+'\','+idx+')">🗑 حذف الموظف</button>'+
@@ -759,6 +761,16 @@ function saveEmpJob(uid,idx){
 function toggleEmpDisabled(uid,currentlyDisabled){
     db.collection('users').doc(uid).update({disabled:!currentlyDisabled}).then(loadStaffOverview)
       .catch(function(err){ alert('تعذر تحديث حالة الحساب: '+err.message); });
+}
+
+function tgToggleEmpChatAccess(uid, currentAccess) {
+    if(!confirm(currentAccess ? 'هل أنت متأكد من منع هذا الموظف من استخدام الشات العام؟' : 'هل أنت متأكد من السماح لهذا الموظف باستخدام الشات العام؟')) return;
+    db.collection('users').doc(uid).update({ chatAccess: !currentAccess }).then(function(){
+        tgToast('✅ تم تحديث صلاحية الشات بنجاح','ok');
+        loadStaffOverview();
+    }).catch(function(err){
+        tgToast('❌ تعذر تحديث الصلاحية: '+err.message,'err');
+    });
 }
 
 // ─── حذف موظف: يسأل في كل مرة بين تعطيل فقط أو حذف نهائي كامل ─────────
@@ -1157,6 +1169,7 @@ var _chatWidgetOpen = false;
 
 // يُبنى مرة واحدة بس ويتضاف على body — بيفضل فوق كل الصفحات وأنت بتتنقل بينها
 function tgChatMount(){
+    if(TG_USER && TG_USER.role === 'employee' && TG_USER.chatAccess === false) return;
     if(document.getElementById('tgChatBubble')) return;
     var wrap=document.createElement('div');
     wrap.id='tgChatWidgetWrap';
@@ -1237,6 +1250,7 @@ function tgChatKeydown(e){
 var _chatInitialSnapDone = false;
 function tgChatWatch(){
     if(_chatUnsub || !TG_USER) return;
+    if(TG_USER.role === 'employee' && TG_USER.chatAccess === false) return;
     _chatUnsub = db.collection('chatMessages').orderBy('createdAt','asc').limitToLast(200)
         .onSnapshot(function(snap){
             _chatMessages=[];

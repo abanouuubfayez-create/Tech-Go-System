@@ -25,7 +25,8 @@ function tgRequireAuth(requiredRole, onOk) {
                 name: data.name || user.email,
                 role: data.role,
                 empId: data.empId || '',
-                jobTitle: data.jobTitle || ''
+                jobTitle: data.jobTitle || '',
+                chatAccess: data.chatAccess !== false
             };
 
             // ── منطق التحويل حسب الدور ──
