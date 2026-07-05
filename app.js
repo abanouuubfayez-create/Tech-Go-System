@@ -1337,7 +1337,7 @@ function tgChatSend(){
     inp.style.height='';
     db.collection('chatMessages').add({
         uid: TG_USER.uid, name: TG_USER.name||TG_USER.email, role: TG_USER.role||'employee',
-        text: text, createdAt: new Date()
+        text: text, createdAt: firebase.firestore.FieldValue.serverTimestamp()
     }).then(function(){
         // إشعار كل المستخدمين الآخرين برسالة جديدة في الشات العام
         if(typeof tgBroadcastPush === 'function'){
@@ -1442,7 +1442,7 @@ function postProjectComment(projectId,inputId){
     input.disabled=true;
     db.collection('projectComments').add({
         projectId:projectId, uid:TG_USER.uid, name:TG_USER.name, role:TG_USER.role,
-        text:text, createdAt:new Date()
+        text:text, createdAt:firebase.firestore.FieldValue.serverTimestamp()
     }).then(function(){
         input.value=''; input.disabled=false; input.focus();
         reloadProjectChat(projectId);
