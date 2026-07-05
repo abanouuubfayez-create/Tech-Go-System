@@ -1201,7 +1201,12 @@ function tgChatMount(){
             '</span>'+
           '</div>'+
           '<div class="tg-chat-log" id="tgChatLog"><div class="pj-chat-empty">جارِ تحميل الرسائل...</div></div>'+
+          '<div id="tgChatReplyPreview" class="tg-chat-reply-preview" style="display:none">'+
+             '<div class="tg-chat-reply-preview-text" id="tgChatReplyText"></div>'+
+             '<div class="tg-chat-reply-preview-close" onclick="tgChatClearReply()">✕</div>'+
+          '</div>'+
           '<div class="tg-chat-input-row">'+
+            '<button class="bt bt-d" style="padding:8px 10px" onclick="document.getElementById(\'tgChatInput\').value=\'\'; tgChatClearReply();" title="مسح المربع">🧹</button>'+
             '<textarea id="tgChatInput" rows="1" placeholder="اكتب رسالتك هنا..." onkeydown="tgChatKeydown(event)"></textarea>'+
             '<button class="bt bt-p" onclick="tgChatSend()">➤</button>'+
           '</div>'+
@@ -1337,8 +1342,10 @@ function renderChatMessages(){
            '<div class="pj-chat-msg-h"><span class="pj-chat-name">'+escH(m.name||'')+'</span>'+
            '<span class="pj-chat-role">'+roleLabel+'</span>'+
            '<span class="pj-chat-time">'+escH(timeStr)+'</span>'+
+           '<span class="pj-chat-reply-btn" title="رد" onclick="tgChatSetReply(\''+m.id+'\', \''+escH(m.name||'')+'\', \''+escH((m.text||'').replace(/\\/g,'\\\\').replace(/\'/g,"\\'").replace(/\"/g,'&quot;').replace(/\n/g,'\\n'))+'\')">↩️</span>'+
            (canDelete?('<span class="pj-chat-del" title="حذف الرسالة" onclick="tgChatDelete(\''+m.id+'\')">🗑</span>'):'')+
            '</div>'+
+           (m.replyToId ? ('<div class="pj-chat-quote"><strong>'+escH(m.replyToName||'')+':</strong> '+escH(m.replyToText||'')+'</div>') : '') +
            '<div class="pj-chat-text">'+escH(m.text||'')+'</div>'+
            '</div>';
     });
@@ -1353,10 +1360,17 @@ function tgChatSend(){
     if(!text) return;
     inp.value='';
     inp.style.height='';
-    db.collection('chatMessages').add({
+    var payload = {
         uid: TG_USER.uid, name: TG_USER.name||TG_USER.email, role: TG_USER.role||'employee',
         text: text, createdAt: firebase.firestore.FieldValue.serverTimestamp()
-    }).then(function(){
+    };
+    if (window._chatReplyTo) {
+        payload.replyToId = window._chatReplyTo.id;
+        payload.replyToName = window._chatReplyTo.name;
+        payload.replyToText = window._chatReplyTo.text;
+    }
+    tgChatClearReply();
+    db.collection('chatMessages').add(payload).then(function(){
         // إشعار كل المستخدمين الآخرين برسالة جديدة في الشات العام
         if(typeof tgBroadcastPush === 'function'){
             var preview = text.length > 60 ? text.slice(0, 60) + '…' : text;
@@ -1378,11 +1392,30 @@ function tgChatGetLastRead(){
 }
 function tgChatMarkRead(){
     if(!_chatMessages.length) { updateChatBadge(0); return; }
-    var last=_chatMessages[_chatMessages.length-1];
-    var t=(last.createdAt && last.createdAt.toDate) ? last.createdAt.toDate().getTime() : Date.now();
-    var k=tgChatLastReadKey(); if(k) localStorage.setItem(k, String(t));
+    var last = _chatMessages[_chatMessages.length-1];
+    var k=tgChatLastReadKey();
+    if(k && last.createdAt && last.createdAt.toMillis) localStorage.setItem(k, last.createdAt.toMillis());
     updateChatBadge(0);
 }
+
+window._chatReplyTo = null;
+function tgChatSetReply(msgId, name, text) {
+    window._chatReplyTo = { id: msgId, name: name, text: text };
+    var preview = document.getElementById('tgChatReplyPreview');
+    var txt = document.getElementById('tgChatReplyText');
+    if(preview && txt) {
+        txt.innerHTML = '<strong>' + escH(name) + ':</strong> ' + escH(text.length > 60 ? text.substring(0, 60) + '...' : text);
+        preview.style.display = 'flex';
+    }
+    var inp = document.getElementById('tgChatInput');
+    if(inp) inp.focus();
+}
+function tgChatClearReply() {
+    window._chatReplyTo = null;
+    var preview = document.getElementById('tgChatReplyPreview');
+    if(preview) preview.style.display = 'none';
+}
+
 function tgChatUpdateBadgeFromCache(){
     var lastRead=tgChatGetLastRead();
     var count=0;
