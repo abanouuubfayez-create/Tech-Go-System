@@ -747,7 +747,7 @@ body { font-family: 'Cairo', sans-serif; direction: rtl; background: var(--bg); 
     .sigs {
         display: grid !important;
         grid-template-columns: repeat(3, 1fr) !important;
-        gap: 16px; margin-top: 22px; padding-top: 12px;
+        gap: 16px; margin-top: 10px; padding-top: 8px;
         border-top: 1px solid #c7cbd4 !important;
         direction: rtl !important;
         page-break-inside: avoid !important; break-inside: avoid !important;
@@ -765,7 +765,7 @@ body { font-family: 'Cairo', sans-serif; direction: rtl; background: var(--bg); 
         background: none !important; color: #1b2a4a !important;
         display: block; font-weight: 800;
     }
-    .sig .ss { font-size: 8px !important; color: #5a6a82 !important; margin-bottom: 18px !important; }
+    .sig .ss { font-size: 8px !important; color: #5a6a82 !important; margin-bottom: 12px !important; }
     .sig .sl {
         border-bottom: 1px solid #444 !important;
         margin: 0 8% 4px;
@@ -1100,9 +1100,11 @@ body { font-family: 'Cairo', sans-serif; direction: rtl; background: var(--bg); 
     .FL-body { padding: 0 4px; }
     .FL-line-val, .FL-open, .FL-close, .FL-textbody { color: #0d1b3a !important; font-size: 11px !important; direction: rtl !important; text-align: right !important; }
     .FL-types { page-break-inside: avoid; break-inside: avoid; border-color: #b8bcc4 !important; }
-    .FL-signrow { page-break-inside: avoid; break-inside: avoid; margin-top: 30px; }
+    .FL-signrow { page-break-inside: avoid; break-inside: avoid; margin-top: 10px !important; }
+    .FL-sig-sub { margin-bottom: 12px !important; }
     .FL-sig-name { font-size: 12px !important; color: #1b2a4a !important; }
     .FL-foot { margin: 18px 4px 0; }
+    .FL .fg textarea { min-height: 40px !important; }
     .print-only-ts { display: inline !important; color: #9aa5b8 !important; font-size: 8px !important; }
     .FL-foot-ref {
         font-family: 'Courier New', monospace !important;
