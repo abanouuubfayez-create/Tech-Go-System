@@ -3364,7 +3364,7 @@ function tgSaveFormDraft() {
     var activePg = document.querySelector('.pg.a');
     if(!activePg) return;
     var formId = activePg.id.replace('pg-', '');
-    if(formId === 'dash' || formId === 'staff' || formId === 'pmgmt' || formId === 'tasksmgmt' || formId === 'announcements' || formId === 'account' || formId === 'livetrack' || formId === 'sendform' || formId === 'empdocs') {
+    if(formId === 'dash' || formId === 'account' || formId === 'livetrack' || formId === 'empdocs' || formId === 'announcements') {
         alert('لا يمكن حفظ هذه الصفحة كنموذج.');
         return;
     }
@@ -3407,7 +3407,7 @@ function tgLoadFormDrafts() {
     var activePg = document.querySelector('.pg.a');
     if(!activePg) return;
     var formId = activePg.id.replace('pg-', '');
-    if(formId === 'dash' || formId === 'staff' || formId === 'pmgmt' || formId === 'tasksmgmt' || formId === 'announcements' || formId === 'account' || formId === 'livetrack' || formId === 'sendform' || formId === 'empdocs') {
+    if(formId === 'dash' || formId === 'account' || formId === 'livetrack' || formId === 'empdocs' || formId === 'announcements') {
         alert('لا يوجد نماذج محفوظة لهذه الصفحة.');
         return;
     }
