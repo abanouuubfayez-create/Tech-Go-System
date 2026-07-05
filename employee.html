@@ -960,14 +960,31 @@ function loadEmpAttendance() {
           }
           var arr = [];
           var todayLog = null;
+          var uniqueDates = {};
           snap.forEach(function(doc){
               var data = doc.data();
               if (data.date >= monthPrefix+'-01' && data.date <= monthPrefix+'-31') {
-                  arr.push(data);
+                  if (!uniqueDates[data.date]) {
+                      uniqueDates[data.date] = data;
+                      uniqueDates[data.date].docId = doc.id;
+                      arr.push(data);
+                  } else {
+                      if (data.checkOut && !uniqueDates[data.date].checkOut) {
+                          Object.assign(uniqueDates[data.date], data);
+                          uniqueDates[data.date].docId = doc.id;
+                      } else if (!uniqueDates[data.date].checkOut && data.checkIn > uniqueDates[data.date].checkIn) {
+                          Object.assign(uniqueDates[data.date], data);
+                          uniqueDates[data.date].docId = doc.id;
+                      }
+                  }
               }
-              if(data.date === todayStr) { todayLog = data; _todayAttDocId = doc.id; }
           });
           
+          if(uniqueDates[todayStr]) { 
+              todayLog = uniqueDates[todayStr]; 
+              _todayAttDocId = uniqueDates[todayStr].docId; 
+          }
+
           if(arr.length === 0 && !todayLog) {
               box.innerHTML = '<div class="empty-hint">لا توجد سجلات حضور لهذا الشهر.</div>';
               _todayAttDocId = null;
@@ -1021,7 +1038,9 @@ function loadEmpAttendance() {
 }
 
 function empCheckIn() {
+    if (_todayAttDocId) return; // already checked in
     if(!confirm('هل تريد تسجيل حضورك الآن؟')) return;
+    document.getElementById('btnCheckIn').disabled = true;
     var now = new Date();
     var time = ('0'+now.getHours()).slice(-2)+':'+('0'+now.getMinutes()).slice(-2);
     var date = now.getFullYear()+'-'+('0'+(now.getMonth()+1)).slice(-2)+'-'+('0'+now.getDate()).slice(-2);
@@ -1044,6 +1063,7 @@ function empCheckIn() {
 function empCheckOut() {
     if(!_todayAttDocId) return;
     if(!confirm('هل تريد تسجيل انصرافك؟ لن تتمكن من تعديله.')) return;
+    document.getElementById('btnCheckOut').disabled = true;
     var now = new Date();
     var time = ('0'+now.getHours()).slice(-2)+':'+('0'+now.getMinutes()).slice(-2);
     document.getElementById('attStatusMsg').textContent = '⏳ جارٍ التسجيل...';
