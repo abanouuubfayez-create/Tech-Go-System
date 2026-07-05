@@ -1771,9 +1771,9 @@
                 <line x1="12" y1="3" x2="12" y2="15"/>
             </svg>
 
-            <h2 class="upload-title">ارفع ملف الحضور</h2>
+            <h2 class="upload-title">ارفع ملف الحضور أو اسحب من البوابة</h2>
             <p class="upload-text">
-                اسحب ملف <code style="background:rgba(59,130,246,0.15);color:#60a5fa;padding:3px 10px;border-radius:6px;font-weight:700;font-family:monospace;">attlog.dat</code> هنا أو اضغط لاختياره
+                اسحب ملف <code style="background:rgba(59,130,246,0.15);color:#60a5fa;padding:3px 10px;border-radius:6px;font-weight:700;font-family:monospace;">attlog.dat</code> هنا أو اضغط لاختياره، أو اسحب البيانات أونلاين
             </p>
             <div style="display:flex;gap:1.5rem;justify-content:center;margin:1.2rem 0;flex-wrap:wrap;">
                 <span style="display:flex;align-items:center;gap:5px;color:#475569;font-size:0.82rem;"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#34d399" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>تحليل انضباط فوري</span>
@@ -1783,7 +1783,10 @@
 
             <input type="file" id="attlogInput" accept=".dat"
                    style="display:none;" onchange="onFileChange(event,'attlog')">
-            <label for="attlogInput" class="btn-primary" style="padding:1rem 3rem;font-size:1rem;">📂 اختر الملف</label>
+            <div style="display:flex;gap:1rem;justify-content:center;flex-wrap:wrap;margin-top:1rem;">
+                <label for="attlogInput" class="btn-primary" style="padding:1rem 2rem;font-size:1rem;cursor:pointer;">📂 ملف البصمة</label>
+                <button class="btn-primary" style="padding:1rem 2rem;font-size:1rem;background:#059669;border:none;cursor:pointer;" onclick="pullFromPortal()">🌐 سحب من البوابة (أونلاين)</button>
+            </div>
 
             <!-- استيراد/تصدير الأسماء -->
             <div style="margin-top:1.5rem;display:flex;flex-direction:column;align-items:center;gap:0.8rem;">
@@ -2598,6 +2601,84 @@
                 displayResults();
             } else {
                 showNamingPanel();
+            }
+        }
+
+        // ====== سحب من البوابة أونلاين ======
+        async function pullFromPortal() {
+            try {
+                if(!window.parent || !window.parent.db) {
+                    alert("عذراً، يجب فتح هذه الصفحة من داخل بوابة النظام للوصول لقاعدة البيانات.");
+                    return;
+                }
+                const btn = document.querySelector('button[onclick="pullFromPortal()"]');
+                const origText = btn.innerHTML;
+                btn.innerHTML = '⏳ جارٍ السحب...';
+                btn.disabled = true;
+
+                const snap = await window.parent.db.collection('attendance_logs').get();
+                const records = [];
+                let i = 1;
+                
+                const usersSnap = await window.parent.db.collection('users').get();
+                const userNames = {};
+                usersSnap.forEach(u => { userNames[u.id] = u.data().name; });
+
+                snap.forEach(doc => {
+                    const d = doc.data();
+                    if(!d.date) return;
+                    if (userNames[d.uid]) {
+                        employeeNames[d.uid] = userNames[d.uid];
+                    } else if (d.name) {
+                        employeeNames[d.uid] = d.name;
+                    }
+
+                    if (d.checkIn) {
+                        records.push({
+                            id: i++,
+                            employeeId: d.uid,
+                            date: d.date,
+                            time: d.checkIn + ':00',
+                            datetime: new Date(d.date + 'T' + d.checkIn + ':00'),
+                            type: ''
+                        });
+                    }
+                    if (d.checkOut) {
+                        records.push({
+                            id: i++,
+                            employeeId: d.uid,
+                            date: d.date,
+                            time: d.checkOut + ':00',
+                            datetime: new Date(d.date + 'T' + d.checkOut + ':00'),
+                            type: ''
+                        });
+                    }
+                });
+
+                if (records.length === 0) {
+                    alert("لا توجد سجلات حضور مسجلة في البوابة حتى الآن.");
+                    btn.innerHTML = origText;
+                    btn.disabled = false;
+                    return;
+                }
+
+                records.sort((a, b) => {
+                    const dc = a.date.localeCompare(b.date);
+                    return dc !== 0 ? dc : a.time.localeCompare(b.time);
+                });
+
+                attendanceData = records;
+                stats = calculateStats(records);
+                saveNames();
+                
+                uploadSection.classList.add('hidden');
+                namingSection.classList.add('hidden');
+                
+                displayResults();
+            } catch(err) {
+                alert("حدث خطأ أثناء سحب البيانات: " + err.message);
+                const btn = document.querySelector('button[onclick="pullFromPortal()"]');
+                if(btn) { btn.innerHTML = '🌐 سحب من البوابة (أونلاين)'; btn.disabled = false; }
             }
         }
 
