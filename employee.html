@@ -72,7 +72,6 @@
 </div>
 
 <div class="emp-nav">
-  <div class="emp-tab" id="empTabAtt" data-pg="att" onclick="empGo('att',this)" style="display:none">⏱️ الحضور والانصراف</div>
   <div class="emp-tab a" data-pg="proj" onclick="empGo('proj',this)">📁 مشاريعي <span class="tab-badge" id="proj-badge" style="display:none">0</span></div>
   <div class="emp-tab" data-pg="tasks" onclick="empGo('tasks',this)">🗂 مهامي <span class="tab-badge" id="tasks-badge" style="display:none">0</span></div>
   <div class="emp-tab" data-pg="wkr" onclick="empGo('wkr',this)">📆 تقاريري الأسبوعية</div>
@@ -80,6 +79,7 @@
   <div class="emp-tab" data-pg="docs" onclick="empGo('docs',this)">📄 مستنداتي</div>
   <div class="emp-tab" data-pg="req" onclick="empGo('req',this)">📨 طلباتي</div>
   <div class="emp-tab" data-pg="forms" onclick="empGo('forms',this)">📝 نماذج مطلوبة مني <span class="tab-badge" id="forms-badge" style="display:none">0</span></div>
+  <div class="emp-tab" id="empTabAtt" data-pg="att" onclick="empGo('att',this)" style="display:none">⏱️ الحضور والانصراف</div>
   <div class="emp-tab" data-pg="acct" onclick="empGo('acct',this)">👤 حسابي</div>
 </div>
 
@@ -948,7 +948,6 @@ function loadEmpAttendance() {
     var monthPrefix = y+'-'+m;
 
     db.collection('attendance_logs').where('uid','==',TG_USER.uid)
-      .where('date','>=', monthPrefix+'-01').where('date','<=', monthPrefix+'-31')
       .onSnapshot(function(snap){
           var box = document.getElementById('myAttList');
           if(snap.empty){
@@ -963,9 +962,21 @@ function loadEmpAttendance() {
           var todayLog = null;
           snap.forEach(function(doc){
               var data = doc.data();
-              arr.push(data);
+              if (data.date >= monthPrefix+'-01' && data.date <= monthPrefix+'-31') {
+                  arr.push(data);
+              }
               if(data.date === todayStr) { todayLog = data; _todayAttDocId = doc.id; }
           });
+          
+          if(arr.length === 0 && !todayLog) {
+              box.innerHTML = '<div class="empty-hint">لا توجد سجلات حضور لهذا الشهر.</div>';
+              _todayAttDocId = null;
+              document.getElementById('btnCheckIn').disabled = false;
+              document.getElementById('btnCheckOut').disabled = true;
+              document.getElementById('attStatusMsg').textContent = '';
+              return;
+          }
+
           arr.sort(function(a,b){ return a.date < b.date ? 1 : -1; });
           
           if(todayLog) {
@@ -1002,6 +1013,10 @@ function loadEmpAttendance() {
           });
           h += '</table>';
           box.innerHTML = h;
+      }, function(err) {
+          var box = document.getElementById('myAttList');
+          box.innerHTML = '<div class="empty-hint" style="color:var(--no)">تعذر تحميل السجلات: ' + esc(err.message) + '</div>';
+          document.getElementById('attStatusMsg').textContent = '';
       });
 }
 
@@ -1019,7 +1034,11 @@ function empCheckIn() {
         checkIn: time,
         checkOut: null,
         timestamp: new Date()
-    }).catch(function(err){ alert('تعذر التسجيل: '+err.message); });
+    }).catch(function(err){ 
+        var msg = document.getElementById('attStatusMsg');
+        msg.textContent = 'تعذر التسجيل: ' + err.message;
+        msg.style.color = 'var(--no)';
+    });
 }
 
 function empCheckOut() {
@@ -1030,7 +1049,11 @@ function empCheckOut() {
     document.getElementById('attStatusMsg').textContent = '⏳ جارٍ التسجيل...';
     db.collection('attendance_logs').doc(_todayAttDocId).update({
         checkOut: time
-    }).catch(function(err){ alert('تعذر التسجيل: '+err.message); });
+    }).catch(function(err){ 
+        var msg = document.getElementById('attStatusMsg');
+        msg.textContent = 'تعذر التسجيل: ' + err.message;
+        msg.style.color = 'var(--no)';
+    });
 }
 
 // ── مستنداتي ────────────────────────────────────────────────────────
