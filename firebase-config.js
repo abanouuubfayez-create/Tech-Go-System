@@ -32,27 +32,41 @@ var SUPABASE_BUCKET = 'uploads';
  * @param {function} onDone - callback عند النجاح (يستقبل الـ public URL)
  */
 function tgUploadFile(folder, fileName, file, onProgress, onError, onDone) {
-    var safeFileName = fileName.replace(/[^a-zA-Z0-9.\-_\/]/g, '_').replace(/_+/g, '_');
-    var path = folder + '/' + Date.now() + '_' + safeFileName;
-    var storageRef = firebase.storage().ref(path);
-    var uploadTask = storageRef.put(file);
-
-    uploadTask.on('state_changed',
-        function(snapshot) {
-            if (onProgress) {
-                var progress = Math.round((snapshot.bytesTransferred / snapshot.totalBytes) * 100);
-                onProgress(progress);
+    try {
+        var safeFileName = fileName.replace(/[^a-zA-Z0-9.\-_\/]/g, '_').replace(/_+/g, '_');
+        var path = folder + '/' + Date.now() + '_' + safeFileName;
+        
+        var xhr = new XMLHttpRequest();
+        xhr.open('POST', SUPABASE_URL + '/storage/v1/object/' + SUPABASE_BUCKET + '/' + path, true);
+        xhr.setRequestHeader('apikey', SUPABASE_ANON_KEY);
+        xhr.setRequestHeader('Authorization', 'Bearer ' + SUPABASE_ANON_KEY);
+        xhr.setRequestHeader('Content-Type', file.type || 'application/octet-stream');
+        
+        xhr.upload.onprogress = function(e) {
+            if (e.lengthComputable && onProgress) {
+                var percentComplete = Math.round((e.loaded / e.total) * 100);
+                onProgress(percentComplete);
             }
-        },
-        function(error) {
-            if (onError) onError(error.message);
-        },
-        function() {
-            uploadTask.snapshot.ref.getDownloadURL().then(function(downloadURL) {
-                if (onDone) onDone(downloadURL);
-            }).catch(function(err) {
-                if (onError) onError(err.message);
-            });
-        }
-    );
+        };
+        
+        xhr.onload = function() {
+            if (xhr.status >= 200 && xhr.status < 300) {
+                var publicUrl = SUPABASE_URL + '/storage/v1/object/public/' + SUPABASE_BUCKET + '/' + path;
+                if (onDone) onDone(publicUrl);
+            } else {
+                var errDesc = 'Upload failed with status: ' + xhr.status;
+                try { errDesc += ' - ' + JSON.parse(xhr.responseText).message; } catch(e){}
+                if (onError) onError(errDesc);
+            }
+        };
+        
+        xhr.onerror = function() {
+            if (onError) onError('Network error occurred during upload.');
+        };
+        
+        xhr.send(file);
+    } catch(err) {
+        console.error("Sync Upload Error:", err);
+        if (onError) onError(err.message || err);
+    }
 }
