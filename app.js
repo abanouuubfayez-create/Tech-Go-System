@@ -3350,3 +3350,125 @@ function deleteEmpDoc(docId, fileUrl) {
         alert('❌ خطأ أثناء الحذف: '+err.message);
     });
 }
+
+// ═══════════════════════════════════════════════════════════════
+// ── حفظ واسترجاع النماذج (المسودات) ──────────────────────────
+function tgSaveFormDraft() {
+    var activePg = document.querySelector('.pg.a');
+    if(!activePg) return;
+    var formId = activePg.id.replace('pg-', '');
+    if(formId === 'dash' || formId === 'staff' || formId === 'pmgmt' || formId === 'tasksmgmt' || formId === 'announcements' || formId === 'account' || formId === 'livetrack' || formId === 'sendform' || formId === 'empdocs') {
+        alert('لا يمكن حفظ هذه الصفحة كنموذج.');
+        return;
+    }
+    
+    // Find the first input value (usually the name) to suggest as title
+    var inputs = activePg.querySelectorAll('input, textarea, select');
+    var defaultTitle = '';
+    for(var i=0; i<inputs.length; i++) {
+        if(inputs[i].type !== 'button' && inputs[i].type !== 'submit' && inputs[i].value.trim()) {
+            defaultTitle = inputs[i].value.trim();
+            break;
+        }
+    }
+    
+    var title = prompt('أدخل اسماً مميزاً لحفظ هذا النموذج (مثال: اسم الموظف):', defaultTitle);
+    if(!title) return;
+    
+    var data = [];
+    inputs.forEach(function(inp) {
+        if(inp.type === 'file' || inp.type === 'button' || inp.type === 'submit') return;
+        var val = (inp.type === 'checkbox' || inp.type === 'radio') ? inp.checked : inp.value;
+        data.push(val);
+    });
+    
+    var msgId = tgToast('⏳ جارٍ الحفظ...', 'info', true);
+    db.collection('savedForms').add({
+        formId: formId,
+        title: title,
+        data: JSON.stringify(data),
+        savedBy: TG_USER.uid,
+        createdAt: new Date()
+    }).then(function() {
+        tgToast('✅ تم حفظ النموذج بنجاح!', 'ok');
+    }).catch(function(err) {
+        tgToast('❌ تعذر الحفظ: ' + err.message, 'err');
+    });
+}
+
+function tgLoadFormDrafts() {
+    var activePg = document.querySelector('.pg.a');
+    if(!activePg) return;
+    var formId = activePg.id.replace('pg-', '');
+    if(formId === 'dash' || formId === 'staff' || formId === 'pmgmt' || formId === 'tasksmgmt' || formId === 'announcements' || formId === 'account' || formId === 'livetrack' || formId === 'sendform' || formId === 'empdocs') {
+        alert('لا يوجد نماذج محفوظة لهذه الصفحة.');
+        return;
+    }
+    
+    var modalHtml = '<h3 style="margin-top:0;margin-bottom:16px">📂 النماذج المحفوظة ('+(T[formId]||formId)+')</h3>'+
+                    '<div id="savedFormsList"><div class="empty-hint">⏳ جارٍ التحميل...</div></div>';
+    tgModal(modalHtml, [{label: 'إغلاق', cls: 'bt-o', onClick: tgCloseModal}]);
+    
+    db.collection('savedForms').where('formId','==',formId).orderBy('createdAt','desc').get().then(function(snap){
+        var box = document.getElementById('savedFormsList');
+        if(!box) return;
+        if(snap.empty){
+            box.innerHTML = '<div class="empty-hint">لا توجد نماذج محفوظة لهذه الصفحة.</div>';
+            return;
+        }
+        var h = '<div style="display:flex;flex-direction:column;gap:8px">';
+        snap.forEach(function(doc){
+            var d = doc.data();
+            var docDataStr = (d.data||'').replace(/"/g, '&quot;').replace(/'/g, '\\\'');
+            h += '<div style="background:rgba(255,255,255,.05);padding:12px;border-radius:8px;display:flex;justify-content:space-between;align-items:center">';
+            h += '<div><div style="font-weight:bold;margin-bottom:4px">'+escH(d.title)+'</div>';
+            h += '<div style="font-size:11px;opacity:.6">'+(d.createdAt&&d.createdAt.toDate?d.createdAt.toDate().toLocaleString('ar-EG'):'')+'</div></div>';
+            h += '<div style="display:flex;gap:8px">';
+            h += '<button class="bt bt-p" style="padding:4px 10px;font-size:11px" onclick="tgApplySavedForm(\''+formId+'\', \''+docDataStr+'\')">📥 استرجاع</button>';
+            h += '<button class="bt bt-d" style="padding:4px 10px;font-size:11px" onclick="tgDeleteSavedForm(\''+doc.id+'\', this)">🗑 حذف</button>';
+            h += '</div></div>';
+        });
+        h += '</div>';
+        box.innerHTML = h;
+    }).catch(function(err){
+        var box = document.getElementById('savedFormsList');
+        if(box) box.innerHTML = '<div class="empty-hint" style="color:var(--no)">خطأ: '+escH(err.message)+'</div>';
+    });
+}
+
+function tgApplySavedForm(formId, dataStr) {
+    if(!confirm('سيتم استبدال البيانات الحالية بالبيانات المحفوظة. هل أنت متأكد؟')) return;
+    try {
+        var data = JSON.parse(dataStr);
+        var activePg = document.getElementById('pg-'+formId);
+        if(!activePg) return;
+        var inputs = activePg.querySelectorAll('input, textarea, select');
+        var dataIdx = 0;
+        inputs.forEach(function(inp) {
+            if(inp.type === 'file' || inp.type === 'button' || inp.type === 'submit') return;
+            if(data[dataIdx] !== undefined) {
+                if(inp.type === 'checkbox' || inp.type === 'radio') inp.checked = data[dataIdx];
+                else inp.value = data[dataIdx];
+                // Trigger input event for auto-expand textareas
+                inp.dispatchEvent(new Event('input', { bubbles: true }));
+            }
+            dataIdx++;
+        });
+        tgCloseModal();
+        tgToast('✅ تم استرجاع النموذج', 'ok');
+    } catch(e) {
+        alert('❌ خطأ في قراءة البيانات');
+    }
+}
+
+function tgDeleteSavedForm(docId, btn) {
+    if(!confirm('هل أنت متأكد من حذف هذا النموذج المحفوظ؟')) return;
+    btn.disabled = true;
+    db.collection('savedForms').doc(docId).delete().then(function(){
+        btn.parentElement.parentElement.remove();
+        tgToast('✅ تم الحذف', 'ok');
+    }).catch(function(err){
+        btn.disabled = false;
+        alert('❌ تعذر الحذف: '+err.message);
+    });
+}

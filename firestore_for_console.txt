@@ -149,6 +149,11 @@ service cloud.firestore {
       allow delete: if isAdmin();
     }
 
+    // النماذج المحفوظة (المسودات) للأدمن
+    match /savedForms/{formId} {
+      allow read, write: if isAnyAdmin();
+    }
+
     // نماذج تُرسل لموظف مُحدَّد ليملأها ويعيدها للأدمن (📨 إرسال نموذج للموظف)
     match /formRequests/{reqId} {
       allow read: if isAdmin() || (isSignedIn() && resource.data.targetUid == myUid());
