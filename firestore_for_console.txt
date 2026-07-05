@@ -128,6 +128,16 @@ service cloud.firestore {
     }
 
 
+    // الحضور والانصراف
+    match /attendance/{attId} {
+      allow read: if isAnyAdmin() || (isSignedIn() && resource.data.uid == myUid());
+      allow create: if isSignedIn() && request.resource.data.uid == myUid();
+      allow update: if isAnyAdmin() || (isSignedIn() && resource.data.uid == myUid() &&
+        request.resource.data.diff(resource.data).affectedKeys().hasOnly(['checkOut', 'locationOut', 'totalHours'])
+      );
+      allow delete: if isAdmin();
+    }
+
     // الإشعارات (Push Notifications عبر Firestore)
     match /notifications/{notifId} {
       // المستلم يقرأ إشعاراته فقط

@@ -109,6 +109,7 @@
         <div class="S-s" onclick="tgToggleNavGroup(this)">الأنظمة <span class="arr">▼</span></div>
         <div class="sb-items">
             <div class="S-i" onclick="go('att',this)"><span class="ic">⏱</span> الحضور والانصراف</div>
+            <div class="S-i" onclick="go('cal',this)"><span class="ic">📅</span> التقويم العام <span class="S-b">جديد</span></div>
             <div class="S-i" onclick="go('comp',this)"><span class="ic">📝</span> الشكاوى والمقترحات</div>
         </div>
     </div>
@@ -182,11 +183,16 @@
 <div class="pg" id="pg-notice"></div><div class="pg" id="pg-gen"></div><div class="pg" id="pg-warn"></div><div class="pg" id="pg-inv"></div>
 <div class="pg" id="pg-exp"></div><div class="pg" id="pg-clr"></div><div class="pg" id="pg-task"></div><div class="pg" id="pg-sal"></div>
 <div class="pg" id="pg-res"></div><div class="pg" id="pg-promo"></div><div class="pg" id="pg-raise"></div><div class="pg" id="pg-contract"></div>
-<div class="pg" id="pg-att"></div><div class="pg" id="pg-comp"></div><div class="pg" id="pg-set"></div><div class="pg" id="pg-proj"></div><div class="pg" id="pg-mexp"></div>
+<div class="pg" id="pg-att"></div><div class="pg" id="pg-cal"></div><div class="pg" id="pg-comp"></div><div class="pg" id="pg-set"></div><div class="pg" id="pg-proj"></div><div class="pg" id="pg-mexp"></div>
 <div class="pg" id="pg-staff"></div><div class="pg" id="pg-pmgmt"></div><div class="pg" id="pg-tasksmgmt"></div><div class="pg" id="pg-account"></div><div class="pg" id="pg-announcements"></div><div class="pg" id="pg-livetrack"></div><div class="pg" id="pg-sendform"></div><div class="pg" id="pg-empdocs"></div>
 </div>
 </div>
 <datalist id="tgEmpDL"></datalist>
+<script src="auth.js?v=2"></script>
+
+<!-- FullCalendar -->
+<script src="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.15/index.global.min.js"></script>
+
 <script src="app.js?v=2"></script>
 <script src="livetrack.js?v=2"></script>
 <script src="formsend.js?v=2"></script>

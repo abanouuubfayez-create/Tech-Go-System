@@ -28,7 +28,7 @@ var T={
     ld:"سجل الغياب بالخصم", notice:"نموذج لفت نظر", warn:"خطاب إنذار",
     inv:"محضر تحقيق", exp:"شهادة خبرة", clr:"إخلاء طرف",
     gen:"خطاب إداري عام",
-    task:"تكليف بمهمة عمل", sal:"شهادة راتب", att:"الحضور والانصراف",
+    task:"تكليف بمهمة عمل", sal:"شهادة راتب", att:"سجل الحضور اللحظي", cal:"التقويم العام",
     comp:"الشكاوى والمقترحات", set:"تخصيص النظام", proj:"نموذج إدارة المشروع",
     mexp:"شيت المصروفات الشهري",
     res:"طلب استقالة", promo:"قرار ترقية", contract:"عقد عمل", raise:"زيادة راتب / علاوة",
@@ -3606,4 +3606,93 @@ function tgDeleteSavedForm(docId, btn) {
         btn.disabled = false;
         alert('❌ تعذر الحذف: '+err.message);
     });
+}
+
+// ── ADMIN ATTENDANCE & CALENDAR ──────────────────────────────────────────
+function loadAdminAttendance() {
+    var dateInp = document.getElementById('adminAttDate');
+    var box = document.getElementById('adminAttList');
+    if(!dateInp || !box) return;
+    var dStr = dateInp.value;
+    if(!dStr) return;
+    box.innerHTML = '<div class="empty-hint">⏳ جارٍ التحميل...</div>';
+    
+    db.collection('attendance').where('date','==',dStr).get().then(function(snap){
+        if(snap.empty) {
+            box.innerHTML = '<div class="empty-hint">لا يوجد سجل حضور لهذا اليوم.</div>';
+            return;
+        }
+        var h = '<table class="dt"><tr><th>الموظف</th><th>وقت الحضور</th><th>الموقع (حضور)</th><th>وقت الانصراف</th><th>الموقع (انصراف)</th><th>ساعات العمل</th></tr>';
+        snap.forEach(function(doc){
+            var d = doc.data();
+            var empName = EMPLOYEES[d.uid] ? EMPLOYEES[d.uid].name : 'مجهول';
+            var inTime = d.checkIn && d.checkIn.toDate ? d.checkIn.toDate().toLocaleTimeString('ar-EG') : '-';
+            var outTime = d.checkOut && d.checkOut.toDate ? d.checkOut.toDate().toLocaleTimeString('ar-EG') : '-';
+            var locIn = d.locationIn ? '<a href="https://maps.google.com/?q='+d.locationIn+'" target="_blank">🗺️ عرض</a>' : '-';
+            var locOut = d.locationOut ? '<a href="https://maps.google.com/?q='+d.locationOut+'" target="_blank">🗺️ عرض</a>' : '-';
+            var hrs = d.totalHours ? d.totalHours.toFixed(2) + ' س' : '-';
+            
+            h += '<tr><td>'+escH(empName)+'</td><td>'+inTime+'</td><td>'+locIn+'</td><td>'+outTime+'</td><td>'+locOut+'</td><td style="font-weight:bold">'+hrs+'</td></tr>';
+        });
+        h += '</table>';
+        box.innerHTML = h;
+    }).catch(function(err){
+        box.innerHTML = '<div class="empty-hint" style="color:var(--no)">خطأ: '+escH(err.message)+'</div>';
+    });
+}
+
+function initAdminCalendar() {
+    var calEl = document.getElementById('calendar');
+    if(!calEl) return;
+    if(typeof FullCalendar === 'undefined') {
+        calEl.innerHTML = '<div class="empty-hint" style="color:var(--no)">تعذر تحميل مكتبة التقويم. الرجاء التحقق من الاتصال بالإنترنت.</div>';
+        return;
+    }
+    
+    var calendar = new FullCalendar.Calendar(calEl, {
+        initialView: 'dayGridMonth',
+        locale: 'ar',
+        direction: 'rtl',
+        headerToolbar: {
+            left: 'prev,next today',
+            center: 'title',
+            right: 'dayGridMonth,timeGridWeek,timeGridDay'
+        },
+        events: function(info, successCallback, failureCallback) {
+            var events = [];
+            // Load Projects
+            db.collection('projects').get().then(function(snap){
+                snap.forEach(function(doc){
+                    var d = doc.data();
+                    if(d.deadline) {
+                        events.push({
+                            title: 'مشروع: ' + (d.title||'بدون عنوان'),
+                            start: d.deadline,
+                            color: '#e74c3c'
+                        });
+                    }
+                });
+                // Load approved vacations (requests)
+                return db.collection('requests').where('status','==','approved').get();
+            }).then(function(snap){
+                snap.forEach(function(doc){
+                    var d = doc.data();
+                    if(d.from && d.to) {
+                        var empName = EMPLOYEES[d.uid] ? EMPLOYEES[d.uid].name : '';
+                        events.push({
+                            title: 'إجازة: ' + empName,
+                            start: d.from,
+                            end: new Date(new Date(d.to).getTime() + 86400000).toISOString().split('T')[0], // Exclusive end date
+                            color: '#2ecc71'
+                        });
+                    }
+                });
+                successCallback(events);
+            }).catch(function(err){
+                console.error(err);
+                failureCallback(err);
+            });
+        }
+    });
+    calendar.render();
 }

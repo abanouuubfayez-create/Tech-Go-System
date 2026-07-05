@@ -73,6 +73,147 @@
         { id: 'noticeDays', label: 'مدة الإشعار (بالأيام)', type: 'text' },
         { id: 'reason', label: 'سبب تقديم الاستقالة (اختياري)', type: 'textarea' }
       ]
+    },
+    clr: {
+      title: 'إخلاء طرف',
+      noteSection: '٥',
+      fill: function () {
+        var h = SC('١', 'بيانات الموظف');
+        h += F2(fgIn('الاسم بالكامل', 'name'), fgIn('الرقم الوظيفي', 'empId'));
+        h += F3(fgIn('القسم / الإدارة', 'dept'), fgIn('المسمى الوظيفي', 'jobTitle'), fgIn('تاريخ آخر يوم عمل', 'lastDay', 'date'));
+        h += SC('٢', 'إقرار وتسليم متعلقات');
+        h += '<div class="chk-grid" style="grid-template-columns:1fr 1fr">' +
+          '<label><input type="checkbox" data-fid="chk1"> تم تسليم العهدة المالية</label>' +
+          '<label><input type="checkbox" data-fid="chk2"> تم تسليم العهدة العينية (لابتوب، هاتف، الخ)</label>' +
+          '<label><input type="checkbox" data-fid="chk3"> تم تسليم المستندات والملفات</label>' +
+          '<label><input type="checkbox" data-fid="chk4"> تم إنهاء المهام المعلقة</label>' +
+          '</div>';
+        h += '<div class="fg fg-full"><label>ملاحظات إضافية (أو نواقص)</label><textarea rows="2" data-fid="reason"></textarea></div>';
+        return h;
+      },
+      print: function (v) {
+        var h = SC('١', 'بيانات الموظف');
+        h += F2(fgOut('الاسم بالكامل', v.name), fgOut('الرقم الوظيفي', v.empId));
+        h += F3(fgOut('القسم / الإدارة', v.dept), fgOut('المسمى الوظيفي', v.jobTitle), fgOut('تاريخ آخر يوم عمل', v.lastDay));
+        h += SC('٢', 'إقرار وتسليم متعلقات');
+        h += '<div class="chk-grid" style="grid-template-columns:1fr 1fr">' +
+          '<label><input type="checkbox" disabled ' + (v.chk1 ? 'checked' : '') + '> تم تسليم العهدة المالية</label>' +
+          '<label><input type="checkbox" disabled ' + (v.chk2 ? 'checked' : '') + '> تم تسليم العهدة العينية (لابتوب، هاتف، الخ)</label>' +
+          '<label><input type="checkbox" disabled ' + (v.chk3 ? 'checked' : '') + '> تم تسليم المستندات والملفات</label>' +
+          '<label><input type="checkbox" disabled ' + (v.chk4 ? 'checked' : '') + '> تم إنهاء المهام المعلقة</label>' +
+          '</div>';
+        h += fgOut('ملاحظات إضافية', v.reason, true);
+        h += SC('٣', 'الإقرار المالي (الإدارة المالية)');
+        h += fsStatusBlock();
+        h += SC('٤', 'التوقيعات');
+        h += SG3('توقيع الموظف', 'مقدم الإخلاء', 'المدير الإداري', 'استلام العهد', 'المدير التنفيذي', 'اعتماد نهائي', null, 'admin', 'exec');
+        return h;
+      }
+    },
+    fclr: {
+      title: 'مخالصة نهائية',
+      noteSection: '٤',
+      fill: function () {
+        var h = SC('١', 'بيانات الموظف');
+        h += F2(fgIn('الاسم بالكامل', 'name'), fgIn('الرقم القومي', 'nid'));
+        h += F2(fgIn('تاريخ التعيين', 'hireDate', 'date'), fgIn('تاريخ الانتهاء', 'endDate', 'date'));
+        h += SC('٢', 'الإقرار المخالصة');
+        h += '<div class="wb wb-gd">أقر أنا الموقع أدناه بأنني استلمت كافة مستحقاتي المالية لدى الشركة (رواتب، بدلات، إجازات، مكافآت) حتى تاريخ انتهاء عملي، وبذلك أُبرئ ذمة الشركة براءة تامة ونهائية لا رجعة فيها من أي مطالبة حالية أو مستقبلية.</div>';
+        return h;
+      },
+      print: function (v) {
+        var h = SC('١', 'بيانات الموظف');
+        h += F2(fgOut('الاسم بالكامل', v.name), fgOut('الرقم القومي', v.nid));
+        h += F2(fgOut('تاريخ التعيين', v.hireDate), fgOut('تاريخ الانتهاء', v.endDate));
+        h += SC('٢', 'الإقرار المخالصة');
+        h += '<div class="wb wb-gd" style="font-size:12px;line-height:1.8">أقر أنا الموقع أدناه بأنني استلمت كافة مستحقاتي المالية لدى الشركة (رواتب، بدلات، إجازات، مكافآت) حتى تاريخ انتهاء عملي، وبذلك أُبرئ ذمة الشركة براءة تامة ونهائية لا رجعة فيها من أي مطالبة حالية أو مستقبلية تتعلق بفترة عملي بالشركة.</div>';
+        h += SC('٣', 'التوقيع والاعتماد');
+        h += SG3('توقيع الموظف المقر', 'البصمة والتوقيع', 'الإدارة المالية', 'مراجعة الحسابات', 'المدير التنفيذي', 'اعتماد', null, null, 'exec');
+        return h;
+      }
+    },
+    asset: {
+      title: 'استلام وتسليم عهدة',
+      noteSection: '٤',
+      fill: function () {
+        var h = SC('١', 'بيانات المستلم');
+        h += F2(fgIn('الاسم بالكامل', 'name'), fgIn('المسمى الوظيفي', 'jobTitle'));
+        h += SC('٢', 'تفاصيل العهدة');
+        h += F2(fgIn('تاريخ الاستلام', 'date', 'date'), fgIn('نوع العهدة (لابتوب، هاتف، إلخ)', 'type'));
+        h += '<div class="fg fg-full"><label>مواصفات العهدة (الموديل، السيريال، الحالة)</label><textarea rows="3" data-fid="details"></textarea></div>';
+        h += '<div class="wb wb-gd">أتعهد بالمحافظة على العهدة المسلمة لي واستخدامها في أغراض العمل فقط وإعادتها عند طلب الإدارة بحالتها.</div>';
+        return h;
+      },
+      print: function (v) {
+        var h = SC('١', 'بيانات المستلم');
+        h += F2(fgOut('الاسم بالكامل', v.name), fgOut('المسمى الوظيفي', v.jobTitle));
+        h += SC('٢', 'تفاصيل العهدة');
+        h += F2(fgOut('تاريخ الاستلام', v.date), fgOut('نوع العهدة', v.type));
+        h += fgOut('مواصفات العهدة', v.details, true);
+        h += '<div class="wb wb-gd" style="font-size:11px">أتعهد بالمحافظة على العهدة المسلمة لي واستخدامها في أغراض العمل فقط وإعادتها عند طلب الإدارة بحالتها وإلا أتحمل قيمة إصلاحها أو تعويضها.</div>';
+        h += SC('٣', 'التوقيعات');
+        h += SG3('توقيع الموظف المستلم', '', 'مسؤول العهد / المخازن', 'تسليم', 'المدير الإداري', 'اعتماد', null, 'admin');
+        return h;
+      }
+    },
+    jobreceipt: {
+      title: 'إقرار استلام عمل',
+      noteSection: '٤',
+      fill: function () {
+        var h = SC('١', 'بيانات الموظف');
+        h += F2(fgIn('الاسم بالكامل', 'name'), fgIn('المسمى الوظيفي', 'jobTitle'));
+        h += F2(fgIn('تاريخ مباشرة العمل', 'date', 'date'), fgIn('القسم', 'dept'));
+        h += '<div class="wb wb-gd">أقر أنا بأنني باشرت مهام عملي المذكورة أعلاه ابتداءً من التاريخ الموضح.</div>';
+        return h;
+      },
+      print: function (v) {
+        var h = SC('١', 'بيانات الموظف');
+        h += F2(fgOut('الاسم بالكامل', v.name), fgOut('المسمى الوظيفي', v.jobTitle));
+        h += F2(fgOut('تاريخ مباشرة العمل', v.date), fgOut('القسم', v.dept));
+        h += '<div class="wb wb-gd">أقر أنا بأنني باشرت مهام عملي المذكورة أعلاه ابتداءً من التاريخ الموضح وأتعهد بالالتزام بأنظمة العمل.</div>';
+        h += SC('٣', 'اعتماد الإدارة');
+        h += fsStatusBlock();
+        h += SC('٤', 'التوقيعات');
+        h += SG3('توقيع الموظف', '', 'المدير المباشر', '', 'إدارة الموارد البشرية', 'اعتماد', null, 'admin');
+        return h;
+      }
+    },
+    eval: {
+      title: 'تقييم أداء ذاتي',
+      noteSection: '٥',
+      fill: function () {
+        var h = SC('١', 'بيانات الموظف');
+        h += F2(fgIn('الاسم بالكامل', 'name'), fgIn('القسم / الإدارة', 'dept'));
+        h += F2(fgIn('فترة التقييم (من - إلى)', 'period'), fgIn('المسمى الوظيفي', 'jobTitle'));
+        h += SC('٢', 'التقييم الذاتي');
+        h += '<div class="fg fg-full"><label>أبرز إنجازاتك خلال هذه الفترة</label><textarea rows="3" data-fid="achievements"></textarea></div>';
+        h += '<div class="fg fg-full"><label>أبرز التحديات أو الصعوبات</label><textarea rows="2" data-fid="challenges"></textarea></div>';
+        h += '<div class="fg fg-full"><label>مقترحات التطوير أو التدريب المطلوب</label><textarea rows="2" data-fid="proposals"></textarea></div>';
+        h += SC('٣', 'التقييم الرقمي الذاتي');
+        h += '<div class="chk-grid" style="grid-template-columns:1fr 1fr">' +
+          '<label>جودة العمل: <input type="number" min="1" max="10" data-fid="score1" placeholder="/ 10" style="width:60px"></label>' +
+          '<label>الالتزام بالمواعيد: <input type="number" min="1" max="10" data-fid="score2" placeholder="/ 10" style="width:60px"></label>' +
+          '</div>';
+        return h;
+      },
+      print: function (v) {
+        var h = SC('١', 'بيانات الموظف');
+        h += F2(fgOut('الاسم بالكامل', v.name), fgOut('القسم / الإدارة', v.dept));
+        h += F2(fgOut('فترة التقييم', v.period), fgOut('المسمى الوظيفي', v.jobTitle));
+        h += SC('٢', 'التقييم الذاتي');
+        h += fgOut('أبرز إنجازاتك خلال هذه الفترة', v.achievements, true);
+        h += fgOut('أبرز التحديات أو الصعوبات', v.challenges, true);
+        h += fgOut('مقترحات التطوير أو التدريب المطلوب', v.proposals, true);
+        h += SC('٣', 'التقييم الرقمي الذاتي');
+        h += '<div class="chk-grid" style="grid-template-columns:1fr 1fr">' +
+          fgOut('جودة العمل', (v.score1||'0')+'/10') +
+          fgOut('الالتزام بالمواعيد', (v.score2||'0')+'/10') +
+          '</div>';
+        h += SC('٤', 'اعتماد المدير المباشر');
+        h += fsStatusBlock();
+        h += '<div style="margin-top:16px">'+SG3('توقيع الموظف', '', 'المدير المباشر', '', 'المدير الإداري', 'اعتماد', null, 'admin', 'exec')+'</div>';
+        return h;
+      }
     }
   };
 
@@ -483,14 +624,13 @@
     var tpl = FS_TEMPLATES[r.templateKey];
     var title = tpl ? tpl.title : (r.templateLabel || 'نموذج');
     var docId = (tpl && r.templateKey) || null;
-    var official = FS_OFFICIAL[r.templateKey];
+    var official = tpl;
     var h;
-    if (official) {
-      var meta = FS_OFFICIAL_META[r.templateKey] || {};
-      h = H(title, meta.sub || '', meta.en || '', docId);
+    if (official && official.print) {
+      h = H(title, '', '', docId);
       h += official.print(r.values || {});
       if (r.note) {
-        h += SC(official.noteSection, 'ملاحظة الأدمن عند الإرسال');
+        h += SC(official.noteSection || '٩', 'ملاحظة الأدمن عند الإرسال');
         h += tgBlock(r.note);
       }
       h += FT(['نسخة للموظف', 'نسخة للإدارة']);
@@ -544,7 +684,7 @@
         '<div class="ac-meta">من: ' + escH(r.sentByName || 'الأدمن') + '</div>' +
         (pending ?
           '<div id="fsForm_' + r.id + '" style="margin-top:10px">' +
-            (FS_OFFICIAL[r.templateKey] ? FS_OFFICIAL[r.templateKey].fill() :
+            ((FS_TEMPLATES[r.templateKey] && FS_TEMPLATES[r.templateKey].fill) ? FS_TEMPLATES[r.templateKey].fill() :
             (r.fields || []).map(function (f) {
               var inputHtml;
               if (f.type === 'textarea') {

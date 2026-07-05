@@ -72,6 +72,7 @@
 </div>
 
 <div class="emp-nav">
+  <div class="emp-tab" data-pg="att" onclick="empGo('att',this)">⏱️ الحضور والانصراف</div>
   <div class="emp-tab a" data-pg="proj" onclick="empGo('proj',this)">📁 مشاريعي <span class="tab-badge" id="proj-badge" style="display:none">0</span></div>
   <div class="emp-tab" data-pg="tasks" onclick="empGo('tasks',this)">🗂 مهامي <span class="tab-badge" id="tasks-badge" style="display:none">0</span></div>
   <div class="emp-tab" data-pg="wkr" onclick="empGo('wkr',this)">📆 تقاريري الأسبوعية</div>
@@ -83,6 +84,21 @@
 </div>
 
 <div class="emp-ct">
+
+  <!-- الحضور والانصراف -->
+  <div class="emp-pg" id="epg-att">
+    <div class="set-sec">
+      <div class="set-sec-title">⏱️ تسجيل الحضور والانصراف</div>
+      <div class="set-hint" style="margin-bottom:16px">سجل حضورك وانصرافك يومياً. سيتم تسجيل موقعك الجغرافي للتحقق.</div>
+      <div style="display:flex;gap:16px;flex-wrap:wrap">
+        <button id="btnCheckIn" class="bt bt-p" style="flex:1;padding:16px;font-size:16px" onclick="empCheckIn()">🟢 تسجيل حضور</button>
+        <button id="btnCheckOut" class="bt bt-d" style="flex:1;padding:16px;font-size:16px" onclick="empCheckOut()" disabled>🔴 تسجيل انصراف</button>
+      </div>
+      <div id="attStatusMsg" style="margin-top:12px;font-weight:bold;text-align:center"></div>
+    </div>
+    <div class="set-sec-title" style="margin:16px 0 8px">📋 سجل حضور هذا الشهر</div>
+    <div id="myAttList"><div class="empty-hint">⏳ جارٍ التحميل...</div></div>
+  </div>
 
   <!-- مشاريعي -->
   <div class="emp-pg a" id="epg-proj">
