@@ -127,6 +127,8 @@ function go(id, nav, force){
     document.querySelectorAll(".S-i").forEach(function(e){e.classList.remove("a")});
     if(nav)nav.classList.add("a");
     else{var el=document.querySelector('.S-i[onclick*="\''+id+'\'"]');if(el)el.classList.add("a")}
+    window._currentLoadedFormId = null;
+    window._currentLoadedFormTitle = null;
     document.querySelectorAll(".pg").forEach(function(e){e.classList.remove("a")});
     document.getElementById("pg-"+id).classList.add("a");
     document.getElementById("pT").innerText=T[id]||id;
@@ -3435,18 +3437,68 @@ function tgSaveFormDraft() {
         data.push(val);
     });
     
+    if (window._currentLoadedFormId) {
+        tgConfirmModal(
+            'خيارات الحفظ',
+            'أنت تقوم بتعديل نموذج محفوظ مسبقاً ('+escH(window._currentLoadedFormTitle)+'). ماذا تريد أن تفعل؟',
+            [
+                {label: 'تحديث النموذج الحالي', cls: 'bt-p', onClick: function() {
+                    tgCloseModal();
+                    var msgId = tgToast('⏳ جارٍ التحديث...', 'info', true);
+                    db.collection('savedForms').doc(window._currentLoadedFormId).update({
+                        data: JSON.stringify(data),
+                        updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+                    }).then(function() {
+                        tgToast('✅ تم التحديث بنجاح!', 'ok');
+                    }).catch(function(err) {
+                        tgToast('❌ تعذر التحديث: ' + err.message, 'err');
+                    });
+                }},
+                {label: 'حفظ كنموذج جديد', cls: 'bt-g', onClick: function() {
+                    tgCloseModal();
+                    _tgSaveAsNewDraft(formId, data);
+                }},
+                {label: 'إلغاء', cls: 'bt-o', onClick: tgCloseModal}
+            ]
+        );
+    } else {
+        _tgSaveAsNewDraft(formId, data);
+    }
+}
+
+function _tgSaveAsNewDraft(formId, data) {
+    var title = prompt('اسم النموذج (المرجع للحفظ):');
+    if(!title) return;
     var msgId = tgToast('⏳ جارٍ الحفظ...', 'info', true);
     db.collection('savedForms').add({
         formId: formId,
         title: title,
         data: JSON.stringify(data),
         savedBy: TG_USER.uid,
-        createdAt: new Date()
-    }).then(function() {
+        createdAt: firebase.firestore.FieldValue.serverTimestamp()
+    }).then(function(docRef) {
+        window._currentLoadedFormId = docRef.id;
+        window._currentLoadedFormTitle = title;
         tgToast('✅ تم حفظ النموذج بنجاح!', 'ok');
     }).catch(function(err) {
         tgToast('❌ تعذر الحفظ: ' + err.message, 'err');
     });
+}
+
+function tgClearForm() {
+    if(!confirm('هل أنت متأكد من مسح جميع البيانات المدخلة في النموذج الحالي؟')) return;
+    var activePg = document.querySelector('.pg.a');
+    if(!activePg) return;
+    var inputs = activePg.querySelectorAll('input, textarea, select');
+    inputs.forEach(function(inp) {
+        if(inp.type === 'button' || inp.type === 'submit') return;
+        if(inp.type === 'checkbox' || inp.type === 'radio') inp.checked = false;
+        else inp.value = '';
+        inp.dispatchEvent(new Event('input', { bubbles: true }));
+    });
+    window._currentLoadedFormId = null;
+    window._currentLoadedFormTitle = null;
+    tgToast('✅ تم مسح النموذج', 'ok');
 }
 
 function tgLoadFormDrafts() {
@@ -3472,6 +3524,7 @@ function tgLoadFormDrafts() {
         }
         var docs = [];
         window._savedFormsData = {};
+        window._savedFormsTitles = {};
         snap.forEach(function(d){ docs.push(d); });
         docs.sort(function(a,b){
             var ta = a.data().createdAt ? (a.data().createdAt.toDate ? a.data().createdAt.toDate().getTime() : new Date(a.data().createdAt).getTime()) : 0;
@@ -3483,6 +3536,7 @@ function tgLoadFormDrafts() {
         docs.forEach(function(doc){
             var d = doc.data();
             window._savedFormsData[doc.id] = d.data || '';
+            window._savedFormsTitles[doc.id] = d.title || '';
             h += '<div style="background:rgba(255,255,255,.05);padding:12px;border-radius:8px;display:flex;justify-content:space-between;align-items:center">';
             h += '<div><div style="font-weight:bold;margin-bottom:4px">'+escH(d.title)+'</div>';
             h += '<div style="font-size:11px;opacity:.6">'+(d.createdAt&&d.createdAt.toDate?d.createdAt.toDate().toLocaleString('ar-EG'):'')+'</div></div>';
@@ -3531,6 +3585,10 @@ function tgApplySavedForm(formId, docId, skipConfirm) {
             }
             dataIdx++;
         });
+        if(!skipConfirm) {
+            window._currentLoadedFormId = docId;
+            window._currentLoadedFormTitle = window._savedFormsTitles ? window._savedFormsTitles[docId] : '';
+        }
         tgCloseModal();
         tgToast('✅ تم استرجاع النموذج', 'ok');
     } catch(e) {
