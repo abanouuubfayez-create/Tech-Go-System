@@ -3355,7 +3355,9 @@ function uploadEmpDoc(uid, idx) {
     
     var file = fileInp.files[0];
     msg.style.color = '#fff'; msg.textContent = '⏳ جارٍ الرفع... يرجى الانتظار';
-    tgUploadFile(file, 'employeeDocuments/'+uid, function(url) {
+    tgUploadFile('employeeDocuments/'+uid, file.name, file, null, function(err){
+        msg.style.color = 'var(--no)'; msg.textContent = '❌ تعذر رفع الملف: '+err;
+    }, function(url) {
         db.collection('employeeDocuments').add({
             uid: uid,
             title: title,
@@ -3372,8 +3374,6 @@ function uploadEmpDoc(uid, idx) {
         }).catch(function(err){
             msg.style.color = 'var(--no)'; msg.textContent = '❌ تعذر حفظ بيانات المستند: '+err.message;
         });
-    }, function(err){
-        msg.style.color = 'var(--no)'; msg.textContent = '❌ تعذر رفع الملف: '+err.message;
     });
 }
 
@@ -3473,6 +3473,7 @@ function tgLoadFormDrafts() {
             h += '<div><div style="font-weight:bold;margin-bottom:4px">'+escH(d.title)+'</div>';
             h += '<div style="font-size:11px;opacity:.6">'+(d.createdAt&&d.createdAt.toDate?d.createdAt.toDate().toLocaleString('ar-EG'):'')+'</div></div>';
             h += '<div style="display:flex;gap:8px">';
+            h += '<button class="bt bt-g" style="padding:4px 10px;font-size:11px" onclick="tgPrintSavedForm(\''+formId+'\', \''+doc.id+'\')">📄 طباعة PDF</button>';
             h += '<button class="bt bt-p" style="padding:4px 10px;font-size:11px" onclick="tgApplySavedForm(\''+formId+'\', \''+doc.id+'\')">📥 استرجاع</button>';
             h += '<button class="bt bt-d" style="padding:4px 10px;font-size:11px" onclick="tgDeleteSavedForm(\''+doc.id+'\', this)">🗑 حذف</button>';
             h += '</div></div>';
@@ -3485,8 +3486,18 @@ function tgLoadFormDrafts() {
     });
 }
 
-function tgApplySavedForm(formId, docId) {
-    if(!confirm('سيتم استبدال البيانات الحالية بالبيانات المحفوظة. هل أنت متأكد؟')) return;
+function tgPrintSavedForm(formId, docId) {
+    if(!confirm('عملية الطباعة ستستبدل البيانات الحالية في النموذج مؤقتاً بالبيانات المحفوظة. هل أنت متأكد؟')) return;
+    tgApplySavedForm(formId, docId, true);
+    tgCloseModal();
+    setTimeout(function() {
+        openPrintPreview();
+        setTimeout(doPrintNow, 500);
+    }, 200);
+}
+
+function tgApplySavedForm(formId, docId, skipConfirm) {
+    if(!skipConfirm && !confirm('سيتم استبدال البيانات الحالية بالبيانات المحفوظة. هل أنت متأكد؟')) return;
     try {
         var dataStr = window._savedFormsData ? window._savedFormsData[docId] : null;
         if(!dataStr) throw new Error("Data not found");

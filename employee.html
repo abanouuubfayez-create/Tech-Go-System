@@ -930,7 +930,9 @@ function empUploadDoc() {
     
     var file = fileInp.files[0];
     msg.style.color = '#fff'; msg.textContent = '⏳ جارٍ الرفع... يرجى الانتظار';
-    tgUploadFile(file, 'employeeDocuments/'+TG_USER.uid, function(url) {
+    tgUploadFile('employeeDocuments/'+TG_USER.uid, file.name, file, null, function(err){
+        msg.style.color = 'var(--no)'; msg.textContent = '❌ تعذر رفع الملف: '+err;
+    }, function(url) {
         db.collection('employeeDocuments').add({
             uid: TG_USER.uid,
             title: title,
@@ -947,8 +949,6 @@ function empUploadDoc() {
         }).catch(function(err){
             msg.style.color = 'var(--no)'; msg.textContent = '❌ تعذر حفظ بيانات المستند: '+err.message;
         });
-    }, function(err){
-        msg.style.color = 'var(--no)'; msg.textContent = '❌ تعذر رفع الملف: '+err.message;
     });
 }
 
