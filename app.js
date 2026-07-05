@@ -3424,6 +3424,7 @@ function tgLoadFormDrafts() {
             return;
         }
         var docs = [];
+        window._savedFormsData = {};
         snap.forEach(function(d){ docs.push(d); });
         docs.sort(function(a,b){
             var ta = a.data().createdAt ? (a.data().createdAt.toDate ? a.data().createdAt.toDate().getTime() : new Date(a.data().createdAt).getTime()) : 0;
@@ -3434,12 +3435,12 @@ function tgLoadFormDrafts() {
         var h = '<div style="display:flex;flex-direction:column;gap:8px">';
         docs.forEach(function(doc){
             var d = doc.data();
-            var docDataStr = (d.data||'').replace(/"/g, '&quot;').replace(/'/g, '\\\'');
+            window._savedFormsData[doc.id] = d.data || '';
             h += '<div style="background:rgba(255,255,255,.05);padding:12px;border-radius:8px;display:flex;justify-content:space-between;align-items:center">';
             h += '<div><div style="font-weight:bold;margin-bottom:4px">'+escH(d.title)+'</div>';
             h += '<div style="font-size:11px;opacity:.6">'+(d.createdAt&&d.createdAt.toDate?d.createdAt.toDate().toLocaleString('ar-EG'):'')+'</div></div>';
             h += '<div style="display:flex;gap:8px">';
-            h += '<button class="bt bt-p" style="padding:4px 10px;font-size:11px" onclick="tgApplySavedForm(\''+formId+'\', \''+docDataStr+'\')">📥 استرجاع</button>';
+            h += '<button class="bt bt-p" style="padding:4px 10px;font-size:11px" onclick="tgApplySavedForm(\''+formId+'\', \''+doc.id+'\')">📥 استرجاع</button>';
             h += '<button class="bt bt-d" style="padding:4px 10px;font-size:11px" onclick="tgDeleteSavedForm(\''+doc.id+'\', this)">🗑 حذف</button>';
             h += '</div></div>';
         });
@@ -3451,9 +3452,11 @@ function tgLoadFormDrafts() {
     });
 }
 
-function tgApplySavedForm(formId, dataStr) {
+function tgApplySavedForm(formId, docId) {
     if(!confirm('سيتم استبدال البيانات الحالية بالبيانات المحفوظة. هل أنت متأكد؟')) return;
     try {
+        var dataStr = window._savedFormsData ? window._savedFormsData[docId] : null;
+        if(!dataStr) throw new Error("Data not found");
         var data = JSON.parse(dataStr);
         var activePg = document.getElementById('pg-'+formId);
         if(!activePg) return;
