@@ -3412,7 +3412,8 @@ function tgLoadFormDrafts() {
         return;
     }
     
-    var modalHtml = '<h3 style="margin-top:0;margin-bottom:16px">📂 النماذج المحفوظة ('+(T[formId]||formId)+')</h3>'+
+    var pageTitle = document.getElementById('pT') ? document.getElementById('pT').textContent : formId;
+    var modalHtml = '<h3 style="margin-top:0;margin-bottom:16px">📂 النماذج المحفوظة ('+escH(pageTitle)+')</h3>'+
                     '<div id="savedFormsList"><div class="empty-hint">⏳ جارٍ التحميل...</div></div>';
     tgModal(modalHtml, [{label: 'إغلاق', cls: 'bt-o', onClick: tgCloseModal}]);
     
