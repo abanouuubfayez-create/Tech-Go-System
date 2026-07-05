@@ -33,7 +33,8 @@ var SUPABASE_BUCKET = 'uploads';
  */
 function tgUploadFile(folder, fileName, file, onProgress, onError, onDone) {
     var path = folder + '/' + fileName;
-    var url = SUPABASE_URL + '/storage/v1/object/' + SUPABASE_BUCKET + '/' + path;
+    var encodedPath = path.split('/').map(encodeURIComponent).join('/');
+    var url = SUPABASE_URL + '/storage/v1/object/' + SUPABASE_BUCKET + '/' + encodedPath;
     var xhr = new XMLHttpRequest();
     xhr.open('POST', url, true);
     xhr.setRequestHeader('Authorization', 'Bearer ' + SUPABASE_ANON_KEY);
@@ -51,7 +52,7 @@ function tgUploadFile(folder, fileName, file, onProgress, onError, onDone) {
     };
     xhr.onload = function() {
         if (xhr.status >= 200 && xhr.status < 300) {
-            var publicUrl = SUPABASE_URL + '/storage/v1/object/public/' + SUPABASE_BUCKET + '/' + path;
+            var publicUrl = SUPABASE_URL + '/storage/v1/object/public/' + SUPABASE_BUCKET + '/' + encodedPath;
             onDone(publicUrl);
         } else {
             var errMsg = 'خطأ في الرفع (HTTP ' + xhr.status + ')';

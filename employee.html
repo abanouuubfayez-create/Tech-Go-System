@@ -885,15 +885,23 @@ tgRequireAuth('employee', function(u){
 
 // ── مستنداتي ────────────────────────────────────────────────────────
 function loadMyDocs() {
-    db.collection('employeeDocuments').where('uid','==',TG_USER.uid).orderBy('createdAt','desc').onSnapshot(function(snap){
+    db.collection('employeeDocuments').where('uid','==',TG_USER.uid).onSnapshot(function(snap){
         var box = document.getElementById('empDocsViewList');
         if(!box) return;
         if(snap.empty){
             box.innerHTML = '<div class="empty-hint">لم يتم رفع أي مستندات بعد.</div>';
             return;
         }
+        var docs = [];
+        snap.forEach(function(d){ docs.push(d); });
+        docs.sort(function(a,b){
+            var ta = a.data().createdAt ? a.data().createdAt.toMillis() : 0;
+            var tb = b.data().createdAt ? b.data().createdAt.toMillis() : 0;
+            return tb - ta;
+        });
+
         var h = '<div style="display:flex;flex-direction:column;gap:8px">';
-        snap.forEach(function(doc){
+        docs.forEach(function(doc){
             var d = doc.data();
             h += '<div style="background:rgba(0,0,0,.3);padding:12px;border-radius:8px;display:flex;justify-content:space-between;align-items:center;border-right:3px solid var(--gd)">';
             h += '<div><div style="font-weight:bold;margin-bottom:4px">'+escH(d.title)+'</div>';

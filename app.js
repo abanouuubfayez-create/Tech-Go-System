@@ -3273,15 +3273,22 @@ function toggleEmpDocCard(idx, uid) {
         var box = document.getElementById('empDocsFolderList_'+idx);
         box.innerHTML = '<div class="empty-hint">⏳ جارٍ التحميل...</div>';
         if(window._empDocsListeners[uid]) { window._empDocsListeners[uid](); }
-        window._empDocsListeners[uid] = db.collection('employeeDocuments').where('uid','==',uid).orderBy('createdAt','desc').onSnapshot(function(snap){
+        window._empDocsListeners[uid] = db.collection('employeeDocuments').where('uid','==',uid).onSnapshot(function(snap){
             var b = document.getElementById('empDocsFolderList_'+idx);
             if(!b) return;
             if(snap.empty){
                 b.innerHTML = '<div class="empty-hint">لا توجد مستندات مرفوعة لهذا الموظف.</div>';
                 return;
             }
+            var docs = [];
+            snap.forEach(function(d){ docs.push(d); });
+            docs.sort(function(a,b){
+                var ta = a.data().createdAt ? a.data().createdAt.toMillis() : 0;
+                var tb = b.data().createdAt ? b.data().createdAt.toMillis() : 0;
+                return tb - ta;
+            });
             var h = '<div style="display:flex;flex-direction:column;gap:8px">';
-            snap.forEach(function(doc){
+            docs.forEach(function(doc){
                 var d = doc.data();
                 h += '<div style="background:rgba(0,0,0,.3);padding:12px;border-radius:8px;display:flex;justify-content:space-between;align-items:center;border-right:3px solid var(--gd)">';
                 h += '<div><div style="font-weight:bold;margin-bottom:4px">'+escH(d.title)+'</div>';
