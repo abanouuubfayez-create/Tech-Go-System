@@ -3413,9 +3413,9 @@ function tgLoadFormDrafts() {
     }
     
     var pageTitle = document.getElementById('pT') ? document.getElementById('pT').textContent : formId;
-    var modalHtml = '<h3 style="margin-top:0;margin-bottom:16px">📂 النماذج المحفوظة ('+escH(pageTitle)+')</h3>'+
-                    '<div id="savedFormsList"><div class="empty-hint">⏳ جارٍ التحميل...</div></div>';
-    tgModal(modalHtml, [{label: 'إغلاق', cls: 'bt-o', onClick: tgCloseModal}]);
+    var modalTitle = '📂 النماذج المحفوظة ('+escH(pageTitle)+')';
+    var modalHtml = '<div id="savedFormsList"><div class="empty-hint">⏳ جارٍ التحميل...</div></div>';
+    tgConfirmModal(modalTitle, modalHtml, [{label: 'إغلاق', cls: 'bt-o', onClick: tgCloseModal}]);
     
     db.collection('savedForms').where('formId','==',formId).get().then(function(snap){
         var box = document.getElementById('savedFormsList');
