@@ -1689,3 +1689,5 @@ html.tg-auth-pending body { visibility: hidden; }
         page-break-inside: avoid;
     }
 }
+
+.ac-meta, .pj-meta, .dd { white-space: pre-wrap; word-break: break-word; overflow-wrap: break-word; }

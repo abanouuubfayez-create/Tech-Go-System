@@ -460,12 +460,20 @@ function startAdminNotifications(){
                 lastReqTime = Date.now();
                 playAdminNotif();
                 incrementAdminBadge('notif-req-badge', 'notif-req-badge-sb');
+                if(typeof tgRefreshStaffIfOpen === 'function') tgRefreshStaffIfOpen();
                 // Push Notification للأدمن
                 if(typeof tgShowNotification === 'function'){
                     tgShowNotification('📨 طلب جديد', 'وصلك طلب جديد من أحد الموظفين.');
                 }
             }
         });
+
+    function tgRefreshStaffIfOpen(){
+        var p = document.getElementById('pg-staff');
+        if(p && p.classList.contains('a') && typeof loadStaffOverview === 'function') {
+            loadStaffOverview();
+        }
+    }
 
     // مراقبة التقارير الأسبوعية الجديدة
     var lastWkrTime = Date.now();
@@ -479,6 +487,7 @@ function startAdminNotifications(){
                     lastWkrTime = Date.now();
                     playAdminNotif();
                     incrementAdminBadge('notif-wkr-badge', 'notif-wkr-badge-sb');
+                    tgRefreshStaffIfOpen();
                     // Push Notification للأدمن
                     if(typeof tgShowNotification === 'function'){
                         tgShowNotification('📝 تقرير أسبوعي جديد', 'تم إرسال تقرير أسبوعي جديد من موظف.');
