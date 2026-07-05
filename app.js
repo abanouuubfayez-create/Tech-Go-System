@@ -1694,16 +1694,20 @@ function empBlock(val){ return tgBlock(val); }
 function printDoc(bodyHtml){
     var ifr=document.getElementById('tgPrintFrame');
     if(!ifr)return;
-    var doc=ifr.contentWindow.document;
-    doc.open();
-    doc.write('<!DOCTYPE html><html lang="ar" dir="rtl"><head><meta charset="UTF-8">'+
-        '<link rel="stylesheet" href="styles.css"></head><body>'+bodyHtml+'</body></html>');
-    doc.close();
-    doc.querySelectorAll('.dcn').forEach(function(e){e.innerText=CN;});
-    setTimeout(function(){
-        ifr.contentWindow.focus();
-        ifr.contentWindow.print();
-    },300);
+    fetch('styles.css?v='+Date.now()).then(function(res){return res.text();}).then(function(css){
+        var doc=ifr.contentWindow.document;
+        doc.open();
+        doc.write('<!DOCTYPE html><html lang="ar" dir="rtl"><head><meta charset="UTF-8">'+
+            '<style>'+css+'</style></head><body>'+bodyHtml+'</body></html>');
+        doc.close();
+        doc.querySelectorAll('.dcn').forEach(function(e){e.innerText=CN;});
+        setTimeout(function(){
+            ifr.contentWindow.focus();
+            ifr.contentWindow.print();
+        },500);
+    }).catch(function(err){
+        console.error('Failed to load CSS for print', err);
+    });
 }
 function printWeeklyReportDoc(u,r){
     var h=H('تقرير أسبوعي','تقرير أداء أسبوعي مُرسل من الموظف','WEEKLY WORK REPORT','wkr');
@@ -1743,32 +1747,60 @@ function printRequestDoc(u,r){
 }
 function printProjectDoc(p){
     if(!p) return;
-    var h=H('تقرير مشروع','تقرير حالة المشروع وتحديثات الموظفين','PROJECT STATUS REPORT','proj');
-    h+=SC('١','بيانات المشروع');
-    h+=tgLine('اسم المشروع', p.title||'');
-    if(p.description) h+=tgLine('الوصف', p.description);
-    h+=tgLine('الأولوية', p.priority||'متوسطة');
-    h+=tgLine('حالة المشروع', p.status||'مخطط له');
-    if(p.deadline) h+=tgLine('تاريخ الاستحقاق', p.deadline);
-    if(p.createdBy) h+=tgLine('أنشئ بواسطة', p.createdBy);
-    h+=SC('٢','تقدّم الموظفين');
-    var assignees = p.assignees||[];
-    if(assignees.length){
-        assignees.forEach(function(uid){
-            var e = (PMGMT_EMPLOYEES||[]).find(function(x){return x.uid===uid;});
-            var nm = e ? (e.name||e.email) : uid;
-            var pm = (p.progressMap&&p.progressMap[uid])||{progress:0,status:'لم يبدأ',note:''};
-            h+=tgLine('الموظف', nm);
-            h+=tgLine('نسبة الإنجاز', (pm.progress||0)+'%');
-            h+=tgLine('الحالة', pm.status||'لم يبدأ');
-            if(pm.note) h+=tgLine('ملاحظة', pm.note);
-            h+='<div style="border-bottom:1px dashed #ccc;margin:8px 0"></div>';
-        });
-    } else {
-        h+=tgLine('الموظفون', 'لم يتم تعيين موظفين بعد');
-    }
-    h+=FT(['نسخة للإدارة','نسخة للأرشيف']);
-    printDoc(h);
+    // Fetch project comments first
+    db.collection('projectComments').where('projectId','==',p.id).get().then(function(snap){
+        var comments = snap.docs.map(function(d){ return d.data(); })
+            .sort(function(a,b){
+                var am=(a.createdAt&&a.createdAt.toMillis)?a.createdAt.toMillis():0;
+                var bm=(b.createdAt&&b.createdAt.toMillis)?b.createdAt.toMillis():0;
+                return am-bm;
+            });
+        
+        var h=H('تقرير مشروع','تقرير حالة المشروع وتحديثات الموظفين','PROJECT STATUS REPORT','proj');
+        h+=SC('١','بيانات المشروع');
+        h+=tgLine('اسم المشروع', p.title||'');
+        if(p.description) h+=tgLine('الوصف', p.description);
+        h+=tgLine('الأولوية', p.priority||'متوسطة');
+        h+=tgLine('حالة المشروع', p.status||'مخطط له');
+        if(p.deadline) h+=tgLine('تاريخ الاستحقاق', p.deadline);
+        if(p.createdBy) h+=tgLine('أنشئ بواسطة', p.createdBy);
+        h+=SC('٢','تقدّم الموظفين');
+        var assignees = p.assignees||[];
+        if(assignees.length){
+            assignees.forEach(function(uid){
+                var e = (PMGMT_EMPLOYEES||[]).find(function(x){return x.uid===uid;});
+                var nm = e ? (e.name||e.email) : uid;
+                var pm = (p.progressMap&&p.progressMap[uid])||{progress:0,status:'لم يبدأ',note:''};
+                h+=tgLine('الموظف', nm);
+                h+=tgLine('نسبة الإنجاز', (pm.progress||0)+'%');
+                h+=tgLine('الحالة', pm.status||'لم يبدأ');
+                if(pm.note) h+=tgLine('ملاحظة', pm.note);
+                h+='<div style="border-bottom:1px dashed #ccc;margin:8px 0"></div>';
+            });
+        } else {
+            h+=tgLine('الموظفون', 'لم يتم تعيين موظفين بعد');
+        }
+        
+        // Add project comments to the report
+        if(comments.length){
+            h+=SC('٣','ملاحظات وتحديثات المشروع');
+            comments.forEach(function(c){
+                var roleLabel = (c.role==='admin'||c.role==='tech_admin')?'أدمن':'موظف';
+                var timeStr = '';
+                if(c.createdAt&&c.createdAt.toDate){
+                    try{ timeStr=c.createdAt.toDate().toLocaleString('ar-EG'); }catch(e){}
+                }
+                var cHeader = escH(c.name||'') + ' ('+roleLabel+')' + (timeStr?' - '+timeStr:'');
+                h+=tgLine(cHeader, c.text||'مرفق');
+            });
+        }
+
+        h+=FT(['نسخة للإدارة','نسخة للأرشيف']);
+        printDoc(h);
+    }).catch(function(err){
+        console.error('Error fetching comments for print', err);
+        alert('حدث خطأ أثناء تحميل بيانات التقرير للطباعة.');
+    });
 }
 
 // ─── حسابي — إعدادات شخصية مشتركة (تعمل للأدمن والموظف على حدٍّ سواء) ───────
