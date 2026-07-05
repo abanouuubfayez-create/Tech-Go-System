@@ -1786,7 +1786,7 @@ function tgLine(lbl,val){
            '<input type="text" class="FL-line-val" readonly value="'+escH(val||'')+'"></div>';
 }
 function tgBlock(val){
-    return '<textarea class="FL-textbody" rows="8" readonly>'+escH(val||'')+'</textarea>';
+    return '<div class="FL-textbody" style="min-height:200px; white-space:pre-wrap; word-break:break-word; overflow-wrap:break-word;">'+escH(val||'')+'</div>';
 }
 // إبقاء الأسماء القديمة كمرادفات (متوافقة مع الكود القديم في بوابة الموظف)
 function empLine(lbl,val){ return tgLine(lbl,val); }
