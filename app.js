@@ -1053,21 +1053,10 @@ function renderTasksMgmtList(list){
            '<div class="pj-meta" style="margin-top:2px;font-size:10px;color:var(--tx3)">بواسطة: '+escH(t.createdBy||'الإدارة')+' ('+escH(t.createdByRole||'أدمن إداري')+')</div>'+
            attachHtml+
            '<div style="text-align:right;margin-top:12px">'+
-           '<button class="bt bt-o" style="padding:4px 12px;font-size:11px;border-radius:6px;margin-left:8px" onclick="askTaskStatus(\''+escH(t.assignedTo)+'\', \''+escH(t.title)+'\')">❓ استعلام عن الحالة</button>'+
            '<button class="bt bt-d" style="padding:4px 12px;font-size:11px;border-radius:6px" onclick="deleteTask(\''+t.id+'\')">🗑 حذف المهمة</button></div>'+
            '</div>';
     });
     box.innerHTML=h;
-}
-
-function askTaskStatus(uid, title) {
-    if(!confirm('هل تريد إرسال تنبيه للموظف للاستعلام عن حالة هذه المهمة؟')) return;
-    if(typeof tgSendPushToUser === 'function') {
-        tgSendPushToUser(uid, '❓ استعلام عن مهمة', 'الإدارة تستعلم عن حالة مهمة: ' + title, 'task-query');
-        alert('✅ تم إرسال التنبيه للموظف.');
-    } else {
-        alert('❌ نظام الإشعارات غير مفعل.');
-    }
 }
 
 function createTask(){
