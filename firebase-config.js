@@ -32,7 +32,9 @@ var SUPABASE_BUCKET = 'uploads';
  * @param {function} onDone - callback عند النجاح (يستقبل الـ public URL)
  */
 function tgUploadFile(folder, fileName, file, onProgress, onError, onDone) {
-    var path = folder + '/' + fileName;
+    // Sanitize fileName to prevent 'Invalid key' errors from Supabase
+    var safeFileName = fileName.replace(/[^a-zA-Z0-9.\-_\/]/g, '_').replace(/_+/g, '_');
+    var path = folder + '/' + safeFileName;
     var encodedPath = path.split('/').map(encodeURIComponent).join('/');
     var url = SUPABASE_URL + '/storage/v1/object/' + SUPABASE_BUCKET + '/' + encodedPath;
     var xhr = new XMLHttpRequest();
