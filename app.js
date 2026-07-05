@@ -837,9 +837,15 @@ function permanentlyDeleteEmployee(uid,name){
                     db.collection('achievements').where('uid','==',uid).get(),
                     db.collection('requests').where('uid','==',uid).get(),
                     db.collection('weeklyReports').where('uid','==',uid).get(),
-                    db.collection('projectComments').where('uid','==',uid).get()
+                    db.collection('projectComments').where('uid','==',uid).get(),
+                    db.collection('attendance_logs').where('uid','==',uid).get(),
+                    db.collection('employeeDocuments').where('uid','==',uid).get(),
+                    db.collection('chatMessages').where('senderId','==',uid).get(),
+                    db.collection('formRequests').where('sentByUid','==',uid).get(),
+                    db.collection('formRequests').where('targetUid','==',uid).get()
                 ]).then(function(res){
                     var batch=db.batch();
+                    var delRefs = {};
                     res[0].forEach(function(d){
                         var data=d.data();
                         var assignees=(data.assignees||[]).filter(function(a){return a!==uid;});
@@ -847,10 +853,10 @@ function permanentlyDeleteEmployee(uid,name){
                         delete pm[uid];
                         batch.update(d.ref,{assignees:assignees,progressMap:pm});
                     });
-                    res[1].forEach(function(d){batch.delete(d.ref);});
-                    res[2].forEach(function(d){batch.delete(d.ref);});
-                    res[3].forEach(function(d){batch.delete(d.ref);});
-                    res[4].forEach(function(d){batch.delete(d.ref);});
+                    for(var i=1; i<=9; i++) {
+                        res[i].forEach(function(d){ delRefs[d.ref.path] = d.ref; });
+                    }
+                    Object.values(delRefs).forEach(function(ref) { batch.delete(ref); });
                     batch.delete(db.collection('users').doc(uid));
                     return batch.commit();
                 }).then(loadStaffOverview).catch(function(err){
@@ -2878,7 +2884,7 @@ function deleteAllSystemData() {
     if(!second) return;
     // ملحوظة: 'system' غير مدرجة عمداً — تحتوي فقط على system/meta (حالة الإعداد الأول)
     // وحذفها كان يفصّل حالة setupDone بشكل عشوائي حسب ترتيب تنفيذ الحذف، ويجبرك ترجع لصفحة setup.html.
-    var collections = ['projects','tasks','announcements','requests','notifications','weeklyReports','achievements','chatMessages','projectComments','employees','users'];
+    var collections = ['projects','tasks','announcements','requests','notifications','weeklyReports','achievements','chatMessages','projectComments','users','attendance_logs','employeeDocuments','formRequests'];
     // حساب الأدمن الحالي (اللي بيضغط على الزرار) يُستثنى دائماً من حذف مجموعة users
     // عشان ميتقفلش برّه النظام بعد الحذف بدون أي طريقة قانونية للرجوع (حساب Firebase Auth بيفضل موجود
     // لكن ملفه في Firestore كان بيتمسح، فيتحول لحساب معلّق مش قادر يدخل ولا يعمل setup تاني بنفس الإيميل).
