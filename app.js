@@ -3416,15 +3416,23 @@ function tgLoadFormDrafts() {
                     '<div id="savedFormsList"><div class="empty-hint">⏳ جارٍ التحميل...</div></div>';
     tgModal(modalHtml, [{label: 'إغلاق', cls: 'bt-o', onClick: tgCloseModal}]);
     
-    db.collection('savedForms').where('formId','==',formId).orderBy('createdAt','desc').get().then(function(snap){
+    db.collection('savedForms').where('formId','==',formId).get().then(function(snap){
         var box = document.getElementById('savedFormsList');
         if(!box) return;
         if(snap.empty){
             box.innerHTML = '<div class="empty-hint">لا توجد نماذج محفوظة لهذه الصفحة.</div>';
             return;
         }
+        var docs = [];
+        snap.forEach(function(d){ docs.push(d); });
+        docs.sort(function(a,b){
+            var ta = a.data().createdAt ? (a.data().createdAt.toDate ? a.data().createdAt.toDate().getTime() : new Date(a.data().createdAt).getTime()) : 0;
+            var tb = b.data().createdAt ? (b.data().createdAt.toDate ? b.data().createdAt.toDate().getTime() : new Date(b.data().createdAt).getTime()) : 0;
+            return tb - ta;
+        });
+
         var h = '<div style="display:flex;flex-direction:column;gap:8px">';
-        snap.forEach(function(doc){
+        docs.forEach(function(doc){
             var d = doc.data();
             var docDataStr = (d.data||'').replace(/"/g, '&quot;').replace(/'/g, '\\\'');
             h += '<div style="background:rgba(255,255,255,.05);padding:12px;border-radius:8px;display:flex;justify-content:space-between;align-items:center">';
