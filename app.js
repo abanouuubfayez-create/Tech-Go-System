@@ -295,11 +295,14 @@ function saveSt(){
 
 function saveAppSettings() {
     var enabled = document.getElementById('chkAttEnabled').checked;
+    var globalRemote = document.getElementById('chkGlobalRemote').checked;
     db.collection('system').doc('appSettings').set({
-        attendanceEnabled: enabled
+        attendanceEnabled: enabled,
+        globalRemoteMode: globalRemote
     }, {merge: true}).then(function() {
         window._appSettingsCache = window._appSettingsCache || {};
         window._appSettingsCache.attendanceEnabled = enabled;
+        window._appSettingsCache.globalRemoteMode = globalRemote;
         alert('✅ تم حفظ إعدادات النظام بنجاح!');
     }).catch(function(err) {
         alert('❌ تعذر حفظ الإعدادات: ' + err.message);
@@ -2746,6 +2749,7 @@ function load(id,c){
 
         h+='<div class="set-sec"><div class="set-sec-title">⏱ نظام الحضور والانصراف</div>';
         h+='<div class="fg" style="margin-bottom:14px"><label>تفعيل الميزة للموظفين</label><div class="chk-grid"><label><input type="checkbox" id="chkAttEnabled" '+(window._appSettingsCache&&window._appSettingsCache.attendanceEnabled!==false?'checked':'')+'> السماح للموظفين بتسجيل الحضور والانصراف عبر البوابة</label></div></div>';
+        h+='<div class="fg" style="margin-bottom:14px"><label>وضع "العمل عن بُعد" الشامل</label><div class="chk-grid"><label><input type="checkbox" id="chkGlobalRemote" '+(window._appSettingsCache&&window._appSettingsCache.globalRemoteMode?'checked':'')+'> تفعيل وضع "العمل عن بُعد" (ريموتلي) لجميع الموظفين (يلغي الإعدادات الفردية)</label></div></div>';
         h+='<button class="bt bt-p" style="padding:6px 14px;font-size:12px" onclick="saveAppSettings()">💾 حفظ إعدادات النظام</button>';
         h+='</div>';
 

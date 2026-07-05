@@ -249,6 +249,15 @@ window.onAppSettingsUpdate = function(settings) {
     var enabled = settings.attendanceEnabled !== false;
     document.getElementById('attDisabledMsg').style.display = enabled ? 'none' : 'block';
     document.getElementById('attEnabledSec').style.display = enabled ? 'block' : 'none';
+
+    if (settings.globalRemoteMode) {
+        var tab = document.getElementById('empTabAtt');
+        if (tab) tab.style.display = 'flex';
+    } else if (typeof TG_USER !== 'undefined' && TG_USER) {
+        var tab = document.getElementById('empTabAtt');
+        if (tab) tab.style.display = (TG_USER.workMode === 'remote') ? 'flex' : 'none';
+        if (TG_USER.workMode !== 'remote' && window.location.hash === '#att') window.location.hash = '';
+    }
 };
 
 function esc(s){ return (s||'').replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
@@ -876,7 +885,11 @@ document.getElementById('wkrStart').value=sundayOf(new Date());
 
 // ── حماية الصفحة: لازم تسجيل دخول بصلاحية موظف ──────────────────
 tgRequireAuth('employee', function(u){
-    if (u.workMode === 'remote') {
+    var isRemote = (u.workMode === 'remote');
+    if (window._appSettingsCache && window._appSettingsCache.globalRemoteMode) {
+        isRemote = true;
+    }
+    if (isRemote) {
         var tab = document.getElementById('empTabAtt');
         if (tab) tab.style.display = 'flex';
     } else {
