@@ -47,6 +47,13 @@ function tgRequireAuth(requiredRole, onOk) {
             }
 
             document.documentElement.classList.remove('tg-auth-pending');
+            // Listen to appSettings globally
+            db.collection('system').doc('appSettings').onSnapshot(function(sDoc) {
+                window._appSettingsCache = sDoc.data() || {};
+                if (typeof window.onAppSettingsUpdate === 'function') {
+                    window.onAppSettingsUpdate(window._appSettingsCache);
+                }
+            });
             // طلب إذن الإشعارات
             tgRequestNotificationPermission();
             onOk(TG_USER);

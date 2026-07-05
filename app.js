@@ -290,8 +290,22 @@ function saveSt(){
     document.querySelectorAll('.pg').forEach(function(p){
         if(p.id!=='pg-dash'&&p.id!=='pg-set')p.innerHTML='';
     });
-    alert("✅ تم حفظ الإعدادات\nسيتم تحديث أسماء المديرين عند فتح النماذج.");
+    alert("✅ تم حفظ إعدادات الشركة والمديرين\nسيتم تحديث الأسماء عند فتح النماذج.");
 }
+
+function saveAppSettings() {
+    var enabled = document.getElementById('chkAttEnabled').checked;
+    db.collection('system').doc('appSettings').set({
+        attendanceEnabled: enabled
+    }, {merge: true}).then(function() {
+        window._appSettingsCache = window._appSettingsCache || {};
+        window._appSettingsCache.attendanceEnabled = enabled;
+        alert('✅ تم حفظ إعدادات النظام بنجاح!');
+    }).catch(function(err) {
+        alert('❌ تعذر حفظ الإعدادات: ' + err.message);
+    });
+}
+
 function upCN(){document.querySelectorAll(".dcn").forEach(function(e){e.innerText=CN})}
 function resetSeq(){
     if(!confirm("⚠️ هل تريد تصفير كل أرقام التسلسل للمستندات؟\nسيبدأ ترقيم كل النماذج من 001 من جديد.\nلا يمكن التراجع عن هذا الإجراء."))return;
@@ -1038,11 +1052,24 @@ function renderTasksMgmtList(list){
            (t.description?'<div class="pj-meta">'+escH(t.description)+'</div>':'')+
            '<div class="pj-meta" style="margin-top:2px;font-size:10px;color:var(--tx3)">بواسطة: '+escH(t.createdBy||'الإدارة')+' ('+escH(t.createdByRole||'أدمن إداري')+')</div>'+
            attachHtml+
-           '<div style="text-align:right;margin-top:12px"><button class="bt bt-d" style="padding:4px 12px;font-size:11px;border-radius:6px" onclick="deleteTask(\''+t.id+'\')">🗑 حذف المهمة</button></div>'+
+           '<div style="text-align:right;margin-top:12px">'+
+           '<button class="bt bt-o" style="padding:4px 12px;font-size:11px;border-radius:6px;margin-left:8px" onclick="askTaskStatus(\''+escH(t.assignedTo)+'\', \''+escH(t.title)+'\')">❓ استعلام عن الحالة</button>'+
+           '<button class="bt bt-d" style="padding:4px 12px;font-size:11px;border-radius:6px" onclick="deleteTask(\''+t.id+'\')">🗑 حذف المهمة</button></div>'+
            '</div>';
     });
     box.innerHTML=h;
 }
+
+function askTaskStatus(uid, title) {
+    if(!confirm('هل تريد إرسال تنبيه للموظف للاستعلام عن حالة هذه المهمة؟')) return;
+    if(typeof tgSendPushToUser === 'function') {
+        tgSendPushToUser(uid, '❓ استعلام عن مهمة', 'الإدارة تستعلم عن حالة مهمة: ' + title, 'task-query');
+        alert('✅ تم إرسال التنبيه للموظف.');
+    } else {
+        alert('❌ نظام الإشعارات غير مفعل.');
+    }
+}
+
 function createTask(){
     var sel=document.getElementById('tkAssignee');
     var uid=sel.value;
@@ -2641,6 +2668,11 @@ function load(id,c){
         h+='</div>';
     }
 
+    // ── التقويم العام ──────────────────────────────────────────────────
+    else if(id==="cal"){
+        h='<div class="SP" style="text-align:center;padding:50px"><h3>📅 التقويم العام</h3><div style="color:var(--tx3);margin-top:10px">هذه الميزة قيد التطوير وسيتم إضافتها قريباً.</div></div>';
+    }
+
     // ── تخصيص النظام ──────────────────────────────────────────────────
     else if(id==="set"){
         h='<div class="SP"><h3>⚙️ تخصيص النظام</h3>';
@@ -2671,6 +2703,11 @@ function load(id,c){
         h+='</div>';
 
         h+=empListSecHTML();
+
+        h+='<div class="set-sec"><div class="set-sec-title">⏱ نظام الحضور والانصراف</div>';
+        h+='<div class="fg" style="margin-bottom:14px"><label>تفعيل الميزة للموظفين</label><div class="chk-grid"><label><input type="checkbox" id="chkAttEnabled" '+(window._appSettingsCache&&window._appSettingsCache.attendanceEnabled!==false?'checked':'')+'> السماح للموظفين بتسجيل الحضور والانصراف عبر البوابة</label></div></div>';
+        h+='<button class="bt bt-p" style="padding:6px 14px;font-size:12px" onclick="saveAppSettings()">💾 حفظ إعدادات النظام</button>';
+        h+='</div>';
 
         h+='<div class="set-sec"><div class="set-sec-title">📋 ترقيم المستندات</div>';
         h+='<div class="set-hint">يُنشأ رقم مستند تلقائي لكل ورقة تصدر من النظام بالصيغة: <strong>TG-السنة-الكود-التسلسل</strong><br>مثال: TG-'+new Date().getFullYear()+'-NTC-001 (لفت نظر) · TG-'+new Date().getFullYear()+'-LV-003 (إجازة) · TG-'+new Date().getFullYear()+'-TSK-007 (مهمة)</div>';
@@ -3445,10 +3482,13 @@ function tgSaveFormDraft() {
                 {label: 'تحديث النموذج الحالي', cls: 'bt-p', onClick: function() {
                     tgCloseModal();
                     var msgId = tgToast('⏳ جارٍ التحديث...', 'info', true);
-                    db.collection('savedForms').doc(window._currentLoadedFormId).update({
+                    db.collection('savedForms').doc(window._currentLoadedFormId).set({
+                        formId: formId,
+                        title: window._currentLoadedFormTitle || defaultTitle || 'بدون اسم',
                         data: JSON.stringify(data),
+                        savedBy: TG_USER.uid,
                         updatedAt: firebase.firestore.FieldValue.serverTimestamp()
-                    }).then(function() {
+                    }, { merge: true }).then(function() {
                         tgToast('✅ تم التحديث بنجاح!', 'ok');
                     }).catch(function(err) {
                         tgToast('❌ تعذر التحديث: ' + err.message, 'err');

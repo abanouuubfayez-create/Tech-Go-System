@@ -32,6 +32,11 @@ service cloud.firestore {
       allow delete: if isAdmin();
     }
 
+    match /system/appSettings {
+      allow read: if isSignedIn();
+      allow write: if isAdmin();
+    }
+
     // ملفات المستخدمين
     match /users/{uid} {
       allow read: if isSignedIn() && (myUid() == uid || isAnyAdmin());
@@ -44,6 +49,17 @@ service cloud.firestore {
       allow update: if isAdmin() || (
                       isSignedIn() && myUid() == uid &&
                       request.resource.data.diff(resource.data).affectedKeys().hasOnly(['name'])
+                    );
+      allow delete: if isAdmin();
+    }
+
+    // سجل الحضور والانصراف
+    match /attendance_logs/{logId} {
+      allow read: if isAnyAdmin() || (isSignedIn() && myUid() == resource.data.uid);
+      allow create: if isSignedIn() && myUid() == request.resource.data.uid;
+      allow update: if isAnyAdmin() || (
+                      isSignedIn() && myUid() == resource.data.uid &&
+                      request.resource.data.diff(resource.data).affectedKeys().hasOnly(['checkOut'])
                     );
       allow delete: if isAdmin();
     }

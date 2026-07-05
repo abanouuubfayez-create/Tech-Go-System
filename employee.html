@@ -18,7 +18,7 @@
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-storage-compat.js"></script>
 <script src="firebase-config.js?v=2"></script>
 <script src="auth.js?v=2"></script>
-<script src="app.js?v=2"></script>
+<script src="app.js?v=3"></script>
 <script src="formsend.js?v=2"></script>
 <style>
 .emp-body{margin:0; background:var(--bg);}
@@ -87,17 +87,20 @@
 
   <!-- الحضور والانصراف -->
   <div class="emp-pg" id="epg-att">
-    <div class="set-sec">
-      <div class="set-sec-title">⏱️ تسجيل الحضور والانصراف</div>
-      <div class="set-hint" style="margin-bottom:16px">سجل حضورك وانصرافك يومياً. سيتم تسجيل موقعك الجغرافي للتحقق.</div>
-      <div style="display:flex;gap:16px;flex-wrap:wrap">
-        <button id="btnCheckIn" class="bt bt-p" style="flex:1;padding:16px;font-size:16px" onclick="empCheckIn()">🟢 تسجيل حضور</button>
-        <button id="btnCheckOut" class="bt bt-d" style="flex:1;padding:16px;font-size:16px" onclick="empCheckOut()" disabled>🔴 تسجيل انصراف</button>
+    <div id="attDisabledMsg" style="display:none;padding:20px;text-align:center;color:var(--no);font-weight:bold;background:var(--w);border-radius:8px;border:1px solid var(--bd2)">⚠️ ميزة تسجيل الحضور والانصراف معطلة حالياً من قبل الإدارة.</div>
+    <div id="attEnabledSec">
+      <div class="set-sec">
+        <div class="set-sec-title">⏱️ تسجيل الحضور والانصراف</div>
+        <div class="set-hint" style="margin-bottom:16px">سجل حضورك وانصرافك يومياً. سيتم حفظ وقت وتاريخ الحضور تلقائياً.</div>
+        <div style="display:flex;gap:16px;flex-wrap:wrap">
+          <button id="btnCheckIn" class="bt bt-p" style="flex:1;padding:16px;font-size:16px" onclick="empCheckIn()">🟢 تسجيل حضور</button>
+          <button id="btnCheckOut" class="bt bt-d" style="flex:1;padding:16px;font-size:16px" onclick="empCheckOut()" disabled>🔴 تسجيل انصراف</button>
+        </div>
+        <div id="attStatusMsg" style="margin-top:12px;font-weight:bold;text-align:center"></div>
       </div>
-      <div id="attStatusMsg" style="margin-top:12px;font-weight:bold;text-align:center"></div>
+      <div class="set-sec-title" style="margin:16px 0 8px">📋 سجل حضور هذا الشهر</div>
+      <div id="myAttList"><div class="empty-hint">⏳ جارٍ التحميل...</div></div>
     </div>
-    <div class="set-sec-title" style="margin:16px 0 8px">📋 سجل حضور هذا الشهر</div>
-    <div id="myAttList"><div class="empty-hint">⏳ جارٍ التحميل...</div></div>
   </div>
 
   <!-- مشاريعي -->
@@ -242,6 +245,12 @@
 </div>
 
 <script>
+window.onAppSettingsUpdate = function(settings) {
+    var enabled = settings.attendanceEnabled !== false;
+    document.getElementById('attDisabledMsg').style.display = enabled ? 'none' : 'block';
+    document.getElementById('attEnabledSec').style.display = enabled ? 'block' : 'none';
+};
+
 function esc(s){ return (s||'').replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
 function badgeReq(s){
     var cls = s === 'approved' ? 'badge-approved' : (s === 'rejected' ? 'badge-rejected' : 'badge-pending');
@@ -867,11 +876,21 @@ document.getElementById('wkrStart').value=sundayOf(new Date());
 
 // ── حماية الصفحة: لازم تسجيل دخول بصلاحية موظف ──────────────────
 tgRequireAuth('employee', function(u){
+    loadEmpAttendance();
     document.getElementById('empWhoName').textContent=u.name;
     document.getElementById('empWhoRole').textContent=(u.jobTitle?(u.jobTitle+' · '):'')+'بوابة الموظف · '+u.email;
     document.getElementById('acctName').value=u.name||'';
     document.getElementById('acctEmail').value=u.email||'';
     document.getElementById('acctJobTitle').value=u.jobTitle||'';
+    
+    // Check App Settings for Attendance
+    db.collection('settings').doc('appSettings').get().then(function(doc){
+        if(doc.exists && doc.data().enableAttendance === false){
+            var el = document.getElementById('empAttendanceSection');
+            if(el) el.style.display = 'none';
+        }
+    });
+
     loadMyProjects();
     loadMyTasks();
     loadMyWeeklyReports();
@@ -898,6 +917,102 @@ tgRequireAuth('employee', function(u){
         }
     });
 });
+
+// ─── حضور وانصراف الموظف ────────────────────────────────────────────────
+var _todayAttDocId = null;
+function loadEmpAttendance() {
+    var now = new Date();
+    var y = now.getFullYear();
+    var m = ('0'+(now.getMonth()+1)).slice(-2);
+    var d = ('0'+now.getDate()).slice(-2);
+    var todayStr = y+'-'+m+'-'+d;
+    var monthPrefix = y+'-'+m;
+
+    db.collection('attendance_logs').where('uid','==',TG_USER.uid)
+      .where('date','>=', monthPrefix+'-01').where('date','<=', monthPrefix+'-31')
+      .onSnapshot(function(snap){
+          var box = document.getElementById('myAttList');
+          if(snap.empty){
+              box.innerHTML = '<div class="empty-hint">لا توجد سجلات حضور لهذا الشهر.</div>';
+              _todayAttDocId = null;
+              document.getElementById('btnCheckIn').disabled = false;
+              document.getElementById('btnCheckOut').disabled = true;
+              document.getElementById('attStatusMsg').textContent = '';
+              return;
+          }
+          var arr = [];
+          var todayLog = null;
+          snap.forEach(function(doc){
+              var data = doc.data();
+              arr.push(data);
+              if(data.date === todayStr) { todayLog = data; _todayAttDocId = doc.id; }
+          });
+          arr.sort(function(a,b){ return a.date < b.date ? 1 : -1; });
+          
+          if(todayLog) {
+              document.getElementById('btnCheckIn').disabled = true;
+              if(todayLog.checkOut) {
+                  document.getElementById('btnCheckOut').disabled = true;
+                  document.getElementById('attStatusMsg').textContent = 'لقد سجلت حضورك وانصرافك بنجاح اليوم.';
+                  document.getElementById('attStatusMsg').style.color = 'var(--ok)';
+              } else {
+                  document.getElementById('btnCheckOut').disabled = false;
+                  document.getElementById('attStatusMsg').textContent = '✅ مسجل حضور ('+todayLog.checkIn+') — لا تنسَ تسجيل الانصراف.';
+                  document.getElementById('attStatusMsg').style.color = 'var(--nv)';
+              }
+          } else {
+              _todayAttDocId = null;
+              document.getElementById('btnCheckIn').disabled = false;
+              document.getElementById('btnCheckOut').disabled = true;
+              document.getElementById('attStatusMsg').textContent = 'لم تقم بتسجيل الحضور اليوم.';
+              document.getElementById('attStatusMsg').style.color = 'var(--tx3)';
+          }
+
+          var h = '<table class="dt"><tr><th>التاريخ</th><th>الحضور</th><th>الانصراف</th><th>ساعات العمل</th></tr>';
+          arr.forEach(function(a){
+              var cin = a.checkIn || '-';
+              var cout = a.checkOut || '-';
+              var th = '-';
+              if(a.checkIn && a.checkOut){
+                 var dt1 = new Date(a.date+'T'+a.checkIn);
+                 var dt2 = new Date(a.date+'T'+a.checkOut);
+                 var diff = (dt2-dt1)/3600000;
+                 th = (diff>0?diff.toFixed(1):0) + ' ساعة';
+              }
+              h += '<tr><td>'+a.date+'</td><td>'+cin+'</td><td>'+cout+'</td><td>'+th+'</td></tr>';
+          });
+          h += '</table>';
+          box.innerHTML = h;
+      });
+}
+
+function empCheckIn() {
+    if(!confirm('هل تريد تسجيل حضورك الآن؟')) return;
+    var now = new Date();
+    var time = ('0'+now.getHours()).slice(-2)+':'+('0'+now.getMinutes()).slice(-2);
+    var date = now.getFullYear()+'-'+('0'+(now.getMonth()+1)).slice(-2)+'-'+('0'+now.getDate()).slice(-2);
+    
+    document.getElementById('attStatusMsg').textContent = '⏳ جارٍ التسجيل...';
+    db.collection('attendance_logs').add({
+        uid: TG_USER.uid,
+        name: TG_USER.name,
+        date: date,
+        checkIn: time,
+        checkOut: null,
+        timestamp: new Date()
+    }).catch(function(err){ alert('تعذر التسجيل: '+err.message); });
+}
+
+function empCheckOut() {
+    if(!_todayAttDocId) return;
+    if(!confirm('هل تريد تسجيل انصرافك؟ لن تتمكن من تعديله.')) return;
+    var now = new Date();
+    var time = ('0'+now.getHours()).slice(-2)+':'+('0'+now.getMinutes()).slice(-2);
+    document.getElementById('attStatusMsg').textContent = '⏳ جارٍ التسجيل...';
+    db.collection('attendance_logs').doc(_todayAttDocId).update({
+        checkOut: time
+    }).catch(function(err){ alert('تعذر التسجيل: '+err.message); });
+}
 
 // ── مستنداتي ────────────────────────────────────────────────────────
 function loadMyDocs() {

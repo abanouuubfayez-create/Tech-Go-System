@@ -32,35 +32,27 @@ var SUPABASE_BUCKET = 'uploads';
  * @param {function} onDone - callback عند النجاح (يستقبل الـ public URL)
  */
 function tgUploadFile(folder, fileName, file, onProgress, onError, onDone) {
-    // Sanitize fileName to prevent 'Invalid key' errors from Supabase
     var safeFileName = fileName.replace(/[^a-zA-Z0-9.\-_\/]/g, '_').replace(/_+/g, '_');
-    var path = folder + '/' + safeFileName;
-    var encodedPath = path.split('/').map(encodeURIComponent).join('/');
-    var url = SUPABASE_URL + '/storage/v1/object/' + SUPABASE_BUCKET + '/' + encodedPath;
-    var xhr = new XMLHttpRequest();
-    xhr.open('POST', url, true);
-    xhr.setRequestHeader('Authorization', 'Bearer ' + SUPABASE_ANON_KEY);
-    xhr.setRequestHeader('apikey', SUPABASE_ANON_KEY);
-    xhr.setRequestHeader('x-upsert', 'true');
-    xhr.setRequestHeader('Content-Type', file.type || 'application/octet-stream');
-    
-    xhr.upload.onprogress = function(e) {
-        if (e.lengthComputable && onProgress) {
-            onProgress(Math.round(e.loaded / e.total * 100));
+    var path = folder + '/' + Date.now() + '_' + safeFileName;
+    var storageRef = firebase.storage().ref(path);
+    var uploadTask = storageRef.put(file);
+
+    uploadTask.on('state_changed',
+        function(snapshot) {
+            if (onProgress) {
+                var progress = Math.round((snapshot.bytesTransferred / snapshot.totalBytes) * 100);
+                onProgress(progress);
+            }
+        },
+        function(error) {
+            if (onError) onError(error.message);
+        },
+        function() {
+            uploadTask.snapshot.ref.getDownloadURL().then(function(downloadURL) {
+                if (onDone) onDone(downloadURL);
+            }).catch(function(err) {
+                if (onError) onError(err.message);
+            });
         }
-    };
-    xhr.onerror = function() {
-        onError('فشل الاتصال بالخادم. تحقق من اتصال الإنترنت.');
-    };
-    xhr.onload = function() {
-        if (xhr.status >= 200 && xhr.status < 300) {
-            var publicUrl = SUPABASE_URL + '/storage/v1/object/public/' + SUPABASE_BUCKET + '/' + encodedPath;
-            onDone(publicUrl);
-        } else {
-            var errMsg = 'خطأ في الرفع (HTTP ' + xhr.status + ')';
-            try { var resp = JSON.parse(xhr.responseText); errMsg = resp.message || resp.error || errMsg; } catch(e){}
-            onError(errMsg);
-        }
-    };
-    xhr.send(file);
+    );
 }
