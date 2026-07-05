@@ -541,7 +541,7 @@ body { font-family: 'Cairo', sans-serif; direction: rtl; background: var(--bg); 
     }
 
     /* إخفاء عناصر الواجهة */
-    .S, .TB, .mtg, .np, .toast, .modal-backdrop,
+    .S, .TB, .mtg, .np, .toast, .tg-toast, #_toast, .modal-backdrop,
     [data-no-print], button:not(.print-keep) {
         display: none !important;
     }

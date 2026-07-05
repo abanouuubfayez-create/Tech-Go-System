@@ -3490,6 +3490,7 @@ function tgPrintSavedForm(formId, docId) {
     if(!confirm('عملية الطباعة ستستبدل البيانات الحالية في النموذج مؤقتاً بالبيانات المحفوظة. هل أنت متأكد؟')) return;
     tgApplySavedForm(formId, docId, true);
     tgCloseModal();
+    if(typeof togglePrintKeepData === 'function') togglePrintKeepData(true);
     setTimeout(function() {
         openPrintPreview();
         setTimeout(doPrintNow, 500);
