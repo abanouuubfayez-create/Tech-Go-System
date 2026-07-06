@@ -206,16 +206,15 @@ function tgSortVisibleList(sortBy) {
 
         rows.forEach(function(el) { container.appendChild(el); });
     });
-}
 function tgFilterByEmployee(empName, rowClass) {
     var activePg = document.querySelector('.pg.a') || document.querySelector('.emp-pg.a');
     if(!activePg) return;
     var items = activePg.querySelectorAll('.' + rowClass);
     items.forEach(function(el) {
         if(!empName || el.getAttribute('data-emp') === empName) {
-            el.style.display = '';
+            el.style.setProperty('display', '', 'important');
         } else {
-            el.style.display = 'none';
+            el.style.setProperty('display', 'none', 'important');
         }
     });
 }
