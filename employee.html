@@ -8,7 +8,7 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-title" content="Tech Go">
 <title>بوابة الموظف · تيك جو</title>
-<link rel="stylesheet" href="styles.css?v=2">
+<link rel="stylesheet" href="styles.css?v=3">
 <link rel="manifest" href="manifest.json">
 <link rel="icon" type="image/png" sizes="192x192" href="icon-192.png">
 <link rel="apple-touch-icon" href="icon-192.png">
@@ -18,8 +18,8 @@
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-storage-compat.js"></script>
 <script src="firebase-config.js?v=2"></script>
 <script src="auth.js?v=2"></script>
-<script src="app.js?v=3"></script>
-<script src="formsend.js?v=2"></script>
+<script src="app.js?v=4"></script>
+<script src="formsend.js?v=3"></script>
 <script>
     (function() {
         const theme = localStorage.getItem('tg-theme') || 'light';
@@ -66,6 +66,20 @@
     font-size:11px;color:var(--tx3);margin-top:6px;padding:6px 10px;
     background:var(--bg2);border-radius:6px;border-right:3px solid var(--gd);
 }
+.ach-tabs {
+    display: flex; gap: 6px; background: var(--bg2); padding: 4px; 
+    border-radius: 12px; border: 1px solid var(--bd2);
+}
+.ach-tab {
+    padding: 6px 14px; font-size: 11px; font-weight: 700; cursor: pointer;
+    border-radius: 9px; color: var(--tx3); transition: all .2s; white-space: nowrap;
+}
+.ach-tab.active {
+    background: var(--nv); color: #fff; box-shadow: 0 2px 6px rgba(15,23,42,.15);
+}
+[data-theme='dark'] .ach-tab.active {
+    background: var(--gd); color: var(--nv);
+}
 </style>
 </head>
 <body class="emp-body">
@@ -75,7 +89,7 @@
 <div class="emp-topbar">
   <div class="who">👋 أهلاً، <span id="empWhoName">...</span><small id="empWhoRole"></small></div>
   <div style="display:flex;align-items:center;gap:8px;">
-    <input type="text" id="globalTableFilter" name="tg-global-search-field" class="global-table-filter" placeholder="🔍 تصفية بيانات الجدول..." oninput="if(typeof tgFilterVisibleTables==='function') tgFilterVisibleTables(this.value)" autocomplete="new-password">
+    <input type="text" id="globalTableFilter" name="tg-global-search-field" class="global-table-filter" placeholder="🔍 تصفية البيانات (V1.1)..." oninput="if(typeof tgFilterVisibleTables==='function') tgFilterVisibleTables(this.value)" autocomplete="new-password">
     <div class="emp-header-actions" style="margin-right:auto;display:flex;gap:8px;align-items:center">
         <button class="bt bt-o" id="themeToggle" onclick="tgToggleTheme()" title="تبديل الوضع الليلي" style="font-size:16px;padding:4px 10px">🌙</button>
         <button class="bt bt-o" onclick="tgLogout()">🚪 خروج</button>
@@ -197,7 +211,14 @@
       <button class="bt bt-p" style="margin-top:12px" onclick="addAchievement()">➕ إضافة الإنجاز</button>
       <div id="achMsg" style="font-size:11px;margin-top:4px"></div>
     </div>
-    <div class="set-sec-title" style="margin:16px 0 8px">📜 سجل إنجازاتي</div>
+    <div style="font-size: 10px; color: #ff0000; text-align: center; margin-bottom: 5px; font-weight: bold; background: #ffebeb; padding: 4px; border-radius: 4px; border: 1px solid #ffcfcf;">تم تحديث النظام: النسخة 1.1 (يرجى عمل Refresh إذا لم تظهر التبويبات)</div>
+    <div class="ach-header-row" style="display:flex;justify-content:space-between;align-items:center;margin:16px 0 12px;flex-wrap:wrap;gap:10px">
+      <div class="set-sec-title" style="margin:0">📜 سجل الإنجازات</div>
+      <div class="ach-tabs">
+        <div class="ach-tab active" id="achTabMine" onclick="switchAchFilter('mine')">إنجازاتي</div>
+        <div class="ach-tab" id="achTabTeam" onclick="switchAchFilter('team')">إنجازات الزملاء</div>
+      </div>
+    </div>
     <div id="myAchList"><div class="empty-hint">⏳ جارٍ التحميل...</div></div>
   </div>
 
@@ -624,53 +645,102 @@ function saveProjectProgress(id){
 }
 
 // ── لوحة الإنجازات ────────────────────────────────────────────────────────
+var _achUnsub = null;
+var _achFilter = 'mine';
+
 function loadMyAchievements(){
+    if(_achUnsub) _achUnsub();
     var box=document.getElementById('myAchList');
+    
     loadTeammates(function() {
         var namesMap = {};
         if(_teammatesCache) _teammatesCache.forEach(function(e){ namesMap[e.id] = e.name; });
-        namesMap[TG_USER.uid] = TG_USER.name; // تأكد من وجود اسم المستخدم الحالي
+        namesMap[TG_USER.uid] = TG_USER.name;
 
-        db.collection('achievements').orderBy('date', 'desc').limit(50).onSnapshot(function(snap){
-        if(snap.empty){ box.innerHTML='<div class="empty-hint">لا توجد إنجازات مسجّلة بعد. كن أول من يضيف إنجازاً!</div>'; return; }
-        var h='<div style="display:flex;flex-direction:column;gap:16px">';
-        snap.forEach(function(doc){
-            var a = doc.data();
-            var isMine = a.uid === TG_USER.uid;
-            var reactions = a.reactions || {};
-            var displayName = a.userName || namesMap[a.uid] || 'موظف';
-            
-            var isAnyAdmin = (TG_USER.role === 'admin' || TG_USER.role === 'tech_admin');
-            var canDelete = isAnyAdmin || isMine;
-            
-            h+='<div class="ac-row" style="border-right:4px solid '+(isMine?'var(--ok)':'var(--gd)')+'">'+
-               '<div style="display:flex;justify-content:space-between;align-items:flex-start">'+
-               '<div><div style="font-weight:700;color:var(--gd);font-size:13px;margin-bottom:2px">👤 '+displayName+(isMine?' (أنت)':'')+'</div>'+
-               '<div class="ac-t" style="font-size:15px">🏆 '+esc(a.title)+'</div></div>'+
-               '<div style="display:flex;gap:4px">'+
-                 (isMine?'<button class="bt bt-o" style="padding:2px 8px;font-size:10px" onclick="printAchievementDoc(TG_USER,{title:\''+esc(a.title)+'\',description:\''+esc(a.description||'')+'\',date:\''+esc(a.date||'')+'\'})">🖨 طباعة</button>':'')+
-                 (canDelete?'<button class="bt bt-o" style="padding:2px 8px;font-size:10px;border-color:var(--no);color:var(--no)" onclick="deleteAchievement(\''+doc.id+'\')">🗑 حذف</button>':'')+
-               '</div>'+
-               '</div>'+
-               (a.description?'<div class="ac-meta">'+esc(a.description)+'</div>':'')+
-               '<div style="display:flex;justify-content:space-between;align-items:center;margin-top:10px">'+
-                 '<div style="font-size:10px;color:var(--tx3)">📅 '+esc(a.date||'')+'</div>'+
-                 '<div class="ac-reactions" style="display:flex;gap:6px;align-items:center">'+
-                   renderReactions(doc.id, reactions, namesMap)+
-                   '<div class="reaction-picker" style="position:relative">'+
-                     '<button class="bt-reaction-add" onclick="toggleEmojiPicker(\''+doc.id+'\')">➕</button>'+
-                     '<div id="picker-'+doc.id+'" class="emoji-picker-popup">'+
-                       ['👏','🔥','⭐','🙌','💪','❤️'].map(e => '<span onclick="addReaction(\''+doc.id+'\',\''+e+'\')">'+e+'</span>').join('')+
-                     '</div>'+
-                   '</div>'+
+        _achUnsub = db.collection('achievements').orderBy('date', 'desc').limit(50).onSnapshot(function(snap){
+            window._lastAchSnap = snap;
+            renderAchievements(snap, namesMap);
+        }, function(err){ 
+            if(box) box.innerHTML='<div class="empty-hint" style="color:var(--no)">تعذر التحميل: '+esc(err.message)+'</div>'; 
+        });
+    });
+}
+
+function renderAchievements(snap, namesMap) {
+    var box=document.getElementById('myAchList');
+    if(!box) return;
+    if(!snap || snap.empty){ 
+        box.innerHTML='<div class="empty-hint">لا توجد إنجازات مسجّلة بعد. كن أول من يضيف إنجازاً!</div>'; 
+        return; 
+    }
+
+    var h='<div style="display:flex;flex-direction:column;gap:16px">';
+    var count = 0;
+    
+    snap.forEach(function(doc){
+        var a = doc.data();
+        var isMine = a.uid === TG_USER.uid;
+        
+        // Filter based on selected tab
+        if(_achFilter === 'mine' && !isMine) return;
+        if(_achFilter === 'team' && isMine) return;
+        
+        count++;
+        var reactions = a.reactions || {};
+        var displayName = a.userName || namesMap[a.uid] || 'موظف';
+        var isAnyAdmin = (TG_USER.role === 'admin' || TG_USER.role === 'tech_admin');
+        var canDelete = isAnyAdmin || isMine;
+        
+        h+='<div class="ac-row" style="border-right:4px solid '+(isMine?'var(--ok)':'var(--gd)')+'">'+
+           '<div style="display:flex;justify-content:space-between;align-items:flex-start">'+
+           '<div><div style="font-weight:700;color:var(--gd);font-size:13px;margin-bottom:2px">👤 '+displayName+(isMine?' (أنت)':'')+'</div>'+
+           '<div class="ac-t" style="font-size:15px">🏆 '+esc(a.title)+'</div></div>'+
+           '<div style="display:flex;gap:4px">'+
+             (isMine?'<button class="bt bt-o" style="padding:2px 8px;font-size:10px" onclick="printAchievementDoc(TG_USER,{title:\''+esc(a.title)+'\',description:\''+esc(a.description||'')+'\',date:\''+esc(a.date||'')+'\'})">🖨 طباعة</button>':'')+
+             (canDelete?'<button class="bt bt-o" style="padding:2px 8px;font-size:10px;border-color:var(--no);color:var(--no)" onclick="deleteAchievement(\''+doc.id+'\')">🗑 حذف</button>':'')+
+           '</div>'+
+           '</div>'+
+           (a.description?'<div class="ac-meta">'+esc(a.description)+'</div>':'')+
+           '<div style="display:flex;justify-content:space-between;align-items:center;margin-top:10px">'+
+             '<div style="font-size:10px;color:var(--tx3)">📅 '+esc(a.date||'')+'</div>'+
+             '<div class="ac-reactions" style="display:flex;gap:6px;align-items:center">'+
+               renderReactions(doc.id, reactions, namesMap)+
+               '<div class="reaction-picker" style="position:relative">'+
+                 '<button class="bt-reaction-add" onclick="toggleEmojiPicker(\''+doc.id+'\')">➕</button>'+
+                 '<div id="picker-'+doc.id+'" class="emoji-picker-popup">'+
+                   ['👏','🔥','⭐','🙌','💪','❤️'].map(e => '<span onclick="addReaction(\''+doc.id+'\',\''+e+'\')">'+e+'</span>').join('')+
                  '</div>'+
                '</div>'+
-               '</div>';
-        });
+             '</div>'+
+           '</div>'+
+           '</div>';
+    });
+    
+    if(count === 0) {
+        var msg = _achFilter === 'mine' ? 'لم تقم بإضافة أي إنجازات بعد.' : 'لا توجد إنجازات من الزملاء حالياً.';
+        box.innerHTML = '<div class="empty-hint">' + msg + '</div>';
+    } else {
         h+='</div>';
         box.innerHTML=h;
-    }, function(err){ box.innerHTML='<div class="empty-hint" style="color:var(--no)">تعذر التحميل: '+esc(err.message)+'</div>'; });
-    });
+    }
+}
+
+function switchAchFilter(f) {
+    _achFilter = f;
+    var tMine = document.getElementById('achTabMine');
+    var tTeam = document.getElementById('achTabTeam');
+    if(tMine) tMine.classList.toggle('active', f === 'mine');
+    if(tTeam) tTeam.classList.toggle('active', f === 'team');
+    
+    // Use cached snapshot to re-render immediately
+    if(window._lastAchSnap) {
+        var namesMap = {};
+        if(_teammatesCache) _teammatesCache.forEach(function(e){ namesMap[e.id] = e.name; });
+        namesMap[TG_USER.uid] = TG_USER.name;
+        renderAchievements(window._lastAchSnap, namesMap);
+    } else {
+        loadMyAchievements();
+    }
 }
 
 function renderReactions(docId, reactions, namesMap) {
@@ -1218,9 +1288,16 @@ tgRequireAuth('employee', function(u){
     if(typeof loadMyFormRequests === 'function') loadMyFormRequests(u.uid);
     // تفعيل استقبال Push Notifications من Firestore
     if(typeof tgListenMyNotifications === 'function') tgListenMyNotifications(u.uid);
-    // PWA Service Worker
+    // Service Worker disabled to clear cache issues
+    /*
     if('serviceWorker' in navigator){
       navigator.serviceWorker.register('./sw.js').catch(function(){});
+    }
+    */
+    if ('caches' in window) {
+        caches.keys().then(function(names) {
+            for (let name of names) caches.delete(name);
+        });
     }
     loadMyDocs();
     
