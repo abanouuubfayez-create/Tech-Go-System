@@ -1385,14 +1385,12 @@ function tgChatMount(){
              '<div class="tg-chat-reply-preview-text" id="tgChatReplyText"></div>'+
              '<div class="tg-chat-reply-preview-close" onclick="tgChatClearReply()">✕</div>'+
           '</div>'+
-          '<div id="tgChatEmojiRow" style="position:relative;display:flex;gap:8px;padding:6px 12px;background:rgba(255,255,255,0.02);border-top:1px solid rgba(255,255,255,0.05);">'+
-             '<button class="bt" style="padding:4px 8px;font-size:16px;background:transparent;color:var(--gd);border:1px solid var(--gd);border-radius:4px;cursor:pointer;transition:all 0.2s;" onmouseover="this.style.background=\'var(--gd)\';this.style.color=\'#fff\'" onmouseout="this.style.background=\'transparent\';this.style.color=\'var(--gd)\'" onclick="var p=document.getElementById(\'tgEmojiWrap\'); p.style.display=p.style.display===\'none\'?\'block\' : \'none\';" title="فتح لوحة الإيموجي">😀 إيموجي</button>'+
-             '<div id="tgEmojiWrap" style="display:none;position:absolute;bottom:45px;right:10px;z-index:999999;box-shadow:0 4px 12px rgba(0,0,0,0.2);border-radius:8px;overflow:hidden;">'+
+          '<div class="tg-chat-input-row" style="position:relative">'+
+             '<div id="tgEmojiWrap" style="display:none;position:absolute;bottom:60px;right:10px;z-index:999999;box-shadow:0 4px 12px rgba(0,0,0,0.2);border-radius:8px;overflow:hidden;">'+
                 '<emoji-picker class="light"></emoji-picker>'+
              '</div>'+
-          '</div>'+
-          '<div class="tg-chat-input-row">'+
             '<button class="bt bt-d" style="padding:8px 10px" onclick="document.getElementById(\'tgChatInput\').value=\'\'; tgChatClearReply();" title="مسح المربع">🧹</button>'+
+            '<button class="bt" style="padding:8px 10px;font-size:20px;background:transparent;border:none;cursor:pointer;opacity:0.7;transition:opacity 0.2s;" onmouseover="this.style.opacity=1" onmouseout="this.style.opacity=0.7" onclick="var p=document.getElementById(\'tgEmojiWrap\'); p.style.display=p.style.display===\'none\'?\'block\' : \'none\';" title="إضافة إيموجي">😀</button>'+
             '<textarea id="tgChatInput" rows="1" placeholder="اكتب رسالتك هنا... (اكتب @ للإشارة)" onkeydown="tgChatKeydown(event)"></textarea>'+
             '<button class="bt bt-p" onclick="tgChatSend()">➤</button>'+
           '</div>'+
