@@ -53,14 +53,11 @@
     if (!ts) return 'الآن';
     var d = (ts && typeof ts.toDate === 'function') ? ts.toDate() : new Date(ts);
     var now = Date.now();
-    var diff = now - d.getTime();
+    var s = Math.floor((now - d.getTime()) / 1000);
     
-    // معالجة فارق التوقيت لو ساعة الجهاز مأخرة عن السيرفر
-    if (diff < 0) diff = 0;
-    
-    var s = Math.floor(diff / 1000);
-    if (s < 15) return 'الآن';
-    if (s < 60) return 'منذ ثوانٍ';
+    if (s < 5) return 'الآن';
+    if (s < 60) return 'منذ ' + s + ' ثانية';
+    var m = Math.floor(s / 60);
     var m = Math.floor(s / 60);
     if (m < 60) return 'منذ ' + m + (m === 1 ? ' دقيقة' : m === 2 ? ' دقيقتين' : m <= 10 ? ' دقائق' : ' دقيقة');
     var h = Math.floor(m / 60);
@@ -248,10 +245,10 @@
     // بدون انتظار حدث جديد من Firestore، عشان الصفحة تفضل "لحظية" فعلاً
     if (!ltTickTimer) {
       ltTickTimer = setInterval(function () {
-        if (ltPruneFeed()) ltSaveFeed(); // شيل أي حدث بقى عمره أكتر من 24 ساعة
+        if (ltPruneFeed()) ltSaveFeed();
         ltRenderFeed();
         ltRenderTeam();
-      }, 10000);
+      }, 5000);
     }
   }
 
