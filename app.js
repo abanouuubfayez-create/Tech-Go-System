@@ -1169,11 +1169,21 @@ function renderTasksMgmtList(list){
         var sVal = t.status === 'مكتمل' ? 3 : (t.status === 'جاري العمل' ? 2 : 1);
         var dVal = (t.createdAt && t.createdAt.toMillis) ? t.createdAt.toMillis() : ((t.createdAt && new Date(t.createdAt).getTime()) || 0);
 
+        var createdAtStr = '';
+        if(t.createdAt && typeof t.createdAt.toDate === 'function') {
+            var cd = t.createdAt.toDate();
+            createdAtStr = cd.toLocaleDateString('ar-EG') + ' ' + cd.toLocaleTimeString('ar-EG', {hour:'2-digit', minute:'2-digit'});
+        } else if(t.createdAt) {
+            var cd = new Date(t.createdAt);
+            if(!isNaN(cd.getTime())) createdAtStr = cd.toLocaleDateString('ar-EG');
+        }
+
         h+='<div class="pj-row" data-prio="'+pVal+'" data-status="'+sVal+'" data-date="'+dVal+'"><div class="pj-t">'+escH(t.title||'بدون عنوان')+
            ' <span class="badge '+prioBadgeClass(t.priority)+'">'+escH(t.priority||'متوسطة')+'</span>'+
            ' <span class="badge '+pstatusBadgeClass(t.status)+'">'+escH(t.status||'لم يبدأ')+'</span></div>'+
            '<div class="pj-meta">👤 مكلَّف حالياً إلى: '+escH(t.assignedToName||'مجهول')+(t.deadline?(' · تاريخ التسليم: '+escH(t.deadline)):'')+'</div>'+
            (t.description?'<div class="pj-meta">'+escH(t.description)+'</div>':'')+
+           (createdAtStr?'<div class="pj-meta" style="margin-top:2px;color:var(--nv);font-weight:700">🕒 تاريخ الإنشاء: '+createdAtStr+'</div>':'')+
            '<div class="pj-meta" style="margin-top:2px;font-size:10px;color:var(--tx3)">بواسطة: '+escH(t.createdBy||'الإدارة')+' ('+escH(t.createdByRole||'أدمن إداري')+')</div>'+
            attachHtml+
            historyHtml+
