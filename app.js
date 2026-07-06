@@ -1362,6 +1362,12 @@ function tgChatMount(){
         s.id = 'emojiPickerScript';
         document.head.appendChild(s);
     }
+    if(!document.getElementById('twemojiScript')){
+        var ts = document.createElement('script');
+        ts.src = 'https://unpkg.com/@twemoji/api@14.1.0/dist/twemoji.min.js';
+        ts.id = 'twemojiScript';
+        document.head.appendChild(ts);
+    }
 
     var wrap=document.createElement('div');
     wrap.id='tgChatWidgetWrap';
@@ -1544,6 +1550,9 @@ function renderChatMessages(){
            '</div>';
     });
     log.innerHTML=h;
+    if(window.twemoji) {
+        twemoji.parse(log, { folder: 'svg', ext: '.svg' });
+    }
     log.scrollTop=log.scrollHeight;
 }
 
