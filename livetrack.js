@@ -106,9 +106,9 @@
       '.lt-panel-h{display:flex;align-items:center;justify-content:space-between;padding:14px 18px;border-bottom:1px solid var(--bd2)}' +
       '.lt-panel-h h3{font-size:13.5px;font-weight:800;color:var(--nv);margin:0}' +
       '.lt-panel-h select{background:#fafbfd;color:var(--tx);border:1.5px solid var(--bd2);border-radius:8px;padding:6px 10px;font-size:11.5px;font-family:inherit}' +
-      '.lt-live-pill{display:inline-flex;align-items:center;gap:6px;font-size:10.5px;font-weight:800;color:var(--ok);background:#e5f4ea;padding:4px 10px;border-radius:20px}' +
-      '.lt-live-pill i{width:6px;height:6px;border-radius:50%;background:var(--ok);animation:ltBlink 1.4s infinite}' +
-      '@keyframes ltBlink{0%,100%{opacity:1}50%{opacity:.25}}' +
+      '.lt-live-pill{display:inline-flex;align-items:center;gap:6px;font-size:10.5px;font-weight:800;color:var(--ok);background:rgba(39,174,96,.1);padding:4px 12px;border:1px solid rgba(39,174,96,.2);border-radius:20px}' +
+      '.lt-live-pill i{width:8px;height:8px;border-radius:50%;background:var(--ok);box-shadow:0 0 8px var(--ok);animation:ltPulse 1.8s infinite}' +
+      '@keyframes ltPulse{0%{transform:scale(0.95);box-shadow:0 0 0 0 rgba(39,174,96,0.7)}70%{transform:scale(1);box-shadow:0 0 0 6px rgba(39,174,96,0)}100%{transform:scale(0.95);box-shadow:0 0 0 0 rgba(39,174,96,0)}}' +
       '.lt-feed{max-height:420px;overflow-y:auto}' +
       '.lt-feed-item{display:flex;gap:11px;padding:12px 18px;border-bottom:1px solid var(--bd2);animation:ltSlide .35s ease}' +
       '@keyframes ltSlide{from{opacity:0;transform:translateY(-6px)}to{opacity:1;transform:translateY(0)}}' +
@@ -177,7 +177,7 @@
         ltRenderTeam();
       });
 
-    db.collection('tasks').orderBy('createdAt', 'desc')
+    db.collection('tasks').orderBy('createdAt', 'desc').limit(300)
       .onSnapshot(function (snap) {
         snap.docChanges().forEach(function (ch) {
           if (!ltTasksFirstSnap && (ch.type === 'added' || ch.type === 'modified')) {
@@ -233,7 +233,7 @@
         ltRenderTasks();
       });
 
-    db.collection('projects').onSnapshot(function (snap) {
+    db.collection('projects').limit(100).onSnapshot(function (snap) {
       ltProjects = snap.docs.map(function (d) { return Object.assign({ id: d.id }, d.data()); });
       ltRenderTeam();
     });
