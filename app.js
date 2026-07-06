@@ -133,14 +133,7 @@ function tgGoBack(){
 }
 
 function go(id, nav, force){
-    if(!force && hasUnsavedText()){
-        var pendingBack = window._isGoingBack;
-        tgConfirmModal('مغادرة الصفحة؟', 'يوجد نص غير محفوظ. هل أنت متأكد من المغادرة وتجاهل التغييرات؟', [
-            {label: 'بقاء', cls: 'bt-o', onClick: function(){ tgCloseModal(); window._isGoingBack = false; }},
-            {label: 'مغادرة', cls: 'bt-d', onClick: function(){ tgCloseModal(); clearUnsavedText(); window._isGoingBack = pendingBack; go(id, nav, true); }}
-        ]);
-        return;
-    }
+    // Removed hasUnsavedText check to prevent annoying popups
     // قيود الأدمن التقني
     if(TG_USER && TG_USER.role==='tech_admin' && TECH_ALLOWED.indexOf(id)===-1){
         tgConfirmModal('🔒 وصول محدود',
@@ -1347,11 +1340,8 @@ function createTask(){
         tgToast('❌ خطأ تقني: ' + syncErr.message, 'err');
     }
 }
-function deleteTask(id){
-    if(!confirm('حذف هذه المهمة نهائياً؟'))return;
-    db.collection('tasks').doc(id).delete().then(loadTasksMgmt).catch(function(err){
-        alert('تعذر حذف المهمة: '+err.message);
-    });
+function empGo(id, el, force) {
+    // Removed hasUnsavedText check to prevent annoying popups
 }
 
 // ─── شارات الأولوية / حالة المشروع / تاريخ الاستحقاق (مشتركة بين لوحة الأدمن وبوابة الموظف) ───

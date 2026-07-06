@@ -307,13 +307,7 @@ function badgeReq(s){
     return '<span class="badge ' + cls + '">' + lbl + '</span>';
 }
 function empGo(id, el, force) {
-    if(!force && window.hasUnsavedText && hasUnsavedText()) {
-        tgConfirmModal('مغادرة الصفحة؟', 'يوجد نص غير محفوظ في هذه الصفحة. هل أنت متأكد من المغادرة وتجاهل التغييرات؟', [
-            {label: 'بقاء', cls: 'bt-o', onClick: tgCloseModal},
-            {label: 'مغادرة', cls: 'bt-d', onClick: function(){ tgCloseModal(); window.clearUnsavedText && clearUnsavedText(); empGo(id, el, true); }}
-        ]);
-        return;
-    }
+    // تم إزالة فحص النص غير المحفوظ لتجنب الإزعاج
     document.querySelectorAll('.emp-tab').forEach(function(t){t.classList.remove('a');});
     document.querySelectorAll('.emp-pg').forEach(function(p){p.classList.remove('a');});
     if(el)el.classList.add('a');
