@@ -746,6 +746,7 @@ function renderStaffList(list){
         h+='<div class="staff-card-body">';
 
         h+='<div class="staff-actions-row">'+
+           '<button class="bt bt-g" onclick="event.stopPropagation();tgOpenEmployeeProfile(\''+emp.uid+'\')">👤 عرض البروفايل</button>'+
            '<button class="bt bt-o" onclick="event.stopPropagation();toggleEmpNameEdit('+idx+')">✏️ تعديل الاسم</button>'+
            '<button class="bt bt-o" onclick="event.stopPropagation();toggleEmpJobEdit('+idx+')">🏷 تعديل المسمى الوظيفي</button>'+
            '<button class="bt '+(emp.chatAccess===false?'bt-p':'bt-o')+'" onclick="event.stopPropagation();tgToggleEmpChatAccess(\''+emp.uid+'\','+(emp.chatAccess!==false)+')">'+
@@ -4198,3 +4199,173 @@ window.fetchLiveAttendance = async function() {
         tbody.innerHTML = '<tr><td colspan="5" style="padding:20px;color:red">حدث خطأ أثناء جلب البيانات</td></tr>';
     }
 };
+
+// ─── بروفايل الموظف المنظم ──────────────────────────────────────────
+function tgOpenEmployeeProfile(uid) {
+    var emp = (window._staffEmpCache || []).find(function(e){ return e.uid === uid; });
+    if(!emp) {
+        // لو مش موجود في الكاش (مثلاً لو موظف داخل يشوف بروفايله)، نجيبه من الداتابيز
+        db.collection('users').doc(uid).get().then(function(snap){
+            if(!snap.exists) return;
+            var data = Object.assign({uid:snap.id}, snap.data());
+            // جلب البيانات المرتبطة
+            Promise.all([
+                db.collection('projects').where('assignees','array-contains',uid).get(),
+                db.collection('achievements').where('uid','==',uid).get(),
+                db.collection('requests').where('uid','==',uid).get(),
+                db.collection('weeklyReports').where('uid','==',uid).get(),
+                db.collection('tasks').where('assignedTo','==',uid).get()
+            ]).then(function(res){
+                data.projects = res[0].docs.map(function(d){return Object.assign({id:d.id},d.data());});
+                data.achievements = res[1].docs.map(function(d){return Object.assign({id:d.id},d.data());}).sort(function(a,b){return (a.date<b.date)?1:-1;});
+                data.requests = res[2].docs.map(function(d){return Object.assign({id:d.id},d.data());}).sort(function(a,b){return (a.createdAt<b.createdAt)?1:-1;});
+                data.weeklyReports = res[3].docs.map(function(d){return Object.assign({id:d.id},d.data());}).sort(function(a,b){return (a.weekStart<b.weekStart)?1:-1;});
+                data.tasks = res[4].docs.map(function(d){return Object.assign({id:d.id},d.data());}).sort(function(a,b){return (a.createdAt<b.createdAt)?1:-1;});
+                
+                renderEmployeeProfileModal(data);
+            });
+        });
+        return;
+    }
+    
+    // لو الأدمن بيفتحه، نجيب المهام كمان (مش موجودة في كاش الموظفين الافتراضي)
+    db.collection('tasks').where('assignedTo','==',uid).get().then(function(snap){
+        emp.tasks = snap.docs.map(function(d){return Object.assign({id:d.id},d.data());});
+        renderEmployeeProfileModal(emp);
+    });
+}
+
+function renderEmployeeProfileModal(emp) {
+    var modal = document.getElementById('tgProfileModal');
+    if(!modal) {
+        modal = document.createElement('div');
+        modal.id = 'tgProfileModal';
+        modal.className = 'profile-modal';
+        document.body.appendChild(modal);
+    }
+    
+    var initials = (emp.name || emp.email || 'U').split(' ').map(function(n){return n[0];}).join('').toUpperCase().substring(0,2);
+    var avgProg = emp.projects.length ? Math.round(emp.projects.reduce(function(s,p){
+        var pm = (p.progressMap && p.progressMap[emp.uid]) ? p.progressMap[emp.uid].progress : 0;
+        return s + (pm || 0);
+    }, 0) / emp.projects.length) : 0;
+
+    var h = '<div class="profile-container">' +
+        '<div class="profile-header">' +
+            '<div class="profile-close" onclick="tgCloseProfile()">✕</div>' +
+            '<div class="profile-info">' +
+                '<div class="profile-avatar">' + initials + '</div>' +
+                '<div class="profile-details">' +
+                    '<div class="profile-name">' + escH(emp.name || emp.email) + '</div>' +
+                    '<div class="profile-job">💼 ' + escH(emp.jobTitle || 'موظف') + ' · 📧 ' + escH(emp.email) + '</div>' +
+                '</div>' +
+            '</div>' +
+        '</div>' +
+        '<div class="profile-nav">' +
+            '<div class="profile-tab a" data-pt="ov" onclick="tgProfileGo(\'ov\',this)">🏠 نظرة عامة</div>' +
+            '<div class="profile-tab" data-pt="pj" onclick="tgProfileGo(\'pj\',this)">📁 المشاريع ('+emp.projects.length+')</div>' +
+            '<div class="profile-tab" data-pt="tk" onclick="tgProfileGo(\'tk\',this)">🗂 المهام ('+(emp.tasks?emp.tasks.length:0)+')</div>' +
+            '<div class="profile-tab" data-pt="ac" onclick="tgProfileGo(\'ac\',this)">🏆 الإنجازات ('+emp.achievements.length+')</div>' +
+            '<div class="profile-tab" data-pt="wr" onclick="tgProfileGo(\'wr\',this)">📊 التقارير ('+emp.weeklyReports.length+')</div>' +
+            '<div class="profile-tab" data-pt="rq" onclick="tgProfileGo(\'rq\',this)">📨 الطلبات ('+emp.requests.length+')</div>' +
+        '</div>' +
+        '<div class="profile-content">' +
+            // Overview
+            '<div class="profile-pg a" id="ppg-ov">' +
+                '<div class="p-stats">' +
+                    '<div class="p-stat-box"><div class="p-stat-val">' + emp.projects.length + '</div><div class="p-stat-lbl">مشاريع</div></div>' +
+                    '<div class="p-stat-box"><div class="p-stat-val">' + avgProg + '%</div><div class="p-stat-lbl">متوسط التقدم</div></div>' +
+                    '<div class="p-stat-box"><div class="p-stat-val">' + emp.achievements.length + '</div><div class="p-stat-lbl">إنجازات</div></div>' +
+                    '<div class="p-stat-box"><div class="p-stat-val">' + emp.weeklyReports.length + '</div><div class="p-stat-lbl">تقارير</div></div>' +
+                '</div>' +
+                '<div class="profile-grid">' +
+                    '<div class="p-card"><div class="p-card-h">🧑 البيانات الشخصية</div>' +
+                        '<div class="p-info-list">' +
+                            '<div class="p-info-item"><span class="p-info-lbl">الاسم</span><span class="p-info-val">' + escH(emp.name || '-') + '</span></div>' +
+                            '<div class="p-info-item"><span class="p-info-lbl">المسمى الوظيفي</span><span class="p-info-val">' + escH(emp.jobTitle || '-') + '</span></div>' +
+                            '<div class="p-info-item"><span class="p-info-lbl">البريد الإلكتروني</span><span class="p-info-val">' + escH(emp.email || '-') + '</span></div>' +
+                            '<div class="p-info-item"><span class="p-info-lbl">نظام العمل</span><span class="p-info-val">' + (emp.workMode==='remote'?'عن بُعد':'من المكتب') + '</span></div>' +
+                        '</div>' +
+                    '</div>' +
+                    '<div class="p-card"><div class="p-card-h">📅 آخر النشاطات</div>' +
+                        '<div class="empty-hint" style="font-size:11px">سيتم ربط سجل النشاطات لاحقاً...</div>' +
+                    '</div>' +
+                '</div>' +
+            '</div>' +
+            // Projects
+            '<div class="profile-pg" id="ppg-pj">' +
+                '<div class="profile-grid">' +
+                    (emp.projects.length ? emp.projects.map(function(p){
+                        var pm = (p.progressMap && p.progressMap[emp.uid]) || {progress:0, status:'لم يبدأ'};
+                        return '<div class="p-card"><div class="p-card-h">📁 ' + escH(p.title) + '</div>' +
+                               '<div class="pj-bar"><div class="pj-bar-in" style="width:'+pm.progress+'%"></div></div>' +
+                               '<div style="font-size:11px;margin-top:8px;display:flex;justify-content:space-between">' +
+                               '<span>الحالة: <b>'+escH(pm.status)+'</b></span><span>'+pm.progress+'%</span></div>' +
+                               '</div>';
+                    }).join('') : '<div class="empty-hint">لا توجد مشاريع حالية.</div>') +
+                '</div>' +
+            '</div>' +
+            // Tasks
+            '<div class="profile-pg" id="ppg-tk">' +
+                '<div class="profile-grid">' +
+                    (emp.tasks && emp.tasks.length ? emp.tasks.map(function(t){
+                        return '<div class="p-card"><div class="p-card-h">🗂 ' + escH(t.title) + '</div>' +
+                               '<div style="font-size:11px;opacity:0.8">' + escH(t.description || '') + '</div>' +
+                               '<div style="margin-top:10px"><span class="badge '+pstatusBadgeClass(t.status)+'">'+escH(t.status)+'</span></div>' +
+                               '</div>';
+                    }).join('') : '<div class="empty-hint">لا توجد مهام حالية.</div>') +
+                '</div>' +
+            '</div>' +
+            // Achievements
+            '<div class="profile-pg" id="ppg-ac">' +
+                '<div class="p-timeline">' +
+                    (emp.achievements.length ? emp.achievements.map(function(a){
+                        return '<div class="p-timeline-item"><div class="p-timeline-dot"></div>' +
+                               '<div class="p-timeline-content"><div class="p-timeline-date">' + escH(a.date) + '</div>' +
+                               '<div class="p-timeline-title">' + escH(a.title) + '</div>' +
+                               (a.description?'<div style="font-size:11px;opacity:0.7;margin-top:4px">'+escH(a.description)+'</div>':'') +
+                               '</div></div>';
+                    }).join('') : '<div class="empty-hint">لا توجد إنجازات مسجلة.</div>') +
+                '</div>' +
+            '</div>' +
+            // Weekly Reports
+            '<div class="profile-pg" id="ppg-wr">' +
+                '<div class="profile-grid">' +
+                    (emp.weeklyReports.length ? emp.weeklyReports.map(function(r){
+                        return '<div class="p-card"><div class="p-card-h">📅 أسبوع ' + escH(r.weekStart) + '</div>' +
+                               '<div style="font-size:11px;opacity:0.8;white-space:pre-wrap">' + escH(r.content) + '</div>' +
+                               '</div>';
+                    }).join('') : '<div class="empty-hint">لا توجد تقارير أسبوعية.</div>') +
+                '</div>' +
+            '</div>' +
+            // Requests
+            '<div class="profile-pg" id="ppg-rq">' +
+                '<div class="profile-grid">' +
+                    (emp.requests.length ? emp.requests.map(function(r){
+                        return '<div class="p-card"><div class="p-card-h">📨 ' + escH(r.type) + '</div>' +
+                               '<div style="font-size:11px;margin-bottom:8px">' + escH(r.details || '') + '</div>' +
+                               '<div><span class="badge '+badgeClassForReq(r.status)+'">'+reqStatusLabel(r.status)+'</span></div>' +
+                               '</div>';
+                    }).join('') : '<div class="empty-hint">لا توجد طلبات سابقة.</div>') +
+                '</div>' +
+            '</div>' +
+        '</div>' +
+    '</div>';
+    
+    modal.innerHTML = h;
+    modal.classList.add('open');
+    document.body.style.overflow = 'hidden';
+}
+
+function tgCloseProfile() {
+    var modal = document.getElementById('tgProfileModal');
+    if(modal) modal.classList.remove('open');
+    document.body.style.overflow = '';
+}
+
+function tgProfileGo(id, el) {
+    document.querySelectorAll('.profile-tab').forEach(function(t){ t.classList.remove('a'); });
+    document.querySelectorAll('.profile-pg').forEach(function(p){ p.classList.remove('a'); });
+    el.classList.add('a');
+    document.getElementById('ppg-' + id).classList.add('a');
+}

@@ -253,6 +253,15 @@
 
   <!-- حسابي -->
   <div class="emp-pg" id="epg-acct">
+    <div class="set-sec" style="background: linear-gradient(135deg, var(--nv), var(--nv2)); color: #fff; padding: 30px; border-radius: 20px; margin-bottom: 24px; display: flex; align-items: center; gap: 24px; border: none; box-shadow: var(--sh-md);">
+        <div style="width: 90px; height: 90px; background: linear-gradient(135deg, var(--gd), var(--gd2)); color: var(--nv); border-radius: 24px; display: flex; align-items: center; justify-content: center; font-size: 38px; font-weight: 900; box-shadow: 0 8px 20px rgba(0,0,0,0.3); flex-shrink: 0;" id="acctAvatarInitials">..</div>
+        <div style="flex: 1;">
+            <div style="font-size: 24px; font-weight: 800; margin-bottom: 6px; text-shadow: 0 2px 4px rgba(0,0,0,0.2);" id="acctProfileName">...</div>
+            <div style="font-size: 14px; opacity: 0.85; margin-bottom: 12px; font-weight: 500;" id="acctProfileJob">...</div>
+            <button class="bt bt-g" style="padding: 10px 20px; font-size: 12px; box-shadow: 0 4px 15px rgba(201,162,39,0.4);" onclick="tgOpenEmployeeProfile(TG_USER.uid)">👤 عرض ملفي الشخصي الكامل (البروفايل)</button>
+        </div>
+    </div>
+
     <div class="set-hint" style="margin-bottom:14px">عدّل اسمك الظاهر في النظام، أو غيّر كلمة مرور حسابك.</div>
     <div class="set-sec">
       <div class="set-sec-title">🧑 البيانات الشخصية</div>
@@ -1172,6 +1181,14 @@ tgRequireAuth('employee', function(u){
     document.getElementById('acctName').value=u.name||'';
     document.getElementById('acctEmail').value=u.email||'';
     document.getElementById('acctJobTitle').value=u.jobTitle||'';
+
+    // تهيئة الهيدر الجديد للبروفايل في صفحة الحساب
+    if(document.getElementById('acctProfileName')) document.getElementById('acctProfileName').textContent = u.name || u.email;
+    if(document.getElementById('acctProfileJob')) document.getElementById('acctProfileJob').textContent = (u.jobTitle || 'موظف') + ' · ' + u.email;
+    if(document.getElementById('acctAvatarInitials')) {
+        var initials = (u.name || u.email || 'U').split(' ').map(function(n){return n[0];}).join('').toUpperCase().substring(0,2);
+        document.getElementById('acctAvatarInitials').textContent = initials;
+    }
     
     // Check App Settings for Attendance
     db.collection('settings').doc('appSettings').get().then(function(doc){
