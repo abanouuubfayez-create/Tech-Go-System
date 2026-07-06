@@ -80,9 +80,34 @@
 [data-theme='dark'] .ach-tab.active {
     background: var(--gd); color: var(--nv);
 }
+/* Zaghrouta Animation Styles */
+.zaghrouta-container {
+    position: fixed; bottom: -300px; right: 20px; z-index: 9999;
+    width: 220px; pointer-events: none; transition: bottom 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+.zaghrouta-container.show { bottom: 0; }
+.zaghrouta-img { width: 100%; filter: drop-shadow(0 10px 20px rgba(0,0,0,0.2)); }
+.zaghrouta-bubble {
+    position: absolute; top: -20px; left: -40px; background: #fff;
+    padding: 8px 15px; border-radius: 20px; font-weight: 800; font-size: 14px;
+    box-shadow: 0 5px 15px rgba(0,0,0,0.1); border: 2px solid var(--gd);
+    color: var(--nv); transform: scale(0); transition: transform 0.3s 0.4s;
+}
+.zaghrouta-container.show .zaghrouta-bubble { transform: scale(1); }
+@keyframes celebrate-shake {
+    0%, 100% { transform: translateY(0) rotate(0); }
+    25% { transform: translateY(-5px) rotate(-2deg); }
+    75% { transform: translateY(-5px) rotate(2deg); }
+}
+.zaghrouta-container.show .zaghrouta-img { animation: celebrate-shake 0.3s infinite; }
 </style>
 </head>
 <body class="emp-body">
+<!-- Celebration Character Container -->
+<div id="zaghroutaWrap" class="zaghrouta-container">
+    <div class="zaghrouta-bubble" id="zaghroutaMsg">أخيراً! 🎉</div>
+    <img src="celebrating_arab_woman_1783378189859.png" class="zaghrouta-img" alt="Celebration">
+</div>
 
 <iframe id="tgPrintFrame" style="position:fixed;top:-9999px;left:-9999px;width:0;height:0;border:0" title="طباعة"></iframe>
 
@@ -618,11 +643,23 @@ function saveProjDetailProgress(id){
     var note = document.getElementById('dpn_'+id).value;
     var msg = document.getElementById('dpmsg_'+id);
     msg.style.color='var(--tx3)'; msg.textContent='⏳ جارٍ الحفظ...';
+    
+    // Check if late on completion
+    var isLate = false;
+    if(status === 'مكتمل'){
+        var p = window._projectsData && window._projectsData.find(function(x){ return x.id===id; });
+        if(p && p.deadline) {
+            var dl = new Date(p.deadline);
+            dl.setHours(23,59,59,999);
+            if(new Date() > dl) isLate = true;
+        }
+    }
+
     var upd = {}; upd['progressMap.'+TG_USER.uid] = {progress:prog, status:status, note:note, updatedAt:new Date()};
     db.collection('projects').doc(id).update(upd)
         .then(function(){ 
             msg.style.color='var(--ok)'; msg.textContent='✅ تم حفظ التحديث.'; 
-            if(status === 'مكتمل' && typeof tgCelebrate === 'function') tgCelebrate();
+            if(status === 'مكتمل' && typeof tgCelebrate === 'function') tgCelebrate(isLate);
         })
         .catch(function(e){ msg.style.color='var(--no)'; msg.textContent='❌ '+e.message; });
 }
@@ -1049,20 +1086,53 @@ function saveTaskStatus(id){
     var status=document.getElementById('tks_'+id).value;
     var msg=document.getElementById('tkmsg_'+id);
     msg.style.color='var(--tx3)'; msg.textContent='⏳ جارٍ الحفظ...';
-    db.collection('tasks').doc(id).update({status:status, statusUpdatedAt: new Date()}).then(function(){
+
+    // Check if late on completion
+    var isLate = false;
+    db.collection('tasks').doc(id).get().then(function(doc){
+        var t = doc.data();
+        if(status === 'مكتمل' && t && t.deadline){
+            var dl = new Date(t.deadline);
+            dl.setHours(23,59,59,999);
+            if(new Date() > dl) isLate = true;
+        }
+        return db.collection('tasks').doc(id).update({status:status, statusUpdatedAt: new Date()});
+    }).then(function(){
         msg.style.color='var(--ok)'; msg.textContent='✅ تم الحفظ';
         // Push notification عند اكتمال المهمة
         if(status === 'مكتمل'){
-            if(typeof tgCelebrate === 'function') tgCelebrate();
+            if(typeof tgCelebrate === 'function') tgCelebrate(isLate);
             tgShowNotification('✅ مهمة مكتملة', 'أنهيت مهمة بنجاح! أحسنت 🎉');
-            // إعادة تحميل القائمة لتأرشف المهمة تلقائياً
-            setTimeout(function(){
-                var box=document.getElementById('myTasksList');
-                if(box){ /* سيتم التحديث تلقائياً من onSnapshot */ }
-            }, 500);
         }
         setTimeout(function(){if(msg)msg.textContent='';},2500);
     }).catch(function(err){ msg.style.color='var(--no)'; msg.textContent='❌ '+err.message; });
+}
+
+function tgCelebrate(isLate) {
+    // Standard confetti for all completions
+    if(typeof confetti === 'function') {
+        confetti({ particleCount: 100, spread: 70, origin: { y: 0.6 }, zIndex: 10000 });
+    }
+
+    // Special zaghrouta if late
+    if(isLate) {
+        var wrap = document.getElementById('zaghroutaWrap');
+        var msg = document.getElementById('zaghroutaMsg');
+        if(!wrap) return;
+
+        // Sound effect (Zaghrouta) - using a short audio clip
+        // Note: Browsers may block autoplay if no user interaction occurred, 
+        // but this is triggered by a button click, so it should be fine.
+        var audio = new Audio('https://www.soundjay.com/buttons/sounds/button-3.mp3'); // Fallback placeholder
+        // Trying a more thematic sound if possible or just visual if sound fails
+        audio.volume = 0.3;
+        audio.play().catch(function(){});
+
+        wrap.classList.add('show');
+        setTimeout(function(){
+            wrap.classList.remove('show');
+        }, 3000);
+    }
 }
 
 function forwardTask(id) {
