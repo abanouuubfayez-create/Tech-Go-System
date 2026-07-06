@@ -139,7 +139,12 @@
     <span class="pwa-install-close" onclick="document.getElementById('pwaInstallBar').style.display='none'">✕</span>
   </div>
 </div>
-<div class="TB"><div class="t" id="pT">لوحة التحكم</div><div class="ac np">
+<div class="TB">
+  <div style="display:flex;align-items:center;gap:12px">
+    <button id="tgBackBtn" class="bt bt-o np" style="display:none;padding:5px 12px;font-size:12px;box-shadow:none;border-color:var(--bd)" onclick="tgGoBack()" title="رجوع">🔙 رجوع</button>
+    <div class="t" id="pT">لوحة التحكم</div>
+  </div>
+  <div class="ac np">
     <input type="search" id="globalTableFilter" class="global-table-filter" placeholder="🔍 تصفية بيانات الجدول..." oninput="if(typeof tgFilterVisibleTables==='function') tgFilterVisibleTables(this.value)" autocomplete="off" style="margin-left:8px;">
     <button class="bt bt-o" onclick="tgClearForm()" style="font-size:11px;padding:4px 10px;margin-left:4px">🧹 مسح النموذج</button>
     <button class="bt bt-o" onclick="tgLoadFormDrafts()" style="font-size:11px;padding:4px 10px;margin-left:4px">📂 النماذج المحفوظة</button>

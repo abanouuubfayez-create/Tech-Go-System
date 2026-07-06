@@ -109,11 +109,21 @@ function clearUnsavedText() {
     }
 }
 
+window.tgHistory = [];
+function tgGoBack(){
+    if(window.tgHistory.length > 0){
+        var prevId = window.tgHistory.pop();
+        window._isGoingBack = true;
+        go(prevId, null, false);
+    }
+}
+
 function go(id, nav, force){
     if(!force && hasUnsavedText()){
+        var pendingBack = window._isGoingBack;
         tgConfirmModal('مغادرة الصفحة؟', 'يوجد نص غير محفوظ. هل أنت متأكد من المغادرة وتجاهل التغييرات؟', [
-            {label: 'بقاء', cls: 'bt-o', onClick: tgCloseModal},
-            {label: 'مغادرة', cls: 'bt-d', onClick: function(){ tgCloseModal(); clearUnsavedText(); go(id, nav, true); }}
+            {label: 'بقاء', cls: 'bt-o', onClick: function(){ tgCloseModal(); window._isGoingBack = false; }},
+            {label: 'مغادرة', cls: 'bt-d', onClick: function(){ tgCloseModal(); clearUnsavedText(); window._isGoingBack = pendingBack; go(id, nav, true); }}
         ]);
         return;
     }
@@ -129,8 +139,24 @@ function go(id, nav, force){
     else{var el=document.querySelector('.S-i[onclick*="\''+id+'\'"]');if(el)el.classList.add("a")}
     window._currentLoadedFormId = null;
     window._currentLoadedFormTitle = null;
+    
+    var currentActive = document.querySelector(".pg.a");
+    var currentId = currentActive ? currentActive.id.replace('pg-', '') : null;
+    if(currentId && currentId !== id && !window._isGoingBack) {
+        if(currentId !== 'dash') { window.tgHistory.push(currentId); }
+        else { window.tgHistory = ['dash']; }
+    }
+    window._isGoingBack = false;
+
     document.querySelectorAll(".pg").forEach(function(e){e.classList.remove("a")});
     document.getElementById("pg-"+id).classList.add("a");
+    
+    var backBtn = document.getElementById("tgBackBtn");
+    if(backBtn){
+        backBtn.style.display = (window.tgHistory.length > 0 && id !== 'dash') ? 'inline-flex' : 'none';
+        if(id === 'dash') window.tgHistory = [];
+    }
+
     document.getElementById("pT").innerText=T[id]||id;
     if(window.innerWidth<=900)document.getElementById("sb").classList.remove("opn");
     var c=document.getElementById("pg-"+id);
