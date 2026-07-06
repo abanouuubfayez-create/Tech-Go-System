@@ -1354,6 +1354,15 @@ var _chatWidgetOpen = false;
 function tgChatMount(){
     if(TG_USER && TG_USER.role === 'employee' && TG_USER.chatAccess === false) return;
     if(document.getElementById('tgChatBubble')) return;
+    
+    if(!document.getElementById('emojiPickerScript')){
+        var s = document.createElement('script');
+        s.type = 'module';
+        s.src = 'https://cdn.jsdelivr.net/npm/emoji-picker-element@1.x.x/index.js';
+        s.id = 'emojiPickerScript';
+        document.head.appendChild(s);
+    }
+
     var wrap=document.createElement('div');
     wrap.id='tgChatWidgetWrap';
     wrap.innerHTML =
@@ -1370,17 +1379,11 @@ function tgChatMount(){
              '<div class="tg-chat-reply-preview-text" id="tgChatReplyText"></div>'+
              '<div class="tg-chat-reply-preview-close" onclick="tgChatClearReply()">✕</div>'+
           '</div>'+
-          '<div id="tgChatEmojiRow" style="display:flex;gap:8px;padding:6px 12px;font-size:18px;background:rgba(255,255,255,0.02);border-top:1px solid rgba(255,255,255,0.05);overflow-x:auto">'+
-          '<span style="cursor:pointer;transition:transform 0.1s" onmousedown="this.style.transform=\'scale(0.9)\'" onmouseup="this.style.transform=\'scale(1)\'" onclick="document.getElementById(\'tgChatInput\').value+=\'👍\'">👍</span>'+
-          '<span style="cursor:pointer;transition:transform 0.1s" onmousedown="this.style.transform=\'scale(0.9)\'" onmouseup="this.style.transform=\'scale(1)\'" onclick="document.getElementById(\'tgChatInput\').value+=\'❤️\'">❤️</span>'+
-          '<span style="cursor:pointer;transition:transform 0.1s" onmousedown="this.style.transform=\'scale(0.9)\'" onmouseup="this.style.transform=\'scale(1)\'" onclick="document.getElementById(\'tgChatInput\').value+=\'😂\'">😂</span>'+
-          '<span style="cursor:pointer;transition:transform 0.1s" onmousedown="this.style.transform=\'scale(0.9)\'" onmouseup="this.style.transform=\'scale(1)\'" onclick="document.getElementById(\'tgChatInput\').value+=\'🙏\'">🙏</span>'+
-          '<span style="cursor:pointer;transition:transform 0.1s" onmousedown="this.style.transform=\'scale(0.9)\'" onmouseup="this.style.transform=\'scale(1)\'" onclick="document.getElementById(\'tgChatInput\').value+=\'✅\'">✅</span>'+
-          '<span style="cursor:pointer;transition:transform 0.1s" onmousedown="this.style.transform=\'scale(0.9)\'" onmouseup="this.style.transform=\'scale(1)\'" onclick="document.getElementById(\'tgChatInput\').value+=\'👏\'">👏</span>'+
-          '<span style="cursor:pointer;transition:transform 0.1s" onmousedown="this.style.transform=\'scale(0.9)\'" onmouseup="this.style.transform=\'scale(1)\'" onclick="document.getElementById(\'tgChatInput\').value+=\'🔥\'">🔥</span>'+
-          '<span style="cursor:pointer;transition:transform 0.1s" onmousedown="this.style.transform=\'scale(0.9)\'" onmouseup="this.style.transform=\'scale(1)\'" onclick="document.getElementById(\'tgChatInput\').value+=\'👀\'">👀</span>'+
-          '<span style="cursor:pointer;transition:transform 0.1s" onmousedown="this.style.transform=\'scale(0.9)\'" onmouseup="this.style.transform=\'scale(1)\'" onclick="document.getElementById(\'tgChatInput\').value+=\'🤔\'">🤔</span>'+
-          '<span style="cursor:pointer;transition:transform 0.1s" onmousedown="this.style.transform=\'scale(0.9)\'" onmouseup="this.style.transform=\'scale(1)\'" onclick="document.getElementById(\'tgChatInput\').value+=\'🎉\'">🎉</span>'+
+          '<div id="tgChatEmojiRow" style="position:relative;display:flex;gap:8px;padding:6px 12px;background:rgba(255,255,255,0.02);border-top:1px solid rgba(255,255,255,0.05);">'+
+             '<button class="bt" style="padding:4px 8px;font-size:16px;background:transparent;color:var(--gd);border:1px solid var(--gd);border-radius:4px;cursor:pointer;transition:all 0.2s;" onmouseover="this.style.background=\'var(--gd)\';this.style.color=\'#fff\'" onmouseout="this.style.background=\'transparent\';this.style.color=\'var(--gd)\'" onclick="var p=document.getElementById(\'tgEmojiWrap\'); p.style.display=p.style.display===\'none\'?\'block\' : \'none\';" title="فتح لوحة الإيموجي">😀 إيموجي</button>'+
+             '<div id="tgEmojiWrap" style="display:none;position:absolute;bottom:45px;right:10px;z-index:999999;box-shadow:0 4px 12px rgba(0,0,0,0.2);border-radius:8px;overflow:hidden;">'+
+                '<emoji-picker class="light"></emoji-picker>'+
+             '</div>'+
           '</div>'+
           '<div class="tg-chat-input-row">'+
             '<button class="bt bt-d" style="padding:8px 10px" onclick="document.getElementById(\'tgChatInput\').value=\'\'; tgChatClearReply();" title="مسح المربع">🧹</button>'+
@@ -1399,6 +1402,20 @@ function tgChatMount(){
     var unlock=function(){ tgChatUnlockAudio(); document.removeEventListener('click',unlock); document.removeEventListener('keydown',unlock); };
     document.addEventListener('click',unlock);
     document.addEventListener('keydown',unlock);
+
+    setTimeout(function(){
+        var picker = document.querySelector('emoji-picker');
+        if(picker){
+            picker.addEventListener('emoji-click', function(e){
+                var inp = document.getElementById('tgChatInput');
+                if(inp){
+                    inp.value += e.detail.unicode;
+                    document.getElementById('tgEmojiWrap').style.display = 'none';
+                    inp.focus();
+                }
+            });
+        }
+    }, 1000);
 }
 
 function tgChatToggleMute(){

@@ -1386,7 +1386,7 @@ html.tg-auth-pending body { visibility: hidden; }
 .pj-chat-name { font-weight: 800; color: var(--nv); font-size: 11px; }
 .pj-chat-role { font-size: 8.5px; font-weight: 700; padding: 2px 7px; border-radius: 10px; background: var(--gdl2); color: var(--gd2); }
 .pj-chat-time { font-size: 9px; color: var(--tx3); margin-right: auto; }
-.pj-chat-text { color: var(--tx); white-space: pre-wrap; word-break: break-word; line-height: 1.6; }
+.pj-chat-text { color: var(--tx); white-space: pre-wrap; word-break: break-word; line-height: 1.6; font-family: 'Cairo', 'Segoe UI Emoji', 'Noto Color Emoji', 'Apple Color Emoji', 'Twemoji Mozilla', sans-serif !important; }
 .pj-chat-del { cursor: pointer; color: var(--tx3); font-size: 10px; }
 .pj-chat-del:hover { color: var(--no); }
 .pj-chat-input-row { display: flex; gap: 8px; padding: 12px 14px; border-top: 1px solid var(--bd2); background: #f8f9fc; }
