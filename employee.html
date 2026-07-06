@@ -124,7 +124,14 @@
 
       <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px">
         <div style="display:flex;align-items:center;gap:10px;"><div style="font-size:14px;font-weight:800;color:var(--nv)">📁 مشاريعي الحالية</div>
-        <select class="global-table-filter" style="margin:0;padding:4px;font-size:11px;min-height:auto;" onchange="if(typeof window.parent.tgSortVisibleList==='function') window.parent.tgSortVisibleList(this.value); else if(typeof tgSortVisibleList==='function') tgSortVisibleList(this.value)"><option value="">-- فرز حسب --</option><option value="date_desc">الأحدث</option><option value="date_asc">الأقدم</option><option value="prio_desc">الأولوية</option><option value="status_desc">الحالة</option></select></div>
+        <select class="global-table-filter" style="margin:0;padding:4px;font-size:11px;min-height:auto;" onchange="if(typeof window.parent.tgSortVisibleList==='function') window.parent.tgSortVisibleList(this.value); else if(typeof tgSortVisibleList==='function') tgSortVisibleList(this.value)">
+            <option value="">-- فرز حسب --</option>
+            <option value="date_desc">الأحدث</option>
+            <option value="date_asc">الأقدم</option>
+            <option value="prio_desc">الأولوية</option>
+            <option value="status_desc">الحالة</option>
+            <option value="deadline_asc">تاريخ التسليم</option>
+        </select></div>
         <div id="projCountLabel" style="font-size:11px;color:var(--tx3);font-weight:600"></div>
       </div>
       <div id="myProjectsList"><div class="empty-hint">⏳ جارٍ التحميل...</div></div>
@@ -139,7 +146,14 @@
   <div class="emp-pg" id="epg-tasks">
     <div style="display:flex;align-items:center;gap:10px;margin-bottom:8px;">
       <div style="font-size:14px;font-weight:800;color:var(--nv)">🗂 مهامي الحالية</div>
-      <select class="global-table-filter" style="margin:0;padding:4px;font-size:11px;min-height:auto;" onchange="if(typeof window.parent.tgSortVisibleList==='function') window.parent.tgSortVisibleList(this.value); else if(typeof tgSortVisibleList==='function') tgSortVisibleList(this.value)"><option value="">-- فرز حسب --</option><option value="date_desc">الأحدث</option><option value="date_asc">الأقدم</option><option value="prio_desc">الأولوية</option><option value="status_desc">الحالة</option></select>
+      <select class="global-table-filter" style="margin:0;padding:4px;font-size:11px;min-height:auto;" onchange="if(typeof window.parent.tgSortVisibleList==='function') window.parent.tgSortVisibleList(this.value); else if(typeof tgSortVisibleList==='function') tgSortVisibleList(this.value)">
+          <option value="">-- فرز حسب --</option>
+          <option value="date_desc">الأحدث</option>
+          <option value="date_asc">الأقدم</option>
+          <option value="prio_desc">الأولوية</option>
+          <option value="status_desc">الحالة</option>
+          <option value="deadline_asc">تاريخ التسليم</option>
+      </select>
     </div>
     <div class="set-hint" style="margin-bottom:14px">المهام اللي كلّفك بيها الأدمن — حدّث حالتها أولاً بأول عشان يتابع الأدمن تنفيذك لها.</div>
     <div id="myTasksList"><div class="empty-hint">⏳ جارٍ التحميل...</div></div>
@@ -466,8 +480,9 @@ function renderProjectsHtml(projects){
         var pVal = p.priority === 'عالية' ? 3 : (p.priority === 'متوسطة' ? 2 : 1);
         var sVal = isCompleted ? 3 : (pm.status === 'متوقف' ? 1 : 2);
         var dVal = (p.createdAt && p.createdAt.toMillis) ? p.createdAt.toMillis() : ((p.createdAt && new Date(p.createdAt).getTime()) || 0);
+        var dlVal = p.deadline ? new Date(p.deadline).getTime() : 9999999999999;
 
-        h += '<div class="emp-proj-card" onclick="openProjectDetail(\''+p.id+'\')" style="'+cardStyle+'" data-prio="'+pVal+'" data-status="'+sVal+'" data-date="'+dVal+'">';
+        h += '<div class="emp-proj-card" onclick="openProjectDetail(\''+p.id+'\')" style="'+cardStyle+'" data-prio="'+pVal+'" data-status="'+sVal+'" data-date="'+dVal+'" data-deadline="'+dlVal+'" data-emp="">';
         h += '<div class="emp-proj-card-stripe" style="background:'+(isCompleted?'linear-gradient(90deg,var(--ok),#40c674)':stripeColor)+'"></div>';
         h += '<div class="emp-proj-card-top">';
         h += '<div class="emp-proj-card-title">'+esc(p.title||'بدون عنوان')+(mine?' <span class="badge" style="background:var(--gd);color:#1b2a4a;font-size:8.5px">مشروعي</span>':'')+(isCompleted?' <span style="background:var(--ok);color:#fff;border-radius:12px;padding:1px 7px;font-size:9px;font-weight:800">✅ مكتمل</span>':'')+commentBadge+'</div>';
@@ -740,8 +755,10 @@ function renderTasksHtml(rows){
         var pVal = t.priority === 'عالية' ? 3 : (t.priority === 'متوسطة' ? 2 : 1);
         var sVal = t.status === 'مكتمل' ? 3 : (t.status === 'جاري العمل' ? 2 : 1);
         var dVal = (t.createdAt && t.createdAt.toMillis) ? t.createdAt.toMillis() : ((t.createdAt && new Date(t.createdAt).getTime()) || 0);
+        var dlVal = t.deadline ? new Date(t.deadline).getTime() : 9999999999999;
+        var empVal = esc(t.assignedToName || '');
 
-        return '<div class="pj-row" style="'+cardStyle+'" data-prio="'+pVal+'" data-status="'+sVal+'" data-date="'+dVal+'">'+
+        return '<div class="pj-row" style="'+cardStyle+'" data-prio="'+pVal+'" data-status="'+sVal+'" data-date="'+dVal+'" data-deadline="'+dlVal+'" data-emp="'+empVal+'">'+
             '<div class="pj-t">'+esc(t.title||'بدون عنوان')+
             ' <span class="badge"'+(isDone?' style="background:var(--ok);color:#fff"':'')+(isOverdue?' style="background:var(--no);color:#fff"':'')+'>'+esc(t.priority||'متوسطة')+'</span>'+
             (isDone?' <span style="background:var(--ok);color:#fff;border-radius:10px;padding:1px 8px;font-size:9px;font-weight:800">✅ مكتملة</span>':'')+(isOverdue?' <span style="background:var(--no);color:#fff;border-radius:10px;padding:1px 8px;font-size:9px;font-weight:800">⏰ متأخرة</span>':'')+

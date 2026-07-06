@@ -1178,7 +1178,10 @@ function renderTasksMgmtList(list){
             if(!isNaN(cd.getTime())) createdAtStr = cd.toLocaleDateString('ar-EG');
         }
 
-        h+='<div class="pj-row" data-prio="'+pVal+'" data-status="'+sVal+'" data-date="'+dVal+'"><div class="pj-t">'+escH(t.title||'بدون عنوان')+
+        var dlVal = t.deadline ? new Date(t.deadline).getTime() : 9999999999999;
+        var empVal = escH(t.assignedToName || '');
+
+        h+='<div class="pj-row" data-prio="'+pVal+'" data-status="'+sVal+'" data-date="'+dVal+'" data-deadline="'+dlVal+'" data-emp="'+empVal+'"><div class="pj-t">'+escH(t.title||'بدون عنوان')+
            ' <span class="badge '+prioBadgeClass(t.priority)+'">'+escH(t.priority||'متوسطة')+'</span>'+
            ' <span class="badge '+pstatusBadgeClass(t.status)+'">'+escH(t.status||'لم يبدأ')+'</span></div>'+
            '<div class="pj-meta">👤 مكلَّف حالياً إلى: '+escH(t.assignedToName||'مجهول')+(t.deadline?(' · تاريخ التسليم: '+escH(t.deadline)):'')+'</div>'+
@@ -1340,9 +1343,21 @@ function tgChatMount(){
              '<div class="tg-chat-reply-preview-text" id="tgChatReplyText"></div>'+
              '<div class="tg-chat-reply-preview-close" onclick="tgChatClearReply()">✕</div>'+
           '</div>'+
+          '<div id="tgChatEmojiRow" style="display:flex;gap:8px;padding:6px 12px;font-size:18px;background:rgba(255,255,255,0.02);border-top:1px solid rgba(255,255,255,0.05);overflow-x:auto">'+
+          '<span style="cursor:pointer;transition:transform 0.1s" onmousedown="this.style.transform=\'scale(0.9)\'" onmouseup="this.style.transform=\'scale(1)\'" onclick="document.getElementById(\'tgChatInput\').value+=\'👍\'">👍</span>'+
+          '<span style="cursor:pointer;transition:transform 0.1s" onmousedown="this.style.transform=\'scale(0.9)\'" onmouseup="this.style.transform=\'scale(1)\'" onclick="document.getElementById(\'tgChatInput\').value+=\'❤️\'">❤️</span>'+
+          '<span style="cursor:pointer;transition:transform 0.1s" onmousedown="this.style.transform=\'scale(0.9)\'" onmouseup="this.style.transform=\'scale(1)\'" onclick="document.getElementById(\'tgChatInput\').value+=\'😂\'">😂</span>'+
+          '<span style="cursor:pointer;transition:transform 0.1s" onmousedown="this.style.transform=\'scale(0.9)\'" onmouseup="this.style.transform=\'scale(1)\'" onclick="document.getElementById(\'tgChatInput\').value+=\'🙏\'">🙏</span>'+
+          '<span style="cursor:pointer;transition:transform 0.1s" onmousedown="this.style.transform=\'scale(0.9)\'" onmouseup="this.style.transform=\'scale(1)\'" onclick="document.getElementById(\'tgChatInput\').value+=\'✅\'">✅</span>'+
+          '<span style="cursor:pointer;transition:transform 0.1s" onmousedown="this.style.transform=\'scale(0.9)\'" onmouseup="this.style.transform=\'scale(1)\'" onclick="document.getElementById(\'tgChatInput\').value+=\'👏\'">👏</span>'+
+          '<span style="cursor:pointer;transition:transform 0.1s" onmousedown="this.style.transform=\'scale(0.9)\'" onmouseup="this.style.transform=\'scale(1)\'" onclick="document.getElementById(\'tgChatInput\').value+=\'🔥\'">🔥</span>'+
+          '<span style="cursor:pointer;transition:transform 0.1s" onmousedown="this.style.transform=\'scale(0.9)\'" onmouseup="this.style.transform=\'scale(1)\'" onclick="document.getElementById(\'tgChatInput\').value+=\'👀\'">👀</span>'+
+          '<span style="cursor:pointer;transition:transform 0.1s" onmousedown="this.style.transform=\'scale(0.9)\'" onmouseup="this.style.transform=\'scale(1)\'" onclick="document.getElementById(\'tgChatInput\').value+=\'🤔\'">🤔</span>'+
+          '<span style="cursor:pointer;transition:transform 0.1s" onmousedown="this.style.transform=\'scale(0.9)\'" onmouseup="this.style.transform=\'scale(1)\'" onclick="document.getElementById(\'tgChatInput\').value+=\'🎉\'">🎉</span>'+
+          '</div>'+
           '<div class="tg-chat-input-row">'+
             '<button class="bt bt-d" style="padding:8px 10px" onclick="document.getElementById(\'tgChatInput\').value=\'\'; tgChatClearReply();" title="مسح المربع">🧹</button>'+
-            '<textarea id="tgChatInput" rows="1" placeholder="اكتب رسالتك هنا..." onkeydown="tgChatKeydown(event)"></textarea>'+
+            '<textarea id="tgChatInput" rows="1" placeholder="اكتب رسالتك هنا... (اكتب @ للإشارة)" onkeydown="tgChatKeydown(event)"></textarea>'+
             '<button class="bt bt-p" onclick="tgChatSend()">➤</button>'+
           '</div>'+
         '</div>'+
@@ -1480,8 +1495,8 @@ function renderChatMessages(){
            '<span class="pj-chat-reply-btn" title="رد" onclick="tgChatSetReply(\''+m.id+'\', \''+escH(m.name||'')+'\', \''+escH((m.text||'').replace(/\\/g,'\\\\').replace(/\'/g,"\\'").replace(/\"/g,'&quot;').replace(/\n/g,'\\n'))+'\')">↩️</span>'+
            (canDelete?('<span class="pj-chat-del" title="حذف الرسالة" onclick="tgChatDelete(\''+m.id+'\')">🗑</span>'):'')+
            '</div>'+
-           (m.replyToId ? ('<div class="pj-chat-quote"><strong>'+escH(m.replyToName||'')+':</strong> '+escH(m.replyToText||'')+'</div>') : '') +
-           '<div class="pj-chat-text">'+escH(m.text||'')+'</div>'+
+           (m.replyToId ? ('<div class="pj-chat-quote" dir="auto"><strong>'+escH(m.replyToName||'')+':</strong> '+escH(m.replyToText||'')+'</div>') : '') +
+           '<div class="pj-chat-text" dir="auto">'+escH(m.text||'').replace(/(@[\w\u0600-\u06FF_]+)/g, '<span style="color:var(--gd);font-weight:bold;background:rgba(235,160,0,0.1);padding:1px 4px;border-radius:4px">$1</span>')+'</div>'+
            '</div>';
     });
     log.innerHTML=h;
@@ -1675,8 +1690,10 @@ function renderProjectsList(list){
         var dVal = (p.createdAt && p.createdAt.toMillis) ? p.createdAt.toMillis() : ((p.createdAt && new Date(p.createdAt).getTime()) || 0);
         var sVal = p.status === 'مكتمل' ? 3 : (p.status === 'متوقف' ? 1 : 2); // default 2
         var pVal = p.priority === 'عالية' ? 3 : (p.priority === 'متوسطة' ? 2 : 1);
+        var dlVal = p.deadline ? new Date(p.deadline).getTime() : 9999999999999;
+        var empVal = p.assignees && p.assignees.length > 0 ? escH(PMGMT_EMPLOYEES.find(function(e){return e.uid===p.assignees[0];})?.name || '') : '';
 
-        h+='<div class="staff-card" id="pmCard'+idx+'" data-date="'+dVal+'" data-status="'+sVal+'" data-prio="'+pVal+'">';
+        h+='<div class="staff-card" id="pmCard'+idx+'" data-date="'+dVal+'" data-status="'+sVal+'" data-prio="'+pVal+'" data-deadline="'+dlVal+'" data-emp="'+empVal+'">';
         h+='<div class="staff-card-h" onclick="toggleProjCard('+idx+')">'+
            '<div><div class="staff-name">'+escH(p.title||'بدون عنوان')+'</div>'+
            (p.description?'<div class="staff-email">'+escH(p.description)+'</div>':'')+
@@ -2796,7 +2813,8 @@ function load(id,c){
 
         h+='<div style="display:flex;justify-content:space-between;align-items:center;margin:18px 0 10px">';
         h+='<div style="display:flex;align-items:center;gap:10px;"><div class="set-sec-title" style="margin:0">🗂 المهام الحالية</div>';
-        h+='<select class="global-table-filter" style="margin:0;padding:4px;font-size:11px;min-height:auto;" onchange="tgSortVisibleList(this.value)"><option value="">-- فرز حسب --</option><option value="date_desc">الأحدث</option><option value="date_asc">الأقدم</option><option value="prio_desc">الأولوية</option><option value="status_desc">الحالة</option></select></div>';
+        h+='<select class="global-table-filter" style="margin:0;padding:4px;font-size:11px;min-height:auto;" onchange="tgSortVisibleList(this.value)">'+
+           '<option value="">-- فرز حسب --</option><option value="date_desc">الأحدث</option><option value="date_asc">الأقدم</option><option value="prio_desc">الأولوية</option><option value="status_desc">الحالة</option><option value="deadline_asc">تاريخ التسليم</option><option value="emp_asc">الموظف المكلف</option></select></div>';
         h+='<button class="bt bt-d" style="padding:5px 14px;font-size:11px" onclick="tgDeleteAllRecords(\'tasks\', \'المهام\', null, null, loadTasksMgmt)">🗑 حذف الكل</button>';
         h+='</div>';
         h+='<div id="tasksMgmtList"><div class="empty-hint">⏳ جارٍ تحميل المهام...</div></div>';
