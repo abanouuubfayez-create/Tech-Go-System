@@ -494,19 +494,24 @@ function renderProjectsHtml(projects){
         var dVal = (p.createdAt && p.createdAt.toMillis) ? p.createdAt.toMillis() : ((p.createdAt && new Date(p.createdAt).getTime()) || 0);
         var dlVal = p.deadline ? new Date(p.deadline).getTime() : 9999999999999;
 
-        h += '<div class="emp-proj-card" onclick="openProjectDetail(\''+p.id+'\')" style="'+cardStyle+'" data-prio="'+pVal+'" data-status="'+sVal+'" data-date="'+dVal+'" data-deadline="'+dlVal+'" data-emp="">';
+        h += '<div class="emp-proj-card" onclick="openProjectDetail(\''+p.id+'\')" style="'+cardStyle+'" data-prio="'+pVal+'" data-status="'+sVal+'" data-date="'+dVal+'" data-deadline="'+dlVal+'">';
         h += '<div class="emp-proj-card-stripe" style="background:'+(isCompleted?'linear-gradient(90deg,var(--ok),#40c674)':stripeColor)+'"></div>';
         h += '<div class="emp-proj-card-top">';
         h += '<div class="emp-proj-card-title">'+esc(p.title||'بدون عنوان')+(mine?' <span class="badge" style="background:var(--gd);color:#1b2a4a;font-size:8.5px">مشروعي</span>':'')+(isCompleted?' <span style="background:var(--ok);color:#fff;border-radius:12px;padding:1px 7px;font-size:9px;font-weight:800">✅ مكتمل</span>':'')+commentBadge+'</div>';
         if(p.description) h += '<div class="emp-proj-card-desc">'+esc(p.description)+'</div>';
-        if(p.createdBy) h += '<div style="font-size:10px;opacity:.7;margin:2px 0 4px">👤 '+esc(p.createdBy)+(p.createdByRole?' <span style="opacity:.8">('+esc(p.createdByRole)+')</span>':'')+'</div>';
+        
+        // Progress Section
+        h += '<div style="margin-top:auto">';
+        h += '<div style="display:flex;justify-content:space-between;font-size:11px;font-weight:800;margin-bottom:5px;color:var(--nv)"><span>التقدم</span><span>'+prog+'%</span></div>';
         h += '<div class="emp-proj-card-bar"><div class="emp-proj-card-bar-in" style="width:'+prog+'%"></div></div>';
-        h += '<div class="emp-proj-card-meta">'+projectTagsHtml(p)+'</div>';
         h += '</div>';
-        h += '<div class="emp-proj-card-foot">';
-        h += '<div class="emp-proj-card-prog">📊 تقدّمي '+prog+'%</div>';
-        h += '<button class="bt bt-g" style="padding:6px 14px;font-size:11px" onclick="event.stopPropagation();openProjectDetail(\''+p.id+'\')">🔍 تفاصيل</button>';
-        h += '</div></div>';
+        h += '</div>'; // end top
+        
+        h += '<div class="emp-proj-card-footer">';
+        h += '<span>'+(p.priority?'<span class="tg-tag tg-tag-prio-'+(p.priority==='عالية'?'high':(p.priority==='منخفضة'?'low':'med'))+'">'+p.priority+'</span>':'')+'</span>';
+        h += '<span>'+(p.deadline ? '📅 ' + p.deadline : 'بلا موعد')+'</span>';
+        h += '</div>';
+        h += '</div>';
     });
     h += '</div>';
     box.innerHTML = h;
@@ -551,20 +556,24 @@ function openProjectDetail(pid){
     // Section 1: Progress
     h += '<div class="proj-sec">';
     h += '<div class="proj-sec-title">📊 تقدّمي في المشروع</div>';
-    h += '<div style="background:var(--bg);border-radius:10px;padding:16px 18px;margin-bottom:2px">';
-    h += '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">';
-    h += '<span style="font-size:13px;font-weight:700;color:var(--nv)">نسبة الإنجاز</span>';
-    h += '<span style="font-size:22px;font-weight:900;color:var(--gd)" id="dpv_'+p.id+'">'+prog+'%</span>';
+    
+    h += '<div class="prog-ui-container">';
+    h += '<div class="prog-ui-bg-icon">📊</div>';
+    h += '<span class="prog-ui-val" id="dpv_'+p.id+'">'+prog+'%</span>';
+    h += '<span class="prog-ui-lbl">نسبة الإنجاز الحالية</span>';
+    h += '<input type="range" class="modern-slider" min="0" max="100" value="'+prog+'" id="dpr_'+p.id+'" oninput="document.getElementById(\'dpv_'+p.id+'\').textContent=this.value+\'%\';document.getElementById(\'dpbar_fill_'+p.id+'\').style.width=this.value+\'%\'">';
+    h += '<div class="prog-bar-container"><div class="prog-bar-fill" id="dpbar_fill_'+p.id+'" style="width:'+prog+'%"></div></div>';
     h += '</div>';
-    h += '<div class="emp-proj-card-bar" style="height:10px;margin-bottom:14px"><div class="emp-proj-card-bar-in" id="dpbar_'+p.id+'" style="width:'+prog+'%"></div></div>';
-    h += '<input type="range" min="0" max="100" value="'+prog+'" style="width:100%;margin-bottom:14px;accent-color:var(--gd)" oninput="document.getElementById(\'dpv_'+p.id+'\').textContent=this.value+\'%\';document.getElementById(\'dpbar_'+p.id+'\').style.width=this.value+\'%\'" id="dpr_'+p.id+'">';
+
+    h += '<div class="modern-card">';
     h += '<div class="fr fr2">';
-    h += '<div class="fg"><label>الحالة</label><select id="dps_'+p.id+'">'+['لم يبدأ','جاري العمل','مكتمل'].map(function(s){return '<option'+(pm.status===s?' selected':'')+'>'+s+'</option>';}).join('')+'</select></div>';
-    h += '<div class="fg"><label>ملاحظة (اختياري)</label><input type="text" id="dpn_'+p.id+'" value="'+esc(pm.note||'')+'"></div>';
+    h += '<div class="fg"><label>الحالة الحالية</label><select id="dps_'+p.id+'" style="height:42px;border-radius:10px">'+['لم يبدأ','جاري العمل','مكتمل'].map(function(s){return '<option'+(pm.status===s?' selected':'')+'>'+s+'</option>';}).join('')+'</select></div>';
+    h += '<div class="fg"><label>ملاحظة عن الإنجاز (اختياري)</label><input type="text" id="dpn_'+p.id+'" style="height:42px;border-radius:10px" placeholder="مثال: انتهيت من التصاميم الأولية..." value="'+esc(pm.note||'')+'"></div>';
     h += '</div>';
-    h += '<button class="bt bt-p" style="margin-top:14px;width:100%" onclick="saveProjDetailProgress(\''+p.id+'\')">💾 حفظ التحديث</button>';
-    h += '<div id="dpmsg_'+p.id+'" style="font-size:11px;margin-top:8px;text-align:center"></div>';
-    h += '</div></div>'; // end proj-sec
+    h += '<button class="bt bt-p" style="margin-top:20px;width:100%;height:48px;font-size:15px;font-weight:800;box-shadow:0 10px 20px rgba(15,23,42,0.15)" onclick="saveProjDetailProgress(\''+p.id+'\')">💾 حفظ تحديث التقدم</button>';
+    h += '<div id="dpmsg_'+p.id+'" style="font-size:12px;margin-top:12px;text-align:center;font-weight:600"></div>';
+    h += '</div>';
+    h += '</div>'; // end proj-sec
 
     // Section 2: Chat / Discussion
     h += '<div class="proj-sec">';

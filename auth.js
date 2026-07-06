@@ -134,8 +134,14 @@ function tgListenMyNotifications(uid) {
             snap.docChanges().forEach(function(change) {
                 if (change.type === 'added') {
                     var d = change.doc.data();
-                    tgShowNotification(d.title || '\u0625\u0634\u0639\u0627\u0631', d.body || '');
-                    // \u062a\u0645\u064a\u064a\u0632\u0647\u0627 \u0643\u0645\u0642\u0631\u0648\u0621\u0629 \u0641\u0648\u0631\u0627\u064b
+                    tgShowNotification(d.title || 'إشعار', d.body || '');
+                    
+                    // إذا كان الإشعار بخصوص انتهاء مشروع، شغل الاحتفال عند الموظف
+                    if (d.tag === 'project-completed' && typeof tgCelebrate === 'function') {
+                        setTimeout(tgCelebrate, 500); // تأخير بسيط ليظهر الإشعار أولاً
+                    }
+
+                    // تمييزها كمقروءة فوراً
                     db.collection('notifications').doc(change.doc.id).update({ read: true }).catch(function() {});
                 }
             });
