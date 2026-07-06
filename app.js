@@ -88,24 +88,33 @@ var TECH_ALLOWED = ['pmgmt','tasksmgmt','livetrack','account','announcements'];
 function hasUnsavedText() {
     var p = document.querySelector('.pg.a, .emp-pg.a');
     if(!p) return false;
-    var chatInputs = p.querySelectorAll('.pj-chat-input-row input');
-    for(var i=0; i<chatInputs.length; i++) {
-        if(chatInputs[i].value.trim() !== '') return true;
-    }
-    var textareas = p.querySelectorAll('textarea:not([readonly])');
-    for(var i=0; i<textareas.length; i++) {
-        if(textareas[i].id !== 'tgChatInput' && textareas[i].value.trim() !== '') return true;
+    // فحص جميع الحقول النصية ومساحات الكتابة
+    var inputs = p.querySelectorAll('input:not([type="checkbox"]):not([type="radio"]):not([type="file"]):not([type="hidden"]), textarea');
+    for(var i=0; i<inputs.length; i++) {
+        var el = inputs[i];
+        // تجاهل الحقول للقراءة فقط أو المعطلة أو حقول البحث
+        if(el.readOnly || el.disabled || el.id === 'globalTableFilter' || el.classList.contains('staff-search') || el.classList.contains('global-table-filter')) continue;
+        
+        // إذا كان الحقل يحتوي على نص حقيقي (ليس مجرد مسافات)
+        if(el.value.trim() !== '') {
+            // استثناء الحقول التي لها قيم افتراضية ثابتة (مثل "تحية طيبة وبعد") في بعض النماذج
+            if(el.classList.contains('tpl-default') || el.hasAttribute('data-default')) {
+                if(el.value.trim() === (el.getAttribute('data-default') || el.defaultValue).trim()) continue;
+            }
+            return true;
+        }
     }
     return false;
 }
 function clearUnsavedText() {
     var p = document.querySelector('.pg.a, .emp-pg.a');
     if(!p) return;
-    var chatInputs = p.querySelectorAll('.pj-chat-input-row input');
-    for(var i=0; i<chatInputs.length; i++) chatInputs[i].value = '';
-    var textareas = p.querySelectorAll('textarea:not([readonly])');
-    for(var i=0; i<textareas.length; i++) {
-        if(textareas[i].id !== 'tgChatInput') textareas[i].value = '';
+    var inputs = p.querySelectorAll('input:not([type="checkbox"]):not([type="radio"]):not([type="file"]):not([type="hidden"]), textarea');
+    for(var i=0; i<inputs.length; i++) {
+        var el = inputs[i];
+        if(!el.readOnly && !el.disabled) {
+            el.value = el.getAttribute('data-default') || el.defaultValue || '';
+        }
     }
 }
 
@@ -3202,6 +3211,75 @@ function openAdminProjectDetail(idx) {
         if (p.description) h += '  <div class="emp-proj-detail-desc">' + escH(p.description) + '</div>';
         h += '  <div>' + projectTagsHtml(p) + '</div>';
         if (p.createdBy) h += '  <div style="font-size:10.5px;color:var(--tx3);margin-top:6px">أُنشئ بواسطة: <strong>' + escH(p.createdBy) + '</strong></div>';
+        if(p.fileUrl){
+            var fType = p.fileType || '';
+            h += '<div style="margin-top:12px;padding-top:12px;border-top:1px dashed var(--bd,#ccd)">';
+            if(fType.indexOf('image/')===0){
+                h += '<a href="'+p.fileUrl+'" target="_blank"><img src="'+p.fileUrl+'" style="max-width:100%;max-height:200px;border-radius:6px;display:block"></a>';
+            } else if(fType.indexOf('video/')===0){
+                h += '<video src="'+p.fileUrl+'" controls style="max-width:100%;max-height:200px;border-radius:6px"></video>';
+            } else {
+                h += '<a href="'+p.fileUrl+'" target="_blank" style="color:var(--nv);font-weight:700;text-decoration:underline;display:inline-block">📎 '+escH(p.fileName||'ملف مرفق')+'</a>';
+            }
+            h += '</div>';
+        }
+        if(p.linkUrl){
+            h += '<div style="margin-top:8px"><a href="'+escH(p.linkUrl)+'" target="_blank" style="color:var(--gd);font-weight:700;text-decoration:underline;font-size:13px">🔗 رابط خارجي للمشروع</a></div>';
+        }
+        h += '</div>';
+        h += '<div class="proj-sec"><div class="proj-sec-title">👥 الموظفون المسؤولون عن المشروع</div>';
+        if (assignees.length) {
+            assignees.forEach(function(uid) {
+                var e = PMGMT_EMPLOYEES.find(function(x) { return x.uid === uid; });
+                var nm = e ? (e.name || e.email) : '(موظف غير موجود حالياً)';
+                var pm = (p.progressMap && p.progressMap[uid]) || {progress:0, status:'لم يبدأ', note:''};
+                h += '<div class="pj-row" style="background:var(--bg);padding:12px;border-radius:10px;margin-bottom:8px;">' +
+                     '  <div style="display:flex;justify-content:space-between;font-weight:700;color:var(--nv);margin-bottom:4px;">' +
+                     '    <span>' + escH(nm) + '</span>' +
+                     '    <span style="color:var(--gd);margin-right:auto;">' + (pm.progress || 0) + '%</span>' +
+                     '  </div>' +
+                     '  <div class="pj-bar"><div class="pj-bar-in" style="width:' + (pm.progress || 0) + '%"></div></div>' +
+                     '  <div class="pj-meta" style="margin-top:6px;">الحالة: <span class="badge ' + badgeClassForStatus(pm.status) + '">' + escH(pm.status || 'لم يبدأ') + '</span>' +
+                     (pm.note ? (' · ملاحظة: ' + escH(pm.note)) : '') + '</div>' +
+                     '</div>';
+            });
+        } else {
+            h += '<div class="empty-hint">لم يتم تعيين أي موظف على هذا المشروع بعد.</div>';
+        }
+        h += '</div>';
+        h += '<div class="proj-sec">' + projectChatHtml(p.id, 'pmChatLog' + idx, 'pmChatInput' + idx) + '</div>';
+        h += '<div class="proj-sec"><div class="proj-sec-title">⚙️ إدارة المشروع</div>';
+        h += '<div style="display:flex;gap:8px">' +
+             '  <button class="bt bt-o" onclick="toggleProjEdit(' + idx + ')">✏️ تعديل المشروع</button>' +
+             '  <button class="bt bt-d" onclick="deleteProject(\'' + p.id + '\')">🗑 حذف المشروع</button>' +
+             '</div>';
+        h += '<div id="pmEdit' + idx + '" style="display:none;margin-top:14px;padding-top:14px;border-top:1px dashed var(--bd2)">' +
+             '  <div class="fg" style="margin-bottom:10px"><label>عنوان المشروع</label><input type="text" id="pmEditTitle' + idx + '" value="' + escH(p.title || '') + '"></div>' +
+             '  <div class="fg fg-full" style="margin-bottom:10px"><label>وصف مختصر</label><textarea rows="2" id="pmEditDesc' + idx + '">' + escH(p.description || '') + '</textarea></div>' +
+             '  <div class="fr fr3" style="margin-bottom:10px">' +
+             '    <div class="fg"><label>الأولوية</label><select id="pmEditPriority' + idx + '">' +
+                    ['منخفضة','متوسطة','عالية'].map(function(s){ return '<option' + ((p.priority || 'متوسطة') === s ? ' selected' : '') + '>' + s + '</option>'; }).join('') +
+             '    </select></div>' +
+             '    <div class="fg"><label>حالة المشروع</label><select id="pmEditStatus' + idx + '">' +
+                    ['مخطط له','جاري العمل','متوقف','مكتمل'].map(function(s){ return '<option' + ((p.status || 'مخطط له') === s ? ' selected' : '') + '>' + s + '</option>'; }).join('') +
+             '    </select></div>' +
+             '    <div class="fg"><label>تاريخ الاستحقاق</label><input type="date" id="pmEditDeadline' + idx + '" value="' + escH(p.deadline || '') + '"></div>' +
+             '  </div>' +
+             '  <div class="fg fg-full" style="margin-bottom:6px"><label>الموظفون المسؤولون</label></div>' +
+             '  <div class="chk-grid" id="pmEditAssignees' + idx + '">' + PMGMT_EMPLOYEES.map(function(e){
+                  var checked = assignees.indexOf(e.uid) > -1 ? ' checked' : '';
+                  return '<label><input type="checkbox" class="pm-edit-assignee-chk" ' + checked + ' value="' + e.uid + '"> ' + escH(e.name || e.email) + '</label>';
+             }).join('') + '</div>' +
+             '  <div style="display:flex;gap:8px;margin-top:10px">' +
+             '    <button class="bt bt-p" onclick="saveProjectEdit(\'' + p.id + '\',' + idx + ')">💾 حفظ التعديلات</button>' +
+             '    <button class="bt bt-o" onclick="toggleProjEdit(' + idx + ')">إلغاء</button>' +
+             '  </div>' +
+             '  <div id="pmEditMsg' + idx + '" style="margin-top:8px;font-size:11px"></div>' +
+             '</div>';
+        h += '</div>';
+        h += '</div>';
+        detailView.innerHTML = h;
+        renderProjectChat(p.id, p.comments || [], 'pmChatLog' + idx);
     }
 }
 
@@ -3285,77 +3363,6 @@ function initGeneralCalendar() {
     setTimeout(function() {
         calendar.render();
     }, 50);
-}
-        if(p.fileUrl){
-            var fType = p.fileType || '';
-            h += '<div style="margin-top:12px;padding-top:12px;border-top:1px dashed var(--bd,#ccd)">';
-            if(fType.indexOf('image/')===0){
-                h += '<a href="'+p.fileUrl+'" target="_blank"><img src="'+p.fileUrl+'" style="max-width:100%;max-height:200px;border-radius:6px;display:block"></a>';
-            } else if(fType.indexOf('video/')===0){
-                h += '<video src="'+p.fileUrl+'" controls style="max-width:100%;max-height:200px;border-radius:6px"></video>';
-            } else {
-                h += '<a href="'+p.fileUrl+'" target="_blank" style="color:var(--nv);font-weight:700;text-decoration:underline;display:inline-block">📎 '+escH(p.fileName||'ملف مرفق')+'</a>';
-            }
-            h += '</div>';
-        }
-        if(p.linkUrl){
-            h += '<div style="margin-top:8px"><a href="'+escH(p.linkUrl)+'" target="_blank" style="color:var(--gd);font-weight:700;text-decoration:underline;font-size:13px">🔗 رابط خارجي للمشروع</a></div>';
-        }
-        h += '</div>';
-        h += '<div class="proj-sec"><div class="proj-sec-title">👥 الموظفون المسؤولون عن المشروع</div>';
-        if (assignees.length) {
-            assignees.forEach(function(uid) {
-                var e = PMGMT_EMPLOYEES.find(function(x) { return x.uid === uid; });
-                var nm = e ? (e.name || e.email) : '(موظف غير موجود حالياً)';
-                var pm = (p.progressMap && p.progressMap[uid]) || {progress:0, status:'لم يبدأ', note:''};
-                h += '<div class="pj-row" style="background:var(--bg);padding:12px;border-radius:10px;margin-bottom:8px;">' +
-                     '  <div style="display:flex;justify-content:space-between;font-weight:700;color:var(--nv);margin-bottom:4px;">' +
-                     '    <span>' + escH(nm) + '</span>' +
-                     '    <span style="color:var(--gd);margin-right:auto;">' + (pm.progress || 0) + '%</span>' +
-                     '  </div>' +
-                     '  <div class="pj-bar"><div class="pj-bar-in" style="width:' + (pm.progress || 0) + '%"></div></div>' +
-                     '  <div class="pj-meta" style="margin-top:6px;">الحالة: <span class="badge ' + badgeClassForStatus(pm.status) + '">' + escH(pm.status || 'لم يبدأ') + '</span>' +
-                     (pm.note ? (' · ملاحظة: ' + escH(pm.note)) : '') + '</div>' +
-                     '</div>';
-            });
-        } else {
-            h += '<div class="empty-hint">لم يتم تعيين أي موظف على هذا المشروع بعد.</div>';
-        }
-        h += '</div>';
-        h += '<div class="proj-sec">' + projectChatHtml(p.id, 'pmChatLog' + idx, 'pmChatInput' + idx) + '</div>';
-        h += '<div class="proj-sec"><div class="proj-sec-title">⚙️ إدارة المشروع</div>';
-        h += '<div style="display:flex;gap:8px">' +
-             '  <button class="bt bt-o" onclick="toggleProjEdit(' + idx + ')">✏️ تعديل المشروع</button>' +
-             '  <button class="bt bt-d" onclick="deleteProject(\'' + p.id + '\')">🗑 حذف المشروع</button>' +
-             '</div>';
-        h += '<div id="pmEdit' + idx + '" style="display:none;margin-top:14px;padding-top:14px;border-top:1px dashed var(--bd2)">' +
-             '  <div class="fg" style="margin-bottom:10px"><label>عنوان المشروع</label><input type="text" id="pmEditTitle' + idx + '" value="' + escH(p.title || '') + '"></div>' +
-             '  <div class="fg fg-full" style="margin-bottom:10px"><label>وصف مختصر</label><textarea rows="2" id="pmEditDesc' + idx + '">' + escH(p.description || '') + '</textarea></div>' +
-             '  <div class="fr fr3" style="margin-bottom:10px">' +
-             '    <div class="fg"><label>الأولوية</label><select id="pmEditPriority' + idx + '">' +
-                    ['منخفضة','متوسطة','عالية'].map(function(s){ return '<option' + ((p.priority || 'متوسطة') === s ? ' selected' : '') + '>' + s + '</option>'; }).join('') +
-             '    </select></div>' +
-             '    <div class="fg"><label>حالة المشروع</label><select id="pmEditStatus' + idx + '">' +
-                    ['مخطط له','جاري العمل','متوقف','مكتمل'].map(function(s){ return '<option' + ((p.status || 'مخطط له') === s ? ' selected' : '') + '>' + s + '</option>'; }).join('') +
-             '    </select></div>' +
-             '    <div class="fg"><label>تاريخ الاستحقاق</label><input type="date" id="pmEditDeadline' + idx + '" value="' + escH(p.deadline || '') + '"></div>' +
-             '  </div>' +
-             '  <div class="fg fg-full" style="margin-bottom:6px"><label>الموظفون المسؤولون</label></div>' +
-             '  <div class="chk-grid" id="pmEditAssignees' + idx + '">' + PMGMT_EMPLOYEES.map(function(e){
-                  var checked = assignees.indexOf(e.uid) > -1 ? ' checked' : '';
-                  return '<label><input type="checkbox" class="pm-edit-assignee-chk" ' + checked + ' value="' + e.uid + '"> ' + escH(e.name || e.email) + '</label>';
-             }).join('') + '</div>' +
-             '  <div style="display:flex;gap:8px;margin-top:10px">' +
-             '    <button class="bt bt-p" onclick="saveProjectEdit(\'' + p.id + '\',' + idx + ')">💾 حفظ التعديلات</button>' +
-             '    <button class="bt bt-o" onclick="toggleProjEdit(' + idx + ')">إلغاء</button>' +
-             '  </div>' +
-             '  <div id="pmEditMsg' + idx + '" style="margin-top:8px;font-size:11px"></div>' +
-             '</div>';
-        h += '</div>';
-        h += '</div>';
-        detailView.innerHTML = h;
-        renderProjectChat(p.id, p.comments || [], 'pmChatLog' + idx);
-    }
 }
 
 function closeAdminProjectDetail() {
