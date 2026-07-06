@@ -2968,7 +2968,10 @@ function load(id,c){
 
     // ── التقويم العام ──────────────────────────────────────────────────
     else if(id==="cal"){
-        h='<div class="SP" style="text-align:center;padding:50px"><h3>📅 التقويم العام</h3><div style="color:var(--tx3);margin-top:10px">هذه الميزة قيد التطوير وسيتم إضافتها قريباً.</div></div>';
+        h='<div class="SP"><h3>📅 التقويم العام</h3>';
+        h+='<div class="set-hint">عرض مواعيد تسليم المشاريع والمهام المُسندة بشكل تقويم تفاعلي.</div>';
+        h+='<div id="generalCalendar" style="margin-top:20px; background:#fff; padding:15px; border-radius:12px; border:1px solid var(--bd); box-shadow:0 4px 12px rgba(0,0,0,0.05); min-height:500px"></div>';
+        h+='</div>';
     }
 
     // ── تخصيص النظام ──────────────────────────────────────────────────
@@ -3077,6 +3080,7 @@ function load(id,c){
     if(id==="tasksmgmt") loadTasksMgmt();
     if(id==="announcements") loadAdminAnnouncements();
     if(id==="empdocs") loadEmpDocsOverview();
+    if(id==="cal") initGeneralCalendar();
 }
 // ═══════════════════════════════════════════════════════════════
 // ── الإعلانات ─────────────────────────────────────────────────
@@ -3198,6 +3202,90 @@ function openAdminProjectDetail(idx) {
         if (p.description) h += '  <div class="emp-proj-detail-desc">' + escH(p.description) + '</div>';
         h += '  <div>' + projectTagsHtml(p) + '</div>';
         if (p.createdBy) h += '  <div style="font-size:10.5px;color:var(--tx3);margin-top:6px">أُنشئ بواسطة: <strong>' + escH(p.createdBy) + '</strong></div>';
+    }
+}
+
+// ═══════════════════════════════════════════════════════════════
+// ─── التقويم العام (FullCalendar) ───────────────────────────
+// ═══════════════════════════════════════════════════════════════
+function initGeneralCalendar() {
+    var calendarEl = document.getElementById('generalCalendar');
+    if (!calendarEl || !window.FullCalendar) {
+        if(calendarEl) calendarEl.innerHTML = '<div class="empty-hint">⚠️ تعذر تحميل مكتبة التقويم. يرجى التحقق من الاتصال بالإنترنت.</div>';
+        return;
+    }
+    
+    var calendar = new FullCalendar.Calendar(calendarEl, {
+        initialView: 'dayGridMonth',
+        locale: 'ar',
+        direction: 'rtl',
+        firstDay: 6, // السبت
+        headerToolbar: {
+            left: 'prev,next today',
+            center: 'title',
+            right: 'dayGridMonth,timeGridWeek,listMonth'
+        },
+        buttonText: {
+            today: 'اليوم',
+            month: 'شهر',
+            week: 'أسبوع',
+            day: 'يوم',
+            list: 'أجندة'
+        },
+        noEventsText: 'لا توجد مواعيد تسليم في هذا الشهر',
+        events: function(fetchInfo, successCallback, failureCallback) {
+            Promise.all([
+                db.collection('projects').get(),
+                db.collection('tasks').get()
+            ]).then(function(results) {
+                var events = [];
+                // المشاريع
+                results[0].forEach(function(doc) {
+                    var p = doc.data();
+                    if (p.deadline) {
+                        events.push({
+                            id: 'proj-' + doc.id,
+                            title: '📁 ' + p.title,
+                            start: p.deadline,
+                            backgroundColor: '#1b2a4a',
+                            borderColor: '#1b2a4a',
+                            textColor: '#ffffff',
+                            extendedProps: { type: 'project' }
+                        });
+                    }
+                });
+                // المهام
+                results[1].forEach(function(doc) {
+                    var t = doc.data();
+                    if (t.deadline) {
+                        events.push({
+                            id: 'task-' + doc.id,
+                            title: '🗂 ' + t.title,
+                            start: t.deadline,
+                            backgroundColor: '#27ae60',
+                            borderColor: '#27ae60',
+                            textColor: '#ffffff',
+                            extendedProps: { type: 'task' }
+                        });
+                    }
+                });
+                successCallback(events);
+            }).catch(function(err) {
+                console.error('Calendar error:', err);
+                failureCallback(err);
+            });
+        },
+        eventClick: function(info) {
+            var type = info.event.extendedProps.type;
+            if (type === 'project') go('pmgmt');
+            else if (type === 'task') go('tasksmgmt');
+        }
+    });
+    
+    setTimeout(function() {
+        calendar.render();
+    }, 50);
+}
         if(p.fileUrl){
             var fType = p.fileType || '';
             h += '<div style="margin-top:12px;padding-top:12px;border-top:1px dashed var(--bd,#ccd)">';
