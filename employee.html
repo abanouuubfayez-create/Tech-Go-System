@@ -607,24 +607,86 @@ function saveProjectProgress(id){
     }).catch(function(err){ msg.style.color='var(--no)'; msg.textContent='❌ '+err.message; });
 }
 
-// ── إنجازاتي ────────────────────────────────────────────────────────
+// ── لوحة الإنجازات ────────────────────────────────────────────────────────
 function loadMyAchievements(){
     var box=document.getElementById('myAchList');
-    db.collection('achievements').where('uid','==',TG_USER.uid).get().then(function(snap){
-        if(snap.empty){ box.innerHTML='<div class="empty-hint">لا توجد إنجازات مسجّلة بعد.</div>'; return; }
-        var rows=[]; snap.forEach(function(d){rows.push(d.data());});
-        rows.sort(function(a,b){return (a.date<b.date)?1:-1;});
-        window._achCache=rows;
-        var h='';
-        rows.forEach(function(a,i){
-            h+='<div class="ac-row"><div class="ac-t">'+esc(a.title)+
-               ' <button class="bt bt-o" style="padding:2px 8px;font-size:10px;margin-right:8px" onclick="printAchievementDoc(TG_USER,window._achCache['+i+'])">🖨 طباعة</button></div>'+
+    db.collection('achievements').orderBy('date', 'desc').limit(50).onSnapshot(function(snap){
+        if(snap.empty){ box.innerHTML='<div class="empty-hint">لا توجد إنجازات مسجّلة بعد. كن أول من يضيف إنجازاً!</div>'; return; }
+        var h='<div style="display:flex;flex-direction:column;gap:16px">';
+        snap.forEach(function(doc){
+            var a = doc.data();
+            var isMine = a.uid === TG_USER.uid;
+            var reactions = a.reactions || {};
+            var reactionKeys = Object.keys(reactions);
+            
+            h+='<div class="ac-row" style="border-right:4px solid '+(isMine?'var(--ok)':'var(--gd)')+'">'+
+               '<div style="display:flex;justify-content:space-between;align-items:flex-start">'+
+               '<div><div class="ac-t">'+esc(a.title)+'</div>'+
+               '<div style="font-size:11px;opacity:0.7;margin-bottom:4px">👤 '+(a.userName||'موظف')+(isMine?' (أنت)':'')+'</div></div>'+
+               (isMine?'<button class="bt bt-o" style="padding:2px 8px;font-size:10px" onclick="printAchievementDoc(TG_USER,{title:\''+esc(a.title)+'\',description:\''+esc(a.description||'')+'\',date:\''+esc(a.date||'')+'\'})">🖨 طباعة</button>':'')+
+               '</div>'+
                (a.description?'<div class="ac-meta">'+esc(a.description)+'</div>':'')+
-               (a.date?'<div class="ac-meta">📅 '+esc(a.date)+'</div>':'')+'</div>';
+               '<div style="display:flex;justify-content:space-between;align-items:center;margin-top:10px">'+
+                 '<div style="font-size:10px;color:var(--tx3)">📅 '+esc(a.date||'')+'</div>'+
+                 '<div class="ac-reactions" style="display:flex;gap:6px;align-items:center">'+
+                   renderReactions(doc.id, reactions)+
+                   '<div class="reaction-picker" style="position:relative">'+
+                     '<button class="bt-reaction-add" onclick="toggleEmojiPicker(\''+doc.id+'\')">➕</button>'+
+                     '<div id="picker-'+doc.id+'" class="emoji-picker-popup">'+
+                       ['👏','🔥','⭐','🙌','💪','❤️'].map(e => '<span onclick="addReaction(\''+doc.id+'\',\''+e+'\')">'+e+'</span>').join('')+
+                     '</div>'+
+                   '</div>'+
+                 '</div>'+
+               '</div>'+
+               '</div>';
         });
+        h+='</div>';
         box.innerHTML=h;
-    }).catch(function(err){ box.innerHTML='<div class="empty-hint" style="color:var(--no)">تعذر التحميل: '+esc(err.message)+'</div>'; });
+    }, function(err){ box.innerHTML='<div class="empty-hint" style="color:var(--no)">تعذر التحميل: '+esc(err.message)+'</div>'; });
 }
+
+function renderReactions(docId, reactions) {
+    var h = '';
+    for (var emoji in reactions) {
+        var count = reactions[emoji].length;
+        if (count > 0) {
+            var reacted = reactions[emoji].indexOf(TG_USER.uid) > -1;
+            h += '<div class="reaction-chip '+(reacted?'active':'')+'" onclick="addReaction(\''+docId+'\',\''+emoji+'\')">'+
+                 emoji + ' <span class="count">' + count + '</span>'+
+                 '</div>';
+        }
+    }
+    return h;
+}
+
+function toggleEmojiPicker(id) {
+    var p = document.getElementById('picker-'+id);
+    var all = document.querySelectorAll('.emoji-picker-popup');
+    all.forEach(el => { if(el.id !== 'picker-'+id) el.classList.remove('show'); });
+    p.classList.toggle('show');
+}
+
+function addReaction(docId, emoji) {
+    var docRef = db.collection('achievements').doc(docId);
+    db.runTransaction(function(transaction) {
+        return transaction.get(docRef).then(function(doc) {
+            if (!doc.exists) return;
+            var reactions = doc.data().reactions || {};
+            if (!reactions[emoji]) reactions[emoji] = [];
+            
+            var idx = reactions[emoji].indexOf(TG_USER.uid);
+            if (idx > -1) {
+                reactions[emoji].splice(idx, 1);
+            } else {
+                reactions[emoji].push(TG_USER.uid);
+            }
+            transaction.update(docRef, { reactions: reactions });
+        });
+    }).then(function() {
+        document.querySelectorAll('.emoji-picker-popup').forEach(el => el.classList.remove('show'));
+    }).catch(function(err) { console.error("Reaction failed: ", err); });
+}
+
 function addAchievement(){
     var title=(document.getElementById('achTitle').value||'').trim();
     var date=document.getElementById('achDate').value||new Date().toISOString().split('T')[0];
@@ -632,8 +694,13 @@ function addAchievement(){
     var msg=document.getElementById('achMsg');
     if(!title){ msg.style.color='var(--no)'; msg.textContent='من فضلك اكتب عنوان الإنجاز.'; return; }
     db.collection('achievements').add({
-        uid:TG_USER.uid, title:title, description:desc, date:date,
-        createdAt:new Date()
+        uid:TG_USER.uid, 
+        userName:TG_USER.name,
+        title:title, 
+        description:desc, 
+        date:date,
+        reactions: {},
+        createdAt: new Date()
     }).then(function(){
         msg.style.color='var(--ok)'; msg.textContent='✅ تمت الإضافة';
         document.getElementById('achTitle').value=''; document.getElementById('achDesc').value='';
