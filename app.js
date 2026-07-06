@@ -207,6 +207,18 @@ function tgSortVisibleList(sortBy) {
         rows.forEach(function(el) { container.appendChild(el); });
     });
 }
+function tgFilterByEmployee(empName, rowClass) {
+    var activePg = document.querySelector('.pg.a') || document.querySelector('.emp-pg.a');
+    if(!activePg) return;
+    var items = activePg.querySelectorAll('.' + rowClass);
+    items.forEach(function(el) {
+        if(!empName || el.getAttribute('data-emp') === empName) {
+            el.style.display = '';
+        } else {
+            el.style.display = 'none';
+        }
+    });
+}
 function ts(b){var p=b.parentNode;p.querySelectorAll(".stb").forEach(function(x){x.classList.remove("a")});b.classList.add("a")}
 function sct(c){c.parentNode.querySelectorAll(".ctc").forEach(function(x){x.classList.remove("sel")});c.classList.add("sel")}
 function spr(p){p.parentNode.querySelectorAll(".ppl").forEach(function(x){x.classList.remove("a")});p.classList.add("a")}
@@ -1138,6 +1150,21 @@ function renderTasksMgmtList(list){
     if(!box)return;
     window._tasksMgmtCache=list;
     if(!list.length){ box.innerHTML='<div class="empty-hint">لا توجد مهام مُكلَّفة بعد.</div>'; return; }
+
+    var f = document.getElementById('tgTasksEmpFilter');
+    if(f) {
+        var empSet = new Set();
+        list.forEach(function(t) { if(t.assignedToName) empSet.add(t.assignedToName); });
+        var curVal = f.value;
+        var opts = '<option value="">الكل (تصفية بالموظف)</option>';
+        Array.from(empSet).sort(function(a,b){return a.localeCompare(b,'ar')}).forEach(function(e) {
+            opts += '<option value="'+escH(e)+'">'+escH(e)+'</option>';
+        });
+        f.innerHTML = opts;
+        f.value = curVal;
+        setTimeout(function(){ tgFilterByEmployee(f.value, 'pj-row'); }, 50);
+    }
+
     var h='';
     list.forEach(function(t,i){
         var attachHtml = '';
@@ -1671,6 +1698,26 @@ function renderProjectsList(list){
         box.innerHTML='<div class="empty-hint">لا توجد مشاريع بعد. أنشئ أول مشروع من الأعلى.</div>';
         return;
     }
+
+    var f = document.getElementById('tgProjsEmpFilter');
+    if(f && typeof PMGMT_EMPLOYEES !== 'undefined') {
+        var empSet = new Set();
+        list.forEach(function(p) {
+            if(p.assignees && p.assignees.length > 0) {
+                var emp = PMGMT_EMPLOYEES.find(function(e){return e.uid===p.assignees[0];});
+                if(emp && emp.name) empSet.add(emp.name);
+            }
+        });
+        var curVal = f.value;
+        var opts = '<option value="">الكل (تصفية بالموظف)</option>';
+        Array.from(empSet).sort(function(a,b){return a.localeCompare(b,'ar')}).forEach(function(e) {
+            opts += '<option value="'+escH(e)+'">'+escH(e)+'</option>';
+        });
+        f.innerHTML = opts;
+        f.value = curVal;
+        setTimeout(function(){ tgFilterByEmployee(f.value, 'staff-card'); }, 50);
+    }
+
     list.sort(function(a,b){
         var am=(a.createdAt&&a.createdAt.toMillis)?a.createdAt.toMillis():0;
         var bm=(b.createdAt&&b.createdAt.toMillis)?b.createdAt.toMillis():0;
@@ -2775,7 +2822,10 @@ function load(id,c){
         h+='</div>';
 
         h+='<div style="display:flex;justify-content:space-between;align-items:center;margin:18px 0 10px">';
-        h+='<div class="set-sec-title" style="margin:0">📁 المشاريع الحالية</div>';
+        h+='<div style="display:flex;align-items:center;gap:10px;"><div class="set-sec-title" style="margin:0">📁 المشاريع الحالية</div>';
+        h+='<select class="global-table-filter" style="margin:0;padding:4px;font-size:11px;min-height:auto;" onchange="tgSortVisibleList(this.value)">'+
+           '<option value="">-- فرز حسب --</option><option value="date_desc">الأحدث</option><option value="date_asc">الأقدم</option><option value="prio_desc">الأولوية</option><option value="status_desc">الحالة</option><option value="deadline_asc">تاريخ التسليم</option><option value="emp_asc">الموظف المكلف</option></select>';
+        h+='<select id="tgProjsEmpFilter" class="global-table-filter" style="margin:0;padding:4px;font-size:11px;min-height:auto;" onchange="tgFilterByEmployee(this.value, \'staff-card\')"><option value="">تصفية بالموظف</option></select></div>';
         h+='<button class="bt bt-d" style="padding:5px 14px;font-size:11px" onclick="tgDeleteAllRecords(\'projects\', \'المشاريع\', null, null, loadPmgmtData)">🗑 حذف الكل</button>';
         h+='</div>';
         h+='<div id="pmgmtList"><div class="empty-hint">⏳ جارٍ تحميل المشاريع...</div></div>';
@@ -2814,7 +2864,8 @@ function load(id,c){
         h+='<div style="display:flex;justify-content:space-between;align-items:center;margin:18px 0 10px">';
         h+='<div style="display:flex;align-items:center;gap:10px;"><div class="set-sec-title" style="margin:0">🗂 المهام الحالية</div>';
         h+='<select class="global-table-filter" style="margin:0;padding:4px;font-size:11px;min-height:auto;" onchange="tgSortVisibleList(this.value)">'+
-           '<option value="">-- فرز حسب --</option><option value="date_desc">الأحدث</option><option value="date_asc">الأقدم</option><option value="prio_desc">الأولوية</option><option value="status_desc">الحالة</option><option value="deadline_asc">تاريخ التسليم</option><option value="emp_asc">الموظف المكلف</option></select></div>';
+           '<option value="">-- فرز حسب --</option><option value="date_desc">الأحدث</option><option value="date_asc">الأقدم</option><option value="prio_desc">الأولوية</option><option value="status_desc">الحالة</option><option value="deadline_asc">تاريخ التسليم</option><option value="emp_asc">الموظف المكلف</option></select>';
+        h+='<select id="tgTasksEmpFilter" class="global-table-filter" style="margin:0;padding:4px;font-size:11px;min-height:auto;" onchange="tgFilterByEmployee(this.value, \'pj-row\')"><option value="">تصفية بالموظف</option></select></div>';
         h+='<button class="bt bt-d" style="padding:5px 14px;font-size:11px" onclick="tgDeleteAllRecords(\'tasks\', \'المهام\', null, null, loadTasksMgmt)">🗑 حذف الكل</button>';
         h+='</div>';
         h+='<div id="tasksMgmtList"><div class="empty-hint">⏳ جارٍ تحميل المهام...</div></div>';
