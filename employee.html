@@ -621,8 +621,8 @@ function loadMyAchievements(){
             
             h+='<div class="ac-row" style="border-right:4px solid '+(isMine?'var(--ok)':'var(--gd)')+'">'+
                '<div style="display:flex;justify-content:space-between;align-items:flex-start">'+
-               '<div><div class="ac-t">'+esc(a.title)+'</div>'+
-               '<div style="font-size:11px;opacity:0.7;margin-bottom:4px">👤 '+(a.userName||'موظف')+(isMine?' (أنت)':'')+'</div></div>'+
+               '<div><div style="font-weight:700;color:var(--gd);font-size:13px;margin-bottom:2px">👤 '+(a.userName||'موظف')+(isMine?' (أنت)':'')+'</div>'+
+               '<div class="ac-t" style="font-size:15px">'+esc(a.title)+'</div></div>'+
                (isMine?'<button class="bt bt-o" style="padding:2px 8px;font-size:10px" onclick="printAchievementDoc(TG_USER,{title:\''+esc(a.title)+'\',description:\''+esc(a.description||'')+'\',date:\''+esc(a.date||'')+'\'})">🖨 طباعة</button>':'')+
                '</div>'+
                (a.description?'<div class="ac-meta">'+esc(a.description)+'</div>':'')+
@@ -704,9 +704,57 @@ function addAchievement(){
     }).then(function(){
         msg.style.color='var(--ok)'; msg.textContent='✅ تمت الإضافة';
         document.getElementById('achTitle').value=''; document.getElementById('achDesc').value='';
+        showCelebration();
+        sendAchievementNotification(title);
         loadMyAchievements();
     }).catch(function(err){ msg.style.color='var(--no)'; msg.textContent='❌ '+err.message; });
 }
+
+function sendAchievementNotification(achTitle) {
+    loadTeammates(function() {
+        if (!_teammatesCache) return;
+        _teammatesCache.forEach(function(emp) {
+            db.collection('notifications').add({
+                toUid: emp.id,
+                fromUid: TG_USER.uid,
+                fromName: TG_USER.name,
+                title: 'إنجاز جديد! 🏆',
+                body: 'قام ' + TG_USER.name + ' بإضافة إنجاز: ' + achTitle,
+                type: 'achievement',
+                read: false,
+                createdAt: new Date()
+            });
+        });
+    });
+}
+
+function showCelebration() {
+    const duration = 3000;
+    const end = Date.now() + duration;
+    const colors = ['#c9a227', '#ffffff', '#22c55e', '#3b82f6'];
+
+    (function frame() {
+        confetti({
+            particleCount: 5,
+            angle: 60,
+            spread: 55,
+            origin: { x: 0 },
+            colors: colors
+        });
+        confetti({
+            particleCount: 5,
+            angle: 120,
+            spread: 55,
+            origin: { x: 1 },
+            colors: colors
+        });
+
+        if (Date.now() < end) {
+            requestAnimationFrame(frame);
+        }
+    }());
+}
+
 
 // ── مهامي ───────────────────────────────────────────────────────────
 var _tasksUnsub = null;
@@ -1362,6 +1410,7 @@ function empDeleteDoc(docId, fileUrl) {
 }
 </script>
 <div style="position:fixed;bottom:4px;left:50%;transform:translateX(-50%);font-size:9px;color:rgba(255,255,255,0.2);z-index:9999;pointer-events:none;white-space:nowrap;font-family:inherit">تطوير وتصميم: أبانوب فايز</div>
+<script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
 <script src="theme.js?v=1"></script>
 </body>
 </html>
