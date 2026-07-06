@@ -52,9 +52,15 @@
   function ltRelTime(ts) {
     if (!ts) return 'الآن';
     var d = (ts && typeof ts.toDate === 'function') ? ts.toDate() : new Date(ts);
-    var s = Math.floor((Date.now() - d.getTime()) / 1000);
-    if (s < 10) return 'الآن';
-    if (s < 60) return 'منذ ' + s + ' ثانية';
+    var now = Date.now();
+    var diff = now - d.getTime();
+    
+    // معالجة فارق التوقيت لو ساعة الجهاز مأخرة عن السيرفر
+    if (diff < 0) diff = 0;
+    
+    var s = Math.floor(diff / 1000);
+    if (s < 15) return 'الآن';
+    if (s < 60) return 'منذ ثوانٍ';
     var m = Math.floor(s / 60);
     if (m < 60) return 'منذ ' + m + (m === 1 ? ' دقيقة' : m === 2 ? ' دقيقتين' : m <= 10 ? ' دقائق' : ' دقيقة');
     var h = Math.floor(m / 60);
@@ -245,7 +251,7 @@
         if (ltPruneFeed()) ltSaveFeed(); // شيل أي حدث بقى عمره أكتر من 24 ساعة
         ltRenderFeed();
         ltRenderTeam();
-      }, 30000);
+      }, 10000);
     }
   }
 
