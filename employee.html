@@ -89,7 +89,7 @@
 <div class="emp-topbar">
   <div class="who">👋 أهلاً، <span id="empWhoName">...</span><small id="empWhoRole"></small></div>
   <div style="display:flex;align-items:center;gap:8px;">
-    <input type="text" id="globalTableFilter" name="tg-global-search-field" class="global-table-filter" placeholder="🔍 تصفية البيانات (V1.1)..." oninput="if(typeof tgFilterVisibleTables==='function') tgFilterVisibleTables(this.value)" autocomplete="new-password">
+    <input type="text" id="globalTableFilter" name="tg-global-search-field" class="global-table-filter" placeholder="🔍 تصفية بيانات الجدول..." oninput="if(typeof tgFilterVisibleTables==='function') tgFilterVisibleTables(this.value)" autocomplete="new-password">
     <div class="emp-header-actions" style="margin-right:auto;display:flex;gap:8px;align-items:center">
         <button class="bt bt-o" id="themeToggle" onclick="tgToggleTheme()" title="تبديل الوضع الليلي" style="font-size:16px;padding:4px 10px">🌙</button>
         <button class="bt bt-o" onclick="tgLogout()">🚪 خروج</button>
@@ -211,7 +211,6 @@
       <button class="bt bt-p" style="margin-top:12px" onclick="addAchievement()">➕ إضافة الإنجاز</button>
       <div id="achMsg" style="font-size:11px;margin-top:4px"></div>
     </div>
-    <div style="font-size: 10px; color: #ff0000; text-align: center; margin-bottom: 5px; font-weight: bold; background: #ffebeb; padding: 4px; border-radius: 4px; border: 1px solid #ffcfcf;">تم تحديث النظام: النسخة 1.1 (يرجى عمل Refresh إذا لم تظهر التبويبات)</div>
     <div class="ach-header-row" style="display:flex;justify-content:space-between;align-items:center;margin:16px 0 12px;flex-wrap:wrap;gap:10px">
       <div class="set-sec-title" style="margin:0">📜 سجل الإنجازات</div>
       <div class="ach-tabs">
@@ -1288,16 +1287,9 @@ tgRequireAuth('employee', function(u){
     if(typeof loadMyFormRequests === 'function') loadMyFormRequests(u.uid);
     // تفعيل استقبال Push Notifications من Firestore
     if(typeof tgListenMyNotifications === 'function') tgListenMyNotifications(u.uid);
-    // Service Worker disabled to clear cache issues
-    /*
+    // PWA Service Worker
     if('serviceWorker' in navigator){
       navigator.serviceWorker.register('./sw.js').catch(function(){});
-    }
-    */
-    if ('caches' in window) {
-        caches.keys().then(function(names) {
-            for (let name of names) caches.delete(name);
-        });
     }
     loadMyDocs();
     
