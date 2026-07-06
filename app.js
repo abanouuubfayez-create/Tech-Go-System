@@ -1900,6 +1900,8 @@ function saveProjectEdit(id,idx){
     var checked=Array.prototype.slice.call(document.querySelectorAll('#pmEditAssignees'+idx+' .pm-edit-assignee-chk:checked')).map(function(c){return c.value;});
     msg.style.color='var(--tx3)'; msg.textContent='⏳ جارٍ الحفظ...';
     db.collection('projects').doc(id).update({title:title,description:desc,assignees:checked,priority:priority,status:status,deadline:deadline}).then(function(){
+        msg.style.color='var(--ok)'; msg.textContent='✅ تم الحفظ';
+        if(status === 'مكتمل') tgCelebrate();
         loadPmgmtData();
     }).catch(function(err){
         msg.style.color='var(--no)'; msg.textContent='❌ تعذر الحفظ: '+err.message;
@@ -4358,4 +4360,24 @@ function tgProfileGo(id, el) {
     document.querySelectorAll('.profile-pg').forEach(function(p){ p.classList.remove('a'); });
     el.classList.add('a');
     document.getElementById('ppg-' + id).classList.add('a');
+}
+
+// 🎊 دالة الاحتفال (Confetti Celebration)
+function tgCelebrate() {
+    if (typeof confetti !== 'function') return;
+    var duration = 3 * 1000;
+    var animationEnd = Date.now() + duration;
+    var defaults = { startVelocity: 30, spread: 360, ticks: 60, zIndex: 999999 };
+
+    function randomInRange(min, max) {
+        return Math.random() * (max - min) + min;
+    }
+
+    var interval = setInterval(function() {
+        var timeLeft = animationEnd - Date.now();
+        if (timeLeft <= 0) return clearInterval(interval);
+        var particleCount = 50 * (timeLeft / duration);
+        confetti(Object.assign({}, defaults, { particleCount: particleCount, origin: { x: randomInRange(0.1, 0.3), y: Math.random() - 0.2 } }));
+        confetti(Object.assign({}, defaults, { particleCount: particleCount, origin: { x: randomInRange(0.7, 0.9), y: Math.random() - 0.2 } }));
+    }, 250);
 }

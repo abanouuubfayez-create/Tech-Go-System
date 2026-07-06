@@ -591,7 +591,10 @@ function saveProjDetailProgress(id){
     msg.style.color='var(--tx3)'; msg.textContent='⏳ جارٍ الحفظ...';
     var upd = {}; upd['progressMap.'+TG_USER.uid] = {progress:prog, status:status, note:note, updatedAt:new Date()};
     db.collection('projects').doc(id).update(upd)
-        .then(function(){ msg.style.color='var(--ok)'; msg.textContent='✅ تم حفظ التحديث.'; })
+        .then(function(){ 
+            msg.style.color='var(--ok)'; msg.textContent='✅ تم حفظ التحديث.'; 
+            if(status === 'مكتمل' && typeof tgCelebrate === 'function') tgCelebrate();
+        })
         .catch(function(e){ msg.style.color='var(--no)'; msg.textContent='❌ '+e.message; });
 }
 // saveMyProjDetailEdit removed
@@ -606,6 +609,7 @@ function saveProjectProgress(id){
     var field={}; field['progressMap.'+TG_USER.uid]={progress:progress,status:status,note:note,updatedAt:new Date()};
     db.collection('projects').doc(id).update(field).then(function(){
         msg.style.color='var(--ok)'; msg.textContent='✅ تم الحفظ';
+        if(status === 'مكتمل' && typeof tgCelebrate === 'function') tgCelebrate();
         setTimeout(function(){msg.textContent='';},2500);
     }).catch(function(err){ msg.style.color='var(--no)'; msg.textContent='❌ '+err.message; });
 }
@@ -971,6 +975,7 @@ function saveTaskStatus(id){
         msg.style.color='var(--ok)'; msg.textContent='✅ تم الحفظ';
         // Push notification عند اكتمال المهمة
         if(status === 'مكتمل'){
+            if(typeof tgCelebrate === 'function') tgCelebrate();
             tgShowNotification('✅ مهمة مكتملة', 'أنهيت مهمة بنجاح! أحسنت 🎉');
             // إعادة تحميل القائمة لتأرشف المهمة تلقائياً
             setTimeout(function(){
