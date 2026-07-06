@@ -1843,6 +1843,7 @@ function renderProjectsList(list){
 
         h+='<div class="proj-sec"><div class="proj-sec-title">⚙️ إدارة المشروع</div>';
         h+='<div style="display:flex;gap:8px;flex-wrap:wrap">'+
+           (p.status !== 'مكتمل' ? '<button class="bt bt-ok" onclick="quickCompleteProject(\''+p.id+'\')">✅ إنهاء المشروع</button>' : '')+
            '<button class="bt bt-o" onclick="toggleProjEdit('+idx+')">✏️ تعديل المشروع</button>'+
            '<button class="bt bt-o" onclick="printProjectDoc(window._pmgmtProjCache['+idx+'])">🖨 طباعة المشروع</button>'+
            '<button class="bt bt-d" onclick="deleteProject(\''+p.id+'\')">🗑 حذف المشروع</button>'+
@@ -1905,6 +1906,15 @@ function saveProjectEdit(id,idx){
         loadPmgmtData();
     }).catch(function(err){
         msg.style.color='var(--no)'; msg.textContent='❌ تعذر الحفظ: '+err.message;
+    });
+}
+function quickCompleteProject(id){
+    if(!confirm('هل أنت متأكد من رغبتك في إنهاء هذا المشروع؟')) return;
+    db.collection('projects').doc(id).update({status:'مكتمل'}).then(function(){
+        tgCelebrate();
+        loadPmgmtData();
+    }).catch(function(err){
+        alert('تعذر إنهاء المشروع: '+err.message);
     });
 }
 function deleteProject(id){
