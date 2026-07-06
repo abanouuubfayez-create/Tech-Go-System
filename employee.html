@@ -80,24 +80,29 @@
 [data-theme='dark'] .ach-tab.active {
     background: var(--gd); color: var(--nv);
 }
-/* Zaghrouta Animation Styles */
+/* Zaghrouta Animation Styles (Centered) */
 .zaghrouta-container {
-    position: fixed; bottom: -300px; right: 20px; z-index: 9999;
-    width: 220px; pointer-events: none; transition: bottom 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    position: fixed; top: 50%; left: 50%; transform: translate(-50%, 100%) scale(0.5);
+    z-index: 10000; width: 280px; pointer-events: none; opacity: 0;
+    transition: all 0.6s cubic-bezier(0.175, 0.885, 0.32, 1.275);
 }
-.zaghrouta-container.show { bottom: 0; }
-.zaghrouta-img { width: 100%; filter: drop-shadow(0 10px 20px rgba(0,0,0,0.2)); }
+.zaghrouta-container.show { 
+    transform: translate(-50%, -50%) scale(1); 
+    opacity: 1;
+}
+.zaghrouta-img { width: 100%; filter: drop-shadow(0 15px 30px rgba(0,0,0,0.3)); }
 .zaghrouta-bubble {
-    position: absolute; top: -20px; left: -40px; background: #fff;
-    padding: 8px 15px; border-radius: 20px; font-weight: 800; font-size: 14px;
-    box-shadow: 0 5px 15px rgba(0,0,0,0.1); border: 2px solid var(--gd);
-    color: var(--nv); transform: scale(0); transition: transform 0.3s 0.4s;
+    position: absolute; top: 10px; left: -20px; background: #fff;
+    padding: 10px 20px; border-radius: 25px; font-weight: 800; font-size: 18px;
+    box-shadow: 0 8px 25px rgba(0,0,0,0.2); border: 3px solid var(--gd);
+    color: var(--nv); transform: scale(0); transition: transform 0.4s 0.5s;
+    white-space: nowrap;
 }
 .zaghrouta-container.show .zaghrouta-bubble { transform: scale(1); }
 @keyframes celebrate-shake {
     0%, 100% { transform: translateY(0) rotate(0); }
-    25% { transform: translateY(-5px) rotate(-2deg); }
-    75% { transform: translateY(-5px) rotate(2deg); }
+    25% { transform: translateY(-8px) rotate(-3deg); }
+    75% { transform: translateY(-8px) rotate(3deg); }
 }
 .zaghrouta-container.show .zaghrouta-img { animation: celebrate-shake 0.3s infinite; }
 </style>
@@ -106,7 +111,7 @@
 <!-- Celebration Character Container -->
 <div id="zaghroutaWrap" class="zaghrouta-container">
     <div class="zaghrouta-bubble" id="zaghroutaMsg">أخيراً! 🎉</div>
-    <img src="celebrating_arab_woman_1783378189859.png" class="zaghrouta-img" alt="Celebration">
+    <img src="celebration.png" class="zaghrouta-img" alt="Celebration">
 </div>
 
 <iframe id="tgPrintFrame" style="position:fixed;top:-9999px;left:-9999px;width:0;height:0;border:0" title="طباعة"></iframe>
