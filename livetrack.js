@@ -52,10 +52,11 @@
   function ltRelTime(ts) {
     if (!ts) return 'الآن';
     var d = (ts && typeof ts.toDate === 'function') ? ts.toDate() : new Date(ts);
+    if (isNaN(d.getTime())) return 'توقيت غير معروف';
     var now = Date.now();
     var s = Math.floor((now - d.getTime()) / 1000);
     
-    if (s < 5) return 'الآن';
+    if (s < 2) return 'الآن';
     if (s < 60) return 'منذ ' + s + ' ثانية';
     var m = Math.floor(s / 60);
     if (m < 60) return 'منذ ' + m + (m === 1 ? ' دقيقة' : m === 2 ? ' دقيقتين' : m <= 10 ? ' دقائق' : ' دقيقة');
@@ -146,6 +147,7 @@
         '<div class="lt-panel">' +
           '<div class="lt-panel-h"><h3>سجل النشاط اللحظي</h3>' +
             '<div style="display:flex;align-items:center;gap:8px">' +
+              '<button class="bt bt-o" style="padding:4px 10px;font-size:10.5px" onclick="ltForceRefresh()">🔄 تحديث</button>' +
               '<button class="bt bt-o" style="padding:4px 10px;font-size:10.5px" onclick="ltPrintFeed()">🖨 طباعة</button>' +
               '<span class="lt-live-pill"><i></i> مباشر <span id="ltTick" style="font-size:8px;opacity:0.5;margin-left:4px"></span></span>' +
             '</div>' +
@@ -242,17 +244,14 @@
       ltRenderTeam();
     });
 
-    // تحديث نصوص الوقت النسبي ("منذ دقيقة" ← "منذ دقيقتين"...) كل ٣٠ ثانية
-    // بدون انتظار حدث جديد من Firestore، عشان الصفحة تفضل "لحظية" فعلاً
-    if (!ltTickTimer) {
-      ltTickTimer = setInterval(function () {
-        var tickEl = document.getElementById('ltTick');
-        if(tickEl) tickEl.textContent = ':' + (new Date().getSeconds());
-        if (ltPruneFeed()) ltSaveFeed();
-        ltRenderFeed();
-        ltRenderTeam();
-      }, 5000);
-    }
+    if (ltTickTimer) clearInterval(ltTickTimer);
+    ltTickTimer = setInterval(function () {
+      var tickEl = document.getElementById('ltTick');
+      if(tickEl) tickEl.textContent = ':' + (new Date().getSeconds());
+      if (ltPruneFeed()) ltSaveFeed();
+      ltRenderFeed();
+      ltRenderTeam();
+    }, 5000);
   }
 
   // ── سجل النشاط: يضيف حدثًا جديدًا فقط عند تغيّر فعلي بعد أول تحميل ───────
@@ -404,4 +403,17 @@
     h += FT(['نسخة الإدارة']);
     printDoc(h);
   };
+
+  window.ltForceRefresh = function() {
+    ltLoadFeed();
+    ltRenderFeed();
+    ltRenderTeam();
+    ltRenderKpis();
+  };
+  
+  // تنظيف الذاكرة القديمة لمرة واحدة لضمان سلامة البيانات
+  if(!localStorage.getItem('lt_v2')) {
+     localStorage.removeItem(LT_STORAGE_KEY);
+     localStorage.setItem('lt_v2', '1');
+  }
 })();
