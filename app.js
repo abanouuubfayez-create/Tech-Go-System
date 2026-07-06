@@ -161,6 +161,52 @@ function tgFilterVisibleTables(query) {
         });
     });
 }
+// ── Global Table Sorter ──
+function tgSortVisibleList(sortBy) {
+    if(!sortBy) return;
+    var activePg = document.querySelector('.pg.a') || document.querySelector('.emp-pg.a');
+    if(!activePg) return;
+
+    var lists = activePg.querySelectorAll('.pj-row, .staff-card, .emp-proj-card, table.dt tbody tr, table:not(.no-filter) tr');
+    var containers = new Set();
+    lists.forEach(function(el) { containers.add(el.parentNode); });
+
+    containers.forEach(function(container) {
+        var items = Array.prototype.slice.call(container.children).filter(function(el) {
+            return el.classList.contains('pj-row') || el.classList.contains('staff-card') || el.classList.contains('emp-proj-card') || el.tagName === 'TR';
+        });
+        if(items.length === 0) return;
+        
+        var headers = [];
+        var rows = [];
+        items.forEach(function(el) {
+            if(el.querySelector('th')) headers.push(el);
+            else rows.push(el);
+        });
+
+        rows.sort(function(a,b) {
+            var parts = sortBy.split('_');
+            var sortKey = parts[0];
+            var dir = parts[1];
+            
+            var valA = a.getAttribute('data-' + sortKey) || '';
+            var valB = b.getAttribute('data-' + sortKey) || '';
+            
+            var numA = parseFloat(valA);
+            var numB = parseFloat(valB);
+            
+            var res = 0;
+            if(!isNaN(numA) && !isNaN(numB)) {
+                res = numA - numB;
+            } else {
+                res = valA.localeCompare(valB);
+            }
+            return dir === 'desc' ? -res : res;
+        });
+
+        rows.forEach(function(el) { container.appendChild(el); });
+    });
+}
 function ts(b){var p=b.parentNode;p.querySelectorAll(".stb").forEach(function(x){x.classList.remove("a")});b.classList.add("a")}
 function sct(c){c.parentNode.querySelectorAll(".ctc").forEach(function(x){x.classList.remove("sel")});c.classList.add("sel")}
 function spr(p){p.parentNode.querySelectorAll(".ppl").forEach(function(x){x.classList.remove("a")});p.classList.add("a")}
@@ -1119,7 +1165,11 @@ function renderTasksMgmtList(list){
             });
             historyHtml += '</div>';
         }
-        h+='<div class="pj-row"><div class="pj-t">'+escH(t.title||'بدون عنوان')+
+        var pVal = t.priority === 'عالية' ? 3 : (t.priority === 'متوسطة' ? 2 : 1);
+        var sVal = t.status === 'مكتمل' ? 3 : (t.status === 'جاري العمل' ? 2 : 1);
+        var dVal = (t.createdAt && t.createdAt.toMillis) ? t.createdAt.toMillis() : ((t.createdAt && new Date(t.createdAt).getTime()) || 0);
+
+        h+='<div class="pj-row" data-prio="'+pVal+'" data-status="'+sVal+'" data-date="'+dVal+'"><div class="pj-t">'+escH(t.title||'بدون عنوان')+
            ' <span class="badge '+prioBadgeClass(t.priority)+'">'+escH(t.priority||'متوسطة')+'</span>'+
            ' <span class="badge '+pstatusBadgeClass(t.status)+'">'+escH(t.status||'لم يبدأ')+'</span></div>'+
            '<div class="pj-meta">👤 مكلَّف حالياً إلى: '+escH(t.assignedToName||'مجهول')+(t.deadline?(' · تاريخ التسليم: '+escH(t.deadline)):'')+'</div>'+
@@ -1612,7 +1662,11 @@ function renderProjectsList(list){
         });
         var avgProg=assignees.length?Math.round(sum/assignees.length):0;
 
-        h+='<div class="staff-card" id="pmCard'+idx+'">';
+        var dVal = (p.createdAt && p.createdAt.toMillis) ? p.createdAt.toMillis() : ((p.createdAt && new Date(p.createdAt).getTime()) || 0);
+        var sVal = p.status === 'مكتمل' ? 3 : (p.status === 'متوقف' ? 1 : 2); // default 2
+        var pVal = p.priority === 'عالية' ? 3 : (p.priority === 'متوسطة' ? 2 : 1);
+
+        h+='<div class="staff-card" id="pmCard'+idx+'" data-date="'+dVal+'" data-status="'+sVal+'" data-prio="'+pVal+'">';
         h+='<div class="staff-card-h" onclick="toggleProjCard('+idx+')">'+
            '<div><div class="staff-name">'+escH(p.title||'بدون عنوان')+'</div>'+
            (p.description?'<div class="staff-email">'+escH(p.description)+'</div>':'')+

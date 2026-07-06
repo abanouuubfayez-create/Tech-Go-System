@@ -1937,6 +1937,13 @@
             </div>
             <span id="periodLabelDisplay" style="color:#94a3b8;font-size:.82rem;font-weight:600;margin-right:.5rem;"></span>
             <input type="search" id="globalTableFilter" class="global-table-filter" placeholder="🔍 تصفية بيانات الجدول..." oninput="tgFilterVisibleTables(this.value)" autocomplete="off" style="margin-right:auto; margin-left:1rem;">
+            <select id="globalSortSelect" class="global-table-filter" style="margin-left:1rem; cursor:pointer;" onchange="if(typeof tgSortVisibleList==='function') tgSortVisibleList(this.value)">
+                <option value="">-- فرز حسب --</option>
+                <option value="date_desc">الأحدث أولاً</option>
+                <option value="date_asc">الأقدم أولاً</option>
+                <option value="prio_desc">الأعلى أولوية</option>
+                <option value="status_desc">حسب الحالة</option>
+            </select>
         </div>
 
         <!-- ── Settings Drawer ── -->
@@ -5623,6 +5630,50 @@ ${empBlocks}
                 var text = tr.textContent.toLowerCase();
                 tr.style.display = (q === "" || text.indexOf(q) > -1) ? '' : 'none';
             });
+        });
+    }
+
+    // ── Global Table Sorter ──
+    function tgSortVisibleList(sortBy) {
+        if(!sortBy) return;
+        var lists = document.querySelectorAll('table:not(.no-filter) tr');
+        var containers = new Set();
+        lists.forEach(function(el) { containers.add(el.parentNode); });
+
+        containers.forEach(function(container) {
+            var items = Array.prototype.slice.call(container.children).filter(function(el) {
+                return el.tagName === 'TR';
+            });
+            if(items.length === 0) return;
+            
+            var headers = [];
+            var rows = [];
+            items.forEach(function(el) {
+                if(el.querySelector('th')) headers.push(el);
+                else rows.push(el);
+            });
+
+            rows.sort(function(a,b) {
+                var parts = sortBy.split('_');
+                var sortKey = parts[0];
+                var dir = parts[1];
+                
+                var valA = a.getAttribute('data-' + sortKey) || '';
+                var valB = b.getAttribute('data-' + sortKey) || '';
+                
+                var numA = parseFloat(valA);
+                var numB = parseFloat(valB);
+                
+                var res = 0;
+                if(!isNaN(numA) && !isNaN(numB)) {
+                    res = numA - numB;
+                } else {
+                    res = valA.localeCompare(valB);
+                }
+                return dir === 'desc' ? -res : res;
+            });
+
+            rows.forEach(function(el) { container.appendChild(el); });
         });
     }
     </script>

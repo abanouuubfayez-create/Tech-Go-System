@@ -70,6 +70,13 @@
   <div class="who">👋 أهلاً، <span id="empWhoName">...</span><small id="empWhoRole"></small></div>
   <div style="display:flex;align-items:center;gap:8px;">
     <input type="search" id="globalTableFilter" class="global-table-filter" placeholder="🔍 تصفية بيانات الجدول..." oninput="if(typeof tgFilterVisibleTables==='function') tgFilterVisibleTables(this.value)" autocomplete="off">
+    <select id="globalSortSelect" class="global-table-filter" style="margin-left:8px; cursor:pointer;" onchange="if(typeof window.parent.tgSortVisibleList==='function') window.parent.tgSortVisibleList(this.value); else if(typeof tgSortVisibleList==='function') tgSortVisibleList(this.value)">
+        <option value="">-- فرز حسب --</option>
+        <option value="date_desc">الأحدث أولاً</option>
+        <option value="date_asc">الأقدم أولاً</option>
+        <option value="prio_desc">الأعلى أولوية</option>
+        <option value="status_desc">حسب الحالة</option>
+    </select>
     <button class="bt-logout" onclick="tgLogout()">🚪 خروج</button>
   </div>
 </div>
@@ -457,7 +464,12 @@ function renderProjectsHtml(projects){
             : '';
         // بطاقة مكتملة بتصميم مختلف
         var cardStyle = isCompleted ? 'opacity:.7;border:1.5px solid var(--ok)' : '';
-        h += '<div class="emp-proj-card" onclick="openProjectDetail(\''+p.id+'\')" style="'+cardStyle+'">';
+        
+        var pVal = p.priority === 'عالية' ? 3 : (p.priority === 'متوسطة' ? 2 : 1);
+        var sVal = isCompleted ? 3 : (pm.status === 'متوقف' ? 1 : 2);
+        var dVal = (p.createdAt && p.createdAt.toMillis) ? p.createdAt.toMillis() : ((p.createdAt && new Date(p.createdAt).getTime()) || 0);
+
+        h += '<div class="emp-proj-card" onclick="openProjectDetail(\''+p.id+'\')" style="'+cardStyle+'" data-prio="'+pVal+'" data-status="'+sVal+'" data-date="'+dVal+'">';
         h += '<div class="emp-proj-card-stripe" style="background:'+(isCompleted?'linear-gradient(90deg,var(--ok),#40c674)':stripeColor)+'"></div>';
         h += '<div class="emp-proj-card-top">';
         h += '<div class="emp-proj-card-title">'+esc(p.title||'بدون عنوان')+(mine?' <span class="badge" style="background:var(--gd);color:#1b2a4a;font-size:8.5px">مشروعي</span>':'')+(isCompleted?' <span style="background:var(--ok);color:#fff;border-radius:12px;padding:1px 7px;font-size:9px;font-weight:800">✅ مكتمل</span>':'')+commentBadge+'</div>';
@@ -727,7 +739,11 @@ function renderTasksHtml(rows){
             historyHtml += '</div>';
         }
         
-        return '<div class="pj-row" style="'+cardStyle+'">'+
+        var pVal = t.priority === 'عالية' ? 3 : (t.priority === 'متوسطة' ? 2 : 1);
+        var sVal = t.status === 'مكتمل' ? 3 : (t.status === 'جاري العمل' ? 2 : 1);
+        var dVal = (t.createdAt && t.createdAt.toMillis) ? t.createdAt.toMillis() : ((t.createdAt && new Date(t.createdAt).getTime()) || 0);
+
+        return '<div class="pj-row" style="'+cardStyle+'" data-prio="'+pVal+'" data-status="'+sVal+'" data-date="'+dVal+'">'+
             '<div class="pj-t">'+esc(t.title||'بدون عنوان')+
             ' <span class="badge"'+(isDone?' style="background:var(--ok);color:#fff"':'')+(isOverdue?' style="background:var(--no);color:#fff"':'')+'>'+esc(t.priority||'متوسطة')+'</span>'+
             (isDone?' <span style="background:var(--ok);color:#fff;border-radius:10px;padding:1px 8px;font-size:9px;font-weight:800">✅ مكتملة</span>':'')+(isOverdue?' <span style="background:var(--no);color:#fff;border-radius:10px;padding:1px 8px;font-size:9px;font-weight:800">⏰ متأخرة</span>':'')+
