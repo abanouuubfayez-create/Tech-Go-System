@@ -197,6 +197,7 @@
                 var exists = ltFeed.some(function(f) { return f.ts === tsMillis && f.title === t.title && f.verb.indexOf('كلّف') > -1; });
                 if (!exists) {
                   ltFeed.push({
+                    id: t.id,
                     name: t.createdBy || 'الإدارة',
                     verb: 'كلّف الموظف (' + (t.assignedToName || '?') + ') بمهمة',
                     title: t.title || 'بدون عنوان',
@@ -213,6 +214,7 @@
                 var exists = ltFeed.some(function(f) { return f.ts === tsMillis && f.title === t.title; });
                 if (!exists) {
                   ltFeed.push({
+                    id: t.id,
                     name: t.assignedToName || 'موظف',
                     verb: t.status === 'مكتمل' ? 'أنهى مهمة' : t.status === 'جاري العمل' ? 'بدأ العمل على' : 'أعاد فتح مهمة',
                     title: t.title || 'بدون عنوان',
@@ -255,28 +257,32 @@
 
   // ── سجل النشاط: يضيف حدثًا جديدًا فقط عند تغيّر فعلي بعد أول تحميل ───────
   function ltPushFeed(t) {
-    // Firestore بيبعث onSnapshot مرتين لنفس الكتابة أحيانًا (نسخة محلية فورية
-    // ثم تأكيد من الخادم) — نتفادى تكرار نفس الحدث لنفس المهمة بنفس الحالة
-    if (ltLastPushed[t.id] === t.status) return;
-    var isNew = !ltLastPushed[t.id] && t.status === 'لم يبدأ';
-    ltLastPushed[t.id] = t.status;
+    var status = t.status || 'لم يبدأ';
+    if (ltLastPushed[t.id] === status) return;
+    
+    var isNew = !ltLastPushed[t.id] && status === 'لم يبدأ';
+    ltLastPushed[t.id] = status;
 
     var verb = isNew ? 'كلّف الموظف (' + (t.assignedToName || '?') + ') بمهمة'
-      : t.status === 'مكتمل' ? 'أنهى مهمة'
-      : t.status === 'جاري العمل' ? 'بدأ العمل على'
+      : status === 'مكتمل' ? 'أنهى مهمة'
+      : status === 'جاري العمل' ? 'بدأ العمل على'
       : 'أعاد فتح مهمة';
       
     var name = isNew ? (t.createdBy || 'الإدارة') : (t.assignedToName || 'موظف');
-    var status = isNew ? 'جديدة' : (t.status || 'لم يبدأ');
 
     var tsMillis = (t.statusUpdatedAt && typeof t.statusUpdatedAt.toMillis === 'function') ? t.statusUpdatedAt.toMillis() : 
                    (isNew && t.createdAt && typeof t.createdAt.toMillis === 'function') ? t.createdAt.toMillis() : Date.now();
-                   
+    
+    // تفادي تكرار نفس الحدث
+    var exists = ltFeed.some(function(f) { return f.id === t.id && f.status === (isNew ? 'جديدة' : status); });
+    if (exists) return;
+
     ltFeed.unshift({
+      id: t.id,
       name: name,
       verb: verb,
       title: t.title || 'بدون عنوان',
-      status: status,
+      status: (isNew ? 'جديدة' : status),
       ts: tsMillis
     });
     ltPruneFeed();
