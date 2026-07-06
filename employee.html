@@ -86,7 +86,7 @@
 <div class="emp-nav">
   <div class="emp-tab a" data-pg="proj" onclick="empGo('proj',this)">📁 مشاريعي <span class="tab-badge" id="proj-badge" style="display:none">0</span></div>
   <div class="emp-tab" data-pg="tasks" onclick="empGo('tasks',this)">🗂 مهامي <span class="tab-badge" id="tasks-badge" style="display:none">0</span></div>
-  <div class="emp-tab" data-pg="wkr" onclick="empGo('wkr',this)">📆 تقاريري الأسبوعية</div>
+  <div class="emp-tab" data-pg="wkr" onclick="empGo('wkr',this)">📊 تقاريري الأسبوعية</div>
   <div class="emp-tab" data-pg="ach" onclick="empGo('ach',this)">🏆 إنجازاتي</div>
   <div class="emp-tab" data-pg="docs" onclick="empGo('docs',this)">📄 مستنداتي</div>
   <div class="emp-tab" data-pg="req" onclick="empGo('req',this)">📨 طلباتي</div>
@@ -190,10 +190,10 @@
     <div class="set-sec">
       <div class="set-sec-title">➕ إضافة إنجاز جديد</div>
       <div class="fr fr2" style="margin-top:8px">
-        <div class="fg"><label>عنوان الإنجاز</label><input type="text" id="achTitle" placeholder="مثلاً: إتمام نظام المرفقات"></div>
-        <div class="fg"><label>التاريخ</label><input type="date" id="achDate"></div>
+        <div class="fg"><label>🏆 عنوان الإنجاز</label><input type="text" id="achTitle" placeholder="مثلاً: إتمام نظام المرفقات"></div>
+        <div class="fg"><label>📅 التاريخ</label><input type="date" id="achDate"></div>
       </div>
-      <div class="fg fg-full" style="margin-top:12px"><label>وصف مختصر (اختياري)</label><textarea id="achDesc" rows="2"></textarea></div>
+      <div class="fg fg-full" style="margin-top:12px"><label>📝 وصف مختصر (اختياري)</label><textarea id="achDesc" rows="2"></textarea></div>
       <button class="bt bt-p" style="margin-top:12px" onclick="addAchievement()">➕ إضافة الإنجاز</button>
       <div id="achMsg" style="font-size:11px;margin-top:4px"></div>
     </div>
@@ -627,7 +627,7 @@ function loadMyAchievements(){
             h+='<div class="ac-row" style="border-right:4px solid '+(isMine?'var(--ok)':'var(--gd)')+'">'+
                '<div style="display:flex;justify-content:space-between;align-items:flex-start">'+
                '<div><div style="font-weight:700;color:var(--gd);font-size:13px;margin-bottom:2px">👤 '+displayName+(isMine?' (أنت)':'')+'</div>'+
-               '<div class="ac-t" style="font-size:15px">'+esc(a.title)+'</div></div>'+
+               '<div class="ac-t" style="font-size:15px">🏆 '+esc(a.title)+'</div></div>'+
                (isMine?'<button class="bt bt-o" style="padding:2px 8px;font-size:10px" onclick="printAchievementDoc(TG_USER,{title:\''+esc(a.title)+'\',description:\''+esc(a.description||'')+'\',date:\''+esc(a.date||'')+'\'})">🖨 طباعة</button>':'')+
                '</div>'+
                (a.description?'<div class="ac-meta">'+esc(a.description)+'</div>':'')+
