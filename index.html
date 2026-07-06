@@ -19,6 +19,12 @@
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-storage-compat.js"></script>
 <script src="firebase-config.js?v=2"></script>
 <script src="auth.js?v=2"></script>
+<script>
+    (function() {
+        const theme = localStorage.getItem('tg-theme') || 'light';
+        document.documentElement.setAttribute('data-theme', theme);
+    })();
+</script>
 </head>
 <body>
 <iframe id="tgPrintFrame" style="position:fixed;top:-9999px;left:-9999px;width:0;height:0;border:0" title="طباعة"></iframe>
@@ -148,6 +154,7 @@
     <input type="search" id="globalTableFilter" class="global-table-filter" placeholder="🔍 تصفية بيانات الجدول..." oninput="if(typeof tgFilterVisibleTables==='function') tgFilterVisibleTables(this.value)" autocomplete="off" style="margin-left:8px;">
     <button class="bt bt-o" onclick="tgClearForm()" style="font-size:11px;padding:4px 10px;margin-left:4px">🧹 مسح النموذج</button>
     <button class="bt bt-o" onclick="tgLoadFormDrafts()" style="font-size:11px;padding:4px 10px;margin-left:4px">📂 النماذج المحفوظة</button>
+    <button class="bt bt-o" id="themeToggle" onclick="tgToggleTheme()" title="تبديل الوضع الليلي" style="font-size:16px;padding:4px 10px;margin-left:4px">🌙</button>
     <button class="bt bt-p" onclick="tgSaveFormDraft()" style="font-size:11px;padding:4px 10px;margin-left:8px">💾 حفظ النموذج</button>
     <button class="bt bt-o" onclick="openPrintPreview()">🖨 معاينة وطباعة</button>
 </div></div>
@@ -451,5 +458,6 @@
   }
 </script>
 <div style="position:fixed;bottom:4px;left:50%;transform:translateX(-50%);font-size:9px;color:rgba(255,255,255,0.25);z-index:9999;pointer-events:none;white-space:nowrap;font-family:inherit">تطوير وتصميم: أبانوب فايز</div>
+<script src="theme.js?v=1"></script>
 </body>
 </html>

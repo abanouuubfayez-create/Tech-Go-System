@@ -14,9 +14,16 @@
 <link rel="manifest" href="manifest.json">
 <link rel="icon" type="image/png" sizes="192x192" href="icon-192.png">
 <link rel="apple-touch-icon" href="icon-192.png">
+<script>
+    (function() {
+        const theme = localStorage.getItem('tg-theme') || 'light';
+        document.documentElement.setAttribute('data-theme', theme);
+    })();
+</script>
 </head>
 <body>
 <div class="tg-login-wrap">
+  <button class="bt bt-o" id="themeToggle" onclick="tgToggleTheme()" title="تبديل الوضع الليلي" style="position:fixed;top:20px;right:20px;font-size:20px;padding:8px 12px;z-index:100;border-radius:50%;width:45px;height:45px;display:flex;align-items:center;justify-content:center;background:var(--w);box-shadow:var(--sh-md)">🌙</button>
   <div class="tg-login-card">
     <div class="tg-login-logo">
       <div class="lgo"><span>TECH - GO</span><small>تيك – جو</small></div>
@@ -156,5 +163,6 @@ if('serviceWorker' in navigator){
     });
 }
 </script>
+<script src="theme.js?v=1"></script>
 </body>
 </html>

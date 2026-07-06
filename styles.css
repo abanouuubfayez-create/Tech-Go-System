@@ -27,6 +27,40 @@
     --tr: all .3s cubic-bezier(.4,0,.2,1);
 }
 
+[data-theme='dark'] {
+    --bg: #020617;
+    --w: #0f172a;
+    --tx: #f1f5f9;
+    --tx2: #e2e8f0;
+    --tx3: #94a3b8;
+    --bd: #1e293b;
+    --bd2: #334155;
+    --sh-sm: 0 4px 12px rgba(0, 0, 0, 0.4);
+    --sh-md: 0 10px 30px rgba(0, 0, 0, 0.5);
+    --sh-lg: 0 20px 50px rgba(0, 0, 0, 0.6);
+}
+
+[data-theme='dark'] body { background-color: var(--bg); color: var(--tx); }
+[data-theme='dark'] .M { background-color: var(--bg); }
+[data-theme='dark'] .TB { background-color: var(--w); border-bottom-color: var(--bd); box-shadow: var(--sh-sm); }
+[data-theme='dark'] .bt-o { background-color: var(--w); border-color: var(--bd2); color: var(--tx2); }
+[data-theme='dark'] .bt-o:hover { background: var(--bd); color: var(--tx); }
+[data-theme='dark'] input, [data-theme='dark'] select, [data-theme='dark'] textarea { background-color: var(--w); color: var(--tx); border-color: var(--bd); }
+[data-theme='dark'] .global-table-filter { background-color: var(--w); color: var(--tx); border-color: var(--bd); }
+[data-theme='dark'] .emp-proj-card { background: rgba(15, 23, 42, 0.8) !important; border-color: var(--bd) !important; }
+[data-theme='dark'] .pj-row { background-color: var(--w); border-color: var(--bd) !important; }
+[data-theme='dark'] .print-header, [data-theme='dark'] .print-footer { color: var(--tx3); }
+[data-theme='dark'] .tg-toast { background: var(--w); color: var(--tx); border: 1px solid var(--bd); }
+[data-theme='dark'] .dash-sec-title .di { background: var(--w); border-color: var(--bd); color: var(--gd); }
+[data-theme='dark'] .DC .di { background: rgba(255, 255, 255, 0.05); }
+[data-theme='dark'] .sb-scroll-top:hover { background: var(--nv); color: #fff; }
+[data-theme='dark'] .S-h .logo { background: rgba(201, 162, 39, 0.15); }
+[data-theme='dark'] .F-hd .meta input { border-bottom-color: rgba(255, 255, 255, 0.4); }
+[data-theme='dark'] .sec { border-bottom-color: var(--gd); }
+[data-theme='dark'] .sec .stx { color: var(--gd); }
+[data-theme='dark'] .S { border-left-color: rgba(255, 255, 255, 0.1); }
+
+
 *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
 html { font-size: 14.5px; -webkit-text-size-adjust: 100%; }
 body { font-family: 'Alexandria', 'Inter', sans-serif; direction: rtl; background: var(--bg); color: var(--tx); line-height: 1.6; }
