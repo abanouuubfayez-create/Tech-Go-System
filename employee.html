@@ -624,11 +624,16 @@ function loadMyAchievements(){
             var reactions = a.reactions || {};
             var displayName = a.userName || namesMap[a.uid] || 'موظف';
             
+            var isAnyAdmin = (TG_USER.role === 'admin' || TG_USER.role === 'tech_admin');
+            
             h+='<div class="ac-row" style="border-right:4px solid '+(isMine?'var(--ok)':'var(--gd)')+'">'+
                '<div style="display:flex;justify-content:space-between;align-items:flex-start">'+
                '<div><div style="font-weight:700;color:var(--gd);font-size:13px;margin-bottom:2px">👤 '+displayName+(isMine?' (أنت)':'')+'</div>'+
                '<div class="ac-t" style="font-size:15px">🏆 '+esc(a.title)+'</div></div>'+
-               (isMine?'<button class="bt bt-o" style="padding:2px 8px;font-size:10px" onclick="printAchievementDoc(TG_USER,{title:\''+esc(a.title)+'\',description:\''+esc(a.description||'')+'\',date:\''+esc(a.date||'')+'\'})">🖨 طباعة</button>':'')+
+               '<div style="display:flex;gap:4px">'+
+                 (isMine?'<button class="bt bt-o" style="padding:2px 8px;font-size:10px" onclick="printAchievementDoc(TG_USER,{title:\''+esc(a.title)+'\',description:\''+esc(a.description||'')+'\',date:\''+esc(a.date||'')+'\'})">🖨 طباعة</button>':'')+
+                 (isAnyAdmin?'<button class="bt bt-o" style="padding:2px 8px;font-size:10px;border-color:var(--no);color:var(--no)" onclick="deleteAchievement(\''+doc.id+'\')">🗑 حذف</button>':'')+
+               '</div>'+
                '</div>'+
                (a.description?'<div class="ac-meta">'+esc(a.description)+'</div>':'')+
                '<div style="display:flex;justify-content:space-between;align-items:center;margin-top:10px">'+
@@ -714,6 +719,12 @@ function addAchievement(){
         sendAchievementNotification(title);
         loadMyAchievements();
     }).catch(function(err){ msg.style.color='var(--no)'; msg.textContent='❌ '+err.message; });
+}
+
+function deleteAchievement(id) {
+    if(!confirm('هل أنت متأكد من حذف هذا الإنجاز؟')) return;
+    db.collection('achievements').doc(id).delete()
+        .catch(function(err){ alert('❌ فشل الحذف: ' + err.message); });
 }
 
 function sendAchievementNotification(achTitle) {
