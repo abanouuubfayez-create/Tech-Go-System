@@ -70,13 +70,6 @@
   <div class="who">👋 أهلاً، <span id="empWhoName">...</span><small id="empWhoRole"></small></div>
   <div style="display:flex;align-items:center;gap:8px;">
     <input type="search" id="globalTableFilter" class="global-table-filter" placeholder="🔍 تصفية بيانات الجدول..." oninput="if(typeof tgFilterVisibleTables==='function') tgFilterVisibleTables(this.value)" autocomplete="off">
-    <select id="globalSortSelect" class="global-table-filter" style="margin-left:8px; cursor:pointer;" onchange="if(typeof window.parent.tgSortVisibleList==='function') window.parent.tgSortVisibleList(this.value); else if(typeof tgSortVisibleList==='function') tgSortVisibleList(this.value)">
-        <option value="">-- فرز حسب --</option>
-        <option value="date_desc">الأحدث أولاً</option>
-        <option value="date_asc">الأقدم أولاً</option>
-        <option value="prio_desc">الأعلى أولوية</option>
-        <option value="status_desc">حسب الحالة</option>
-    </select>
     <button class="bt-logout" onclick="tgLogout()">🚪 خروج</button>
   </div>
 </div>
@@ -130,7 +123,8 @@
       <div class="set-hint" style="margin-bottom:16px">المشاريع المُسندة إليك من الإدارة — حدّث نسبة تقدّمك وحالتك أولاً بأول ليراها المدير.</div>
 
       <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px">
-        <div style="font-size:14px;font-weight:800;color:var(--nv)">📁 مشاريعي الحالية</div>
+        <div style="display:flex;align-items:center;gap:10px;"><div style="font-size:14px;font-weight:800;color:var(--nv)">📁 مشاريعي الحالية</div>
+        <select class="global-table-filter" style="margin:0;padding:4px;font-size:11px;min-height:auto;" onchange="if(typeof window.parent.tgSortVisibleList==='function') window.parent.tgSortVisibleList(this.value); else if(typeof tgSortVisibleList==='function') tgSortVisibleList(this.value)"><option value="">-- فرز حسب --</option><option value="date_desc">الأحدث</option><option value="date_asc">الأقدم</option><option value="prio_desc">الأولوية</option><option value="status_desc">الحالة</option></select></div>
         <div id="projCountLabel" style="font-size:11px;color:var(--tx3);font-weight:600"></div>
       </div>
       <div id="myProjectsList"><div class="empty-hint">⏳ جارٍ التحميل...</div></div>
@@ -143,6 +137,10 @@
 
   <!-- مهامي -->
   <div class="emp-pg" id="epg-tasks">
+    <div style="display:flex;align-items:center;gap:10px;margin-bottom:8px;">
+      <div style="font-size:14px;font-weight:800;color:var(--nv)">🗂 مهامي الحالية</div>
+      <select class="global-table-filter" style="margin:0;padding:4px;font-size:11px;min-height:auto;" onchange="if(typeof window.parent.tgSortVisibleList==='function') window.parent.tgSortVisibleList(this.value); else if(typeof tgSortVisibleList==='function') tgSortVisibleList(this.value)"><option value="">-- فرز حسب --</option><option value="date_desc">الأحدث</option><option value="date_asc">الأقدم</option><option value="prio_desc">الأولوية</option><option value="status_desc">الحالة</option></select>
+    </div>
     <div class="set-hint" style="margin-bottom:14px">المهام اللي كلّفك بيها الأدمن — حدّث حالتها أولاً بأول عشان يتابع الأدمن تنفيذك لها.</div>
     <div id="myTasksList"><div class="empty-hint">⏳ جارٍ التحميل...</div></div>
   </div>

@@ -141,13 +141,6 @@
 </div>
 <div class="TB"><div class="t" id="pT">لوحة التحكم</div><div class="ac np">
     <input type="search" id="globalTableFilter" class="global-table-filter" placeholder="🔍 تصفية بيانات الجدول..." oninput="if(typeof tgFilterVisibleTables==='function') tgFilterVisibleTables(this.value)" autocomplete="off" style="margin-left:8px;">
-    <select id="globalSortSelect" class="global-table-filter" style="margin-left:8px; cursor:pointer;" onchange="if(typeof tgSortVisibleList==='function') tgSortVisibleList(this.value)">
-        <option value="">-- فرز حسب --</option>
-        <option value="date_desc">الأحدث أولاً</option>
-        <option value="date_asc">الأقدم أولاً</option>
-        <option value="prio_desc">الأعلى أولوية</option>
-        <option value="status_desc">حسب الحالة</option>
-    </select>
     <button class="bt bt-o" onclick="tgClearForm()" style="font-size:11px;padding:4px 10px;margin-left:4px">🧹 مسح النموذج</button>
     <button class="bt bt-o" onclick="tgLoadFormDrafts()" style="font-size:11px;padding:4px 10px;margin-left:4px">📂 النماذج المحفوظة</button>
     <button class="bt bt-p" onclick="tgSaveFormDraft()" style="font-size:11px;padding:4px 10px;margin-left:8px">💾 حفظ النموذج</button>
