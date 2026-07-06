@@ -1691,3 +1691,24 @@ html.tg-auth-pending body { visibility: hidden; }
 }
 
 .ac-meta, .pj-meta, .dd { white-space: pre-wrap; word-break: break-word; overflow-wrap: break-word; }
+
+/* Global Table Filter */
+.global-table-filter {
+    padding: 6px 12px;
+    border-radius: 6px;
+    border: 1px solid var(--bd2, #cbd5e1);
+    font-family: inherit;
+    font-size: 12px;
+    background: #fff;
+    color: var(--nv, #1b2a4a);
+    outline: none;
+    transition: all 0.2s;
+    width: 200px;
+}
+.global-table-filter:focus {
+    border-color: var(--gd, #c9a227);
+    box-shadow: 0 0 0 2px rgba(201, 162, 39, 0.2);
+}
+@media (max-width: 600px) {
+    .global-table-filter { width: 100%; margin-top: 8px; }
+}

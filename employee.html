@@ -68,7 +68,10 @@
 
 <div class="emp-topbar">
   <div class="who">👋 أهلاً، <span id="empWhoName">...</span><small id="empWhoRole"></small></div>
-  <button class="bt-logout" onclick="tgLogout()">🚪 خروج</button>
+  <div style="display:flex;align-items:center;gap:8px;">
+    <input type="search" id="globalTableFilter" class="global-table-filter" placeholder="🔍 تصفية بيانات الجدول..." oninput="if(typeof tgFilterVisibleTables==='function') tgFilterVisibleTables(this.value)" autocomplete="off">
+    <button class="bt-logout" onclick="tgLogout()">🚪 خروج</button>
+  </div>
 </div>
 
 <div class="emp-nav">
@@ -278,6 +281,10 @@ function empGo(id, el, force) {
     document.querySelectorAll('.emp-pg').forEach(function(p){p.classList.remove('a');});
     if(el)el.classList.add('a');
     document.getElementById('epg-'+id).classList.add('a');
+    
+    // Reset global table filter
+    var gf = document.getElementById("globalTableFilter");
+    if(gf) { gf.value = ""; if(typeof tgFilterVisibleTables==='function') tgFilterVisibleTables(""); }
     
     if(id==='proj' && window._currentProjectIds && TG_USER){
         var seenProjects = JSON.parse(localStorage.getItem('seen_projects_'+TG_USER.uid) || '[]');
@@ -695,6 +702,15 @@ function renderTasksHtml(rows){
         var isOverdue = t.deadline && !isDone && new Date(t.deadline) < new Date();
         var cardStyle = isDone ? 'opacity:.65;border-right-color:var(--ok)' : (isOverdue ? 'border-right-color:var(--no)' : '');
         
+        var createdAtStr = '';
+        if(t.createdAt && typeof t.createdAt.toDate === 'function') {
+            var cd = t.createdAt.toDate();
+            createdAtStr = cd.toLocaleDateString('ar-EG') + ' ' + cd.toLocaleTimeString('ar-EG', {hour:'2-digit', minute:'2-digit'});
+        } else if(t.createdAt) {
+            var cd = new Date(t.createdAt);
+            if(!isNaN(cd.getTime())) createdAtStr = cd.toLocaleDateString('ar-EG');
+        }
+        
         var historyHtml = '';
         if(t.history && t.history.length > 0) {
             historyHtml += '<div style="margin-top:10px;padding:8px;background:rgba(0,0,0,0.03);border-radius:6px;font-size:11px">';
@@ -717,6 +733,7 @@ function renderTasksHtml(rows){
             (isDone?' <span style="background:var(--ok);color:#fff;border-radius:10px;padding:1px 8px;font-size:9px;font-weight:800">✅ مكتملة</span>':'')+(isOverdue?' <span style="background:var(--no);color:#fff;border-radius:10px;padding:1px 8px;font-size:9px;font-weight:800">⏰ متأخرة</span>':'')+
             '</div>'+
             (t.description?'<div class="pj-meta">'+esc(t.description)+'</div>':'')+
+            (createdAtStr?'<div class="pj-meta" style="font-size:10.5px;color:var(--tx3);margin-top:2px">🕒 تاريخ الإنشاء: <strong>'+createdAtStr+'</strong></div>':'')+
             (t.deadline?'<div class="pj-meta"'+(isOverdue?' style="color:var(--no);font-weight:700"':'')+'>📅 تاريخ التسليم: '+esc(t.deadline)+'</div>':'')+
             (t.createdBy?'<div class="pj-meta" style="font-size:10.5px;color:var(--tx3);margin-top:2px">👤 أنشأها: <strong>'+esc(t.createdBy)+'</strong>'+(t.createdByRole?' <span style="opacity:.75">('+esc(t.createdByRole)+')</span>':'')+'</div>':'')+
             attachHtml+

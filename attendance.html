@@ -1936,6 +1936,7 @@
                 <select class="period-select" id="periodAnnualYear" onchange="applyPeriodFilter()"></select>
             </div>
             <span id="periodLabelDisplay" style="color:#94a3b8;font-size:.82rem;font-weight:600;margin-right:.5rem;"></span>
+            <input type="search" id="globalTableFilter" class="global-table-filter" placeholder="🔍 تصفية بيانات الجدول..." oninput="tgFilterVisibleTables(this.value)" autocomplete="off" style="margin-right:auto; margin-left:1rem;">
         </div>
 
         <!-- ── Settings Drawer ── -->
@@ -5610,6 +5611,20 @@ ${empBlocks}
         if (gf) gf.value = today;
         if (gt) gt.value = today;
     });
+
+    // ── Global Table Filter ──
+    function tgFilterVisibleTables(query) {
+        var q = (query || "").toLowerCase().trim();
+        var tables = document.querySelectorAll('table:not(.no-filter)');
+        tables.forEach(function(tbl) {
+            var rows = tbl.querySelectorAll('tbody tr, tr');
+            rows.forEach(function(tr) {
+                if(tr.querySelector('th') && !tr.querySelector('td')) return;
+                var text = tr.textContent.toLowerCase();
+                tr.style.display = (q === "" || text.indexOf(q) > -1) ? '' : 'none';
+            });
+        });
+    }
     </script>
 </body>
 </html>
