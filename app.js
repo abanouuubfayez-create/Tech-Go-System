@@ -88,19 +88,19 @@ var TECH_ALLOWED = ['pmgmt','tasksmgmt','livetrack','account','announcements'];
 function hasUnsavedText() {
     var p = document.querySelector('.pg.a, .emp-pg.a');
     if(!p) return false;
-    // فحص جميع الحقول النصية ومساحات الكتابة
-    var inputs = p.querySelectorAll('input:not([type="checkbox"]):not([type="radio"]):not([type="file"]):not([type="hidden"]), textarea');
+    // فحص الحقول النصية ومساحات الكتابة فقط (تجاهل التواريخ والقوائم التي قد تُعبأ تلقائياً)
+    var inputs = p.querySelectorAll('input[type="text"], input[type="email"], input[type="url"], textarea');
     for(var i=0; i<inputs.length; i++) {
         var el = inputs[i];
-        // تجاهل الحقول للقراءة فقط أو المعطلة أو حقول البحث
-        if(el.readOnly || el.disabled || el.id === 'globalTableFilter' || el.classList.contains('staff-search') || el.classList.contains('global-table-filter')) continue;
+        if(el.readOnly || el.disabled || el.type === 'hidden') continue;
+        if(el.id === 'globalTableFilter' || el.classList.contains('staff-search') || el.classList.contains('global-table-filter')) continue;
         
-        // إذا كان الحقل يحتوي على نص حقيقي (ليس مجرد مسافات)
-        if(el.value.trim() !== '') {
-            // استثناء الحقول التي لها قيم افتراضية ثابتة (مثل "تحية طيبة وبعد") في بعض النماذج
-            if(el.classList.contains('tpl-default') || el.hasAttribute('data-default')) {
-                if(el.value.trim() === (el.getAttribute('data-default') || el.defaultValue).trim()) continue;
-            }
+        var val = el.value.trim();
+        // لا نعتبر الحقل "غير محفوظ" إلا إذا كان يحتوي على نص حقيقي ومختلف عن القيمة الأصلية
+        if(val !== '' && val !== el.defaultValue) {
+            // استثناء إضافي للقيم الافتراضية المحددة برمجياً
+            var def = el.getAttribute('data-default') || '';
+            if(def && val === def.trim()) continue;
             return true;
         }
     }
