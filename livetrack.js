@@ -58,7 +58,6 @@
     if (s < 5) return 'الآن';
     if (s < 60) return 'منذ ' + s + ' ثانية';
     var m = Math.floor(s / 60);
-    var m = Math.floor(s / 60);
     if (m < 60) return 'منذ ' + m + (m === 1 ? ' دقيقة' : m === 2 ? ' دقيقتين' : m <= 10 ? ' دقائق' : ' دقيقة');
     var h = Math.floor(m / 60);
     if (h < 24) return 'منذ ' + h + (h === 1 ? ' ساعة' : h === 2 ? ' ساعتين' : h <= 10 ? ' ساعات' : ' ساعة');
@@ -148,7 +147,7 @@
           '<div class="lt-panel-h"><h3>سجل النشاط اللحظي</h3>' +
             '<div style="display:flex;align-items:center;gap:8px">' +
               '<button class="bt bt-o" style="padding:4px 10px;font-size:10.5px" onclick="ltPrintFeed()">🖨 طباعة</button>' +
-              '<span class="lt-live-pill"><i></i> مباشر</span>' +
+              '<span class="lt-live-pill"><i></i> مباشر <span id="ltTick" style="font-size:8px;opacity:0.5;margin-left:4px"></span></span>' +
             '</div>' +
           '</div>' +
           '<div class="lt-feed" id="ltFeed"><div class="empty-hint">في انتظار أول تحديث من الفريق...</div></div>' +
@@ -245,6 +244,8 @@
     // بدون انتظار حدث جديد من Firestore، عشان الصفحة تفضل "لحظية" فعلاً
     if (!ltTickTimer) {
       ltTickTimer = setInterval(function () {
+        var tickEl = document.getElementById('ltTick');
+        if(tickEl) tickEl.textContent = ':' + (new Date().getSeconds());
         if (ltPruneFeed()) ltSaveFeed();
         ltRenderFeed();
         ltRenderTeam();
