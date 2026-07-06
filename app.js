@@ -1909,10 +1909,32 @@ function saveProjectEdit(id,idx){
     });
 }
 function quickCompleteProject(id){
-    if(!confirm('هل أنت متأكد من رغبتك في إنهاء هذا المشروع؟')) return;
-    db.collection('projects').doc(id).update({status:'مكتمل'}).then(function(){
-        tgCelebrate();
-        loadPmgmtData();
+    if(!confirm('هل أنت متأكد من رغبتك في إنهاء هذا المشروع وإبلاغ جميع الموظفين؟')) return;
+    db.collection('projects').doc(id).get().then(function(doc){
+        if(!doc.exists) return;
+        var p = doc.data();
+        db.collection('projects').doc(id).update({status:'مكتمل'}).then(function(){
+            tgCelebrate();
+            loadPmgmtData();
+            
+            // إرسال إعلان رسمي بانتهاء المشروع
+            var title = '🎉 انتهاء مشروع: ' + p.title;
+            var content = 'تم بحمد الله الانتهاء من مشروع "' + p.title + '" بنجاح. شكراً لجميع الموظفين الذين ساهموا في هذا الإنجاز! ✨';
+            var date = new Date().toISOString().split('T')[0];
+            
+            db.collection('announcements').add({
+                title: title,
+                date: date,
+                content: content,
+                createdAt: new Date(),
+                createdBy: TG_USER ? (TG_USER.name || TG_USER.email) : 'الإدارة',
+                createdByRole: (TG_USER && TG_USER.role === 'tech_admin') ? 'أدمن تقني' : 'أدمن إداري'
+            }).then(function(){
+                if(typeof tgBroadcastPush === 'function'){
+                    tgBroadcastPush('🎊 إنجاز جديد!', 'تم الانتهاء من مشروع: ' + p.title, 'project-completed', TG_USER ? TG_USER.uid : '');
+                }
+            });
+        });
     }).catch(function(err){
         alert('تعذر إنهاء المشروع: '+err.message);
     });
