@@ -1182,7 +1182,7 @@ function renderTasksMgmtList(list){
             historyHtml += '<div style="font-weight:700;color:var(--nv);margin-bottom:6px">📜 سجل تحويل المهمة:</div>';
             t.history.forEach(function(hi){
                 if(hi.action === 'forwarded') {
-                    var dStr = hi.date ? new Date(hi.date).toLocaleString('ar-EG') : '';
+                    var dStr = hi.date ? new Date(hi.date).toLocaleString('en-US', { hour12: true, year: 'numeric', month: 'numeric', day: 'numeric', hour: '2-digit', minute: '2-digit' }).replace('AM', 'ص').replace('PM', 'م') : '';
                     historyHtml += '<div style="margin-bottom:6px;padding-bottom:6px;border-bottom:1px solid var(--bd)">';
                     historyHtml += '<div><span style="color:var(--gd);font-weight:700">من:</span> '+escH(hi.fromName)+' <span style="color:var(--gd);font-weight:700">إلى:</span> '+escH(hi.toName)+' <span style="color:var(--tx3);font-size:9.5px">('+dStr+')</span></div>';
                     historyHtml += '<div style="margin-top:2px;color:var(--tx2)">💬 '+escH(hi.note)+'</div>';
@@ -1198,10 +1198,10 @@ function renderTasksMgmtList(list){
         var createdAtStr = '';
         if(t.createdAt && typeof t.createdAt.toDate === 'function') {
             var cd = t.createdAt.toDate();
-            createdAtStr = cd.toLocaleDateString('ar-EG') + ' ' + cd.toLocaleTimeString('ar-EG', {hour:'2-digit', minute:'2-digit'});
+            createdAtStr = cd.toLocaleString('en-US', { hour12: true, year: 'numeric', month: 'numeric', day: 'numeric', hour: '2-digit', minute: '2-digit' }).replace('AM', 'ص').replace('PM', 'م');
         } else if(t.createdAt) {
             var cd = new Date(t.createdAt);
-            if(!isNaN(cd.getTime())) createdAtStr = cd.toLocaleDateString('ar-EG');
+            if(!isNaN(cd.getTime())) createdAtStr = cd.toLocaleString('en-US', { hour12: true, year: 'numeric', month: 'numeric', day: 'numeric', hour: '2-digit', minute: '2-digit' }).replace('AM', 'ص').replace('PM', 'م');
         }
 
         var dlVal = t.deadline ? new Date(t.deadline).getTime() : 9999999999999;
