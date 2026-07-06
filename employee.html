@@ -625,6 +625,7 @@ function loadMyAchievements(){
             var displayName = a.userName || namesMap[a.uid] || 'موظف';
             
             var isAnyAdmin = (TG_USER.role === 'admin' || TG_USER.role === 'tech_admin');
+            var canDelete = isAnyAdmin || isMine;
             
             h+='<div class="ac-row" style="border-right:4px solid '+(isMine?'var(--ok)':'var(--gd)')+'">'+
                '<div style="display:flex;justify-content:space-between;align-items:flex-start">'+
@@ -632,14 +633,14 @@ function loadMyAchievements(){
                '<div class="ac-t" style="font-size:15px">🏆 '+esc(a.title)+'</div></div>'+
                '<div style="display:flex;gap:4px">'+
                  (isMine?'<button class="bt bt-o" style="padding:2px 8px;font-size:10px" onclick="printAchievementDoc(TG_USER,{title:\''+esc(a.title)+'\',description:\''+esc(a.description||'')+'\',date:\''+esc(a.date||'')+'\'})">🖨 طباعة</button>':'')+
-                 (isAnyAdmin?'<button class="bt bt-o" style="padding:2px 8px;font-size:10px;border-color:var(--no);color:var(--no)" onclick="deleteAchievement(\''+doc.id+'\')">🗑 حذف</button>':'')+
+                 (canDelete?'<button class="bt bt-o" style="padding:2px 8px;font-size:10px;border-color:var(--no);color:var(--no)" onclick="deleteAchievement(\''+doc.id+'\')">🗑 حذف</button>':'')+
                '</div>'+
                '</div>'+
                (a.description?'<div class="ac-meta">'+esc(a.description)+'</div>':'')+
                '<div style="display:flex;justify-content:space-between;align-items:center;margin-top:10px">'+
                  '<div style="font-size:10px;color:var(--tx3)">📅 '+esc(a.date||'')+'</div>'+
                  '<div class="ac-reactions" style="display:flex;gap:6px;align-items:center">'+
-                   renderReactions(doc.id, reactions)+
+                   renderReactions(doc.id, reactions, namesMap)+
                    '<div class="reaction-picker" style="position:relative">'+
                      '<button class="bt-reaction-add" onclick="toggleEmojiPicker(\''+doc.id+'\')">➕</button>'+
                      '<div id="picker-'+doc.id+'" class="emoji-picker-popup">'+
@@ -656,13 +657,15 @@ function loadMyAchievements(){
     });
 }
 
-function renderReactions(docId, reactions) {
+function renderReactions(docId, reactions, namesMap) {
     var h = '';
     for (var emoji in reactions) {
-        var count = reactions[emoji].length;
+        var uids = reactions[emoji];
+        var count = uids.length;
         if (count > 0) {
-            var reacted = reactions[emoji].indexOf(TG_USER.uid) > -1;
-            h += '<div class="reaction-chip '+(reacted?'active':'')+'" onclick="addReaction(\''+docId+'\',\''+emoji+'\')">'+
+            var reacted = uids.indexOf(TG_USER.uid) > -1;
+            var hoverNames = uids.map(uid => namesMap[uid] || 'موظف').join('، ');
+            h += '<div class="reaction-chip '+(reacted?'active':'')+'" title="'+esc(hoverNames)+'" onclick="addReaction(\''+docId+'\',\''+emoji+'\')">'+
                  emoji + ' <span class="count">' + count + '</span>'+
                  '</div>';
         }
@@ -777,11 +780,12 @@ function showCelebration() {
 var _tasksUnsub = null;
 var _teammatesCache = null;
 function loadTeammates(cb){
-    if(_teammatesCache) return cb && cb();
-    db.collection('users').where('role','==','employee').get().then(function(snap){
+    // جلب جميع الموظفين والمديرين لضمان وصول الإشعارات للجميع وربط الأسماء بشكل صحيح
+    db.collection('users').get().then(function(snap){
         _teammatesCache = [];
         snap.forEach(function(d){
-            if(d.id !== TG_USER.uid) _teammatesCache.push(Object.assign({id:d.id}, d.data()));
+            var u = d.data();
+            _teammatesCache.push({id:d.id, name:u.name, role:u.role});
         });
         if(cb) cb();
     }).catch(function(err){ console.error("Error loading teammates:", err); if(cb) cb(); });
