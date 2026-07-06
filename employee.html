@@ -1074,6 +1074,8 @@ function loadEmpAttendance() {
     var monthPrefix = y+'-'+m;
 
     db.collection('attendance_logs').where('uid','==',TG_USER.uid)
+      .where('date', '>=', monthPrefix+'-01')
+      .where('date', '<=', monthPrefix+'-31')
       .onSnapshot(function(snap){
           var box = document.getElementById('myAttList');
           if(snap.empty){
@@ -1089,7 +1091,7 @@ function loadEmpAttendance() {
           var uniqueDates = {};
           snap.forEach(function(doc){
               var data = doc.data();
-              if (data.date >= monthPrefix+'-01' && data.date <= monthPrefix+'-31') {
+              // الفلترة تتم الآن على مستوى السيرفر لزيادة الكفاءة
                   if (!uniqueDates[data.date]) {
                       uniqueDates[data.date] = data;
                       uniqueDates[data.date].docId = doc.id;
@@ -1104,7 +1106,6 @@ function loadEmpAttendance() {
                       }
                   }
               }
-          });
           
           if(uniqueDates[todayStr]) { 
               todayLog = uniqueDates[todayStr]; 
@@ -1178,7 +1179,8 @@ function empCheckIn() {
         date: date,
         checkIn: time,
         checkOut: null,
-        timestamp: new Date()
+        timestamp: new Date(),
+        serverTimestamp: firebase.firestore.FieldValue.serverTimestamp()
     }).catch(function(err){ 
         var msg = document.getElementById('attStatusMsg');
         msg.textContent = 'تعذر التسجيل: ' + err.message;
@@ -1194,7 +1196,8 @@ function empCheckOut() {
     var time = ('0'+now.getHours()).slice(-2)+':'+('0'+now.getMinutes()).slice(-2);
     document.getElementById('attStatusMsg').textContent = '⏳ جارٍ التسجيل...';
     db.collection('attendance_logs').doc(_todayAttDocId).update({
-        checkOut: time
+        checkOut: time,
+        serverTimestamp: firebase.firestore.FieldValue.serverTimestamp()
     }).catch(function(err){ 
         var msg = document.getElementById('attStatusMsg');
         msg.textContent = 'تعذر التسجيل: ' + err.message;

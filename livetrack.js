@@ -244,6 +244,33 @@
       ltRenderTeam();
     });
 
+    db.collection('attendance_logs').orderBy('serverTimestamp', 'desc').limit(30)
+      .onSnapshot(function(snap) {
+        snap.docChanges().forEach(function(ch) {
+          if (ch.type === 'added' || ch.type === 'modified') {
+            var d = ch.doc.data();
+            var status = d.checkOut ? 'انصراف' : 'حضور';
+            var tsMillis = d.serverTimestamp ? d.serverTimestamp.toMillis() : (d.timestamp ? (d.timestamp.toMillis ? d.timestamp.toMillis() : d.timestamp) : Date.now());
+            
+            // تفادي التكرار
+            var exists = ltFeed.some(function(f) { return f.id === ch.doc.id && f.status === status; });
+            if (exists) return;
+
+            ltFeed.unshift({
+              id: ch.doc.id,
+              name: d.name || 'موظف',
+              verb: 'سجل ' + status,
+              title: 'يوم: ' + d.date + ' | الساعة: ' + (d.checkOut || d.checkIn),
+              status: status,
+              ts: tsMillis
+            });
+            ltPruneFeed();
+            ltSaveFeed();
+            ltRenderFeed();
+          }
+        });
+      });
+
     if (ltTickTimer) clearInterval(ltTickTimer);
     ltTickTimer = setInterval(function () {
       var tickEl = document.getElementById('ltTick');
