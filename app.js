@@ -1080,13 +1080,29 @@ function renderTasksMgmtList(list){
                 attachHtml = '<div style="margin-top:6px"><a href="'+t.fileUrl+'" target="_blank" style="color:var(--nv);font-weight:700;text-decoration:underline">📎 '+escH(t.fileName||'ملف مرفق')+'</a></div>';
             }
         }
+        var historyHtml = '';
+        if(t.history && t.history.length > 0) {
+            historyHtml += '<div style="margin-top:10px;padding:8px;background:var(--bg);border-radius:6px;font-size:11px">';
+            historyHtml += '<div style="font-weight:700;color:var(--nv);margin-bottom:6px">📜 سجل تحويل المهمة:</div>';
+            t.history.forEach(function(hi){
+                if(hi.action === 'forwarded') {
+                    var dStr = hi.date ? new Date(hi.date).toLocaleString('ar-EG') : '';
+                    historyHtml += '<div style="margin-bottom:6px;padding-bottom:6px;border-bottom:1px solid var(--bd)">';
+                    historyHtml += '<div><span style="color:var(--gd);font-weight:700">من:</span> '+escH(hi.fromName)+' <span style="color:var(--gd);font-weight:700">إلى:</span> '+escH(hi.toName)+' <span style="color:var(--tx3);font-size:9.5px">('+dStr+')</span></div>';
+                    historyHtml += '<div style="margin-top:2px;color:var(--tx2)">💬 '+escH(hi.note)+'</div>';
+                    historyHtml += '</div>';
+                }
+            });
+            historyHtml += '</div>';
+        }
         h+='<div class="pj-row"><div class="pj-t">'+escH(t.title||'بدون عنوان')+
            ' <span class="badge '+prioBadgeClass(t.priority)+'">'+escH(t.priority||'متوسطة')+'</span>'+
            ' <span class="badge '+pstatusBadgeClass(t.status)+'">'+escH(t.status||'لم يبدأ')+'</span></div>'+
-           '<div class="pj-meta">👤 مكلَّف إلى: '+escH(t.assignedToName||'')+(t.deadline?(' · تاريخ التسليم: '+escH(t.deadline)):'')+'</div>'+
+           '<div class="pj-meta">👤 مكلَّف حالياً إلى: '+escH(t.assignedToName||'مجهول')+(t.deadline?(' · تاريخ التسليم: '+escH(t.deadline)):'')+'</div>'+
            (t.description?'<div class="pj-meta">'+escH(t.description)+'</div>':'')+
            '<div class="pj-meta" style="margin-top:2px;font-size:10px;color:var(--tx3)">بواسطة: '+escH(t.createdBy||'الإدارة')+' ('+escH(t.createdByRole||'أدمن إداري')+')</div>'+
            attachHtml+
+           historyHtml+
            '<div style="text-align:right;margin-top:12px">'+
            '<button class="bt bt-d" style="padding:4px 12px;font-size:11px;border-radius:6px" onclick="deleteTask(\''+t.id+'\')">🗑 حذف المهمة</button></div>'+
            '</div>';

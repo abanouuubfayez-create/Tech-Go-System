@@ -602,8 +602,21 @@ function addAchievement(){
 
 // ── مهامي ───────────────────────────────────────────────────────────
 var _tasksUnsub = null;
+var _teammatesCache = null;
+function loadTeammates(cb){
+    if(_teammatesCache) return cb && cb();
+    db.collection('users').where('role','==','employee').get().then(function(snap){
+        _teammatesCache = [];
+        snap.forEach(function(d){
+            if(d.id !== TG_USER.uid) _teammatesCache.push(Object.assign({id:d.id}, d.data()));
+        });
+        if(cb) cb();
+    }).catch(function(err){ console.error("Error loading teammates:", err); if(cb) cb(); });
+}
+
 function loadMyTasks(){
-    if(_tasksUnsub) return;
+    loadTeammates(function(){
+        if(_tasksUnsub) return;
     var isInitialTasks = true;
     var box = document.getElementById('myTasksList');
     _tasksUnsub = db.collection('tasks').where('assignedTo','==',TG_USER.uid)
@@ -658,6 +671,7 @@ function loadMyTasks(){
         }, function(err){
             box.innerHTML='<div class="empty-hint" style="color:var(--no)">تعذر تحميل المهام: '+esc(err.message)+'</div>';
         });
+    });
 }
 
 function renderTasksHtml(rows){
@@ -694,7 +708,16 @@ function renderTasksHtml(rows){
             ['لم يبدأ','جاري العمل','متوقف','مكتمل'].map(function(s){return '<option'+(s===(t.status||'لم يبدأ')?' selected':'')+'>'+s+'</option>';}).join('')+
             '</select></div>'+
             '<button class="bt bt-p" onclick="saveTaskStatus(\''+t.id+'\')">💾 حفظ الحالة</button>'+
-            ' <span id="tkmsg_'+t.id+'" style="font-size:10.5px"></span>')+
+            ' <span id="tkmsg_'+t.id+'" style="font-size:10.5px"></span>'+
+            '<div style="margin-top:12px;padding-top:12px;border-top:1px dashed var(--bd)">'+
+            '<div style="font-size:11px;font-weight:700;color:var(--nv);margin-bottom:6px">🔄 إرسال المهمة لزميل</div>'+
+            '<div class="fg" style="margin-bottom:8px"><label>اختر الزميل</label><select id="tkfwd_'+t.id+'"><option value="">-- اختر الزميل --</option>'+
+            (_teammatesCache||[]).map(function(emp){return '<option value="'+emp.id+'">'+esc(emp.name)+'</option>';}).join('')+
+            '</select></div>'+
+            '<div class="fg" style="margin-bottom:8px"><label>ماذا أنجزت؟ (ملاحظة للأدمن والزميل)</label><textarea id="tkfwd_note_'+t.id+'" rows="2" placeholder="اكتب ما أنجزته أو سبب الإرسال..."></textarea></div>'+
+            '<button class="bt bt-o" onclick="forwardTask(\''+t.id+'\')">📩 إرسال المهمة للزميل</button>'+
+            ' <span id="tkfwd_msg_'+t.id+'" style="font-size:10.5px"></span>'+
+            '</div>')+
             '</div>';
     }
 
@@ -743,6 +766,43 @@ function saveTaskStatus(id){
         }
         setTimeout(function(){if(msg)msg.textContent='';},2500);
     }).catch(function(err){ msg.style.color='var(--no)'; msg.textContent='❌ '+err.message; });
+}
+
+function forwardTask(id) {
+    var mateId = document.getElementById('tkfwd_'+id).value;
+    var note = document.getElementById('tkfwd_note_'+id).value;
+    var msg = document.getElementById('tkfwd_msg_'+id);
+    if(!mateId) { msg.style.color='var(--no)'; msg.textContent='❌ يرجى اختيار زميل'; return; }
+    if(!note.trim()) { msg.style.color='var(--no)'; msg.textContent='❌ يرجى كتابة ما أنجزته'; return; }
+    
+    msg.style.color='var(--tx3)'; msg.textContent='⏳ جارٍ الإرسال...';
+    
+    var mateName = '';
+    var mate = _teammatesCache.find(function(m){ return m.id === mateId; });
+    if(mate) mateName = mate.name;
+
+    var historyEntry = {
+        action: 'forwarded',
+        fromUid: TG_USER.uid,
+        fromName: document.getElementById('empWhoName').innerText || 'موظف',
+        toUid: mateId,
+        toName: mateName,
+        note: note,
+        date: new Date().toISOString()
+    };
+    
+    db.collection('tasks').doc(id).update({
+        assignedTo: mateId,
+        assignedToName: mateName,
+        status: 'لم يبدأ',
+        history: firebase.firestore.FieldValue.arrayUnion(historyEntry),
+        statusUpdatedAt: new Date()
+    }).then(function(){
+        msg.style.color='var(--ok)'; msg.textContent='✅ تم الإرسال للزميل';
+        tgShowNotification('📩 تم تسليم المهمة', 'تم إرسال المهمة للزميل ' + mateName);
+    }).catch(function(err){
+        msg.style.color='var(--no)'; msg.textContent='❌ '+err.message;
+    });
 }
 
 // ── الطلبات ──────────────────────────────────────────────────────────
