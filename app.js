@@ -93,7 +93,12 @@ function hasUnsavedText() {
     for(var i=0; i<inputs.length; i++) {
         var el = inputs[i];
         if(el.readOnly || el.disabled || el.type === 'hidden') continue;
-        if(el.id === 'globalTableFilter' || el.classList.contains('staff-search') || el.classList.contains('global-table-filter')) continue;
+        // استثناء حقول البحث وحقول إنشاء الحسابات (لتجنب التعبئة التلقائية من المتصفح)
+        if(el.id === 'globalTableFilter' || el.id === 'staffSearch' || el.classList.contains('staff-search') || el.classList.contains('global-table-filter') || 
+           ['newAccName','newAccEmail','newAccPass','newAccJobTitle','pmTitle','pmDesc','tkTitle','tkDesc'].indexOf(el.id) > -1 && el.value.trim() === el.defaultValue) continue;
+        
+        // استثناء إضافي صريح لحقول الحسابات الجديدة
+        if(['newAccName','newAccEmail','newAccPass','newAccJobTitle'].indexOf(el.id) > -1) continue;
         
         var val = el.value.trim();
         // لا نعتبر الحقل "غير محفوظ" إلا إذا كان يحتوي على نص حقيقي ومختلف عن القيمة الأصلية
