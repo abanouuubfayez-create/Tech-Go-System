@@ -206,6 +206,7 @@ function tgSortVisibleList(sortBy) {
 
         rows.forEach(function(el) { container.appendChild(el); });
     });
+}
 function tgFilterByEmployee(empName, rowClass) {
     var activePg = document.querySelector('.pg.a') || document.querySelector('.emp-pg.a');
     if(!activePg) return;
