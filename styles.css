@@ -73,6 +73,7 @@
 *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
 html { font-size: 14.5px; -webkit-text-size-adjust: 100%; }
 body { font-family: 'Alexandria', 'Inter', sans-serif; direction: rtl; background: var(--bg); color: var(--tx); line-height: 1.6; }
+input, select, textarea, button { font-family: inherit; }
 
 /* ═══════════════════════════════════════════ */
 /*                  SIDEBAR                    */
@@ -117,7 +118,7 @@ body { font-family: 'Alexandria', 'Inter', sans-serif; direction: rtl; backgroun
 .S-i {
     display: flex; align-items: center; gap: 10px;
     padding: 9px 18px; cursor: pointer;
-    font-size: 12px; font-weight: 500;
+    font-size: 12.5px; font-weight: 500;
     color: rgba(255,255,255,.58);
     border-right: 3px solid transparent;
     transition: var(--tr); border-radius: 0;
@@ -157,10 +158,10 @@ body { font-family: 'Alexandria', 'Inter', sans-serif; direction: rtl; backgroun
 .sb-search:focus { background: rgba(255,255,255,.13); border-color: rgba(201,162,39,.4); }
 .sb-search-wrap::after {
     content: '🔍'; position: absolute; left: 20px; top: 50%; transform: translateY(-50%);
-    font-size: 11px; pointer-events: none;
+    font-size: 12.5px; pointer-events: none;
 }
 .sb-no-results {
-    font-size: 10px; color: rgba(255,255,255,.3); text-align: center;
+    font-size: 11.5px; color: rgba(255,255,255,.3); text-align: center;
     padding: 12px 0; display: none;
 }
 .sb-scroll-top {
@@ -320,24 +321,24 @@ body { font-family: 'Alexandria', 'Inter', sans-serif; direction: rtl; backgroun
 
 .fg { display: flex; flex-direction: column; }
 .fg label {
-    font-size: 10px; font-weight: 700; color: var(--tx2);
-    letter-spacing: .35px; margin-bottom: 6px; align-self: flex-start;
-    line-height: 1.3;
+    font-size: 11.5px; font-weight: 700; color: var(--tx2);
+    letter-spacing: .2px; margin-bottom: 7px; align-self: flex-start;
+    line-height: 1.4;
 }
 .fg input, .fg select {
     width: 100%; box-sizing: border-box;
-    padding: 8px 11px; border: 1.5px solid var(--bd2);
-    border-radius: 8px;
-    font-family: 'Alexandria', 'Inter'; font-size: 13px;
+    padding: 10px 14px; border: 1.5px solid var(--bd2);
+    border-radius: 9px;
+    font-size: 14px;
     background: #fafbfd; color: var(--tx);
     transition: var(--tr);
     line-height: 1.5;
 }
 .fg textarea {
     width: 100%; box-sizing: border-box;
-    padding: 9px 11px; border: 1.5px solid var(--bd2);
-    border-radius: 8px;
-    font-family: 'Alexandria', 'Inter'; font-size: 13px;
+    padding: 11px 14px; border: 1.5px solid var(--bd2);
+    border-radius: 9px;
+    font-size: 14px;
     background: #fafbfd; color: var(--tx);
     transition: var(--tr);
     line-height: 1.6;
@@ -1776,4 +1777,13 @@ img.emoji { height: 1.25em; width: 1.25em; margin: 0 .05em 0 .1em; vertical-alig
 }
 @media (max-width: 600px) {
     .global-table-filter { width: 100%; margin-top: 8px; }
+}
+
+.empty-hint {
+    padding: 40px 20px;
+    text-align: center;
+    color: var(--tx3);
+    font-size: 14px;
+    font-weight: 500;
+    opacity: 0.8;
 }
