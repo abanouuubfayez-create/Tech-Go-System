@@ -4543,8 +4543,29 @@ function tgProfileGo(id, el) {
 }
 
 // 🎊 دالة الاحتفال (Confetti Celebration)
-function tgCelebrate() {
-    if (typeof confetti !== 'function') return;
+function tgCelebrate(isLate) {
+    if ('speechSynthesis' in window) {
+        var msg = new SpeechSynthesisUtterance();
+        msg.lang = 'ar-SA';
+        if (isLate) {
+            msg.text = "لقد أتممت المهمة، ولكنك تأخرت عن الموعد المحدد. يرجى الالتزام بالمواعيد في المرات القادمة.";
+            
+            // تصميم مرئي للمهمة المتأخرة
+            var overlay = document.createElement('div');
+            overlay.style.cssText = "position:fixed; inset:0; background:rgba(20,20,30,0.85); z-index:999999; display:flex; flex-direction:column; align-items:center; justify-content:center; color:#fff; font-family:'Cairo',sans-serif; backdrop-filter:blur(8px); transition:opacity 0.5s;";
+            overlay.innerHTML = '<div style="font-size:120px; margin-bottom:20px; filter:drop-shadow(0 0 20px rgba(235,160,0,0.5))">⏳</div>' +
+                                '<div style="font-size:28px; font-weight:800; text-align:center; color:var(--gd)">تم الإنجاز.. ولكن متأخراً!</div>' +
+                                '<div style="font-size:16px; opacity:0.9; margin-top:15px; background:rgba(255,255,255,0.1); padding:8px 20px; border-radius:20px">الالتزام بالوقت هو سر النجاح ⏰</div>';
+            document.body.appendChild(overlay);
+            setTimeout(function(){ overlay.style.opacity='0'; setTimeout(function(){ overlay.remove(); }, 500); }, 5000);
+        } else {
+            msg.text = "أحسنت! لقد أتممت المهمة في وقت قياسي. استمر في هذا التألق!";
+        }
+        window.speechSynthesis.speak(msg);
+    }
+
+    if (isLate || typeof confetti !== 'function') return;
+    
     var duration = 3 * 1000;
     var animationEnd = Date.now() + duration;
     var defaults = { startVelocity: 30, spread: 360, ticks: 60, zIndex: 999999 };
