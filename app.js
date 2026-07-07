@@ -1273,11 +1273,10 @@ function renderTasksMgmtList(list){
 }
 
 function createTask(){
-    var sel=document.getElementById('tkAssignee');
-    var selectedOptions = Array.from(sel.selectedOptions);
-    var employees = selectedOptions.map(function(opt){
-        return { uid: opt.value, name: opt.getAttribute('data-name') || '' };
-    }).filter(function(e){ return e.uid; });
+    var checks = document.querySelectorAll('#tkAssigneeList input[type="checkbox"]:checked');
+    var employees = Array.from(checks).map(function(i){
+        return { uid: i.value, name: i.getAttribute('data-name') || '' };
+    });
 
     var title=(document.getElementById('tkTitle').value||'').trim();
     var desc=(document.getElementById('tkDesc').value||'').trim();
@@ -1319,6 +1318,7 @@ function createTask(){
             if(fileInput) fileInput.value='';
             var fnSpan = document.getElementById('tkFileName');
             if(fnSpan) fnSpan.textContent='';
+            selectAllTkAssignees(false);
             loadTasksMgmt();
         }).catch(function(err){
             msg.style.color='var(--no)'; msg.textContent='❌ خطأ أثناء الحفظ: '+err.message;
@@ -1352,6 +1352,7 @@ function createTask(){
 
     finalizeTasks(baseTaskData);
 }
+
 function empGo(id, el, force) {
     // Removed hasUnsavedText check to prevent annoying popups
 }
@@ -2941,12 +2942,21 @@ function load(id,c){
         h+='<div class="set-hint">كلّف أي موظف بمهمة محددة، وهيقدر يشوفها ويحدّث حالتها (لم يبدأ / جاري العمل / مكتمل) من بوابته الخاصة (employee.html) تحت تبويب "مهامي".</div>';
 
         h+='<div class="set-sec"><div class="set-sec-title">➕ تكليف مهمة جديدة</div>';
-        h+='<div class="fr fr2" style="margin-bottom:10px">'+
-           '<div class="fg"><label>الموظف المكلَّف (يمكن اختيار أكثر من واحد)</label>'+
-           '<select id="tkAssignee" multiple style="height:100px; padding:5px;"><option value="">⏳ جارٍ تحميل قائمة الموظفين...</option></select>'+
-           '<button class="bt bt-o" style="margin-top:5px; padding:2px 10px; font-size:10px" onclick="var s=document.getElementById(\'tkAssignee\'); for(var i=0; i<s.options.length; i++) s.options[i].selected=true;">✅ تحديد الكل</button>'+
+        h+='<div class="fr fr2" style="margin-bottom:15px; align-items:flex-start">'+
+           '<div class="fg"><label>الموظف المكلَّف</label>'+
+           '  <div class="tk-assignee-container">'+
+           '    <div class="tk-assignee-search"><input type="text" placeholder="🔍 ابحث عن موظف..." oninput="filterTkAssignees(this.value)"></div>'+
+           '    <div class="tk-assignee-list" id="tkAssigneeList"></div>'+
+           '    <div class="tk-assignee-footer">'+
+           '      <div style="display:flex;gap:10px">'+
+           '        <span onclick="selectAllTkAssignees(true)" style="cursor:pointer;color:var(--ok);font-weight:700">✅ تحديد الكل</span>'+
+           '        <span onclick="selectAllTkAssignees(false)" style="cursor:pointer;color:var(--no);font-weight:700">❌ إلغاء</span>'+
+           '      </div>'+
+           '      <div>تم اختيار: <span class="tk-selected-count" id="tkSelectedCount">0</span></div>'+
+           '    </div>'+
+           '  </div>'+
            '</div>'+
-           '<div class="fg"><label>الأولوية</label><select id="tkPriority"><option>منخفضة</option><option selected>متوسطة</option><option>عالية</option></select></div>'+
+           '<div class="fg"><label>الأولوية</label><select id="tkPriority" style="height:44px"><option>منخفضة</option><option selected>متوسطة</option><option>عالية</option></select></div>'+
            '</div>';
         h+='<div class="fg" style="margin-bottom:10px"><label>عنوان المهمة</label><input type="text" id="tkTitle" placeholder="مثلاً: تجهيز تصميمات كتالوج المنتجات"></div>';
         h+='<div class="fg fg-full" style="margin-bottom:10px"><label>تفاصيل المهمة (اختياري)</label><textarea rows="2" id="tkDesc"></textarea></div>';
