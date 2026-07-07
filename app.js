@@ -2156,8 +2156,11 @@ function FGS(l,opts){var o='<option value="" selected></option>';for(var i=0;i<o
 // ─── طباعة موحدة لمستندات الموظف (تُستخدم من لوحة الأدمن وبوابة الموظف معاً) ──
 // تبحث عن إطار طباعة مخفي بمعرّف tgPrintFrame في الصفحة الحالية (موجود في index.html و employee.html)
 function tgLine(lbl,val){
-    return '<div class="FL-line"><span class="FL-line-lbl">'+lbl+'</span>'+
-           '<div class="FL-line-val" style="white-space:pre-wrap; word-break:break-word;">'+escH(val||'')+'</div></div>';
+    var v = escH(val||'');
+    var isLong = v.length > 50;
+    return '<div class="FL-line" style="display:'+(isLong?'block':'flex')+'; align-items:baseline; gap:10px; margin-bottom:12px; border-bottom:1px solid var(--bd2)">'+
+           '<span class="FL-line-lbl" style="font-weight:bold; color:var(--tx2); '+(isLong?'display:block; margin-bottom:4px':'flex-shrink:0')+'">'+lbl+':</span>'+
+           '<div class="FL-line-val" style="'+(isLong?'display:block; width:100%':'flex:1')+'; white-space:pre-wrap; word-break:break-word; font-size:12px; color:var(--tx); padding:2px 4px">'+v+'</div></div>';
 }
 function tgBlock(val){
     return '<div class="FL-textbody" style="min-height:60px; white-space:pre-wrap; word-break:break-word; overflow-wrap:break-word;">'+escH(val||'')+'</div>';

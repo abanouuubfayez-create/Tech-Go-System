@@ -639,7 +639,13 @@
       h += SC('١', 'بيانات النموذج');
       h += tgLine('الموظف', r.targetName || '');
       (r.fields || []).forEach(function (f) {
-        if (f.type === 'textarea') {
+        var isTA = (f.type === 'textarea');
+        if (!isTA && r.templateKey && FS_TEMPLATES[r.templateKey]) {
+          var tplF = FS_TEMPLATES[r.templateKey].fields.find(function (x) { return x.id === f.id; });
+          if (tplF && tplF.type === 'textarea') isTA = true;
+        }
+
+        if (isTA) {
           h += '<div style="font-size:11.5px; font-weight:700; color:var(--tx2); margin-top:10px; margin-bottom:4px">' + escH(f.label) + '</div>';
           h += tgBlock((r.values && r.values[f.id]) || '');
         } else {
