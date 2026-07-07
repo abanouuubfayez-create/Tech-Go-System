@@ -498,18 +498,106 @@ function loadDashboardSummary(){
     Promise.all([
         db.collection('users').where('role','in',['employee','tech_admin']).get(),
         db.collection('projects').get(),
-        db.collection('requests').where('status','==','pending').get()
+        db.collection('requests').where('status','==','pending').get(),
+        db.collection('tasks').get(),
+        db.collection('attendance_logs').where('date','>=',new Date().toISOString().split('T')[0].substring(0,7)+'-01').get()
     ]).then(function(res){
-        var empCount=res[0].size, projCount=res[1].size, pendingCount=res[2].size;
-        box.innerHTML=
-            '<div class="DC" onclick="go(\'staff\')" style="cursor:pointer"><div class="di-wrap"><div class="di">👥</div></div><div class="dt2">'+empCount+' موظف</div><div class="dd">إجمالي حسابات الموظفين المسجّلة</div></div>'+
+        var employees=res[0].docs.map(function(d){return Object.assign({uid:d.id},d.data())});
+        var projects=res[1].docs.map(function(d){return Object.assign({id:d.id},d.data())});
+        var pendingCount=res[2].size;
+        var tasks=res[3].docs.map(function(d){return Object.assign({id:d.id},d.data())});
+        var attLogs=res[4].docs.map(function(d){return d.data()});
+
+        // حساب النقاط لكل موظف للمتصدرين
+        employees.forEach(function(emp){
+            emp.projects = projects.filter(function(p){ return p.assignees && p.assignees.indexOf(emp.uid)>-1; });
+            emp.tasks = tasks.filter(function(t){ return t.assignedTo === emp.uid; });
+            emp.attendance = attLogs.filter(function(l){ return l.uid === emp.uid; });
+            emp.achievementsCount = 0; // سيتم تحديثه في صفحة الموظفين، هنا نعتمد على المهام والحضور
+            emp.weeklyReportsCount = 0;
+            emp.perf = calculatePerformanceScore(emp);
+        });
+
+        var top3 = employees.sort(function(a,b){ return b.perf.total - a.perf.total; }).slice(0,3);
+
+        var empCount=res[0].size, projCount=res[1].size;
+        var h = '<div class="DC" onclick="go(\'staff\')" style="cursor:pointer"><div class="di-wrap"><div class="di">👥</div></div><div class="dt2">'+empCount+' موظف</div><div class="dd">إجمالي حسابات الموظفين المسجّلة</div></div>'+
             '<div class="DC" onclick="go(\'pmgmt\')" style="cursor:pointer"><div class="di-wrap"><div class="di">📁</div></div><div class="dt2">'+projCount+' مشروع</div><div class="dd">إجمالي المشاريع الحالية</div></div>'+
             '<div class="DC" onclick="go(\'staff\')" style="cursor:pointer'+(pendingCount?';border:1px solid var(--no);box-shadow:0 4px 12px rgba(239,68,68,0.15)':'')+'"><div class="di-wrap"><div class="di" '+(pendingCount?'style="background:#fef2f2"':'')+'>⏳</div>'+(pendingCount?'<span class="badge-new" style="background:#fef2f2;color:#ef4444;border-color:rgba(239,68,68,0.2)">عاجل</span>':'')+'</div><div class="dt2" '+(pendingCount?'style="color:#ef4444"':'')+'>'+pendingCount+' طلب معلّق</div><div class="dd">بانتظار موافقة أو رفض الأدمن</div></div>';
-    }).catch(function(){ box.innerHTML=''; });
+        
+        box.innerHTML = h;
+
+        // إضافة ويدجت المتصدرين
+        var dashWrap = document.querySelector('.dash-wrap');
+        if(dashWrap){
+            var oldRank = document.getElementById('topPerformersWidget');
+            if(oldRank) oldRank.remove();
+            
+            var rankH = '<div class="dash-group" id="topPerformersWidget" style="margin-top:20px">'+
+                '<div class="dash-sec-title"><div class="di">🏆</div> الموظفون الأكثر التزاماً (هذا الشهر)</div>'+
+                '<div style="display:grid;grid-template-columns:repeat(auto-fit, minmax(280px, 1fr));gap:16px">';
+            
+            top3.forEach(function(emp, i){
+                var medals = ['🥇','🥈','🥉'];
+                rankH += '<div class="top-performer-card" onclick="tgOpenEmployeeProfile(\''+emp.uid+'\')">'+
+                    '<div class="top-rank">'+(i+1)+'</div>'+
+                    '<div class="top-info">'+
+                        '<div class="top-name">'+escH(emp.name||emp.email)+'</div>'+
+                        '<div class="top-score-val">الأداء العام: '+emp.perf.total+'%</div>'+
+                        '<div class="perf-stars">'+renderStars(emp.perf.stars)+'</div>'+
+                    '</div>'+
+                    '<div class="top-medal">'+medals[i]+'</div>'+
+                '</div>';
+            });
+            rankH += '</div></div>';
+            dashWrap.insertAdjacentHTML('afterbegin', rankH);
+        }
+
+    }).catch(function(err){ console.error(err); box.innerHTML=''; });
     // بدء مراقبة إشعارات الأدمن من الموظفين
     startAdminNotifications();
     // إخفاء عناصر القائمة للأدمن المساعد
     applyAssistantAdminRestrictions();
+}
+
+function calculatePerformanceScore(emp){
+    var score = { tasks:0, projects:0, attendance:0, engagement:0, total:0, stars:0 };
+    
+    // 1. المهام (40%)
+    if(emp.tasks && emp.tasks.length){
+        var comp = emp.tasks.filter(function(t){ return t.status==='completed'; }).length;
+        score.tasks = Math.round((comp / emp.tasks.length) * 40);
+    }
+    
+    // 2. المشاريع (20%)
+    if(emp.projects && emp.projects.length){
+        var avg = emp.projects.reduce(function(s,p){
+            var pm=(p.progressMap&&p.progressMap[emp.uid])?p.progressMap[emp.uid].progress:0;
+            return s + (pm||0);
+        },0) / emp.projects.length;
+        score.projects = Math.round((avg / 100) * 20);
+    }
+    
+    // 3. الحضور (30%)
+    // نفترض 22 يوم عمل في الشهر كهدف
+    if(emp.attendance && emp.attendance.length){
+        var days = new Set(emp.attendance.map(function(l){ return l.date; })).size;
+        score.attendance = Math.round(Math.min(30, (days / 22) * 30));
+    }
+    
+    // 4. التفاعل (10%)
+    var ach = (emp.achievements?emp.achievements.length:0) * 2;
+    var rep = (emp.weeklyReports?emp.weeklyReports.length:0) * 1;
+    score.engagement = Math.min(10, ach + rep);
+    
+    score.total = score.tasks + score.projects + score.attendance + score.engagement;
+    score.stars = Math.max(1, Math.ceil(score.total / 20)); // 1-5 نجوم
+    return score;
+}
+
+function renderStars(count){
+    var s=''; for(var i=0;i<5;i++) s += (i<count?'★':'☆');
+    return s;
 }
 
 // ─── تقييد القائمة الجانبية للأدمن المساعد ──────────────────────────────
@@ -669,7 +757,9 @@ function loadStaffOverview(){
                 db.collection('projects').where('assignees','array-contains',emp.uid).get(),
                 db.collection('achievements').where('uid','==',emp.uid).get(),
                 db.collection('requests').where('uid','==',emp.uid).get(),
-                db.collection('weeklyReports').where('uid','==',emp.uid).get()
+                db.collection('weeklyReports').where('uid','==',emp.uid).get(),
+                db.collection('tasks').where('assignedTo','==',emp.uid).get(),
+                db.collection('attendance_logs').where('uid','==',emp.uid).get()
             ]).then(function(res){
                 emp.projects=res[0].docs.map(function(d){return Object.assign({id:d.id},d.data());});
                 emp.achievements=res[1].docs.map(function(d){return Object.assign({id:d.id},d.data());})
@@ -682,6 +772,10 @@ function loadStaffOverview(){
                     });
                 emp.weeklyReports=res[3].docs.map(function(d){return Object.assign({id:d.id},d.data());})
                     .sort(function(a,b){return (a.weekStart<b.weekStart)?1:-1;});
+                emp.tasks=res[4].docs.map(function(d){return Object.assign({id:d.id},d.data());});
+                emp.attendance=res[5].docs.map(function(d){return d.data();});
+                
+                emp.perf = calculatePerformanceScore(emp);
                 return emp;
             });
         });
@@ -726,7 +820,10 @@ function renderStaffList(list){
            '<div><div class="staff-name-row"><span class="staff-name">'+escH(emp.name||emp.email)+'</span>'+
            (emp.jobTitle?'<span class="badge" style="background:var(--gd);color:#1b2a4a">'+escH(emp.jobTitle)+'</span>':'')+
            (emp.disabled?'<span class="badge badge-disabled">🚫 معطّل</span>':'<span class="badge badge-active">✅ نشط</span>')+
-           '</div><div class="staff-email">'+escH(emp.email||'')+'</div></div>'+
+           '<span class="perf-score" title="تقييم الأداء العام">🏆 '+emp.perf.total+'%</span>'+
+           '</div><div class="staff-email">'+escH(emp.email||'')+'</div>'+
+           '<div class="perf-stars">'+renderStars(emp.perf.stars)+'</div>'+
+           '</div>'+
            '<div class="staff-stats">'+
            '<span class="staff-stat">📁 '+emp.projects.length+' مشروع</span>'+
            '<span class="staff-stat">📊 متوسط تقدم '+avgProg+'%</span>'+

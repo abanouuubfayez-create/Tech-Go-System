@@ -2226,3 +2226,44 @@ html.tg-auth-pending body { visibility: hidden; }
 [data-theme='dark'] .tg-login-logo .lgo { background: rgba(245, 158, 11, 0.1); }
 [data-theme='dark'] .tg-login-logo .lgo span { color: var(--gd); }
 [data-theme='dark'] .tg-login-foot a { color: var(--gd); }
+
+/* ─── Performance & Ranking Styles ─── */
+.perf-stars { color: #fbbf24; font-size: 14px; margin-top: 4px; display: flex; gap: 2px; }
+.perf-score { font-size: 11px; font-weight: 800; color: var(--gd2); background: var(--gdl); padding: 2px 8px; border-radius: 12px; margin-right: 8px; }
+.top-performer-card {
+    background: linear-gradient(135deg, var(--w) 0%, #fffbf0 100%);
+    border: 1px solid var(--gd);
+    border-radius: 14px;
+    padding: 16px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 12px;
+    box-shadow: 0 4px 15px rgba(245, 158, 11, 0.1);
+    transition: var(--tr);
+    cursor: pointer;
+}
+.top-performer-card:hover { transform: translateY(-3px); box-shadow: 0 8px 25px rgba(245, 158, 11, 0.2); }
+.top-rank {
+    width: 32px; height: 32px;
+    background: var(--gd);
+    color: var(--nv3);
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 900;
+    font-size: 16px;
+    flex-shrink: 0;
+}
+.top-info { flex: 1; }
+.top-name { font-weight: 800; font-size: 13px; color: var(--nv); }
+.top-score-val { font-size: 11px; color: var(--tx3); margin-top: 2px; }
+.top-medal { font-size: 20px; }
+
+[data-theme='dark'] .top-performer-card {
+    background: linear-gradient(135deg, var(--w) 0%, rgba(245, 158, 11, 0.05) 100%);
+    border-color: rgba(245, 158, 11, 0.3);
+}
+[data-theme='dark'] .top-name { color: var(--tx); }
+[data-theme='dark'] .perf-score { background: rgba(245, 158, 11, 0.1); }
