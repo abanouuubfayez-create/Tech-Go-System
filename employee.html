@@ -252,14 +252,32 @@
   </div>
 
   <div class="emp-pg" id="epg-docs">
-    <div class="ac-hdr">📄 مستنداتي</div>
-    <div class="form-grid" style="background:rgba(255,255,255,.05);padding:16px;border-radius:10px;margin-bottom:16px">
-      <div class="fg"><label>اسم المستند (مثال: بطاقة شخصية، شهادة ميلاد)</label><input type="text" id="empNewDocTitle"></div>
-      <div class="fg"><label>ملف المستند</label><input type="file" id="empNewDocFile"></div>
-      <div class="fg" style="display:flex;align-items:flex-end"><button class="bt bt-p" style="width:100%" onclick="empUploadDoc()">⬆ رفع المستند لملفي</button></div>
+    <div class="ac-hdr">📄 مستنداتي والملف الرقمي</div>
+    
+    <!-- قسم إرسال للأدمن -->
+    <div class="set-sec" style="margin-bottom:24px; border:1px solid var(--bd2); padding:16px; border-radius:12px; background:rgba(255,255,255,0.02)">
+      <div class="set-sec-title" style="color:var(--gd); font-size:14px">📤 إرسال مستندات للأدمن (Admin)</div>
+      <div class="set-hint" style="margin-bottom:12px">أرسل مسوغات التعيين أو أي أوراق تطلبها منك الإدارة لتظهر لهم فوراً.</div>
+      <div class="form-grid" style="background:rgba(0,0,0,.1);padding:16px;border-radius:10px">
+        <div class="fg"><label>اسم المستند (مثلاً: صورة البطاقة، شهادة الجيش)</label><input type="text" id="empDirectDocTitle"></div>
+        <div class="fg"><label>الملف</label><input type="file" id="empDirectDocFile"></div>
+        <div class="fg" style="display:flex;align-items:flex-end"><button class="bt bt-p" style="width:100%" onclick="empSendDirectToAdmin()">📩 إرسال للأدمن</button></div>
+      </div>
+      <div id="empDirectUploadMsg" style="font-size:12px; margin-top:8px"></div>
     </div>
-    <div id="empDocUploadMsg" style="font-size:12px;margin-bottom:12px"></div>
-    <div id="empDocsViewList"><div class="empty-hint">⏳ جارٍ التحميل...</div></div>
+
+    <!-- قسم الملف الرقمي الشخصي -->
+    <div class="set-sec">
+      <div class="set-sec-title">📁 ملفي الرقمي الشخصي</div>
+      <div class="set-hint">المستندات المحفوظة في ملفك (المرفوعة بواسطتك أو بواسطة الإدارة).</div>
+      <div class="form-grid" style="background:rgba(255,255,255,.05);padding:16px;border-radius:10px;margin-bottom:16px">
+        <div class="fg"><label>اسم المستند (للحفظ في ملفك)</label><input type="text" id="empNewDocTitle"></div>
+        <div class="fg"><label>الملف</label><input type="file" id="empNewDocFile"></div>
+        <div class="fg" style="display:flex;align-items:flex-end"><button class="bt bt-o" style="width:100%" onclick="empUploadDoc()">⬆ رفع لملفي</button></div>
+      </div>
+      <div id="empDocUploadMsg" style="font-size:12px;margin-bottom:12px"></div>
+      <div id="empDocsViewList"><div class="empty-hint">⏳ جارٍ التحميل...</div></div>
+    </div>
   </div>
 
   <!-- 📨 الطلبات -->
@@ -1539,8 +1557,9 @@ function loadMyDocs() {
         var h = '<div style="display:flex;flex-direction:column;gap:8px">';
         docs.forEach(function(doc){
             var d = doc.data();
+            var directBadge = d.isDirectToAdmin ? '<span class="badge" style="background:var(--gd);color:var(--nv);font-size:9px;margin-right:6px">📩 مرسل للأدمن مباشرة</span>' : '';
             h += '<div style="background:rgba(0,0,0,.3);padding:12px;border-radius:8px;display:flex;justify-content:space-between;align-items:center;border-right:3px solid var(--gd)">';
-            h += '<div><div style="font-weight:bold;margin-bottom:4px">'+escH(d.title)+'</div>';
+            h += '<div><div style="font-weight:bold;margin-bottom:4px">'+escH(d.title)+' '+directBadge+'</div>';
             h += '<div style="font-size:11px;opacity:.6">بواسطة: '+(d.uploadedBy==='admin'?'الإدارة':'أنت')+' · '+(d.createdAt&&d.createdAt.toDate?d.createdAt.toDate().toLocaleString('ar-EG'):'')+'</div></div>';
             h += '<div style="display:flex;gap:8px"><a href="'+d.fileUrl+'" target="_blank" class="bt bt-p" style="padding:4px 10px;font-size:11px;text-decoration:none">👁 عرض</a>';
             if(d.uploadedBy === 'employee'){
@@ -1582,6 +1601,48 @@ function empUploadDoc() {
             fileInp.value = '';
             msg.style.color = 'var(--ok)'; msg.textContent = '✅ تم رفع المستند بنجاح.';
             setTimeout(function(){ msg.textContent=''; }, 3000);
+        }).catch(function(err){
+            msg.style.color = 'var(--no)'; msg.textContent = '❌ تعذر حفظ بيانات المستند: '+err.message;
+        });
+    });
+}
+
+function empSendDirectToAdmin() {
+    var titleInp = document.getElementById('empDirectDocTitle');
+    var fileInp = document.getElementById('empDirectDocFile');
+    var msg = document.getElementById('empDirectUploadMsg');
+    var title = (titleInp.value||'').trim();
+    if(!title){ msg.style.color='var(--no)'; msg.textContent='❌ يرجى كتابة اسم المستند.'; return; }
+    if(!fileInp.files || fileInp.files.length===0){ msg.style.color='var(--no)'; msg.textContent='❌ يرجى اختيار ملف.'; return; }
+    
+    var file = fileInp.files[0];
+    msg.style.color = 'var(--gd)'; msg.textContent = '⏳ جارٍ الإرسال للأدمن... يرجى الانتظار';
+    tgUploadFile('employeeDocuments/'+TG_USER.uid, 'direct_'+Date.now()+'_'+file.name, file, null, function(err){
+        msg.style.color = 'var(--no)'; msg.textContent = '❌ تعذر رفع الملف: '+err;
+    }, function(url) {
+        db.collection('employeeDocuments').add({
+            uid: TG_USER.uid,
+            title: title,
+            fileName: file.name,
+            fileType: file.type,
+            fileUrl: url,
+            uploadedBy: 'employee',
+            isDirectToAdmin: true,
+            createdAt: new Date()
+        }).then(function(){
+            titleInp.value = '';
+            fileInp.value = '';
+            msg.style.color = 'var(--ok)'; msg.textContent = '✅ تم إرسال المستند للأدمن بنجاح.';
+            setTimeout(function(){ msg.textContent=''; }, 5000);
+            
+            // إشعار للأدمن
+            if(typeof tgSendPushToUser === 'function'){
+                db.collection('users').where('role','in',['admin','tech_admin']).get().then(function(snap){
+                    snap.forEach(function(d){
+                        tgSendPushToUser(d.id, '📄 مستند جديد مرسل للأدمن', (TG_USER.name||'موظف') + ' أرسل مستنداً جديداً مباشرة: ' + title, 'emp-doc-direct');
+                    });
+                }).catch(function(){});
+            }
         }).catch(function(err){
             msg.style.color = 'var(--no)'; msg.textContent = '❌ تعذر حفظ بيانات المستند: '+err.message;
         });

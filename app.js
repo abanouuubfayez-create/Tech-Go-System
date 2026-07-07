@@ -1434,9 +1434,10 @@ function tgChatMount(){
              '<div id="tgEmojiWrap" style="display:none;position:absolute;bottom:60px;right:10px;z-index:999999;box-shadow:0 4px 12px rgba(0,0,0,0.2);border-radius:8px;overflow:hidden;">'+
                 '<emoji-picker class="light"></emoji-picker>'+
              '</div>'+
+             '<div id="tgChatMentions" class="tg-mention-list" style="display:none"></div>'+
             '<button class="bt bt-d" style="padding:8px 10px" onclick="document.getElementById(\'tgChatInput\').value=\'\'; tgChatClearReply();" title="مسح المربع">🧹</button>'+
             '<button class="bt" style="padding:8px 10px;font-size:20px;background:transparent;border:none;cursor:pointer;opacity:0.7;transition:opacity 0.2s;" onmouseover="this.style.opacity=1" onmouseout="this.style.opacity=0.7" onclick="var p=document.getElementById(\'tgEmojiWrap\'); p.style.display=p.style.display===\'none\'?\'block\' : \'none\';" title="إضافة إيموجي">😀</button>'+
-            '<textarea id="tgChatInput" rows="1" placeholder="اكتب رسالتك هنا... (اكتب @ للإشارة)" onkeydown="tgChatKeydown(event)"></textarea>'+
+            '<textarea id="tgChatInput" rows="1" placeholder="اكتب رسالتك هنا... (اكتب @ للإشارة)" onkeydown="tgChatKeydown(event)" oninput="tgChatHandleInput(event)"></textarea>'+
             '<button class="bt bt-p" onclick="tgChatSend()">➤</button>'+
           '</div>'+
         '</div>'+
@@ -1509,7 +1510,93 @@ function tgChatToggle(force){
 }
 
 function tgChatKeydown(e){
+    var list = document.getElementById('tgChatMentions');
+    if(list && list.style.display !== 'none'){
+        var items = list.querySelectorAll('.tg-mention-item');
+        var active = list.querySelector('.tg-mention-item.active');
+        var idx = Array.from(items).indexOf(active);
+
+        if(e.key === 'ArrowDown'){
+            e.preventDefault();
+            if(active) active.classList.remove('active');
+            var next = items[idx + 1] || items[0];
+            if(next){ next.classList.add('active'); next.scrollIntoView({block:'nearest'}); }
+            return;
+        }
+        if(e.key === 'ArrowUp'){
+            e.preventDefault();
+            if(active) active.classList.remove('active');
+            var prev = items[idx - 1] || items[items.length - 1];
+            if(prev){ prev.classList.add('active'); prev.scrollIntoView({block:'nearest'}); }
+            return;
+        }
+        if(e.key === 'Enter' || e.key === 'Tab'){
+            if(active){
+                e.preventDefault();
+                active.onclick();
+                return;
+            }
+        }
+        if(e.key === 'Escape'){
+            e.preventDefault();
+            list.style.display = 'none';
+            return;
+        }
+    }
     if(e.key==='Enter' && !e.shiftKey){ e.preventDefault(); tgChatSend(); }
+}
+
+function tgChatHandleInput(e){
+    var inp = e.target;
+    var val = inp.value;
+    var pos = inp.selectionStart;
+    var textBefore = val.substring(0, pos);
+    var mentionMatch = textBefore.match(/@([\w\u0600-\u06FF_]*)$/);
+    
+    if(mentionMatch){
+        tgChatShowMentions(mentionMatch[1]);
+    } else {
+        var list = document.getElementById('tgChatMentions');
+        if(list) list.style.display = 'none';
+    }
+}
+
+function tgChatShowMentions(filter){
+    var list = document.getElementById('tgChatMentions');
+    if(!list) return;
+    var q = (filter || '').toLowerCase();
+    var matches = EMPLOYEES.filter(function(name){
+        return name.toLowerCase().indexOf(q) > -1;
+    });
+
+    if(!matches.length){
+        list.style.display = 'none';
+        return;
+    }
+
+    var h = '';
+    matches.forEach(function(name, i){
+        h += '<div class="tg-mention-item'+(i===0?' active':'')+'" onclick="tgChatInsertMention(\''+name.replace(/'/g,"\\'")+'\')">'+escH(name)+'</div>';
+    });
+    list.innerHTML = h;
+    list.style.display = 'flex';
+}
+
+function tgChatInsertMention(name){
+    var inp = document.getElementById('tgChatInput');
+    if(!inp) return;
+    var val = inp.value;
+    var pos = inp.selectionStart;
+    var textBefore = val.substring(0, pos);
+    var textAfter = val.substring(pos);
+    
+    var newTextBefore = textBefore.replace(/@[\w\u0600-\u06FF_]*$/, '@' + name + ' ');
+    inp.value = newTextBefore + textAfter;
+    inp.focus();
+    var newPos = newTextBefore.length;
+    inp.setSelectionRange(newPos, newPos);
+    
+    document.getElementById('tgChatMentions').style.display = 'none';
 }
 
 // يبدأ الاستماع اللحظي لرسائل الشات (يُستدعى مرة واحدة بعد تسجيل الدخول)
@@ -1589,7 +1676,7 @@ function renderChatMessages(){
            (canDelete?('<span class="pj-chat-del" title="حذف الرسالة" onclick="tgChatDelete(\''+m.id+'\')">🗑</span>'):'')+
            '</div>'+
            (m.replyToId ? ('<div class="pj-chat-quote" dir="auto"><strong>'+escH(m.replyToName||'')+':</strong> '+escH(m.replyToText||'')+'</div>') : '') +
-           '<div class="pj-chat-text" dir="auto">'+escH(m.text||'').replace(/(@[\w\u0600-\u06FF_]+)/g, '<span style="color:var(--gd);font-weight:bold;background:rgba(235,160,0,0.1);padding:1px 4px;border-radius:4px">$1</span>')+'</div>'+
+           '<div class="pj-chat-text" dir="auto">'+escH(m.text||'').replace(/(@[^\n@]+?)(?=\s|$|@)/g, '<span style="color:var(--gd);font-weight:bold;background:rgba(235,160,0,0.1);padding:1px 4px;border-radius:4px">$1</span>')+'</div>'+
            '</div>';
     });
     log.innerHTML=h;
@@ -3819,9 +3906,10 @@ function toggleEmpDocCard(idx, uid) {
             var h = '<div style="display:flex;flex-direction:column;gap:8px">';
             docs.forEach(function(doc){
                 var d = doc.data();
+                var directBadge = d.isDirectToAdmin ? '<span class="badge" style="background:var(--gd);color:var(--nv);font-size:9px;margin-right:6px">📩 مرسل للأدمن مباشرة</span>' : '';
                 h += '<div style="background:rgba(0,0,0,.3);padding:12px;border-radius:8px;display:flex;justify-content:space-between;align-items:center;border-right:3px solid var(--gd)">';
-                h += '<div><div style="font-weight:bold;margin-bottom:4px">'+escH(d.title)+'</div>';
-                h += '<div style="font-size:11px;opacity:.6">بواسطة: '+(d.uploadedBy==='admin'?'الإدارة':'الموظف نفسه')+' · '+(d.createdAt&&d.createdAt.toDate?d.createdAt.toDate().toLocaleString('ar-EG'):'')+'</div></div>';
+                h += '<div><div style="font-weight:bold;margin-bottom:4px">'+escH(d.title)+' '+directBadge+'</div>';
+                h += '<div style="font-size:11px;opacity:.6">بواسطة: '+(d.uploadedBy==='admin'?'الإدارة':(d.isDirectToAdmin?'الموظف (إرسال مباشر)':'الموظف نفسه'))+' · '+(d.createdAt&&d.createdAt.toDate?d.createdAt.toDate().toLocaleString('ar-EG'):'')+'</div></div>';
                 h += '<div style="display:flex;gap:8px"><a href="'+d.fileUrl+'" target="_blank" class="bt bt-p" style="padding:4px 10px;font-size:11px;text-decoration:none">👁 عرض</a>';
                 h += '<button class="bt bt-d" style="padding:4px 10px;font-size:11px" onclick="deleteEmpDoc(\''+doc.id+'\', \''+d.fileUrl+'\')">🗑 حذف</button></div>';
                 h += '</div>';
