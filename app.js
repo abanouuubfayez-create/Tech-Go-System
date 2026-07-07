@@ -2141,10 +2141,10 @@ function FGS(l,opts){var o='<option value="" selected></option>';for(var i=0;i<o
 // تبحث عن إطار طباعة مخفي بمعرّف tgPrintFrame في الصفحة الحالية (موجود في index.html و employee.html)
 function tgLine(lbl,val){
     return '<div class="FL-line"><span class="FL-line-lbl">'+lbl+'</span>'+
-           '<input type="text" class="FL-line-val" readonly value="'+escH(val||'')+'"></div>';
+           '<div class="FL-line-val" style="white-space:pre-wrap; word-break:break-word;">'+escH(val||'')+'</div></div>';
 }
 function tgBlock(val){
-    return '<div class="FL-textbody" style="min-height:200px; white-space:pre-wrap; word-break:break-word; overflow-wrap:break-word;">'+escH(val||'')+'</div>';
+    return '<div class="FL-textbody" style="min-height:60px; white-space:pre-wrap; word-break:break-word; overflow-wrap:break-word;">'+escH(val||'')+'</div>';
 }
 // إبقاء الأسماء القديمة كمرادفات (متوافقة مع الكود القديم في بوابة الموظف)
 function empLine(lbl,val){ return tgLine(lbl,val); }

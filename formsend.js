@@ -639,7 +639,12 @@
       h += SC('١', 'بيانات النموذج');
       h += tgLine('الموظف', r.targetName || '');
       (r.fields || []).forEach(function (f) {
-        h += tgLine(f.label, (r.values && r.values[f.id]) || '');
+        if (f.type === 'textarea') {
+          h += '<div style="font-size:11.5px; font-weight:700; color:var(--tx2); margin-top:10px; margin-bottom:4px">' + escH(f.label) + '</div>';
+          h += tgBlock((r.values && r.values[f.id]) || '');
+        } else {
+          h += tgLine(f.label, (r.values && r.values[f.id]) || '');
+        }
       });
       if (r.note) {
         h += SC('٢', 'ملاحظة الأدمن عند الإرسال');
