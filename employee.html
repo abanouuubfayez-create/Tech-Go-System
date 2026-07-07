@@ -209,7 +209,7 @@
       </select>
     </div>
     <div class="set-hint" style="margin-bottom:14px">المهام اللي كلّفك بيها الأدمن — حدّث حالتها أولاً بأول عشان يتابع الأدمن تنفيذك لها.</div>
-    <div id="myTasksList"><div class="empty-hint">⏳ جارٍ التحميل...</div></div>
+    <div id="myTasksList" class="mission-grid"><div class="empty-hint">⏳ جارٍ التحميل...</div></div>
   </div>
 
   <!-- تقاريري الأسبوعية -->
@@ -988,83 +988,92 @@ function renderTasksHtml(rows){
         var attachHtml = '';
         if(t.fileUrl && t.fileType){
             if(t.fileType.indexOf('image/')===0){
-                attachHtml = '<div style="margin-top:6px"><a href="'+t.fileUrl+'" target="_blank"><img src="'+t.fileUrl+'" style="max-width:140px;max-height:100px;border-radius:6px;display:block"></a></div>';
+                attachHtml = '<div class="mission-attachment"><a href="'+t.fileUrl+'" target="_blank"><img src="'+t.fileUrl+'" style="max-width:100%;max-height:120px;display:block"></a></div>';
             } else if(t.fileType.indexOf('video/')===0){
-                attachHtml = '<div style="margin-top:6px"><video src="'+t.fileUrl+'" controls style="max-width:180px;border-radius:6px"></video></div>';
+                attachHtml = '<div class="mission-attachment"><video src="'+t.fileUrl+'" controls style="max-width:100%;max-height:120px"></video></div>';
             } else {
-                attachHtml = '<div style="margin-top:6px"><a href="'+t.fileUrl+'" target="_blank" style="color:var(--nv);font-weight:700;text-decoration:underline">📎 '+esc(t.fileName||'ملف مرفق')+'</a></div>';
+                attachHtml = '<div class="mission-attachment"><a href="'+t.fileUrl+'" target="_blank" style="color:var(--nv);font-weight:700;text-decoration:underline;font-size:11px">📎 '+esc(t.fileName||'ملف مرفق')+'</a></div>';
             }
         }
+
         var isDone = t.status === 'مكتمل';
         var isOverdue = t.deadline && !isDone && new Date(t.deadline) < new Date();
-        var cardStyle = isDone ? 'opacity:.65;border-right-color:var(--ok)' : (isOverdue ? 'border-right-color:var(--no)' : '');
-        
+        var pClass = t.priority === 'عالية' ? 'prio-high' : (t.priority === 'منخفضة' ? 'prio-low' : 'prio-med');
+        var sClass = isDone ? 'status-done' : '';
+
         var createdAtStr = '';
         if(t.createdAt && typeof t.createdAt.toDate === 'function') {
-            var cd = t.createdAt.toDate();
-            createdAtStr = cd.toLocaleString('en-US', { hour12: true, year: 'numeric', month: 'numeric', day: 'numeric', hour: '2-digit', minute: '2-digit' }).replace('AM', 'ص').replace('PM', 'م');
+            createdAtStr = t.createdAt.toDate().toLocaleDateString('ar-EG') + ' ' + t.createdAt.toDate().toLocaleTimeString('ar-EG', {hour:'2-digit', minute:'2-digit'});
         } else if(t.createdAt) {
             var cd = new Date(t.createdAt);
-            if(!isNaN(cd.getTime())) createdAtStr = cd.toLocaleString('en-US', { hour12: true, year: 'numeric', month: 'numeric', day: 'numeric', hour: '2-digit', minute: '2-digit' }).replace('AM', 'ص').replace('PM', 'م');
+            if(!isNaN(cd.getTime())) createdAtStr = cd.toLocaleDateString('ar-EG') + ' ' + cd.toLocaleTimeString('ar-EG', {hour:'2-digit', minute:'2-digit'});
         }
-        
+
         var historyHtml = '';
         if(t.history && t.history.length > 0) {
-            historyHtml += '<div style="margin-top:10px;padding:8px;background:rgba(0,0,0,0.03);border-radius:6px;font-size:11px">';
-            historyHtml += '<div style="font-weight:700;color:var(--nv);margin-bottom:6px">📜 مسار المهمة:</div>';
+            var histId = 'hist-' + t.id;
+            historyHtml = '<div class="mission-history-toggle" onclick="var e=document.getElementById(\''+histId+'\'); e.style.display=e.style.display===\'none\'?\'block\':\'none\'">📜 سجل التحويلات...</div>';
+            historyHtml += '<div id="'+histId+'" style="display:none;margin-top:10px;padding:8px;background:rgba(0,0,0,0.03);border-radius:8px;font-size:10px;border:1px solid var(--bd)">';
             t.history.forEach(function(hi){
                 if(hi.action === 'forwarded') {
-                    var dStr = hi.date ? new Date(hi.date).toLocaleString('en-US', { hour12: true, year: 'numeric', month: 'numeric', day: 'numeric', hour: '2-digit', minute: '2-digit' }).replace('AM', 'ص').replace('PM', 'م') : '';
+                    var dStr = hi.date ? new Date(hi.date).toLocaleString('ar-EG', { hour12: true, year: 'numeric', month: 'numeric', day: 'numeric', hour: '2-digit', minute: '2-digit' }) : '';
                     historyHtml += '<div style="margin-bottom:6px;padding-bottom:6px;border-bottom:1px solid var(--bd)">';
-                    historyHtml += '<div><span style="color:var(--gd);font-weight:700">من:</span> '+esc(hi.fromName)+' <span style="color:var(--gd);font-weight:700">إلى:</span> '+esc(hi.toName)+' <span style="color:var(--tx3);font-size:9.5px">('+dStr+')</span></div>';
+                    historyHtml += '<div><span style="color:var(--gd);font-weight:700">من:</span> '+esc(hi.fromName)+' <span style="color:var(--gd);font-weight:700">إلى:</span> '+esc(hi.toName)+'</div>';
+                    historyHtml += '<div style="font-size:9px;color:var(--tx3)">'+dStr+'</div>';
                     historyHtml += '<div style="margin-top:2px;color:var(--tx2)">💬 '+esc(hi.note)+'</div>';
                     historyHtml += '</div>';
                 }
             });
             historyHtml += '</div>';
         }
-        
+
         var pVal = t.priority === 'عالية' ? 3 : (t.priority === 'متوسطة' ? 2 : 1);
-        var sVal = t.status === 'مكتمل' ? 3 : (t.status === 'جاري العمل' ? 2 : 1);
+        var sVal = isDone ? 3 : (t.status === 'جاري العمل' ? 2 : 1);
         var dVal = (t.createdAt && t.createdAt.toMillis) ? t.createdAt.toMillis() : ((t.createdAt && new Date(t.createdAt).getTime()) || 0);
         var dlVal = t.deadline ? new Date(t.deadline).getTime() : 9999999999999;
-        var empVal = esc(t.assignedToName || '');
 
-        return '<div class="pj-row" style="'+cardStyle+'" data-prio="'+pVal+'" data-status="'+sVal+'" data-date="'+dVal+'" data-deadline="'+dlVal+'" data-emp="'+empVal+'">'+
-            '<div class="pj-t">'+esc(t.title||'بدون عنوان')+
-            ' <span class="badge"'+(isDone?' style="background:var(--ok);color:#fff"':'')+(isOverdue?' style="background:var(--no);color:#fff"':'')+'>'+esc(t.priority||'متوسطة')+'</span>'+
-            (isDone?' <span style="background:var(--ok);color:#fff;border-radius:10px;padding:1px 8px;font-size:9px;font-weight:800">✅ مكتملة</span>':'')+(isOverdue?' <span style="background:var(--no);color:#fff;border-radius:10px;padding:1px 8px;font-size:9px;font-weight:800">⏰ متأخرة</span>':'')+
-            '</div>'+
-            (t.description?'<div class="pj-meta">'+esc(t.description)+'</div>':'')+
-            (createdAtStr?'<div class="pj-meta" style="font-size:10.5px;color:var(--tx3);margin-top:2px">🕒 تاريخ الإنشاء: <strong>'+createdAtStr+'</strong></div>':'')+
-            (t.deadline?'<div class="pj-meta"'+(isOverdue?' style="color:var(--no);font-weight:700"':'')+'>📅 تاريخ التسليم: '+esc(t.deadline)+'</div>':'')+
-            (t.createdBy?'<div class="pj-meta" style="font-size:10.5px;color:var(--tx3);margin-top:2px">👤 أنشأها: <strong>'+esc(t.createdBy)+'</strong>'+(t.createdByRole?' <span style="opacity:.75">('+esc(t.createdByRole)+')</span>':'')+'</div>':'')+
-            attachHtml+
-            historyHtml+
-            (isDone?'<div style="font-size:11px;color:var(--ok);font-weight:700;margin-top:8px">✅ تم إنجاز هذه المهمة</div>':
-            '<div class="fg" style="max-width:220px;margin:8px 0"><label>حالة المهمة</label><select id="tks_'+t.id+'" onchange="saveTaskStatus(\''+t.id+'\')">'+
-            ['لم يبدأ','جاري العمل','متوقف','مكتمل'].map(function(s){return '<option'+(s===(t.status||'لم يبدأ')?' selected':'')+'>'+s+'</option>';}).join('')+
-            '</select></div>'+
-            '<button class="bt bt-p" onclick="saveTaskStatus(\''+t.id+'\')">💾 حفظ الحالة</button>'+
-            ' <span id="tkmsg_'+t.id+'" style="font-size:10.5px"></span>'+
-            '<div style="margin-top:12px;padding-top:12px;border-top:1px dashed var(--bd)">'+
-            '<div style="font-size:11px;font-weight:700;color:var(--nv);margin-bottom:6px">🔄 إرسال المهمة لزميل</div>'+
-            '<div class="fg" style="margin-bottom:8px"><label>اختر الزميل</label><select id="tkfwd_'+t.id+'"><option value="">-- اختر الزميل --</option>'+
-            (_teammatesCache||[]).map(function(emp){return '<option value="'+emp.id+'">'+esc(emp.name)+'</option>';}).join('')+
-            '</select></div>'+
-            '<div class="fg" style="margin-bottom:8px"><label>ماذا أنجزت؟ (ملاحظة للأدمن والزميل)</label><textarea id="tkfwd_note_'+t.id+'" rows="2" placeholder="اكتب ما أنجزته أو سبب الإرسال..."></textarea></div>'+
-            '<button class="bt bt-o" onclick="forwardTask(\''+t.id+'\')">📩 إرسال المهمة للزميل</button>'+
-            ' <span id="tkfwd_msg_'+t.id+'" style="font-size:10.5px"></span>'+
-            '</div>')+
-            '</div>';
+        var h = '<div class="mission-card '+pClass+' '+sClass+' pj-row" data-prio="'+pVal+'" data-status="'+sVal+'" data-date="'+dVal+'" data-deadline="'+dlVal+'">'+
+             '<div class="mission-card-header">'+
+               '<div class="mission-card-title">'+esc(t.title||'بدون عنوان')+'</div>'+
+               '<div class="mission-card-badges">'+
+                 '<span class="badge '+prioBadgeClass(t.priority)+'">'+esc(t.priority||'متوسطة')+'</span>'+
+                 '<span class="badge '+pstatusBadgeClass(t.status)+'">'+esc(t.status||'لم يبدأ')+'</span>'+
+                 (isOverdue ? '<span class="badge" style="background:var(--no);color:#fff;margin-top:4px">⚠️ متأخر</span>' : '') +
+               '</div>'+
+             '</div>'+
+             '<div class="mission-card-body">'+
+               '<div class="mission-card-meta">'+
+                 (t.deadline?'<div class="mission-meta-item">📅 <strong>التسليم:</strong> '+esc(t.deadline)+'</div>':'')+
+                 (createdAtStr?'<div class="mission-meta-item">🕒 <strong>الإنشاء:</strong> '+createdAtStr+'</div>':'')+
+               '</div>'+
+               (t.description?'<div class="mission-card-desc">'+esc(t.description)+'</div>':'')+
+               attachHtml+
+               historyHtml+
+             '</div>'+
+             '<div class="mission-card-footer" style="flex-direction:column;align-items:stretch;gap:10px">'+
+               '<div style="font-size:9px;color:var(--tx3)">بواسطة: '+esc(t.createdByRole||'أدمن')+'</div>'+
+               '<div class="fg" style="margin-top:0">'+
+                 '<label style="font-size:11px;font-weight:700">تحديث الحالة:</label>'+
+                 '<select onchange="updateTaskStatus(\''+t.id+'\', this.value)" style="padding:6px;font-size:11px;border-radius:8px">'+
+                   '<option value="لم يبدأ" '+(t.status==='لم يبدأ'?'selected':'')+'>لم يبدأ</option>'+
+                   '<option value="جاري العمل" '+(t.status==='جاري العمل'?'selected':'')+'>جاري العمل</option>'+
+                   '<option value="مكتمل" '+(t.status==='مكتمل'?'selected':'')+'>مكتمل ✅</option>'+
+                 '</select>'+
+               '</div>';
+
+        if(!isDone) {
+            h += '<button class="bt bt-o" style="width:100%;padding:8px;font-size:11px;margin-top:5px" onclick="forwardTaskPrompt(\''+t.id+'\')">➡️ تحويل المهمة لموظف آخر</button>';
+        }
+
+        h += '</div></div>';
+        return h;
     }
 
     var h = '';
-
     // ── المهام النشطة ──
     if(active.length){
         h += '<div style="font-size:11px;font-weight:800;color:var(--nv);margin-bottom:10px;padding-bottom:6px;border-bottom:2px solid var(--gd)">⚡ المهام الجارية ('+active.length+')</div>';
-        h += '<div class="tasks-grid">';
+        h += '<div class="mission-grid">';
         active.forEach(function(t){ h += taskCard(t); });
         h += '</div>';
     } else {
@@ -1080,7 +1089,7 @@ function renderTasksHtml(rows){
         h += '<button class="bt bt-o" style="padding:3px 12px;font-size:10px" onclick="var s=document.getElementById(\''+archId+'\');s.style.display=s.style.display===\'none\'?\'block\':\'none\'">📂 عرض / إخفاء</button>';
         h += '</div>';
         h += '<div id="'+archId+'" style="display:none">';
-        h += '<div class="tasks-grid">';
+        h += '<div class="mission-grid">';
         done.forEach(function(t){ h += taskCard(t); });
         h += '</div></div></div>';
     }
