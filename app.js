@@ -1425,20 +1425,20 @@ function tgChatMount(){
               '<span class="tg-chat-panel-close" onclick="tgChatToggle(false)">✕</span>'+
             '</span>'+
           '</div>'+
-          '<div class="tg-chat-log" id="tgChatLog"><div class="pj-chat-empty">جارِ تحميل الرسائل...</div></div>'+
+          '<div class="pj-chat-log" id="tgChatLog"><div class="pj-chat-empty">جارِ تحميل الرسائل...</div></div>'+
           '<div id="tgChatReplyPreview" class="tg-chat-reply-preview" style="display:none">'+
              '<div class="tg-chat-reply-preview-text" id="tgChatReplyText"></div>'+
              '<div class="tg-chat-reply-preview-close" onclick="tgChatClearReply()">✕</div>'+
           '</div>'+
-          '<div class="tg-chat-input-row" style="position:relative">'+
-             '<div id="tgEmojiWrap" style="display:none;position:absolute;bottom:60px;right:10px;z-index:999999;box-shadow:0 4px 12px rgba(0,0,0,0.2);border-radius:8px;overflow:hidden;">'+
+          '<div class="pj-chat-input-row" style="position:relative">'+
+             '<div id="tgEmojiWrap" style="display:none;position:absolute;bottom:65px;right:10px;z-index:999999;box-shadow:0 8px 24px rgba(0,0,0,0.15);border-radius:12px;overflow:hidden;">'+
                 '<emoji-picker class="light"></emoji-picker>'+
              '</div>'+
              '<div id="tgChatMentions" class="tg-mention-list" style="display:none"></div>'+
-            '<button class="bt bt-d" style="padding:8px 10px" onclick="document.getElementById(\'tgChatInput\').value=\'\'; tgChatClearReply();" title="مسح المربع">🧹</button>'+
-            '<button class="bt" style="padding:8px 10px;font-size:20px;background:transparent;border:none;cursor:pointer;opacity:0.7;transition:opacity 0.2s;" onmouseover="this.style.opacity=1" onmouseout="this.style.opacity=0.7" onclick="var p=document.getElementById(\'tgEmojiWrap\'); p.style.display=p.style.display===\'none\'?\'block\' : \'none\';" title="إضافة إيموجي">😀</button>'+
+            '<button class="bt bt-d" style="width:36px;height:36px;padding:0;border-radius:50%;display:flex;align-items:center;justify-content:center;flex-shrink:0" onclick="document.getElementById(\'tgChatInput\').value=\'\'; tgChatClearReply();" title="مسح المربع">🧹</button>'+
+            '<button style="font-size:22px;background:transparent;border:none;cursor:pointer;padding:0 4px;opacity:0.7;transition:0.2s" onmouseover="this.style.opacity=1" onmouseout="this.style.opacity=0.7" onclick="var p=document.getElementById(\'tgEmojiWrap\'); p.style.display=p.style.display===\'none\'?\'block\' : \'none\';" title="إضافة إيموجي">😀</button>'+
             '<textarea id="tgChatInput" rows="1" placeholder="اكتب رسالتك هنا... (اكتب @ للإشارة)" onkeydown="tgChatKeydown(event)" oninput="tgChatHandleInput(event)"></textarea>'+
-            '<button class="bt bt-p" onclick="tgChatSend()">➤</button>'+
+            '<button class="btn-send" onclick="tgChatSend()">➤</button>'+
           '</div>'+
         '</div>'+
         '<div id="tgChatBubble" class="tg-chat-bubble" onclick="tgChatToggle()" title="الشات العام">'+
@@ -1661,29 +1661,54 @@ function renderChatMessages(){
     var log=document.getElementById('tgChatLog');
     if(!log) return;
     if(!_chatMessages.length){ log.innerHTML='<div class="pj-chat-empty">لا توجد رسائل بعد. ابدأ المحادثة! 👋</div>'; return; }
+    
     var h='';
+    var lastDate = '';
+    
     _chatMessages.forEach(function(m){
-        var mine = TG_USER && m.uid===TG_USER.uid;
         var t = (m.createdAt && m.createdAt.toDate) ? m.createdAt.toDate() : null;
-        var timeStr = t ? (t.toLocaleDateString('ar-EG')+' · '+t.toLocaleTimeString('ar-EG',{hour:'2-digit',minute:'2-digit'})) : 'جارِ الإرسال...';
+        var dateStr = t ? t.toLocaleDateString('ar-EG') : '';
+        
+        // Date Separator logic
+        if (dateStr !== lastDate) {
+            var label = dateStr;
+            var today = new Date().toLocaleDateString('ar-EG');
+            var yest = new Date(Date.now() - 86400000).toLocaleDateString('ar-EG');
+            if (dateStr === today) label = 'اليوم';
+            else if (dateStr === yest) label = 'أمس';
+            h += '<div class="pj-chat-date-sep">' + label + '</div>';
+            lastDate = dateStr;
+        }
+
+        var mine = TG_USER && m.uid===TG_USER.uid;
+        var timeStr = t ? t.toLocaleTimeString('ar-EG',{hour:'2-digit',minute:'2-digit'}) : '...';
         var roleLabel = m.role==='admin' ? 'أدمن' : 'موظف';
         var canDelete = TG_USER && (mine || TG_USER.role==='admin');
+        
         h+='<div class="pj-chat-msg'+(mine?' mine':'')+'">'+
-           '<div class="pj-chat-msg-h"><span class="pj-chat-name">'+escH(m.name||'')+'</span>'+
-           '<span class="pj-chat-role">'+roleLabel+'</span>'+
-           '<span class="pj-chat-time">'+escH(timeStr)+'</span>'+
-           '<span class="pj-chat-reply-btn" title="رد" onclick="tgChatSetReply(\''+m.id+'\', \''+escH(m.name||'')+'\', \''+escH((m.text||'').replace(/\\/g,'\\\\').replace(/\'/g,"\\'").replace(/\"/g,'&quot;').replace(/\n/g,'\\n'))+'\')">↩️</span>'+
-           (canDelete?('<span class="pj-chat-del" title="حذف الرسالة" onclick="tgChatDelete(\''+m.id+'\')">🗑</span>'):'')+
+           '<div class="pj-chat-actions">'+
+             '<span class="pj-chat-reply-btn" title="رد" onclick="tgChatSetReply(\''+m.id+'\', \''+escH(m.name||'')+'\', \''+escH((m.text||'').replace(/\\/g,'\\\\').replace(/\'/g,"\\'").replace(/\"/g,'&quot;').replace(/\n/g,'\\n'))+'\')">↩️</span>'+
+             (canDelete?('<span class="pj-chat-del" title="حذف الرسالة" onclick="tgChatDelete(\''+m.id+'\')">🗑</span>'):'')+
            '</div>'+
-           (m.replyToId ? ('<div class="pj-chat-quote" dir="auto"><strong>'+escH(m.replyToName||'')+':</strong> '+escH(m.replyToText||'')+'</div>') : '') +
-           '<div class="pj-chat-text" dir="auto">'+escH(m.text||'').replace(/(@[^\n@]+?)(?=\s|$|@)/g, '<span style="color:var(--gd);font-weight:bold;background:rgba(235,160,0,0.1);padding:1px 4px;border-radius:4px">$1</span>')+'</div>'+
+           '<div class="pj-chat-bubble">'+
+             '<div class="pj-chat-name">'+escH(m.name||'')+' <span class="pj-chat-role">'+roleLabel+'</span></div>'+
+             (m.replyToId ? ('<div class="pj-chat-quote" dir="auto"><strong>'+escH(m.replyToName||'')+':</strong> '+escH(m.replyToText||'')+'</div>') : '') +
+             '<div class="pj-chat-text" dir="auto">'+
+                escH(m.text||'')
+                .replace(/(@[^\n@]+?)(?=\s|$|@)/g, '<span style="color:var(--gd);font-weight:bold;background:rgba(235,160,0,0.1);padding:1px 4px;border-radius:4px">$1</span>')
+                .replace(/(https?:\/\/[^\s]+)/g, '<a href="$1" target="_blank" style="color:#34b7f1;text-decoration:underline">$1</a>')+
+             '</div>'+
+             '<div class="pj-chat-time">'+timeStr+'</div>'+
+           '</div>'+
            '</div>';
     });
+    
     log.innerHTML=h;
     if(window.twemoji) {
         twemoji.parse(log, { folder: 'svg', ext: '.svg' });
     }
-    log.scrollTop=log.scrollHeight;
+    // Smooth scroll to bottom
+    setTimeout(function(){ log.scrollTo({ top: log.scrollHeight, behavior: 'smooth' }); }, 50);
 }
 
 function tgChatSend(){
