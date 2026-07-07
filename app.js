@@ -1274,8 +1274,11 @@ function renderTasksMgmtList(list){
 
 function createTask(){
     var sel=document.getElementById('tkAssignee');
-    var uid=sel.value;
-    var name=sel.selectedOptions&&sel.selectedOptions[0]?sel.selectedOptions[0].getAttribute('data-name'):'';
+    var selectedOptions = Array.from(sel.selectedOptions);
+    var employees = selectedOptions.map(function(opt){
+        return { uid: opt.value, name: opt.getAttribute('data-name') || '' };
+    }).filter(function(e){ return e.uid; });
+
     var title=(document.getElementById('tkTitle').value||'').trim();
     var desc=(document.getElementById('tkDesc').value||'').trim();
     var priority=document.getElementById('tkPriority').value;
@@ -1283,33 +1286,43 @@ function createTask(){
     var fileInput=document.getElementById('tkFile');
     var file=fileInput && fileInput.files && fileInput.files[0];
     var msg=document.getElementById('tkCreateMsg');
-    if(!uid){ msg.style.color='var(--no)'; msg.textContent='من فضلك اختر الموظف المكلَّف.'; return; }
+
+    if(!employees.length){ msg.style.color='var(--no)'; msg.textContent='من فضلك اختر الموظف (أو الموظفين) المكلَّفين.'; return; }
     if(!title){ msg.style.color='var(--no)'; msg.textContent='من فضلك اكتب عنوان المهمة.'; return; }
     msg.style.color='var(--tx3)'; msg.textContent='⏳ جارٍ التكليف...';
 
     var createdByRole = (TG_USER && TG_USER.role === 'tech_admin') ? 'أدمن تقني' : 'أدمن إداري';
-    var taskData = {
-        title:title, description:desc, assignedTo:uid, assignedToName:name||'',
+    var baseTaskData = {
+        title:title, description:desc,
         priority:priority, deadline:deadline, status:'لم يبدأ',
         createdAt: new Date(),
         createdBy:(TG_USER?(TG_USER.name||TG_USER.email||'الأدمن'):''), createdByUid:(TG_USER?TG_USER.uid:''),
         createdByRole: createdByRole
     };
 
-    var onDone = function(){
-        msg.style.color='var(--ok)'; msg.textContent='✅ تم تكليف المهمة بنجاح.';
-        document.getElementById('tkTitle').value='';
-        document.getElementById('tkDesc').value='';
-        document.getElementById('tkDeadline').value='';
-        document.getElementById('tkPriority').value='متوسطة';
-        if(fileInput) fileInput.value='';
-        var fnSpan = document.getElementById('tkFileName');
-        if(fnSpan) fnSpan.textContent='';
-        loadTasksMgmt();
-        // إرسال Push Notification للموظف المكلَّف
-        if(typeof tgSendPushToUser === 'function' && uid){
-            tgSendPushToUser(uid, '📋 مهمة جديدة', 'تم تكليفك بمهمة: ' + title, 'task-new');
-        }
+    var finalizeTasks = function(finalData){
+        var promises = employees.map(function(emp){
+            var task = Object.assign({}, finalData, { assignedTo: emp.uid, assignedToName: emp.name });
+            return db.collection('tasks').add(task).then(function(){
+                if(typeof tgSendPushToUser === 'function'){
+                    tgSendPushToUser(emp.uid, '📋 مهمة جديدة', 'تم تكليفك بمهمة: ' + title, 'task-new');
+                }
+            });
+        });
+
+        Promise.all(promises).then(function(){
+            msg.style.color='var(--ok)'; msg.textContent='✅ تم تكليف المهمة لـ ('+employees.length+') موظفين بنجاح.';
+            document.getElementById('tkTitle').value='';
+            document.getElementById('tkDesc').value='';
+            document.getElementById('tkDeadline').value='';
+            document.getElementById('tkPriority').value='متوسطة';
+            if(fileInput) fileInput.value='';
+            var fnSpan = document.getElementById('tkFileName');
+            if(fnSpan) fnSpan.textContent='';
+            loadTasksMgmt();
+        }).catch(function(err){
+            msg.style.color='var(--no)'; msg.textContent='❌ خطأ أثناء الحفظ: '+err.message;
+        });
     };
 
     if(file){
@@ -1317,7 +1330,7 @@ function createTask(){
         if(file.size > MAX_MB * 1024 * 1024){ msg.style.color='var(--no)'; msg.textContent='الملف كبير جداً (الحد الأقصى '+MAX_MB+' MB).'; return; }
         var prog = document.getElementById('tkUploadProg');
         if(prog) { prog.style.display = 'block'; prog.textContent = '⏳ جاري رفع المرفق... 0%'; }
-        var uniqueName = uid + '/' + Date.now() + '_' + file.name;
+        var uniqueName = (employees[0].uid) + '/' + Date.now() + '_' + file.name;
         tgUploadFile('tasks', uniqueName, file,
             function(pct){
                 if(prog) prog.textContent = '⏳ جاري رفع المرفق... ' + pct + '%';
@@ -1327,32 +1340,17 @@ function createTask(){
                 msg.style.color='var(--no)'; msg.textContent='❌ تعذر رفع الملف: '+errMsg;
             },
             function(publicUrl){
-                taskData.fileUrl = publicUrl;
-                taskData.fileName = file.name;
-                taskData.fileType = file.type;
-                db.collection('tasks').add(taskData).then(function(){
-                    if(prog) { prog.style.display='none'; prog.textContent=''; }
-                    onDone();
-                }).catch(function(err){
-                    if(prog) prog.style.display='none';
-                    msg.style.color='var(--no)'; msg.textContent='❌ '+err.message;
-                });
+                baseTaskData.fileUrl = publicUrl;
+                baseTaskData.fileName = file.name;
+                baseTaskData.fileType = file.type;
+                if(prog) { prog.style.display='none'; prog.textContent=''; }
+                finalizeTasks(baseTaskData);
             }
         );
         return;
     }
 
-    try {
-        db.collection('tasks').add(taskData).then(onDone).catch(function(err){
-            console.error("Task Create Error:", err);
-            msg.style.color='var(--no)'; msg.textContent='❌ تعذر تكليف المهمة: '+err.message;
-            tgToast('❌ تعذر تكليف المهمة: ' + err.message, 'err');
-        });
-    } catch(syncErr) {
-        console.error("Sync Error in createTask:", syncErr);
-        msg.style.color='var(--no)'; msg.textContent='❌ خطأ تقني: '+syncErr.message;
-        tgToast('❌ خطأ تقني: ' + syncErr.message, 'err');
-    }
+    finalizeTasks(baseTaskData);
 }
 function empGo(id, el, force) {
     // Removed hasUnsavedText check to prevent annoying popups
@@ -2944,7 +2942,10 @@ function load(id,c){
 
         h+='<div class="set-sec"><div class="set-sec-title">➕ تكليف مهمة جديدة</div>';
         h+='<div class="fr fr2" style="margin-bottom:10px">'+
-           '<div class="fg"><label>الموظف المكلَّف</label><select id="tkAssignee"><option value="">⏳ جارٍ تحميل قائمة الموظفين...</option></select></div>'+
+           '<div class="fg"><label>الموظف المكلَّف (يمكن اختيار أكثر من واحد)</label>'+
+           '<select id="tkAssignee" multiple style="height:100px; padding:5px;"><option value="">⏳ جارٍ تحميل قائمة الموظفين...</option></select>'+
+           '<button class="bt bt-o" style="margin-top:5px; padding:2px 10px; font-size:10px" onclick="var s=document.getElementById(\'tkAssignee\'); for(var i=0; i<s.options.length; i++) s.options[i].selected=true;">✅ تحديد الكل</button>'+
+           '</div>'+
            '<div class="fg"><label>الأولوية</label><select id="tkPriority"><option>منخفضة</option><option selected>متوسطة</option><option>عالية</option></select></div>'+
            '</div>';
         h+='<div class="fg" style="margin-bottom:10px"><label>عنوان المهمة</label><input type="text" id="tkTitle" placeholder="مثلاً: تجهيز تصميمات كتالوج المنتجات"></div>';

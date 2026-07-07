@@ -2140,3 +2140,32 @@ img.emoji { height: 1.25em; width: 1.25em; margin: 0 .05em 0 .1em; vertical-alig
     .p-stats { grid-template-columns: 1fr 1fr; }
     .profile-nav { overflow-x: auto; white-space: nowrap; }
 }
+
+/* Multi-select styling */
+select[multiple] {
+    scrollbar-width: thin;
+    scrollbar-color: var(--gd) transparent;
+}
+select[multiple]::-webkit-scrollbar {
+    width: 6px;
+}
+select[multiple]::-webkit-scrollbar-thumb {
+    background-color: var(--gd);
+    border-radius: 10px;
+}
+select[multiple] option {
+    padding: 8px 12px;
+    border-bottom: 1px solid var(--bd);
+    transition: var(--tr);
+}
+select[multiple] option:checked {
+    background: var(--gdl) linear-gradient(0deg, var(--gdl) 0%, var(--gdl) 100%);
+    color: var(--nv);
+    font-weight: 700;
+}
+select[multiple] option:hover {
+    background-color: rgba(0,0,0,0.02);
+}
+[data-theme='dark'] select[multiple] option:hover {
+    background-color: rgba(255,255,255,0.05);
+}
