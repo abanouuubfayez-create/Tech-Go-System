@@ -1218,73 +1218,55 @@ function renderTasksMgmtList(list){
         var attachHtml = '';
         if(t.fileUrl && t.fileType){
             if(t.fileType.indexOf('image/')===0){
-                attachHtml = '<div class="mission-attachment"><a href="'+t.fileUrl+'" target="_blank"><img src="'+t.fileUrl+'" style="max-width:100%;max-height:120px;display:block"></a></div>';
+                attachHtml = '<div style="margin-top:6px"><a href="'+t.fileUrl+'" target="_blank"><img src="'+t.fileUrl+'" style="max-width:140px;max-height:100px;border-radius:6px;display:block"></a></div>';
             } else if(t.fileType.indexOf('video/')===0){
-                attachHtml = '<div class="mission-attachment"><video src="'+t.fileUrl+'" controls style="max-width:100%;max-height:120px"></video></div>';
+                attachHtml = '<div style="margin-top:6px"><video src="'+t.fileUrl+'" controls style="max-width:180px;border-radius:6px"></video></div>';
             } else {
-                attachHtml = '<div class="mission-attachment"><a href="'+t.fileUrl+'" target="_blank" style="color:var(--nv);font-weight:700;text-decoration:underline;font-size:11px">📎 '+escH(t.fileName||'ملف مرفق')+'</a></div>';
+                attachHtml = '<div style="margin-top:6px"><a href="'+t.fileUrl+'" target="_blank" style="color:var(--nv);font-weight:700;text-decoration:underline">📎 '+escH(t.fileName||'ملف مرفق')+'</a></div>';
             }
         }
-
         var historyHtml = '';
         if(t.history && t.history.length > 0) {
-            var histId = 'hist-' + t.id;
-            historyHtml = '<div class="mission-history-toggle" onclick="var e=document.getElementById(\''+histId+'\'); e.style.display=e.style.display===\'none\'?\'block\':\'none\'">📜 سجل التحويلات...</div>';
-            historyHtml += '<div id="'+histId+'" style="display:none;margin-top:10px;padding:8px;background:rgba(0,0,0,0.03);border-radius:8px;font-size:10px;border:1px solid var(--bd)">';
+            historyHtml += '<div style="margin-top:10px;padding:8px;background:var(--bg);border-radius:6px;font-size:11px">';
+            historyHtml += '<div style="font-weight:700;color:var(--nv);margin-bottom:6px">📜 سجل تحويل المهمة:</div>';
             t.history.forEach(function(hi){
                 if(hi.action === 'forwarded') {
-                    var dStr = hi.date ? new Date(hi.date).toLocaleString('ar-EG', { hour12: true, year: 'numeric', month: 'numeric', day: 'numeric', hour: '2-digit', minute: '2-digit' }) : '';
+                    var dStr = hi.date ? new Date(hi.date).toLocaleString('en-US', { hour12: true, year: 'numeric', month: 'numeric', day: 'numeric', hour: '2-digit', minute: '2-digit' }).replace('AM', 'ص').replace('PM', 'م') : '';
                     historyHtml += '<div style="margin-bottom:6px;padding-bottom:6px;border-bottom:1px solid var(--bd)">';
-                    historyHtml += '<div><span style="color:var(--gd);font-weight:700">من:</span> '+escH(hi.fromName)+' <span style="color:var(--gd);font-weight:700">إلى:</span> '+escH(hi.toName)+'</div>';
-                    historyHtml += '<div style="font-size:9px;color:var(--tx3)">'+dStr+'</div>';
+                    historyHtml += '<div><span style="color:var(--gd);font-weight:700">من:</span> '+escH(hi.fromName)+' <span style="color:var(--gd);font-weight:700">إلى:</span> '+escH(hi.toName)+' <span style="color:var(--tx3);font-size:9.5px">('+dStr+')</span></div>';
                     historyHtml += '<div style="margin-top:2px;color:var(--tx2)">💬 '+escH(hi.note)+'</div>';
                     historyHtml += '</div>';
                 }
             });
             historyHtml += '</div>';
         }
-
-        var pClass = t.priority === 'عالية' ? 'prio-high' : (t.priority === 'منخفضة' ? 'prio-low' : 'prio-med');
-        var sClass = t.status === 'مكتمل' ? 'status-done' : '';
-        
-        var createdAtStr = '';
-        if(t.createdAt && typeof t.createdAt.toDate === 'function') {
-            createdAtStr = t.createdAt.toDate().toLocaleDateString('ar-EG') + ' ' + t.createdAt.toDate().toLocaleTimeString('ar-EG', {hour:'2-digit', minute:'2-digit'});
-        } else if(t.createdAt) {
-            var cd = new Date(t.createdAt);
-            if(!isNaN(cd.getTime())) createdAtStr = cd.toLocaleDateString('ar-EG') + ' ' + cd.toLocaleTimeString('ar-EG', {hour:'2-digit', minute:'2-digit'});
-        }
-
         var pVal = t.priority === 'عالية' ? 3 : (t.priority === 'متوسطة' ? 2 : 1);
         var sVal = t.status === 'مكتمل' ? 3 : (t.status === 'جاري العمل' ? 2 : 1);
         var dVal = (t.createdAt && t.createdAt.toMillis) ? t.createdAt.toMillis() : ((t.createdAt && new Date(t.createdAt).getTime()) || 0);
+
+        var createdAtStr = '';
+        if(t.createdAt && typeof t.createdAt.toDate === 'function') {
+            var cd = t.createdAt.toDate();
+            createdAtStr = cd.toLocaleString('en-US', { hour12: true, year: 'numeric', month: 'numeric', day: 'numeric', hour: '2-digit', minute: '2-digit' }).replace('AM', 'ص').replace('PM', 'م');
+        } else if(t.createdAt) {
+            var cd = new Date(t.createdAt);
+            if(!isNaN(cd.getTime())) createdAtStr = cd.toLocaleString('en-US', { hour12: true, year: 'numeric', month: 'numeric', day: 'numeric', hour: '2-digit', minute: '2-digit' }).replace('AM', 'ص').replace('PM', 'م');
+        }
+
         var dlVal = t.deadline ? new Date(t.deadline).getTime() : 9999999999999;
         var empVal = escH(t.assignedToName || '');
 
-        h+='<div class="mission-card '+pClass+' '+sClass+' pj-row" data-prio="'+pVal+'" data-status="'+sVal+'" data-date="'+dVal+'" data-deadline="'+dlVal+'" data-emp="'+empVal+'">'+
-             '<div class="mission-card-header">'+
-               '<div class="mission-card-title">'+escH(t.title||'بدون عنوان')+'</div>'+
-               '<div class="mission-card-badges">'+
-                 '<span class="badge '+prioBadgeClass(t.priority)+'">'+escH(t.priority||'متوسطة')+'</span>'+
-                 '<span class="badge '+pstatusBadgeClass(t.status)+'">'+escH(t.status||'لم يبدأ')+'</span>'+
-               '</div>'+
-             '</div>'+
-             '<div class="mission-card-body">'+
-               '<div class="mission-card-meta">'+
-                 '<div class="mission-meta-item">👤 <strong>الموظف:</strong> '+escH(t.assignedToName||'مجهول')+'</div>'+
-                 (t.deadline?'<div class="mission-meta-item">📅 <strong>التسليم:</strong> '+escH(t.deadline)+'</div>':'')+
-                 (createdAtStr?'<div class="mission-meta-item">🕒 <strong>الإنشاء:</strong> '+createdAtStr+'</div>':'')+
-               '</div>'+
-               (t.description?'<div class="mission-card-desc">'+escH(t.description)+'</div>':'')+
-               attachHtml+
-               historyHtml+
-             '</div>'+
-             '<div class="mission-card-footer">'+
-               '<div style="font-size:9px;color:var(--tx3)">بواسطة: '+escH(t.createdByRole||'أدمن')+'</div>'+
-               '<div class="mission-card-actions">'+
-                 '<button class="mission-btn-del" onclick="deleteTask(\''+t.id+'\')">🗑️ حذف</button>'+
-               '</div>'+
-             '</div>'+
+        h+='<div class="pj-row" data-prio="'+pVal+'" data-status="'+sVal+'" data-date="'+dVal+'" data-deadline="'+dlVal+'" data-emp="'+empVal+'"><div class="pj-t">'+escH(t.title||'بدون عنوان')+
+           ' <span class="badge '+prioBadgeClass(t.priority)+'">'+escH(t.priority||'متوسطة')+'</span>'+
+           ' <span class="badge '+pstatusBadgeClass(t.status)+'">'+escH(t.status||'لم يبدأ')+'</span></div>'+
+           '<div class="pj-meta">👤 مكلَّف حالياً إلى: '+escH(t.assignedToName||'مجهول')+(t.deadline?(' · تاريخ التسليم: '+escH(t.deadline)):'')+'</div>'+
+           (t.description?'<div class="pj-meta">'+escH(t.description)+'</div>':'')+
+           (createdAtStr?'<div class="pj-meta" style="margin-top:2px;color:var(--nv);font-weight:700">🕒 تاريخ الإنشاء: '+createdAtStr+'</div>':'')+
+           '<div class="pj-meta" style="margin-top:2px;font-size:10px;color:var(--tx3)">بواسطة: '+escH(t.createdBy||'الإدارة')+' ('+escH(t.createdByRole||'أدمن إداري')+')</div>'+
+           attachHtml+
+           historyHtml+
+           '<div style="text-align:right;margin-top:12px">'+
+           '<button class="bt bt-d" style="padding:4px 12px;font-size:11px;border-radius:6px" onclick="deleteTask(\''+t.id+'\')">🗑 حذف المهمة</button></div>'+
            '</div>';
     });
     box.innerHTML=h;
@@ -2989,7 +2971,7 @@ function load(id,c){
         h+='<select id="tgTasksEmpFilter" class="global-table-filter" style="margin:0;padding:4px;font-size:11px;min-height:auto;" onchange="tgFilterByEmployee(this.value, \'pj-row\')"><option value="">تصفية بالموظف</option></select></div>';
         h+='<button class="bt bt-d" style="padding:5px 14px;font-size:11px" onclick="tgDeleteAllRecords(\'tasks\', \'المهام\', null, null, loadTasksMgmt)">🗑 حذف الكل</button>';
         h+='</div>';
-        h+='<div id="tasksMgmtList" class="mission-grid"><div class="empty-hint">⏳ جارٍ تحميل المهام...</div></div>';
+        h+='<div id="tasksMgmtList"><div class="empty-hint">⏳ جارٍ تحميل المهام...</div></div>';
         h+='</div>';
     }
 
