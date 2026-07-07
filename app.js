@@ -1273,11 +1273,9 @@ function renderTasksMgmtList(list){
 }
 
 function createTask(){
-    var checks = document.querySelectorAll('#tkAssigneeList input[type="checkbox"]:checked');
-    var employees = Array.from(checks).map(function(i){
-        return { uid: i.value, name: i.getAttribute('data-name') || '' };
-    });
-
+    var sel=document.getElementById('tkAssignee');
+    var uid=sel.value;
+    var name=sel.selectedOptions&&sel.selectedOptions[0]?sel.selectedOptions[0].getAttribute('data-name'):'';
     var title=(document.getElementById('tkTitle').value||'').trim();
     var desc=(document.getElementById('tkDesc').value||'').trim();
     var priority=document.getElementById('tkPriority').value;
@@ -1285,44 +1283,33 @@ function createTask(){
     var fileInput=document.getElementById('tkFile');
     var file=fileInput && fileInput.files && fileInput.files[0];
     var msg=document.getElementById('tkCreateMsg');
-
-    if(!employees.length){ msg.style.color='var(--no)'; msg.textContent='من فضلك اختر الموظف (أو الموظفين) المكلَّفين.'; return; }
+    if(!uid){ msg.style.color='var(--no)'; msg.textContent='من فضلك اختر الموظف المكلَّف.'; return; }
     if(!title){ msg.style.color='var(--no)'; msg.textContent='من فضلك اكتب عنوان المهمة.'; return; }
     msg.style.color='var(--tx3)'; msg.textContent='⏳ جارٍ التكليف...';
 
     var createdByRole = (TG_USER && TG_USER.role === 'tech_admin') ? 'أدمن تقني' : 'أدمن إداري';
-    var baseTaskData = {
-        title:title, description:desc,
+    var taskData = {
+        title:title, description:desc, assignedTo:uid, assignedToName:name||'',
         priority:priority, deadline:deadline, status:'لم يبدأ',
         createdAt: new Date(),
         createdBy:(TG_USER?(TG_USER.name||TG_USER.email||'الأدمن'):''), createdByUid:(TG_USER?TG_USER.uid:''),
         createdByRole: createdByRole
     };
 
-    var finalizeTasks = function(finalData){
-        var promises = employees.map(function(emp){
-            var task = Object.assign({}, finalData, { assignedTo: emp.uid, assignedToName: emp.name });
-            return db.collection('tasks').add(task).then(function(){
-                if(typeof tgSendPushToUser === 'function'){
-                    tgSendPushToUser(emp.uid, '📋 مهمة جديدة', 'تم تكليفك بمهمة: ' + title, 'task-new');
-                }
-            });
-        });
-
-        Promise.all(promises).then(function(){
-            msg.style.color='var(--ok)'; msg.textContent='✅ تم تكليف المهمة لـ ('+employees.length+') موظفين بنجاح.';
-            document.getElementById('tkTitle').value='';
-            document.getElementById('tkDesc').value='';
-            document.getElementById('tkDeadline').value='';
-            document.getElementById('tkPriority').value='متوسطة';
-            if(fileInput) fileInput.value='';
-            var fnSpan = document.getElementById('tkFileName');
-            if(fnSpan) fnSpan.textContent='';
-            selectAllTkAssignees(false);
-            loadTasksMgmt();
-        }).catch(function(err){
-            msg.style.color='var(--no)'; msg.textContent='❌ خطأ أثناء الحفظ: '+err.message;
-        });
+    var onDone = function(){
+        msg.style.color='var(--ok)'; msg.textContent='✅ تم تكليف المهمة بنجاح.';
+        document.getElementById('tkTitle').value='';
+        document.getElementById('tkDesc').value='';
+        document.getElementById('tkDeadline').value='';
+        document.getElementById('tkPriority').value='متوسطة';
+        if(fileInput) fileInput.value='';
+        var fnSpan = document.getElementById('tkFileName');
+        if(fnSpan) fnSpan.textContent='';
+        loadTasksMgmt();
+        // إرسال Push Notification للموظف المكلَّف
+        if(typeof tgSendPushToUser === 'function' && uid){
+            tgSendPushToUser(uid, '📋 مهمة جديدة', 'تم تكليفك بمهمة: ' + title, 'task-new');
+        }
     };
 
     if(file){
@@ -1330,7 +1317,7 @@ function createTask(){
         if(file.size > MAX_MB * 1024 * 1024){ msg.style.color='var(--no)'; msg.textContent='الملف كبير جداً (الحد الأقصى '+MAX_MB+' MB).'; return; }
         var prog = document.getElementById('tkUploadProg');
         if(prog) { prog.style.display = 'block'; prog.textContent = '⏳ جاري رفع المرفق... 0%'; }
-        var uniqueName = (employees[0].uid) + '/' + Date.now() + '_' + file.name;
+        var uniqueName = uid + '/' + Date.now() + '_' + file.name;
         tgUploadFile('tasks', uniqueName, file,
             function(pct){
                 if(prog) prog.textContent = '⏳ جاري رفع المرفق... ' + pct + '%';
@@ -1340,19 +1327,33 @@ function createTask(){
                 msg.style.color='var(--no)'; msg.textContent='❌ تعذر رفع الملف: '+errMsg;
             },
             function(publicUrl){
-                baseTaskData.fileUrl = publicUrl;
-                baseTaskData.fileName = file.name;
-                baseTaskData.fileType = file.type;
-                if(prog) { prog.style.display='none'; prog.textContent=''; }
-                finalizeTasks(baseTaskData);
+                taskData.fileUrl = publicUrl;
+                taskData.fileName = file.name;
+                taskData.fileType = file.type;
+                db.collection('tasks').add(taskData).then(function(){
+                    if(prog) { prog.style.display='none'; prog.textContent=''; }
+                    onDone();
+                }).catch(function(err){
+                    if(prog) prog.style.display='none';
+                    msg.style.color='var(--no)'; msg.textContent='❌ '+err.message;
+                });
             }
         );
         return;
     }
 
-    finalizeTasks(baseTaskData);
+    try {
+        db.collection('tasks').add(taskData).then(onDone).catch(function(err){
+            console.error("Task Create Error:", err);
+            msg.style.color='var(--no)'; msg.textContent='❌ تعذر تكليف المهمة: '+err.message;
+            tgToast('❌ تعذر تكليف المهمة: ' + err.message, 'err');
+        });
+    } catch(syncErr) {
+        console.error("Sync Error in createTask:", syncErr);
+        msg.style.color='var(--no)'; msg.textContent='❌ خطأ تقني: '+syncErr.message;
+        tgToast('❌ خطأ تقني: ' + syncErr.message, 'err');
+    }
 }
-
 function empGo(id, el, force) {
     // Removed hasUnsavedText check to prevent annoying popups
 }
@@ -2942,21 +2943,9 @@ function load(id,c){
         h+='<div class="set-hint">كلّف أي موظف بمهمة محددة، وهيقدر يشوفها ويحدّث حالتها (لم يبدأ / جاري العمل / مكتمل) من بوابته الخاصة (employee.html) تحت تبويب "مهامي".</div>';
 
         h+='<div class="set-sec"><div class="set-sec-title">➕ تكليف مهمة جديدة</div>';
-        h+='<div class="fr fr2" style="margin-bottom:15px; align-items:flex-start">'+
-           '<div class="fg"><label>الموظف المكلَّف</label>'+
-           '  <div class="tk-assignee-container">'+
-           '    <div class="tk-assignee-search"><input type="text" placeholder="🔍 ابحث عن موظف..." oninput="filterTkAssignees(this.value)"></div>'+
-           '    <div class="tk-assignee-list" id="tkAssigneeList"></div>'+
-           '    <div class="tk-assignee-footer">'+
-           '      <div style="display:flex;gap:10px">'+
-           '        <span onclick="selectAllTkAssignees(true)" style="cursor:pointer;color:var(--ok);font-weight:700">✅ تحديد الكل</span>'+
-           '        <span onclick="selectAllTkAssignees(false)" style="cursor:pointer;color:var(--no);font-weight:700">❌ إلغاء</span>'+
-           '      </div>'+
-           '      <div>تم اختيار: <span class="tk-selected-count" id="tkSelectedCount">0</span></div>'+
-           '    </div>'+
-           '  </div>'+
-           '</div>'+
-           '<div class="fg"><label>الأولوية</label><select id="tkPriority" style="height:44px"><option>منخفضة</option><option selected>متوسطة</option><option>عالية</option></select></div>'+
+        h+='<div class="fr fr2" style="margin-bottom:10px">'+
+           '<div class="fg"><label>الموظف المكلَّف</label><select id="tkAssignee"><option value="">⏳ جارٍ تحميل قائمة الموظفين...</option></select></div>'+
+           '<div class="fg"><label>الأولوية</label><select id="tkPriority"><option>منخفضة</option><option selected>متوسطة</option><option>عالية</option></select></div>'+
            '</div>';
         h+='<div class="fg" style="margin-bottom:10px"><label>عنوان المهمة</label><input type="text" id="tkTitle" placeholder="مثلاً: تجهيز تصميمات كتالوج المنتجات"></div>';
         h+='<div class="fg fg-full" style="margin-bottom:10px"><label>تفاصيل المهمة (اختياري)</label><textarea rows="2" id="tkDesc"></textarea></div>';
