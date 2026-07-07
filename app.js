@@ -816,7 +816,7 @@ function renderStaffList(list){
                         } else if(r.fileType.indexOf('video/')===0){
                             attachHtml = '<div style="margin-top:6px"><video src="'+r.fileUrl+'" controls style="max-width:180px;border-radius:6px"></video></div>';
                         } else {
-                            attachHtml = '<div style="margin-top:6px"><a href="'+r.fileUrl+'" target="_blank" style="color:var(--nv);font-weight:700;text-decoration:underline">📎 '+escH(r.fileName||'ملف مرفق')+'</a></div>';
+                            attachHtml = '<div style="margin-top:6px"><a href="'+r.fileUrl+'" target="_blank" style="color:var(--tx);font-weight:700;text-decoration:underline">📎 '+escH(r.fileName||'ملف مرفق')+'</a></div>';
                         }
                     }
                     h+='<div class="rq-row"><div class="rq-t">'+escH(r.type||'طلب')+' <span class="badge '+badgeClassForReq(r.status)+'">'+reqStatusLabel(r.status)+'</span>'+
@@ -1222,13 +1222,13 @@ function renderTasksMgmtList(list){
             } else if(t.fileType.indexOf('video/')===0){
                 attachHtml = '<div style="margin-top:6px"><video src="'+t.fileUrl+'" controls style="max-width:180px;border-radius:6px"></video></div>';
             } else {
-                attachHtml = '<div style="margin-top:6px"><a href="'+t.fileUrl+'" target="_blank" style="color:var(--nv);font-weight:700;text-decoration:underline">📎 '+escH(t.fileName||'ملف مرفق')+'</a></div>';
+                attachHtml = '<div style="margin-top:6px"><a href="'+t.fileUrl+'" target="_blank" style="color:var(--tx);font-weight:700;text-decoration:underline">📎 '+escH(t.fileName||'ملف مرفق')+'</a></div>';
             }
         }
         var historyHtml = '';
         if(t.history && t.history.length > 0) {
             historyHtml += '<div style="margin-top:10px;padding:8px;background:var(--bg);border-radius:6px;font-size:11px">';
-            historyHtml += '<div style="font-weight:700;color:var(--nv);margin-bottom:6px">📜 سجل تحويل المهمة:</div>';
+            historyHtml += '<div style="font-weight:700;color:var(--gd);margin-bottom:6px">📜 سجل تحويل المهمة:</div>';
             t.history.forEach(function(hi){
                 if(hi.action === 'forwarded') {
                     var dStr = hi.date ? new Date(hi.date).toLocaleString('en-US', { hour12: true, year: 'numeric', month: 'numeric', day: 'numeric', hour: '2-digit', minute: '2-digit' }).replace('AM', 'ص').replace('PM', 'م') : '';
@@ -1261,8 +1261,8 @@ function renderTasksMgmtList(list){
            ' <span class="badge '+pstatusBadgeClass(t.status)+'">'+escH(t.status||'لم يبدأ')+'</span></div>'+
            '<div class="pj-meta">👤 مكلَّف حالياً إلى: '+escH(t.assignedToName||'مجهول')+(t.deadline?(' · تاريخ التسليم: '+escH(t.deadline)):'')+'</div>'+
            (t.description?'<div class="pj-meta">'+escH(t.description)+'</div>':'')+
-           (createdAtStr?'<div class="pj-meta" style="margin-top:2px;color:var(--nv);font-weight:700">🕒 تاريخ الإنشاء: '+createdAtStr+'</div>':'')+
-           '<div class="pj-meta" style="margin-top:2px;font-size:10px;color:var(--tx3)">بواسطة: '+escH(t.createdBy||'الإدارة')+' ('+escH(t.createdByRole||'أدمن إداري')+')</div>'+
+           (createdAtStr?'<div class="pj-meta" style="margin-top:2px;color:var(--gd);font-weight:700">🕒 تاريخ الإنشاء: '+createdAtStr+'</div>':'')+
+           '<div class="pj-meta" style="margin-top:2px;font-size:10px;color:var(--tx2)">بواسطة: '+escH(t.createdBy||'الإدارة')+' ('+escH(t.createdByRole||'أدمن إداري')+')</div>'+
            attachHtml+
            historyHtml+
            '<div style="text-align:right;margin-top:12px">'+
@@ -1950,7 +1950,7 @@ function renderProjectsList(list){
                 } else if(fType.indexOf('video/')===0){
                     h+='<video src="'+p.fileUrl+'" controls style="max-width:100%;max-height:200px;border-radius:6px;margin-bottom:8px"></video>';
                 } else {
-                    h+='<a href="'+p.fileUrl+'" target="_blank" style="color:var(--nv);font-weight:700;text-decoration:underline;display:block;margin-bottom:8px">📎 '+escH(p.fileName||'ملف مرفق')+'</a>';
+                    h+='<a href="'+p.fileUrl+'" target="_blank" style="color:var(--tx);font-weight:700;text-decoration:underline;display:block;margin-bottom:8px">📎 '+escH(p.fileName||'ملف مرفق')+'</a>';
                 }
             }
             if(p.linkUrl){
@@ -2940,7 +2940,7 @@ function load(id,c){
         h=H('شهادة راتب','إلى من يهمه الأمر — شهادة مفردات مرتب','SALARY CERTIFICATE','sal',true);
         h+='<div class="cert" style="font-size:13px">';
         h+='تشهد شركة <strong><span class="dcn"></span></strong> بأن الموظف أدناه يعمل لدينا ولا يزال على رأس عمله.<br><br>';
-        h+='<table class="dt" style="margin:16px 0;border:2px solid var(--bd)"><tr><th style="width:30%;text-align:right;background:#f7f8fb;color:#333">اسم الموظف</th><td style="text-align:right"><input type="text" class="emp-name-fld" list="tgEmpDL" autocomplete="off" onchange="addEmployeeName(this.value)" style="font-weight:bold;text-align:right"></td></tr><tr><th style="text-align:right;background:#f7f8fb;color:#333">الرقم الوظيفي</th><td style="text-align:right"><input type="text" style="text-align:right"></td></tr><tr><th style="text-align:right;background:#f7f8fb;color:#333">المسمى الوظيفي</th><td style="text-align:right"><input type="text" style="text-align:right"></td></tr><tr><th style="text-align:right;background:#f7f8fb;color:#333">الراتب الأساسي</th><td style="text-align:right"><input type="text" style="text-align:right;width:130px"></td></tr><tr><th style="text-align:right;background:#edf2f7;color:var(--nv);font-weight:800">إجمالي الراتب</th><td style="text-align:right;background:#edf2f7"><input type="text" class="sal-total-fld" style="font-weight:bold;text-align:right"></td></tr></table>';
+        h+='<table class="dt" style="margin:16px 0;border:2px solid var(--bd)"><tr><th style="width:30%;text-align:right;background:var(--bg);color:var(--tx)">اسم الموظف</th><td style="text-align:right"><input type="text" class="emp-name-fld" list="tgEmpDL" autocomplete="off" onchange="addEmployeeName(this.value)" style="font-weight:bold;text-align:right"></td></tr><tr><th style="text-align:right;background:var(--bg);color:var(--tx)">الرقم الوظيفي</th><td style="text-align:right"><input type="text" style="text-align:right"></td></tr><tr><th style="text-align:right;background:var(--bg);color:var(--tx)">المسمى الوظيفي</th><td style="text-align:right"><input type="text" style="text-align:right"></td></tr><tr><th style="text-align:right;background:var(--bg);color:var(--tx)">الراتب الأساسي</th><td style="text-align:right"><input type="text" style="text-align:right;width:130px"></td></tr><tr><th style="text-align:right;background:var(--bd);color:var(--nv);font-weight:800">إجمالي الراتب</th><td style="text-align:right;background:var(--bd)"><input type="text" class="sal-total-fld" style="font-weight:bold;text-align:right"></td></tr></table>';
         h+='لتقديمها إلى: <input type="text" style="width:180px"> دون مسؤولية على الشركة.';
         h+='<div style="margin-top:40px;display:flex;justify-content:space-between;align-items:flex-end;text-align:center">'+
            '<div><div style="font-weight:700;color:var(--nv);margin-bottom:24px">الختم</div>'+
@@ -3156,7 +3156,7 @@ function load(id,c){
     else if(id==="cal"){
         h='<div class="SP"><h3>📅 التقويم العام</h3>';
         h+='<div class="set-hint">عرض مواعيد تسليم المشاريع والمهام المُسندة بشكل تقويم تفاعلي.</div>';
-        h+='<div id="generalCalendar" style="margin-top:20px; background:#fff; padding:15px; border-radius:12px; border:1px solid var(--bd); box-shadow:0 4px 12px rgba(0,0,0,0.05); min-height:500px"></div>';
+        h+='<div id="generalCalendar" style="margin-top:20px; background:var(--w); padding:15px; border-radius:12px; border:1px solid var(--bd); box-shadow:0 4px 12px rgba(0,0,0,0.05); min-height:500px"></div>';
         h+='</div>';
     }
 
@@ -3411,7 +3411,7 @@ function openAdminProjectDetail(idx) {
                 var nm = e ? (e.name || e.email) : '(موظف غير موجود حالياً)';
                 var pm = (p.progressMap && p.progressMap[uid]) || {progress:0, status:'لم يبدأ', note:''};
                 h += '<div class="pj-row" style="background:var(--bg);padding:12px;border-radius:10px;margin-bottom:8px;">' +
-                     '  <div style="display:flex;justify-content:space-between;font-weight:700;color:var(--nv);margin-bottom:4px;">' +
+                     '  <div style="display:flex;justify-content:space-between;font-weight:700;color:var(--tx);margin-bottom:4px;">' +
                      '    <span>' + escH(nm) + '</span>' +
                      '    <span style="color:var(--gd);margin-right:auto;">' + (pm.progress || 0) + '%</span>' +
                      '  </div>' +
@@ -3604,7 +3604,7 @@ function openAdminEmployeeDetail(idx) {
             emp.projects.forEach(function(p) {
                 var pm = (p.progressMap && p.progressMap[emp.uid]) || {progress:0, status:'لم يبدأ', note:''};
                 h += '<div class="pj-row" style="background:var(--bg);padding:12px;border-radius:10px;margin-bottom:8px;">' +
-                     '  <div style="display:flex;justify-content:space-between;font-weight:700;color:var(--nv);margin-bottom:4px;">' +
+                     '  <div style="display:flex;justify-content:space-between;font-weight:700;color:var(--tx);margin-bottom:4px;">' +
                      '    <span>' + escH(p.title || 'بدون عنوان') + '</span>' +
                      '    <span style="color:var(--gd);">' + (pm.progress || 0) + '%</span>' +
                      '  </div>' +
