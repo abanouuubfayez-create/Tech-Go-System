@@ -3285,10 +3285,10 @@ function loadAdminAnnouncements() {
             h += '<div class="pj-t" style="font-size:14px;font-weight:800">'+escH(a.title)+'</div>';
             h += '<div class="pj-meta" style="margin:6px 0 10px;font-size:12px;color:var(--tx);line-height:1.6">'+escH(a.content)+'</div>';
             h += '<div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:6px">';
-            h += '<div class="pj-meta" style="display:flex;gap:12px">';
+            h += '<div class="pj-meta" style="display:flex;gap:12px;opacity:0.85">';
             h += (a.date ? '<span>&#128197; '+escH(a.date)+'</span>' : '');
-            h += (ts ? '<span style="color:var(--tx3)">&#128336; نُشر: '+ts+'</span>' : '');
-            h += (a.createdBy ? '<span style="color:var(--tx3)">&#128100; '+escH(a.createdBy)+' ('+escH(a.createdByRole||'أدمن إداري')+')</span>' : '');
+            h += (ts ? '<span>&#128336; نُشر: '+ts+'</span>' : '');
+            h += (a.createdBy ? '<span>&#128100; '+escH(a.createdBy)+' ('+escH(a.createdByRole||'أدمن إداري')+')</span>' : '');
             h += '</div>';
             h += '<button class="bt bt-d" style="padding:4px 10px;font-size:11px" onclick="deleteAnnouncement(\''+d.id+'\')">&#128465; حذف</button>';
             h += '</div></div>';
