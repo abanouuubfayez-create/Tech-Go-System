@@ -1830,6 +1830,13 @@ function postProjectComment(projectId,inputId){
     }).then(function(){
         input.value=''; input.disabled=false; input.focus();
         reloadProjectChat(projectId);
+        // إشعار الأدمن
+        if(TG_USER && TG_USER.role === 'employee'){
+            db.collection('projects').doc(projectId).get().then(function(doc){
+                var pTitle = doc.exists ? doc.data().title : 'مشروع';
+                tgNotifyAdmins('💬 ملاحظة جديدة على مشروع', (TG_USER.name||'موظف') + ' أضاف ملاحظة في: ' + pTitle, 'project-note');
+            }).catch(function(){});
+        }
     }).catch(function(err){ input.disabled=false; alert('تعذر إضافة الملاحظة: '+err.message); });
 }
 function deleteProjectComment(commentId,projectId){
@@ -2104,6 +2111,15 @@ function _sig(title,name,sub,id){
         '</div>';
 }
 
+function tgNotifyAdmins(title, body, tag) {
+    if (typeof tgSendPushToUser !== 'function') return;
+    db.collection('users').where('role', 'in', ['admin', 'tech_admin']).get().then(function(snap) {
+        snap.forEach(function(d) {
+            tgSendPushToUser(d.id, title, body, tag);
+        });
+    }).catch(function(err) { console.error('Notification Error:', err); });
+}
+
 // توقيع بتصميم الخطاب الرسمي الجديد (FL) — يُستخدم في الخطاب الإداري العام
 function _sigFL(role,name,sub,id){
     var nm=name?'<div class="FL-sig-name">'+escH(name)+'</div>':'<div class="FL-sig-name">&nbsp;</div>';
@@ -2297,6 +2313,8 @@ function saveMyName(){
         var whoEl=document.getElementById('empWhoName'); if(whoEl) whoEl.textContent=name;
         var sbEl=document.getElementById('sbUser');
         if(sbEl) sbEl.innerHTML='👤 <strong style="color:#fff">'+escH(name)+'</strong><br>'+escH(TG_USER.email||'');
+        // إشعار الأدمن
+        tgNotifyAdmins('🧑 تحديث بيانات موظف', 'قام الموظف ' + name + ' بتحديث اسمه في النظام', 'name-change');
     }).catch(function(err){ msg.style.color='var(--no)'; msg.textContent='❌ '+err.message; });
 }
 function saveMyPassword(){

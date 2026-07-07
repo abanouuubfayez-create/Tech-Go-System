@@ -747,9 +747,7 @@
     }).then(function () {
       msg.style.color = 'var(--ok)'; msg.textContent = '✅ تم الإرسال للأدمن';
       var reqData = fsMyCache.filter(function (r) { return r.id === reqId; })[0];
-      if (reqData && reqData.sentByUid && typeof tgSendPushToUser === 'function') {
-        tgSendPushToUser(reqData.sentByUid, '📝 رد جديد على نموذج', (TG_USER.name || 'موظف') + ' ملأ نموذج «' + (reqData.templateLabel || '') + '»', 'form-submitted');
-      }
+      tgNotifyAdmins('📝 رد جديد على نموذج', (TG_USER.name || 'موظف') + ' ملأ نموذج «' + (reqData.templateLabel || '') + '»', 'form-submitted');
     }).catch(function (err) {
       msg.style.color = 'var(--no)'; msg.textContent = '❌ ' + err.message;
     });

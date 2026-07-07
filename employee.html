@@ -683,6 +683,11 @@ function saveProjDetailProgress(id){
         .then(function(){ 
             msg.style.color='var(--ok)'; msg.textContent='✅ تم حفظ التحديث.'; 
             if(status === 'مكتمل' && typeof tgCelebrate === 'function') tgCelebrate(isLate);
+            // إشعار الأدمن
+            db.collection('projects').doc(id).get().then(function(doc){
+                var pTitle = doc.exists ? doc.data().title : 'مشروع';
+                tgNotifyAdmins('📈 تحديث إنجاز مشروع', (TG_USER.name||'موظف') + ' حدث تقدمه في: ' + pTitle + ' إلى ' + prog + '%', 'project-progress');
+            }).catch(function(){});
         })
         .catch(function(e){ msg.style.color='var(--no)'; msg.textContent='❌ '+e.message; });
 }
@@ -700,6 +705,11 @@ function saveProjectProgress(id){
         msg.style.color='var(--ok)'; msg.textContent='✅ تم الحفظ';
         if(status === 'مكتمل' && typeof tgCelebrate === 'function') tgCelebrate();
         setTimeout(function(){msg.textContent='';},2500);
+        // إشعار الأدمن
+        db.collection('projects').doc(id).get().then(function(doc){
+            var pTitle = doc.exists ? doc.data().title : 'مشروع';
+            tgNotifyAdmins('📊 تحديث حالة مشروع', (TG_USER.name||'موظف') + ' حدث حالة ' + pTitle + ' إلى: ' + status, 'project-status');
+        }).catch(function(){});
     }).catch(function(err){ msg.style.color='var(--no)'; msg.textContent='❌ '+err.message; });
 }
 
@@ -890,6 +900,8 @@ function sendAchievementNotification(achTitle) {
                 createdAt: new Date()
             });
         });
+        // إشعار للأدمن أيضاً
+        tgNotifyAdmins('🏆 إنجاز جديد لموظف', 'قام الموظف ' + TG_USER.name + ' بإضافة إنجاز جديد: ' + achTitle, 'achievement-new');
     });
 }
 
@@ -1122,6 +1134,12 @@ function saveTaskStatus(id){
         return db.collection('tasks').doc(id).update({status:status, statusUpdatedAt: new Date()});
     }).then(function(){
         msg.style.color='var(--ok)'; msg.textContent='✅ تم الحفظ';
+        // إشعار للأدمن
+        db.collection('tasks').doc(id).get().then(function(doc){
+            var tName = doc.exists ? doc.data().title : 'مهمة';
+            tgNotifyAdmins('✅ تحديث حالة مهمة', 'قام ' + (TG_USER.name||'الموظف') + ' بتحديث حالة المهمة (' + tName + ') إلى: ' + status, 'task-status');
+        }).catch(function(){});
+
         // Push notification عند اكتمال المهمة
         if(status === 'مكتمل'){
             if(typeof tgCelebrate === 'function') tgCelebrate(isLate);
@@ -1266,6 +1284,8 @@ function submitRequest(){
                     if(fileInput) fileInput.value='';
                     document.getElementById('reqFileName').textContent='';
                     loadMyRequests();
+                    // إشعار الأدمن
+                    tgNotifyAdmins('📩 طلب جديد من موظف', (TG_USER.name||'موظف') + ' أرسل طلباً جديداً: ' + type, 'request-new');
                 }).catch(function(err){
                     if(prog) prog.style.display='none';
                     msg.style.color='var(--no)'; msg.textContent='❌ '+err.message;
@@ -1322,13 +1342,7 @@ function submitWeeklyReport(){
         document.getElementById('wkrContent').value='';
         loadMyWeeklyReports();
         // إشعار كل الأدمن/الأدمن التقني بوصول تقرير أسبوعي جديد
-        if(typeof tgSendPushToUser === 'function'){
-            db.collection('users').where('role','in',['admin','tech_admin']).get().then(function(snap){
-                snap.forEach(function(d){
-                    tgSendPushToUser(d.id, '📆 تقرير أسبوعي جديد', (TG_USER.name||'موظف') + ' أرسل تقريره الأسبوعي', 'weekly-report-new');
-                });
-            }).catch(function(){});
-        }
+        tgNotifyAdmins('📆 تقرير أسبوعي جديد', (TG_USER.name||'موظف') + ' أرسل تقريره الأسبوعي', 'weekly-report-new');
     }).catch(function(err){ msg.style.color='var(--no)'; msg.textContent='❌ '+err.message; });
 }
 document.getElementById('wkrStart').value=sundayOf(new Date());
@@ -1513,6 +1527,9 @@ function empCheckIn() {
         checkOut: null,
         timestamp: new Date(),
         serverTimestamp: firebase.firestore.FieldValue.serverTimestamp()
+    }).then(function(){
+        // إشعار الأدمن
+        tgNotifyAdmins('🕒 تسجيل حضور موظف', 'قام الموظف ' + (TG_USER.name||'') + ' بتسجيل الحضور الآن (' + time + ')', 'att-check-in');
     }).catch(function(err){ 
         var msg = document.getElementById('attStatusMsg');
         msg.textContent = 'تعذر التسجيل: ' + err.message;
@@ -1530,6 +1547,9 @@ function empCheckOut() {
     db.collection('attendance_logs').doc(_todayAttDocId).update({
         checkOut: time,
         serverTimestamp: firebase.firestore.FieldValue.serverTimestamp()
+    }).then(function(){
+        // إشعار الأدمن
+        tgNotifyAdmins('🕒 تسجيل انصراف موظف', 'قام الموظف ' + (TG_USER.name||'') + ' بتسجيل الانصراف الآن (' + time + ')', 'att-check-out');
     }).catch(function(err){ 
         var msg = document.getElementById('attStatusMsg');
         msg.textContent = 'تعذر التسجيل: ' + err.message;
@@ -1597,6 +1617,8 @@ function empUploadDoc() {
             uploadedBy: 'employee',
             createdAt: new Date()
         }).then(function(){
+            // إشعار للأدمن
+            tgNotifyAdmins('📄 مستند جديد في ملف موظف', (TG_USER.name||'موظف') + ' رفع مستنداً جديداً لملفه الشخصي: ' + title, 'emp-doc-personal');
             titleInp.value = '';
             fileInp.value = '';
             msg.style.color = 'var(--ok)'; msg.textContent = '✅ تم رفع المستند بنجاح.';
@@ -1636,13 +1658,7 @@ function empSendDirectToAdmin() {
             setTimeout(function(){ msg.textContent=''; }, 5000);
             
             // إشعار للأدمن
-            if(typeof tgSendPushToUser === 'function'){
-                db.collection('users').where('role','in',['admin','tech_admin']).get().then(function(snap){
-                    snap.forEach(function(d){
-                        tgSendPushToUser(d.id, '📄 مستند جديد مرسل للأدمن', (TG_USER.name||'موظف') + ' أرسل مستنداً جديداً مباشرة: ' + title, 'emp-doc-direct');
-                    });
-                }).catch(function(){});
-            }
+            tgNotifyAdmins('📄 مستند جديد مرسل للأدمن', (TG_USER.name||'موظف') + ' أرسل مستنداً جديداً مباشرة: ' + title, 'emp-doc-direct');
         }).catch(function(err){
             msg.style.color = 'var(--no)'; msg.textContent = '❌ تعذر حفظ بيانات المستند: '+err.message;
         });
