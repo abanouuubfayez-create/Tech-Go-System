@@ -127,17 +127,28 @@ function tgBroadcastPush(title, body, tag, excludeUid) {
     }).catch(function() {});
 }
 
-// \u0627\u0633\u062a\u0645\u0627\u0639 \u0644\u0644\u0625\u0634\u0639\u0627\u0631\u0627\u062a \u0627\u0644\u0648\u0627\u0631\u062f\u0629 \u0644\u0644\u0645\u0633\u062a\u062e\u062f\u0645 \u0627\u0644\u062d\u0627\u0644\u064a
+// استماع للإشعارات الواردة للمستخدم الحالي (يقرأه من onSnapshot عند فتح البوابة)
+var _tgMyNotifUnsub = null;
+var _tgMyNotifShownIds = {}; // درع إضافي: يمنع إعادة عرض نفس الإشعار مرتين في نفس الجلسة حتى لو فشل تحديث Firestore
 function tgListenMyNotifications(uid) {
     if (!uid) return;
+    // يمنع تراكم أكثر من مستمع (listener) واحد على نفس الحساب، وهو ما كان يسبب
+    // إعادة عرض عشرات الإشعارات القديمة كل مرة تُعاد فيها المصادقة (auth state) خلال نفس الجلسة
+    if (_tgMyNotifUnsub) { _tgMyNotifUnsub(); _tgMyNotifUnsub = null; }
     // ملاحظة: 'seen' يُستخدم فقط لمنع تكرار عرض التوست/الإشعار المنبثق لنفس العنصر،
     // وهو مستقل عن 'read' التي تتحكم بحالة القراءة داخل لوحة الإشعارات (Facebook-style)
-    db.collection('notifications').where('toUid', '==', uid).where('seen', '==', false)
+    _tgMyNotifUnsub = db.collection('notifications').where('toUid', '==', uid).where('seen', '==', false)
         .onSnapshot(function(snap) {
             snap.docChanges().forEach(function(change) {
                 if (change.type === 'added') {
+                    var id = change.doc.id;
+                    if (_tgMyNotifShownIds[id]) return; // اتعرض قبل كده في نفس الجلسة، تجاهله
+                    _tgMyNotifShownIds[id] = true;
+
                     var d = change.doc.data();
-                    tgShowNotification(d.title || 'إشعار', d.body || '');
+                    // tag ثابت لكل إشعار حتى لو تكرر عرضه (مثلاً بسبب فشل تحديث seen) يستبدل نفسه
+                    // في نظام تشغيل المستخدم بدل ما يتكدّس كإشعار جديد منفصل
+                    tgShowNotification(d.title || 'إشعار', d.body || '', { tag: 'techgo-notif-' + id });
                     
                     // إذا كان الإشعار بخصوص انتهاء مشروع، شغل الاحتفال عند الموظف
                     if (d.tag === 'project-completed' && typeof tgCelebrate === 'function') {
@@ -145,7 +156,9 @@ function tgListenMyNotifications(uid) {
                     }
 
                     // تمييزها كـ "تم عرضها" فوراً حتى لا يتكرر التوست، مع إبقاء حالة القراءة كما هي
-                    db.collection('notifications').doc(change.doc.id).update({ seen: true }).catch(function() {});
+                    db.collection('notifications').doc(id).update({ seen: true }).catch(function(err) {
+                        console.warn('تعذّر تحديث حالة seen للإشعار (تأكد من نشر firestore.rules المحدّثة):', err && err.message);
+                    });
                 }
             });
         }, function() {});
