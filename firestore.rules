@@ -124,7 +124,7 @@ service cloud.firestore {
         isSignedIn() && 
         request.resource.data.diff(resource.data).affectedKeys().hasOnly(['reactions'])
       );
-      allow delete: if isAnyAdmin();
+      allow delete: if isAnyAdmin() || (isSignedIn() && resource.data.uid == myUid());
     }
 
     // الطلبات: الأدمن الرئيسي فقط يعدّل الحالة
