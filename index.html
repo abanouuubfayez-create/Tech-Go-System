@@ -9,7 +9,7 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-title" content="Tech Go">
 <title>لوحة التحكم · تيك جو</title>
-<link rel="stylesheet" href="styles.css?v=2">
+<link rel="stylesheet" href="styles.css?v=3">
 <link rel="manifest" href="manifest.json">
 <link rel="icon" type="image/png" sizes="192x192" href="icon-192.png">
 <link rel="apple-touch-icon" href="icon-192.png">
@@ -18,7 +18,7 @@
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-storage-compat.js"></script>
 <script src="firebase-config.js?v=2"></script>
-<script src="auth.js?v=2"></script>
+<script src="auth.js?v=3"></script>
 <script>
     (function() {
         const theme = localStorage.getItem('tg-theme') || 'light';
@@ -154,6 +154,20 @@
     <input type="text" id="globalTableFilter" name="tg-global-search-field-admin" class="global-table-filter" placeholder="🔍 تصفية بيانات الجدول..." oninput="if(typeof tgFilterVisibleTables==='function') tgFilterVisibleTables(this.value)" autocomplete="new-password" style="margin-left:8px;">
     <button class="bt bt-o" onclick="tgClearForm()" style="font-size:11px;padding:4px 10px;margin-left:4px">🧹 مسح النموذج</button>
     <button class="bt bt-o" onclick="tgLoadFormDrafts()" style="font-size:11px;padding:4px 10px;margin-left:4px">📂 النماذج المحفوظة</button>
+    <div class="notif-wrap np" id="notifWrap">
+      <button class="bt bt-o notif-bell-btn" id="notifBellBtn" onclick="tgToggleNotifPanel(event)" title="الإشعارات" style="font-size:16px;padding:4px 10px;margin-left:4px;position:relative">
+        🔔<span class="notif-badge" id="notifBadge" style="display:none">0</span>
+      </button>
+      <div class="notif-panel" id="notifPanel" style="display:none">
+        <div class="notif-panel-hd">
+          <span>الإشعارات</span>
+          <span class="notif-mark-all" id="notifMarkAll" onclick="tgMarkAllNotifsRead(TG_USER && TG_USER.uid)">تحديد الكل كمقروء</span>
+        </div>
+        <div class="notif-list" id="notifList">
+          <div class="notif-empty">لا توجد إشعارات بعد</div>
+        </div>
+      </div>
+    </div>
     <button class="bt bt-o" id="themeToggle" onclick="tgToggleTheme()" title="تبديل الوضع الليلي" style="font-size:16px;padding:4px 10px;margin-left:4px">🌙</button>
     <button class="bt bt-p" onclick="tgSaveFormDraft()" style="font-size:11px;padding:4px 10px;margin-left:8px">💾 حفظ النموذج</button>
     <button class="bt bt-o" onclick="openPrintPreview()">🖨 معاينة وطباعة</button>
@@ -233,7 +247,7 @@
 </div>
 </div>
 <datalist id="tgEmpDL"></datalist>
-<script src="auth.js?v=2"></script>
+<script src="auth.js?v=3"></script>
 
 <!-- FullCalendar -->
 <script src="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.15/index.global.min.js"></script>
@@ -244,6 +258,81 @@
 
 
 <script>
+  // ── مركز الإشعارات (Facebook-style) ──────────────────────────────────────
+  function tgToggleNotifPanel(ev) {
+    if (ev) ev.stopPropagation();
+    var panel = document.getElementById('notifPanel');
+    if (!panel) return;
+    var willOpen = panel.style.display === 'none' || !panel.style.display;
+    panel.style.display = willOpen ? 'block' : 'none';
+  }
+  document.addEventListener('click', function (ev) {
+    var wrap = document.getElementById('notifWrap');
+    var panel = document.getElementById('notifPanel');
+    if (!wrap || !panel || panel.style.display === 'none') return;
+    if (!wrap.contains(ev.target)) panel.style.display = 'none';
+  });
+
+  function tgTimeAgo(d) {
+    if (!d) return '';
+    var ms = (d && d.toMillis) ? d.toMillis() : new Date(d).getTime();
+    if (!ms) return '';
+    var diff = Math.max(0, Date.now() - ms);
+    var mins = Math.floor(diff / 60000);
+    if (mins < 1) return 'الآن';
+    if (mins < 60) return 'منذ ' + mins + ' د';
+    var hrs = Math.floor(mins / 60);
+    if (hrs < 24) return 'منذ ' + hrs + ' س';
+    var days = Math.floor(hrs / 24);
+    if (days < 7) return 'منذ ' + days + ' يوم';
+    var wks = Math.floor(days / 7);
+    return 'منذ ' + wks + ' أسبوع';
+  }
+
+  function tgRenderNotifPanel(list, unreadCount) {
+    var badge = document.getElementById('notifBadge');
+    if (badge) {
+      if (unreadCount > 0) {
+        badge.style.display = 'flex';
+        badge.textContent = unreadCount > 99 ? '99+' : unreadCount;
+      } else {
+        badge.style.display = 'none';
+      }
+    }
+    var bellBtn = document.getElementById('notifBellBtn');
+    if (bellBtn) bellBtn.classList.toggle('has-unread', unreadCount > 0);
+
+    var listEl = document.getElementById('notifList');
+    if (!listEl) return;
+    if (!list || !list.length) {
+      listEl.innerHTML = '<div class="notif-empty">لا توجد إشعارات بعد</div>';
+      return;
+    }
+    var h = '';
+    list.forEach(function (n) {
+      var unread = !n.read;
+      h += '<div class="notif-item' + (unread ? ' unread' : '') + '" onclick="tgNotifItemClick(\'' + n.id + '\', event)">';
+      h += '<div class="notif-item-dot"></div>';
+      h += '<div class="notif-item-body">';
+      h += '<div class="notif-item-title">' + escH(n.title || 'إشعار') + '</div>';
+      if (n.body) h += '<div class="notif-item-text">' + escH(n.body) + '</div>';
+      h += '<div class="notif-item-time">' + tgTimeAgo(n.createdAt) + '</div>';
+      h += '</div>';
+      h += '<div class="notif-item-del" title="حذف" onclick="tgNotifDelClick(\'' + n.id + '\', event)">✕</div>';
+      h += '</div>';
+    });
+    listEl.innerHTML = h;
+  }
+
+  function tgNotifItemClick(id, ev) {
+    if (ev) ev.stopPropagation();
+    if (typeof tgMarkNotifRead === 'function') tgMarkNotifRead(id);
+  }
+  function tgNotifDelClick(id, ev) {
+    if (ev) ev.stopPropagation();
+    if (typeof tgDeleteNotif === 'function') tgDeleteNotif(id);
+  }
+
   // ── معاينة الطباعة المحسّنة ──────────────────
   function openPrintPreview() {
     var t = document.getElementById('pT');
@@ -427,6 +516,7 @@
       // الأدمن التقني: تخطّى لوحة التحكم — اعرض المتابعة اللحظية مباشرةً
       applyTechAdminRestrictions(u);
       if (typeof tgListenMyNotifications === 'function') tgListenMyNotifications(u.uid);
+      if (typeof tgListenNotifCenter === 'function') tgListenNotifCenter(u.uid, tgRenderNotifPanel);
       // goLiveTrack تتولى كل شيء: إخفاء pg-dash، تفعيل pg-livetrack، تحميل المحتوى
       if (typeof goLiveTrack === 'function') goLiveTrack();
     } else {
@@ -436,6 +526,7 @@
       tgChatWatch();
       applyTechAdminRestrictions(u);
       if (typeof tgListenMyNotifications === 'function') tgListenMyNotifications(u.uid);
+      if (typeof tgListenNotifCenter === 'function') tgListenNotifCenter(u.uid, tgRenderNotifPanel);
     }
   });
 
