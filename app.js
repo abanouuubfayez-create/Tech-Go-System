@@ -3078,7 +3078,7 @@ function H(title,sub,en,docId,ext){
     h+='<div class="FL-rule"></div>';
     h+='<div class="FL-meta">'+
        '<div class="FL-meta-item"><span class="FL-meta-lbl">رقم المستند</span><input type="text" class="FL-meta-val doc-num-fld" value="'+escH(num)+'"></div>'+
-       '<div class="FL-meta-item"><span class="FL-meta-lbl">التاريخ</span><input type="date" class="FL-meta-val"></div>'+
+       '<div class="FL-meta-item"><span class="FL-meta-lbl">التاريخ</span><input type="date" class="FL-meta-val" value="'+new Date().toISOString().split('T')[0]+'"></div>'+
        '</div>';
     h+='<div class="FL-body">';
     return h;
