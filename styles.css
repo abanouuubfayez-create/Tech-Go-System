@@ -2484,3 +2484,173 @@ html.tg-auth-pending body { visibility: hidden; }
 
 /* Offline banner always readable */
 #offlineBanner { color: #fff !important; }
+
+/* ═══════════════════════════════════════════════════════════════ */
+/*  DARK MODE — DEEP COMPREHENSIVE PASS v2                        */
+/* ═══════════════════════════════════════════════════════════════ */
+
+/* ── Topbar / Header ── */
+[data-theme='dark'] .TB { background: var(--w); border-bottom-color: var(--bd); box-shadow: 0 1px 8px rgba(0,0,0,.4); }
+[data-theme='dark'] .TB .t { color: var(--tx); }
+[data-theme='dark'] .TB .bt-o { background: var(--bg); border-color: var(--bd2); color: var(--tx2); }
+
+/* ── Main content area ── */
+[data-theme='dark'] .M { background: var(--bg); }
+[data-theme='dark'] .CT { background: var(--bg); }
+[data-theme='dark'] .SP { background: var(--w); border-color: var(--bd); }
+[data-theme='dark'] .SP h3 { color: var(--tx); }
+
+/* ── Cards / Sections ── */
+[data-theme='dark'] .DC { background: var(--w); border-color: var(--bd); }
+[data-theme='dark'] .DC:hover { background: rgba(15,23,42,.95); border-color: var(--gd); }
+[data-theme='dark'] .DC .di { background: rgba(255,255,255,.06); }
+[data-theme='dark'] .DC .dd { color: var(--tx3); }
+
+/* ── Buttons ── */
+[data-theme='dark'] .bt-p { background: var(--gd); color: var(--nv); }
+[data-theme='dark'] .bt-g { background: var(--ok); color: #fff; }
+[data-theme='dark'] .bt-d { background: rgba(239,68,68,.15); color: #fca5a5; border-color: rgba(239,68,68,.3); }
+[data-theme='dark'] .bt-d:hover { background: rgba(239,68,68,.25); }
+
+/* ── Form elements ── */
+[data-theme='dark'] .F { background: var(--w); border-color: var(--bd); }
+[data-theme='dark'] .F-hd { background: linear-gradient(135deg, #0f172a, #1e293b); }
+[data-theme='dark'] .F-hd .title { color: var(--tx); }
+[data-theme='dark'] .F-hd .sub { color: var(--tx3); }
+[data-theme='dark'] .F-hd .meta input { color: var(--tx); border-bottom-color: rgba(255,255,255,.35); }
+[data-theme='dark'] .fg label { color: var(--tx2); }
+[data-theme='dark'] .fg input, [data-theme='dark'] .fg select, [data-theme='dark'] .fg textarea {
+    background: var(--bg); color: var(--tx); border-color: var(--bd2);
+}
+[data-theme='dark'] .fg input:focus, [data-theme='dark'] .fg select:focus, [data-theme='dark'] .fg textarea:focus {
+    background: var(--w); border-color: var(--gd);
+    box-shadow: 0 0 0 3px rgba(245,158,11,.1);
+}
+[data-theme='dark'] .fg input[readonly] { background: rgba(255,255,255,.04); color: var(--tx3); }
+
+/* ── Section dividers ── */
+[data-theme='dark'] .sec { border-bottom-color: var(--gd); background: transparent; }
+[data-theme='dark'] .sec .num { background: var(--gd); color: var(--nv); }
+[data-theme='dark'] .sec .stx { color: var(--tx); }
+
+/* ── Signature blocks ── */
+[data-theme='dark'] .sig { background: var(--w); border-color: var(--bd); }
+[data-theme='dark'] .sig .st { color: var(--tx); }
+[data-theme='dark'] .sig .sl { border-bottom-color: var(--bd2); }
+[data-theme='dark'] .sig .ss, [data-theme='dark'] .sig .sd { color: var(--tx3); }
+
+/* ── Info boxes ── */
+[data-theme='dark'] .wb { border-radius: 8px; }
+[data-theme='dark'] .wb-gd { background: rgba(245,158,11,.1); color: #fcd34d; border-right: 3px solid var(--gd); }
+[data-theme='dark'] .wb-bl { background: rgba(59,130,246,.1); color: #93c5fd; border-right: 3px solid #3b82f6; }
+[data-theme='dark'] .wb-rd { background: rgba(239,68,68,.1); color: #fca5a5; border-right: 3px solid #ef4444; }
+
+/* ── Status toggle buttons (stg) ── */
+[data-theme='dark'] .stb { border-color: var(--bd2); color: var(--tx2); background: var(--bg); }
+[data-theme='dark'] .stb.a.ok { background: rgba(16,185,129,.15); color: #6ee7b7; border-color: var(--ok); }
+[data-theme='dark'] .stb.a.no { background: rgba(239,68,68,.15); color: #fca5a5; border-color: var(--no); }
+[data-theme='dark'] .stb.a.pn { background: rgba(245,158,11,.15); color: #fcd34d; border-color: var(--gd); }
+
+/* ── Checkbox grid ── */
+[data-theme='dark'] .chk-grid label { color: var(--tx2); }
+[data-theme='dark'] .chk-grid input[type="checkbox"],
+[data-theme='dark'] .chk-grid input[type="radio"] { accent-color: var(--gd); }
+
+/* ── Tables ── */
+[data-theme='dark'] .dt { border-color: var(--bd); }
+[data-theme='dark'] .dt th { background: rgba(15,23,42,.9); color: var(--tx2); border-color: var(--bd); }
+[data-theme='dark'] .dt td { color: var(--tx2); border-color: var(--bd); background: var(--w); }
+[data-theme='dark'] .dt tr:nth-child(even) td { background: rgba(255,255,255,.025); }
+[data-theme='dark'] .dt tr:hover td { background: rgba(245,158,11,.06) !important; }
+[data-theme='dark'] .dt input { background: transparent; color: var(--tx); border: none; border-bottom: 1px solid var(--bd2); }
+[data-theme='dark'] .dt input:focus { border-bottom-color: var(--gd); outline: none; background: rgba(245,158,11,.05); }
+
+/* ── Badges ── */
+[data-theme='dark'] .badge { background: rgba(255,255,255,.08); color: var(--tx2); border-color: var(--bd2); }
+[data-theme='dark'] .badge-overdue { background: rgba(239,68,68,.15); color: #fca5a5; border-color: rgba(239,68,68,.3); }
+[data-theme='dark'] .badge-approved { background: rgba(16,185,129,.15); color: #6ee7b7; border-color: rgba(16,185,129,.3); }
+[data-theme='dark'] .badge-rejected { background: rgba(239,68,68,.15); color: #fca5a5; border-color: rgba(239,68,68,.3); }
+[data-theme='dark'] .badge-pending { background: rgba(245,158,11,.15); color: #fcd34d; border-color: rgba(245,158,11,.3); }
+
+/* ── Profile pages ── */
+[data-theme='dark'] .profile-nav { background: var(--w); border-bottom-color: var(--bd); }
+[data-theme='dark'] .profile-tab { color: var(--tx3); }
+[data-theme='dark'] .profile-tab.a { color: var(--tx); border-bottom-color: var(--gd); }
+[data-theme='dark'] .profile-container { background: var(--bg); }
+[data-theme='dark'] .p-card { background: var(--w); border-color: var(--bd); }
+[data-theme='dark'] .p-card-h { color: var(--tx); }
+[data-theme='dark'] .p-info-item { border-bottom-color: var(--bd); }
+[data-theme='dark'] .p-info-lbl { color: var(--tx3); }
+[data-theme='dark'] .p-info-val { color: var(--tx); }
+[data-theme='dark'] .p-stat-box { background: var(--w); border-color: var(--bd); }
+[data-theme='dark'] .p-stat-box:hover { background: rgba(245,158,11,.07); }
+[data-theme='dark'] .p-timeline-content { background: var(--w); border-color: var(--bd); }
+[data-theme='dark'] .p-timeline-title { color: var(--tx); }
+[data-theme='dark'] .p-timeline-dot { border-color: var(--w); }
+
+/* ── Staff cards ── */
+[data-theme='dark'] .staff-card { background: var(--w); border-color: var(--bd); }
+[data-theme='dark'] .staff-card:hover { border-color: var(--gd); }
+[data-theme='dark'] .staff-name { color: var(--tx) !important; }
+[data-theme='dark'] .staff-job { color: var(--tx3) !important; }
+[data-theme='dark'] .staff-card-body { background: rgba(255,255,255,.02); border-top-color: var(--bd); }
+
+/* ── Project / Task rows ── */
+[data-theme='dark'] .pj-row { background: var(--w) !important; border-color: var(--bd) !important; }
+[data-theme='dark'] .pj-row:hover { background: rgba(245,158,11,.05) !important; }
+[data-theme='dark'] .pj-t { color: var(--tx); }
+[data-theme='dark'] .pj-meta { color: var(--tx3) !important; }
+[data-theme='dark'] .emp-proj-card { background: var(--w) !important; border-color: var(--bd) !important; }
+[data-theme='dark'] .emp-proj-card-title { color: var(--tx) !important; }
+[data-theme='dark'] .emp-proj-card-desc { color: var(--tx3) !important; }
+
+/* ── Chat ── */
+[data-theme='dark'] .pj-chat-log { background: var(--bg); }
+[data-theme='dark'] .pj-chat-bubble { background: var(--w); color: var(--tx); border-color: var(--bd); }
+[data-theme='dark'] .pj-chat-msg.mine .pj-chat-bubble { background: #1e3a5f; color: #f0f9ff; }
+[data-theme='dark'] .pj-chat-input-row { background: var(--w); border-top-color: var(--bd); }
+[data-theme='dark'] .pj-chat-input-row textarea { background: var(--bg); color: var(--tx); border-color: var(--bd2); }
+[data-theme='dark'] .pj-chat-input-row textarea:focus { background: var(--w); border-color: var(--gd); }
+
+/* ── Modal backdrop ── */
+[data-theme='dark'] .tg-modal-backdrop { background: rgba(0,0,0,.7); }
+[data-theme='dark'] .tg-modal { background: var(--w); border: 1px solid var(--bd2); box-shadow: 0 20px 60px rgba(0,0,0,.6); }
+[data-theme='dark'] .tg-modal-title { color: var(--tx); border-bottom-color: var(--bd); }
+[data-theme='dark'] .tg-modal-body { color: var(--tx2); }
+
+/* ── Search bar ── */
+[data-theme='dark'] .search-bar input { background: var(--bg); color: var(--tx); border-color: var(--bd2); }
+[data-theme='dark'] .search-bar input:focus { background: var(--w); border-color: var(--gd); }
+
+/* ── Dash section titles ── */
+[data-theme='dark'] .dash-sec-title { color: var(--tx); }
+[data-theme='dark'] .dash-sec-title .di { background: var(--w); border-color: var(--bd); color: var(--gd); }
+
+/* ── Empty hint ── */
+[data-theme='dark'] .empty-hint { color: var(--tx3); }
+
+/* ── Toast ── */
+[data-theme='dark'] .tg-toast { background: var(--w); color: var(--tx); border: 1px solid var(--bd2); box-shadow: 0 8px 24px rgba(0,0,0,.4); }
+[data-theme='dark'] .tg-toast.ok { border-right: 4px solid var(--ok); }
+[data-theme='dark'] .tg-toast.err { border-right: 4px solid var(--no); }
+[data-theme='dark'] .tg-toast.warn { border-right: 4px solid var(--gd); }
+
+/* ── Performance / score section ── */
+[data-theme='dark'] .perf-score { background: rgba(245,158,11,.1); color: var(--gd); border-color: rgba(245,158,11,.2); }
+
+/* ── Code chips ── */
+[data-theme='dark'] .code-chip { background: var(--bg); border-color: var(--bd2); }
+[data-theme='dark'] .code-lbl { color: var(--tx2); }
+
+/* ── Scrollbars ── */
+[data-theme='dark'] ::-webkit-scrollbar { width: 6px; height: 6px; }
+[data-theme='dark'] ::-webkit-scrollbar-track { background: var(--bg); }
+[data-theme='dark'] ::-webkit-scrollbar-thumb { background: var(--bd2); border-radius: 4px; }
+[data-theme='dark'] ::-webkit-scrollbar-thumb:hover { background: var(--tx3); }
+
+/* ── Print (always light) ── */
+@media print {
+    [data-theme='dark'] body,
+    [data-theme='dark'] .F,
+    [data-theme='dark'] .F * { background: #fff !important; color: #000 !important; border-color: #ccc !important; }
+}

@@ -18,6 +18,25 @@
   // قوالب جاهزة مطابقة لحقول النماذج الرسمية الموجودة في app.js فقط
   // ملاحظة: تم حذف fclr / asset / jobreceipt / eval لأنها ليست موجودة في النظام الرسمي
   var FS_TEMPLATES = {
+    emp: {
+      title: 'ملف بيانات الموظف',
+      fields: [
+        { id: 'name',       label: 'الاسم الكامل',           type: 'text' },
+        { id: 'nid',        label: 'الرقم القومي',            type: 'text' },
+        { id: 'birthDate',  label: 'تاريخ الميلاد',           type: 'date' },
+        { id: 'nationality',label: 'الجنسية',                 type: 'text' },
+        { id: 'marital',    label: 'الحالة الاجتماعية',       type: 'text' },
+        { id: 'phone',      label: 'رقم الهاتف',              type: 'tel'  },
+        { id: 'email',      label: 'البريد الإلكتروني',       type: 'email'},
+        { id: 'address',    label: 'العنوان',                  type: 'text' },
+        { id: 'jobTitle',   label: 'المسمى الوظيفي',          type: 'text' },
+        { id: 'dept',       label: 'القسم / الإدارة',         type: 'text' },
+        { id: 'hireDate',   label: 'تاريخ التعيين',           type: 'date' },
+        { id: 'empId',      label: 'الرقم الوظيفي',           type: 'text' },
+        { id: 'contractType',label:'نوع العقد',               type: 'text' },
+        { id: 'manager',    label: 'المدير المباشر',          type: 'text' }
+      ]
+    },
     leave: {
       title: 'نموذج طلب إجازة',
       fields: [
@@ -185,6 +204,7 @@
   }
 
   var FS_OFFICIAL_META = {
+    emp:  { sub: 'للاستخدام الداخلي فقط', en: 'EMPLOYEE FILE' },
     leave: { sub: 'اللائحة التنظيمية — المادة الثالثة', en: 'LEAVE REQUEST' },
     perm: { sub: 'اللائحة التنظيمية — المادة الثالثة', en: 'ATTENDANCE PERMISSION' },
     delay: { sub: 'طلب تعديل موعد الحضور الرسمي بصفة دائمة', en: 'ATTENDANCE DELAY REQUEST' },
@@ -192,6 +212,35 @@
   };
 
   var FS_OFFICIAL = {
+    emp: {
+      noteSection: '٣',
+      fill: function () {
+        var h = SC('١', 'البيانات الشخصية');
+        h += F2(fgIn('الاسم الكامل', 'name'), fgIn('الرقم القومي', 'nid'));
+        h += F3(fgIn('تاريخ الميلاد', 'birthDate', 'date'), fgIn('الجنسية', 'nationality'), fgIn('الحالة الاجتماعية', 'marital'));
+        h += F2(fgIn('رقم الهاتف', 'phone', 'tel'), fgIn('البريد الإلكتروني', 'email', 'email'));
+        h += '<div class="fg fg-full"><label>العنوان</label><input type="text" data-fid="address"></div>';
+        h += SC('٢', 'بيانات الوظيفة');
+        h += F2(fgIn('المسمى الوظيفي', 'jobTitle'), fgIn('القسم / الإدارة', 'dept'));
+        h += F3(fgIn('تاريخ التعيين', 'hireDate', 'date'), fgIn('الرقم الوظيفي', 'empId'), fgIn('نوع العقد', 'contractType'));
+        h += F2(fgIn('المدير المباشر', 'manager'), fgIn('درجة الوظيفة', 'grade'));
+        return h;
+      },
+      print: function (v) {
+        var h = SC('١', 'البيانات الشخصية');
+        h += F2(fgOut('الاسم الكامل', v.name), fgOut('الرقم القومي', v.nid));
+        h += F3(fgOut('تاريخ الميلاد', v.birthDate), fgOut('الجنسية', v.nationality), fgOut('الحالة الاجتماعية', v.marital));
+        h += F2(fgOut('رقم الهاتف', v.phone), fgOut('البريد الإلكتروني', v.email));
+        h += fgOut('العنوان', v.address, true);
+        h += SC('٢', 'بيانات الوظيفة');
+        h += F2(fgOut('المسمى الوظيفي', v.jobTitle), fgOut('القسم / الإدارة', v.dept));
+        h += F3(fgOut('تاريخ التعيين', v.hireDate), fgOut('الرقم الوظيفي', v.empId), fgOut('نوع العقد', v.contractType));
+        h += F2(fgOut('المدير المباشر', v.manager), fgOut('درجة الوظيفة', v.grade));
+        h += SC('٣', 'التوقيعات');
+        h += SG3('توقيع الموظف', '', 'المدير الإداري / مدير المشروعات', '', 'المدير التنفيذي', 'اعتماد', null, 'admin', 'exec');
+        return h;
+      }
+    },
     leave: {
       noteSection: '٧',
       fill: function () {

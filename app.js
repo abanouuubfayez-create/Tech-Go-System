@@ -4954,10 +4954,8 @@ function uploadEmpDoc(uid, idx) {
 function deleteEmpDoc(docId, fileUrl) {
     if(!confirm('هل أنت متأكد من حذف هذا المستند نهائياً؟')) return;
     db.collection('employeeDocuments').doc(docId).delete().then(function(){
-        // Note: we let the UI update automatically via onSnapshot
-        // For best practice, we could also delete from storage, but we will leave it for now or delete if needed.
-        if(fileUrl) {
-            try { firebase.storage().refFromURL(fileUrl).delete(); } catch(e){}
+        if(fileUrl && typeof tgDeleteSupabaseFile === 'function') {
+            tgDeleteSupabaseFile(fileUrl);
         }
     }).catch(function(err){
         alert('❌ خطأ أثناء الحذف: '+err.message);
