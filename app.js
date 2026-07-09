@@ -1,4 +1,4 @@
-// ─── STATE & INIT ─────────────────────────────────────────────────────────
+﻿// ─── STATE & INIT ─────────────────────────────────────────────────────────
 var CN   = "شركة تيك جو";
 var MGRS = { admin:'', exec:'', tech:'' };
 var EMPLOYEES = [];
@@ -1385,7 +1385,7 @@ function tgApplyTaskFilters(){
     rows.forEach(function(r){
         var ok = true;
         if(q && (r.getAttribute('data-search')||'').indexOf(q) === -1) ok = false;
-        if(ok && emp && (r.getAttribute('data-emp')||'') !== emp) ok = false;
+        if(ok && emp) { var rawEmp=(r.getAttribute('data-emp')||'').replace(/&amp;/g,'&').replace(/&quot;/g,'"').replace(/&lt;/g,'<').replace(/&gt;/g,'>'); if(rawEmp !== emp) ok = false; }
         if(ok && st){
             var sVal = r.getAttribute('data-status')||'';
             if(st === 'late'){
@@ -2164,7 +2164,7 @@ function tgApplyTaskFilters(){
     rows.forEach(function(r){
         var ok = true;
         if(q && (r.getAttribute('data-search')||'').indexOf(q) === -1) ok = false;
-        if(ok && emp && (r.getAttribute('data-emp')||'') !== emp) ok = false;
+        if(ok && emp) { var rawEmp=(r.getAttribute('data-emp')||'').replace(/&amp;/g,'&').replace(/&quot;/g,'"').replace(/&lt;/g,'<').replace(/&gt;/g,'>'); if(rawEmp !== emp) ok = false; }
         if(ok && st){
             var sVal = r.getAttribute('data-status')||'';
             if(st === 'late'){
