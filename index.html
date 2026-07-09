@@ -27,6 +27,35 @@
 </script>
 </head>
 <body>
+<!-- ═══ شريط حالة الاتصال ═══ -->
+<div id="offlineBanner" style="display:none;position:fixed;top:0;left:0;right:0;z-index:99999;background:#ef4444;color:#fff;text-align:center;padding:10px 16px;font-size:13px;font-weight:700;box-shadow:0 2px 8px rgba(0,0,0,.3);animation:slideDown .3s ease">
+    📵 لا يوجد اتصال بالإنترنت — بعض الوظائف غير متاحة حالياً
+</div>
+<style>
+@keyframes slideDown{from{transform:translateY(-100%)}to{transform:translateY(0)}}
+</style>
+<script>
+(function(){
+    function checkConn(){
+        var b=document.getElementById('offlineBanner');
+        if(!b) return;
+        if(!navigator.onLine){
+            b.style.display='block';
+            document.body.style.marginTop='44px';
+        } else {
+            b.style.display='none';
+            document.body.style.marginTop='';
+        }
+    }
+    window.addEventListener('offline', checkConn);
+    window.addEventListener('online', function(){
+        var b=document.getElementById('offlineBanner');
+        if(b){ b.style.background='#10b981'; b.textContent='✅ عاد الاتصال بالإنترنت'; b.style.display='block'; document.body.style.marginTop='44px'; }
+        setTimeout(function(){ checkConn(); document.body.style.marginTop=''; },2500);
+    });
+    checkConn();
+})();
+</script>
 <iframe id="tgPrintFrame" style="position:fixed;top:-9999px;left:-9999px;width:0;height:0;border:0" title="طباعة"></iframe>
 <button class="mtg" onclick="document.getElementById('sb').classList.toggle('opn')">☰</button>
 

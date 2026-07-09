@@ -109,6 +109,35 @@
 </style>
 </head>
 <body class="emp-body">
+<!-- ═══ شريط حالة الاتصال ═══ -->
+<div id="offlineBanner" style="display:none;position:fixed;top:0;left:0;right:0;z-index:99999;background:#ef4444;color:#fff;text-align:center;padding:10px 16px;font-size:13px;font-weight:700;box-shadow:0 2px 8px rgba(0,0,0,.3);animation:slideDown .3s ease">
+    📵 لا يوجد اتصال بالإنترنت — بعض الوظائف غير متاحة حالياً
+</div>
+<style>
+@keyframes slideDown{from{transform:translateY(-100%)}to{transform:translateY(0)}}
+</style>
+<script>
+(function(){
+    function checkConn(){
+        var b=document.getElementById('offlineBanner');
+        if(!b) return;
+        if(!navigator.onLine){
+            b.style.display='block';
+            document.body.style.paddingTop='44px';
+        } else {
+            b.style.display='none';
+            document.body.style.paddingTop='';
+        }
+    }
+    window.addEventListener('offline', checkConn);
+    window.addEventListener('online', function(){
+        var b=document.getElementById('offlineBanner');
+        if(b){ b.style.background='#10b981'; b.textContent='✅ عاد الاتصال بالإنترنت'; b.style.display='block'; document.body.style.paddingTop='44px'; }
+        setTimeout(function(){ checkConn(); if(document.body.style.paddingTop) document.body.style.paddingTop=''; },2500);
+    });
+    checkConn();
+})();
+</script>
 <!-- Celebration Character Container -->
 <div id="zaghroutaWrap" class="zaghrouta-container">
     <div class="zaghrouta-bubble" id="zaghroutaMsg">أخيراً! 🎉</div>
@@ -198,16 +227,26 @@
 
   <!-- مهامي -->
   <div class="emp-pg" id="epg-tasks">
-    <div style="display:flex;align-items:center;gap:10px;margin-bottom:8px;">
-      <div style="font-size:14px;font-weight:800;color:var(--nv)">🗂 مهامي الحالية</div>
-      <select class="global-table-filter" style="margin:0;padding:4px;font-size:11px;min-height:auto;" onchange="if(typeof window.parent.tgSortVisibleList==='function') window.parent.tgSortVisibleList(this.value); else if(typeof tgSortVisibleList==='function') tgSortVisibleList(this.value)">
-          <option value="">-- فرز حسب --</option>
-          <option value="date_desc">الأحدث</option>
-          <option value="date_asc">الأقدم</option>
-          <option value="prio_desc">الأولوية</option>
-          <option value="status_desc">الحالة</option>
-          <option value="deadline_asc">تاريخ التسليم</option>
-      </select>
+    <div class="p-stats" id="tasksEmployeeSummary" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap: 12px; margin-bottom: 16px;"></div>
+
+    <div style="display:flex;flex-wrap:wrap;gap:10px;align-items:center;justify-content:space-between;margin:10px 0;background:var(--w);padding:12px;border-radius:8px;border:1px solid var(--bd2)">
+      <div style="display:flex;flex-wrap:wrap;gap:8px;align-items:center;flex:1">
+        <div style="font-size:12px;font-weight:800;color:var(--nv)">🗂 تصفية وبحث:</div>
+        <input type="text" id="empTkSearch" placeholder="🔍 ابحث في مهامي..." oninput="tgFilterTasksEmployee()" style="margin:0;padding:5px 10px;font-size:11px;min-width:180px;height:30px;border-radius:6px;border:1px solid var(--bd2)">
+        <select id="empTkPriorityFilter" onchange="tgFilterTasksEmployee()" style="margin:0;padding:5px;font-size:11px;height:30px;border-radius:6px;border:1px solid var(--bd2);background:var(--w);color:var(--tx)"><option value="">كل الأولويات</option><option value="عالية">عالية</option><option value="متوسطة">متوسطة</option><option value="منخفضة">منخفضة</option></select>
+        <select id="empTkStatusFilter" onchange="tgFilterTasksEmployee()" style="margin:0;padding:5px;font-size:11px;height:30px;border-radius:6px;border:1px solid var(--bd2);background:var(--w);color:var(--tx)"><option value="">كل الحالات</option><option value="لم يبدأ">لم يبدأ</option><option value="جاري العمل">جاري العمل</option><option value="متوقف">متوقف</option><option value="مكتمل">مكتمل</option><option value="overdue">متأخرة ⏰</option></select>
+        <select class="global-table-filter" style="margin:0;padding:5px;font-size:11px;height:30px;border-radius:6px;border:1px solid var(--bd2);background:var(--w);color:var(--tx)" onchange="if(typeof window.parent.tgSortVisibleList==='function') window.parent.tgSortVisibleList(this.value); else if(typeof tgSortVisibleList==='function') tgSortVisibleList(this.value)">
+            <option value="">-- فرز حسب --</option>
+            <option value="date_desc">التاريخ: الأحدث</option>
+            <option value="date_asc">التاريخ: الأقدم</option>
+            <option value="prio_desc">الأولوية: الأعلى</option>
+            <option value="prio_asc">الأولوية: الأقل</option>
+            <option value="status_desc">الحالة: المكتمل أولاً</option>
+            <option value="status_asc">الحالة: غير المكتمل أولاً</option>
+            <option value="deadline_asc">تاريخ التسليم: الأقرب</option>
+            <option value="deadline_desc">تاريخ التسليم: الأبعد</option>
+        </select>
+      </div>
     </div>
     <div class="set-hint" style="margin-bottom:14px">المهام اللي كلّفك بيها الأدمن — حدّث حالتها أولاً بأول عشان يتابع الأدمن تنفيذك لها.</div>
     <div id="myTasksList"><div class="empty-hint">⏳ جارٍ التحميل...</div></div>
@@ -1061,9 +1100,9 @@ function renderTasksHtml(rows){
         var dlVal = t.deadline ? new Date(t.deadline).getTime() : 9999999999999;
         var empVal = esc(t.assignedToName || '');
 
-        return '<div class="pj-row" style="'+cardStyle+'" data-prio="'+pVal+'" data-status="'+sVal+'" data-date="'+dVal+'" data-deadline="'+dlVal+'" data-emp="'+empVal+'">'+
+        return '<div class="pj-row" style="'+cardStyle+'" data-prio="'+pVal+'" data-status="'+sVal+'" data-date="'+dVal+'" data-deadline="'+dlVal+'" data-emp="'+empVal+'" data-priority="'+esc(t.priority||'متوسطة')+'" data-taskstatus="'+(isDone?'مكتمل':(t.status||'لم يبدأ'))+'">'+
             '<div class="pj-t">'+esc(t.title||'بدون عنوان')+
-            ' <span class="badge"'+(isDone?' style="background:var(--ok);color:#fff"':'')+(isOverdue?' style="background:var(--no);color:#fff"':'')+'>'+esc(t.priority||'متوسطة')+'</span>'+
+            ' <span class="badge badge-prio"'+(isDone?' style="background:var(--ok);color:#fff"':'')+(isOverdue?' style="background:var(--no);color:#fff"':'')+'>'+esc(t.priority||'متوسطة')+'</span>'+
             (isDone?' <span style="background:var(--ok);color:#fff;border-radius:10px;padding:1px 8px;font-size:9px;font-weight:800">✅ مكتملة</span>':'')+(isOverdue?' <span style="background:var(--no);color:#fff;border-radius:10px;padding:1px 8px;font-size:9px;font-weight:800">⏰ متأخرة</span>':'')+
             '</div>'+
             (t.description?'<div class="pj-meta">'+esc(t.description)+'</div>':'')+
@@ -1117,7 +1156,78 @@ function renderTasksHtml(rows){
     }
 
     box.innerHTML = h;
+    tgFilterTasksEmployee();
 }
+
+window.tgFilterTasksEmployee = function() {
+    var query = (document.getElementById('empTkSearch') ? document.getElementById('empTkSearch').value : '').toLowerCase().trim();
+    var prioFilter = document.getElementById('empTkPriorityFilter') ? document.getElementById('empTkPriorityFilter').value : '';
+    var statusFilter = document.getElementById('empTkStatusFilter') ? document.getElementById('empTkStatusFilter').value : '';
+
+    var cards = document.querySelectorAll('#myTasksList .pj-row');
+    cards.forEach(function(card) {
+        var text = card.textContent.toLowerCase();
+
+        // بحث نصي
+        var matchesSearch = !query || text.indexOf(query) > -1;
+
+        // فلترة الأولوية — نقرأ من data attribute مباشرة
+        var cardPrio = card.getAttribute('data-priority') || '';
+        var matchesPrio = !prioFilter || cardPrio === prioFilter;
+
+        // فلترة الحالة — نقرأ من data attribute مباشرة
+        var cardStatus = card.getAttribute('data-taskstatus') || 'لم يبدأ';
+
+        var dlVal = card.getAttribute('data-deadline');
+        var deadlineTime = parseFloat(dlVal);
+        var isOverdue = deadlineTime && deadlineTime < 9999999999999 && deadlineTime < Date.now() && cardStatus !== 'مكتمل';
+
+        var matchesStatus = true;
+        if (statusFilter) {
+            if (statusFilter === 'overdue') {
+                matchesStatus = isOverdue;
+            } else {
+                matchesStatus = cardStatus === statusFilter;
+            }
+        }
+
+        card.style.display = (matchesSearch && matchesPrio && matchesStatus) ? '' : 'none';
+    });
+
+    updateTasksEmployeeSummary();
+};
+
+window.updateTasksEmployeeSummary = function() {
+    var cards = document.querySelectorAll('#myTasksList .pj-row');
+    var total = 0, pending = 0, progress = 0, hold = 0, completed = 0, overdue = 0;
+
+    cards.forEach(function(card) {
+        if (card.style.display !== 'none') {
+            total++;
+            var cardStatus = card.getAttribute('data-taskstatus') || 'لم يبدأ';
+            var dlVal = card.getAttribute('data-deadline');
+            var deadlineTime = parseFloat(dlVal);
+            var isOD = deadlineTime && deadlineTime < 9999999999999 && deadlineTime < Date.now() && cardStatus !== 'مكتمل';
+
+            if (isOD) overdue++;
+            if (cardStatus === 'مكتمل') completed++;
+            else if (cardStatus === 'جاري العمل') progress++;
+            else if (cardStatus === 'متوقف') hold++;
+            else pending++;
+        }
+    });
+
+    var summaryBox = document.getElementById('tasksEmployeeSummary');
+    if (summaryBox) {
+        summaryBox.innerHTML =
+            '<div class="p-stat-box"><div class="p-stat-val">'+total+'</div><div class="p-stat-lbl">إجمالي مهامي</div></div>' +
+            '<div class="p-stat-box" style="border-right: 3px solid var(--gd)"><div class="p-stat-val" style="color:var(--gd)">'+pending+'</div><div class="p-stat-lbl">لم تبدأ</div></div>' +
+            '<div class="p-stat-box" style="border-right: 3px solid #3b82f6"><div class="p-stat-val" style="color:#3b82f6">'+progress+'</div><div class="p-stat-lbl">جاري العمل</div></div>' +
+            '<div class="p-stat-box" style="border-right: 3px solid #ef4444"><div class="p-stat-val" style="color:#ef4444">'+hold+'</div><div class="p-stat-lbl">متوقفة</div></div>' +
+            '<div class="p-stat-box" style="border-right: 3px solid var(--ok)"><div class="p-stat-val" style="color:var(--ok)">'+completed+'</div><div class="p-stat-lbl">مكتملة</div></div>' +
+            '<div class="p-stat-box" style="border-right: 3px solid var(--no)"><div class="p-stat-val" style="color:var(--no)">'+overdue+'</div><div class="p-stat-lbl">متأخرة ⏰</div></div>';
+    }
+};
 function saveTaskStatus(id){
     var status=document.getElementById('tks_'+id).value;
     var msg=document.getElementById('tkmsg_'+id);
@@ -1669,8 +1779,8 @@ function empSendDirectToAdmin() {
 function empDeleteDoc(docId, fileUrl) {
     if(!confirm('هل أنت متأكد من حذف هذا المستند؟')) return;
     db.collection('employeeDocuments').doc(docId).delete().then(function(){
-        if(fileUrl) {
-            try { firebase.storage().refFromURL(fileUrl).delete(); } catch(e){}
+        if(fileUrl && typeof tgDeleteSupabaseFile === 'function') {
+            tgDeleteSupabaseFile(fileUrl);
         }
     }).catch(function(err){
         alert('❌ خطأ أثناء الحذف: '+err.message);

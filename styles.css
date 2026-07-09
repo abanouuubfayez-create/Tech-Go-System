@@ -2154,6 +2154,7 @@ html.tg-auth-pending body { visibility: hidden; }
 /* ═══════════════════════════════════════════ */
 [data-theme='dark'] {
     --bg: #020617;
+    --bg2: #0f172a;
     --w: #0f172a;
     --tx: #f8fafc;
     --tx2: #cbd5e1;
@@ -2416,3 +2417,70 @@ html.tg-auth-pending body { visibility: hidden; }
 /* Meta / secondary text readability */
 [data-theme='dark'] .empty-hint { color: var(--tx3); }
 [data-theme='dark'] .pj-chat-time { color: var(--tx3); }
+
+/* ═══════════════════════════════════════════ */
+/*  DARK MODE — ADDITIONAL COMPREHENSIVE FIXES */
+/* ═══════════════════════════════════════════ */
+
+/* Employee portal nav tabs */
+[data-theme='dark'] .emp-nav { background: var(--w); border-bottom-color: var(--bd2); }
+[data-theme='dark'] .emp-tab { color: var(--tx3); }
+[data-theme='dark'] .emp-tab:hover { color: var(--tx); background: rgba(255,255,255,.04); }
+[data-theme='dark'] .emp-tab.a { color: var(--tx); border-bottom-color: var(--gd); background: rgba(245,158,11,.06); }
+[data-theme='dark'] .emp-topbar { background: var(--w); border-bottom-color: var(--bd); }
+
+/* File upload labels */
+[data-theme='dark'] .file-upload-label { background: var(--bg); border-color: var(--bd2); color: var(--tx2); }
+[data-theme='dark'] .file-upload-label:hover { border-color: var(--gd); color: var(--tx); }
+
+/* Live track panels */
+[data-theme='dark'] .lt-panel { background: var(--w); border-color: var(--bd); }
+[data-theme='dark'] .lt-panel-h { border-bottom-color: var(--bd); }
+[data-theme='dark'] .lt-panel-h h3 { color: var(--tx); }
+[data-theme='dark'] .lt-panel-h select { background: var(--bg); color: var(--tx); border-color: var(--bd2); }
+[data-theme='dark'] .lt-feed-item { border-bottom-color: var(--bd); }
+[data-theme='dark'] .lt-feed-av { background: var(--bg); color: var(--tx); }
+[data-theme='dark'] .lt-feed-body p { color: var(--tx); }
+[data-theme='dark'] .lt-feed-meta { color: var(--tx3); }
+[data-theme='dark'] .lt-team-row:hover { background: var(--bg); }
+[data-theme='dark'] .lt-team-av { background: var(--bg); color: var(--tx); }
+[data-theme='dark'] .lt-team-name { color: var(--tx); }
+[data-theme='dark'] .lt-team-task { color: var(--tx3); }
+
+/* Stats & KPIs in dark */
+[data-theme='dark'] .lt-kpi.DC { background: var(--w); border-color: var(--bd); }
+
+/* Set-sec containers */
+[data-theme='dark'] .set-sec { background: var(--w); border-color: var(--bd); }
+[data-theme='dark'] .set-sec-title { color: var(--tx); }
+[data-theme='dark'] .set-hint { color: var(--tx2); }
+
+/* Tasks grid cards */
+[data-theme='dark'] .tasks-grid .pj-row { background: var(--w) !important; border-color: var(--bd) !important; }
+[data-theme='dark'] .tasks-grid .pj-row:hover { background: var(--bd) !important; }
+
+/* Reaction chips */
+[data-theme='dark'] .reaction-chip { background: rgba(255,255,255,.07); color: var(--tx2); border: 1px solid var(--bd2); }
+[data-theme='dark'] .reaction-chip.active { background: rgba(245,158,11,.15); border-color: var(--gd); color: var(--gd); }
+[data-theme='dark'] .emoji-picker-popup { background: var(--w); border-color: var(--bd2); box-shadow: var(--sh-md); }
+
+/* Achievement rows */
+[data-theme='dark'] .ac-row { background: var(--w); border-color: var(--bd); }
+[data-theme='dark'] .ac-t { color: var(--tx); }
+[data-theme='dark'] .ac-meta { color: var(--tx2); }
+
+/* Request rows */
+[data-theme='dark'] .rq-row { background: var(--w); border-color: var(--bd); }
+[data-theme='dark'] .rq-t { color: var(--tx); }
+
+/* Topbar global search */
+[data-theme='dark'] .global-table-filter { background: var(--bg); color: var(--tx); border-color: var(--bd2); }
+[data-theme='dark'] .global-table-filter:focus { background: var(--w); border-color: var(--gd); }
+
+/* Modal */
+[data-theme='dark'] .tg-modal { background: var(--w); border: 1px solid var(--bd2); }
+[data-theme='dark'] .tg-modal-title { color: var(--tx); border-bottom-color: var(--bd2); }
+[data-theme='dark'] .tg-modal-body { color: var(--tx2); }
+
+/* Offline banner always readable */
+#offlineBanner { color: #fff !important; }

@@ -6,7 +6,12 @@
 function tgInitTheme() {
     const theme = localStorage.getItem('tg-theme') || 'light';
     document.documentElement.setAttribute('data-theme', theme);
-    tgUpdateThemeUI(theme);
+    // defer UI update until DOM is ready
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', function() { tgUpdateThemeUI(theme); });
+    } else {
+        tgUpdateThemeUI(theme);
+    }
 }
 
 function tgToggleTheme() {
@@ -17,19 +22,18 @@ function tgToggleTheme() {
     localStorage.setItem('tg-theme', newTheme);
     tgUpdateThemeUI(newTheme);
     
-    // Optional: Show toast
     if (typeof tgToast === 'function') {
-        tgToast(newTheme === 'dark' ? 'تم تفعيل الوضع الليلي' : 'تم تفعيل الوضع النهاري', 'ok');
+        tgToast(newTheme === 'dark' ? '🌙 تم تفعيل الوضع الليلي' : '☀️ تم تفعيل الوضع النهاري', 'ok');
     }
 }
 
 function tgUpdateThemeUI(theme) {
-    const btn = document.getElementById('themeToggle');
-    if (btn) {
+    // Update all theme toggle buttons (there may be one in each portal)
+    document.querySelectorAll('#themeToggle').forEach(function(btn) {
         btn.innerHTML = theme === 'dark' ? '☀️' : '🌙';
         btn.title = theme === 'dark' ? 'التبديل للوضع النهاري' : 'التبديل للوضع الليلي';
-    }
-    
+    });
+
     // Update meta theme color
     const metaThemeColor = document.querySelector('meta[name="theme-color"]');
     if (metaThemeColor) {
@@ -37,5 +41,5 @@ function tgUpdateThemeUI(theme) {
     }
 }
 
-// Run initialization
+// Run initialization immediately — icon will be fixed once DOM is ready
 tgInitTheme();
