@@ -2359,3 +2359,60 @@ html.tg-auth-pending body { visibility: hidden; }
 @media (max-width: 640px) {
     .notif-panel { position: fixed; top: 60px; left: 8px; right: 8px; width: auto; }
 }
+
+/* ═══════════════════════════════════════════ */
+/*  DARK MODE — CONTRAST & A11Y IMPROVEMENTS   */
+/*  (WCAG-oriented pass across all screens)    */
+/* ═══════════════════════════════════════════ */
+
+/* Tables: readable rows, striping and hover on dark */
+[data-theme='dark'] .dt td { border-color: var(--bd); color: var(--tx2); }
+[data-theme='dark'] .dt tr:nth-child(even) { background: rgba(255, 255, 255, 0.03); }
+[data-theme='dark'] .dt tr:hover { background: rgba(255, 255, 255, 0.07); }
+[data-theme='dark'] .dt input { color: var(--tx); }
+[data-theme='dark'] .dt input:focus { background: var(--nv2); }
+[data-theme='dark'] #mexp-table tfoot td { background: var(--nv2) !important; color: var(--tx) !important; }
+
+/* Warning / info boxes: replace light pastel backgrounds */
+[data-theme='dark'] .wb-gd { background: rgba(245, 158, 11, 0.12); color: #fcd34d; }
+[data-theme='dark'] .wb-rd { background: rgba(239, 68, 68, 0.12); color: #fca5a5; }
+[data-theme='dark'] .wb-bl { background: rgba(59, 130, 246, 0.12); color: #93c5fd; }
+
+/* Priority tags: translucent dark variants with high-contrast text */
+[data-theme='dark'] .tg-tag-prio-low { background: rgba(16, 185, 129, 0.15); color: #6ee7b7; }
+[data-theme='dark'] .tg-tag-prio-med { background: rgba(234, 179, 8, 0.15); color: #fde047; }
+[data-theme='dark'] .tg-tag-prio-high { background: rgba(239, 68, 68, 0.15); color: #fca5a5; }
+
+/* Complaint-type cards */
+[data-theme='dark'] .ctc { border-color: var(--bd2); }
+[data-theme='dark'] .ctc .ct3 { color: var(--tx); }
+[data-theme='dark'] .ctc:hover { border-color: var(--gd); background: rgba(255, 255, 255, 0.04); }
+[data-theme='dark'] .ctc.sel { background: var(--gdl2); }
+
+/* Signatures & certificates: legible titles and lines */
+[data-theme='dark'] .sig .st { color: var(--tx); }
+[data-theme='dark'] .sig .sl { border-bottom-color: var(--tx3); }
+[data-theme='dark'] .sig .ss, [data-theme='dark'] .sig .sd { color: var(--tx3); }
+[data-theme='dark'] .cert input[type="text"], [data-theme='dark'] .cert input[type="date"] { border-bottom-color: var(--tx3); color: var(--tx); }
+
+/* Official form container */
+[data-theme='dark'] .F { background: var(--w); border-color: var(--bd); }
+
+/* Focus visibility (WCAG 2.4.7) */
+[data-theme='dark'] .fg input:focus, [data-theme='dark'] .fg select:focus, [data-theme='dark'] .fg textarea:focus { box-shadow: 0 0 0 3px rgba(245, 158, 11, 0.28); border-color: var(--gd); }
+[data-theme='dark'] .bt:focus-visible, [data-theme='dark'] a:focus-visible { outline: 2px solid var(--gd); outline-offset: 2px; }
+
+/* Disabled states: dimmed but still readable */
+[data-theme='dark'] input:disabled, [data-theme='dark'] select:disabled, [data-theme='dark'] textarea:disabled { background: rgba(255, 255, 255, 0.04); color: var(--tx3); border-color: var(--bd); opacity: 0.75; }
+
+/* Buttons: primary visible against dark background */
+[data-theme='dark'] .bt-p { background: var(--nv2); box-shadow: 0 2px 8px rgba(0, 0, 0, 0.4); }
+[data-theme='dark'] .bt-p:hover { background: #33415c; }
+[data-theme='dark'] .bt-o { color: var(--tx); }
+
+/* Modals */
+[data-theme='dark'] .tg-modal { background: var(--w); color: var(--tx); border: 1px solid var(--bd); }
+
+/* Meta / secondary text readability */
+[data-theme='dark'] .empty-hint { color: var(--tx3); }
+[data-theme='dark'] .pj-chat-time { color: var(--tx3); }

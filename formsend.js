@@ -74,6 +74,16 @@
         { id: 'reason', label: 'سبب تقديم الاستقالة (اختياري)', type: 'textarea' }
       ]
     },
+    compsug: {
+      title: 'نموذج شكاوى ومقترحات',
+      fields: [
+        { id: 'name', label: 'الاسم بالكامل', type: 'text' },
+        { id: 'dept', label: 'القسم / الإدارة', type: 'text' },
+        { id: 'date', label: 'التاريخ', type: 'date' },
+        { id: 'complaints', label: 'الشكاوى', type: 'textarea' },
+        { id: 'suggestions', label: 'المقترحات', type: 'textarea' }
+      ]
+    },
     clr: {
       title: 'إخلاء طرف',
       noteSection: '٥',
