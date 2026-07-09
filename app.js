@@ -1307,7 +1307,6 @@ function renderTasksMgmtList(list){
         });
         f.innerHTML = opts;
         f.value = curVal;
-        setTimeout(function(){ tgApplyTaskFilters(); }, 120);
     }
 
     var h='';
@@ -1374,13 +1373,17 @@ function renderTasksMgmtList(list){
 }
 
 // ─── بحث + تصفية موحّدة لقائمة المهام (نص + حالة + موظف) ─────────────
+var _tgTaskFilter = { q: '', st: '', emp: '' };
 function tgApplyTaskFilters(){
     var qEl = document.getElementById('tgTasksSearch');
     var stEl = document.getElementById('tgTasksStatusFilter');
     var empEl = document.getElementById('tgTasksEmpFilter');
-    var q = qEl ? (qEl.value||'').toLowerCase().trim() : '';
-    var st = stEl ? stEl.value : '';
-    var emp = empEl ? empEl.value : '';
+    if(qEl !== null) _tgTaskFilter.q   = (qEl.value||'').toLowerCase().trim();
+    if(stEl !== null) _tgTaskFilter.st = stEl.value || '';
+    if(empEl !== null) _tgTaskFilter.emp = empEl.value || '';
+    var q   = _tgTaskFilter.q;
+    var st  = _tgTaskFilter.st;
+    var emp = _tgTaskFilter.emp;
     var rows = document.querySelectorAll('#tasksMgmtList .pj-row');
     var total = rows.length;
     var visible = 0;
@@ -2101,7 +2104,6 @@ function renderTasksMgmtList(list){
         });
         f.innerHTML = opts;
         f.value = curVal;
-        setTimeout(function(){ tgApplyTaskFilters(); }, 120);
     }
 
     var h='';
@@ -2168,13 +2170,17 @@ function renderTasksMgmtList(list){
 }
 
 // ─── بحث + تصفية موحّدة لقائمة المهام (نص + حالة + موظف) ─────────────
+var _tgTaskFilter = { q: '', st: '', emp: '' };
 function tgApplyTaskFilters(){
     var qEl = document.getElementById('tgTasksSearch');
     var stEl = document.getElementById('tgTasksStatusFilter');
     var empEl = document.getElementById('tgTasksEmpFilter');
-    var q = qEl ? (qEl.value||'').toLowerCase().trim() : '';
-    var st = stEl ? stEl.value : '';
-    var emp = empEl ? empEl.value : '';
+    if(qEl !== null) _tgTaskFilter.q   = (qEl.value||'').toLowerCase().trim();
+    if(stEl !== null) _tgTaskFilter.st = stEl.value || '';
+    if(empEl !== null) _tgTaskFilter.emp = empEl.value || '';
+    var q   = _tgTaskFilter.q;
+    var st  = _tgTaskFilter.st;
+    var emp = _tgTaskFilter.emp;
     var rows = document.querySelectorAll('#tasksMgmtList .pj-row');
     var total = rows.length;
     var visible = 0;
