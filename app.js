@@ -1307,7 +1307,7 @@ function renderTasksMgmtList(list){
         });
         f.innerHTML = opts;
         f.value = curVal;
-        setTimeout(function(){ tgApplyTaskFilters(); }, 50);
+        setTimeout(function(){ tgApplyTaskFilters(); }, 120);
     }
 
     var h='';
@@ -1370,6 +1370,7 @@ function renderTasksMgmtList(list){
            '</div>';
     });
     box.innerHTML=h;
+    tgApplyTaskFilters();
 }
 
 // ─── بحث + تصفية موحّدة لقائمة المهام (نص + حالة + موظف) ─────────────
@@ -1381,24 +1382,38 @@ function tgApplyTaskFilters(){
     var st = stEl ? stEl.value : '';
     var emp = empEl ? empEl.value : '';
     var rows = document.querySelectorAll('#tasksMgmtList .pj-row');
+    var total = rows.length;
     var visible = 0;
+    var now = Date.now();
     rows.forEach(function(r){
         var ok = true;
+        // نص البحث
         if(q && (r.getAttribute('data-search')||'').indexOf(q) === -1) ok = false;
-        if(ok && emp) { var rawEmp=(r.getAttribute('data-emp')||'').replace(/&amp;/g,'&').replace(/&quot;/g,'"').replace(/&lt;/g,'<').replace(/&gt;/g,'>'); if(rawEmp !== emp) ok = false; }
+        // تصفية الموظف — فك تشفير HTML قبل المقارنة
+        if(ok && emp){
+            var rawEmp = (r.getAttribute('data-emp')||'')
+                .replace(/&amp;/g,'&').replace(/&quot;/g,'"')
+                .replace(/&lt;/g,'<').replace(/&gt;/g,'>');
+            if(rawEmp !== emp) ok = false;
+        }
+        // تصفية الحالة
         if(ok && st){
             var sVal = r.getAttribute('data-status')||'';
             if(st === 'late'){
                 var dl = parseInt(r.getAttribute('data-deadline'),10)||0;
-                if(!(sVal !== '3' && dl && dl !== 9999999999999 && dl < Date.now())) ok = false;
-            } else if(sVal !== st) ok = false;
+                // متأخرة = غير مكتمل + له موعد تسليم محدد + تجاوز الموعد
+                var isLate = (sVal !== '3') && dl > 0 && dl < 9999999999999 && dl < now;
+                if(!isLate) ok = false;
+            } else {
+                if(sVal !== st) ok = false;
+            }
         }
         r.style.display = ok ? '' : 'none';
         if(ok) visible++;
     });
     var cnt = document.getElementById('tgTasksCount');
-    if(cnt) cnt.textContent = rows.length ? ('عرض '+visible+' من '+rows.length+' مهمة') : '';
-    tgRenderTaskStats(rows);
+    if(cnt) cnt.textContent = total ? ('عرض '+visible+' من '+total+' مهمة') : '';
+    tgRenderTaskStats(rows, visible);
 }
 
 // ملخص سريع لحالة المهام — يُحسب من كروت المهام مباشرة
@@ -2086,7 +2101,7 @@ function renderTasksMgmtList(list){
         });
         f.innerHTML = opts;
         f.value = curVal;
-        setTimeout(function(){ tgApplyTaskFilters(); }, 50);
+        setTimeout(function(){ tgApplyTaskFilters(); }, 120);
     }
 
     var h='';
@@ -2149,6 +2164,7 @@ function renderTasksMgmtList(list){
            '</div>';
     });
     box.innerHTML=h;
+    tgApplyTaskFilters();
 }
 
 // ─── بحث + تصفية موحّدة لقائمة المهام (نص + حالة + موظف) ─────────────
@@ -2160,28 +2176,42 @@ function tgApplyTaskFilters(){
     var st = stEl ? stEl.value : '';
     var emp = empEl ? empEl.value : '';
     var rows = document.querySelectorAll('#tasksMgmtList .pj-row');
+    var total = rows.length;
     var visible = 0;
+    var now = Date.now();
     rows.forEach(function(r){
         var ok = true;
+        // نص البحث
         if(q && (r.getAttribute('data-search')||'').indexOf(q) === -1) ok = false;
-        if(ok && emp) { var rawEmp=(r.getAttribute('data-emp')||'').replace(/&amp;/g,'&').replace(/&quot;/g,'"').replace(/&lt;/g,'<').replace(/&gt;/g,'>'); if(rawEmp !== emp) ok = false; }
+        // تصفية الموظف — فك تشفير HTML قبل المقارنة
+        if(ok && emp){
+            var rawEmp = (r.getAttribute('data-emp')||'')
+                .replace(/&amp;/g,'&').replace(/&quot;/g,'"')
+                .replace(/&lt;/g,'<').replace(/&gt;/g,'>');
+            if(rawEmp !== emp) ok = false;
+        }
+        // تصفية الحالة
         if(ok && st){
             var sVal = r.getAttribute('data-status')||'';
             if(st === 'late'){
                 var dl = parseInt(r.getAttribute('data-deadline'),10)||0;
-                if(!(sVal !== '3' && dl && dl !== 9999999999999 && dl < Date.now())) ok = false;
-            } else if(sVal !== st) ok = false;
+                // متأخرة = غير مكتمل + له موعد تسليم محدد + تجاوز الموعد
+                var isLate = (sVal !== '3') && dl > 0 && dl < 9999999999999 && dl < now;
+                if(!isLate) ok = false;
+            } else {
+                if(sVal !== st) ok = false;
+            }
         }
         r.style.display = ok ? '' : 'none';
         if(ok) visible++;
     });
     var cnt = document.getElementById('tgTasksCount');
-    if(cnt) cnt.textContent = rows.length ? ('عرض '+visible+' من '+rows.length+' مهمة') : '';
-    tgRenderTaskStats(rows);
+    if(cnt) cnt.textContent = total ? ('عرض '+visible+' من '+total+' مهمة') : '';
+    tgRenderTaskStats(rows, visible);
 }
 
-// ملخص سريع لحالة المهام — يُحسب من كروت المهام مباشرة
-function tgRenderTaskStats(rows){
+// ملخص سريع لحالة المهام — يُحسب من الكروت المرئية فقط
+function tgRenderTaskStats(rows, visibleCount){
     var listBox = document.getElementById('tasksMgmtList');
     if(!listBox) return;
     var statsBox = document.getElementById('tasksMgmtStats');
@@ -2193,22 +2223,26 @@ function tgRenderTaskStats(rows){
     }
     if(!statsBox) return;
     rows = rows || document.querySelectorAll('#tasksMgmtList .pj-row');
-    var stNew=0, stProg=0, stDone=0, stLate=0;
+    var stNew=0, stProg=0, stDone=0, stLate=0, stTotal=0;
+    var now = Date.now();
     rows.forEach(function(r){
+        // احسب فقط الكروت المرئية
+        if(r.style.display === 'none') return;
+        stTotal++;
         var s = r.getAttribute('data-status');
         if(s==='3') stDone++; else if(s==='2') stProg++; else stNew++;
         var dl = parseInt(r.getAttribute('data-deadline'),10)||0;
-        if(s!=='3' && dl && dl !== 9999999999999 && dl < Date.now()) stLate++;
+        if(s!=='3' && dl > 0 && dl < 9999999999999 && dl < now) stLate++;
     });
     var stChip = function(lbl, val, clr){
         return '<span style="display:inline-flex;align-items:center;gap:6px;background:var(--w);border:1px solid var(--bd2);border-radius:20px;padding:4px 12px;font-size:11px;font-weight:700;color:var(--tx2)">'+lbl+' <b style="color:'+clr+'">'+val+'</b></span>';
     };
     statsBox.innerHTML =
-        stChip('الإجمالي', rows.length, 'var(--tx)')+
+        stChip('الإجمالي', stTotal, 'var(--tx)')+
         stChip('لم يبدأ', stNew, 'var(--tx3)')+
         stChip('جاري العمل', stProg, 'var(--inf)')+
         stChip('مكتمل', stDone, 'var(--ok)')+
-        stChip('متأخرة', stLate, 'var(--no)');
+        stChip('متأخرة ⏰', stLate, 'var(--no)');
 }
 
 function createTask(){
