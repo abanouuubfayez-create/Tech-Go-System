@@ -23,6 +23,51 @@ var SUPABASE_ANON_KEY = 'sb_publishable_o2zJ82_vrSGnYeFnL2Iemw_PI6oeqZ7';
 var SUPABASE_BUCKET = 'uploads';
 
 /**
+ * حذف ملف من Supabase Storage بناءً على URL العام الخاص به
+ * @param {string} publicUrl - الرابط العام للملف المراد حذفه
+ * @param {function} [onDone] - callback عند النجاح (اختياري)
+ * @param {function} [onError] - callback عند الخطأ (اختياري)
+ */
+function tgDeleteSupabaseFile(publicUrl, onDone, onError) {
+    if (!publicUrl) { if (onDone) onDone(); return; }
+    try {
+        // استخراج المسار من الرابط العام
+        // مثال: https://xxx.supabase.co/storage/v1/object/public/uploads/folder/file.jpg
+        var marker = '/object/public/' + SUPABASE_BUCKET + '/';
+        var idx = publicUrl.indexOf(marker);
+        if (idx === -1) {
+            // ليس ملف Supabase — تجاهل بصمت
+            if (onDone) onDone();
+            return;
+        }
+        var filePath = publicUrl.substring(idx + marker.length);
+
+        var xhr = new XMLHttpRequest();
+        xhr.open('DELETE', SUPABASE_URL + '/storage/v1/object/' + SUPABASE_BUCKET + '/' + filePath, true);
+        xhr.setRequestHeader('apikey', SUPABASE_ANON_KEY);
+        xhr.setRequestHeader('Authorization', 'Bearer ' + SUPABASE_ANON_KEY);
+
+        xhr.onload = function () {
+            if (xhr.status >= 200 && xhr.status < 300) {
+                if (onDone) onDone();
+            } else {
+                var errMsg = 'Delete failed: ' + xhr.status;
+                console.warn('Supabase delete error:', errMsg);
+                if (onError) onError(errMsg); else if (onDone) onDone();
+            }
+        };
+        xhr.onerror = function () {
+            console.warn('Supabase delete network error');
+            if (onError) onError('Network error'); else if (onDone) onDone();
+        };
+        xhr.send();
+    } catch (err) {
+        console.error('tgDeleteSupabaseFile error:', err);
+        if (onError) onError(err.message); else if (onDone) onDone();
+    }
+}
+
+/**
  * رفع ملف على Supabase Storage مع متابعة نسبة الرفع
  * @param {string} folder - المجلد (مثلاً 'tasks', 'projects', 'requests')
  * @param {string} fileName - اسم الملف الفريد

@@ -1307,7 +1307,7 @@ function renderTasksMgmtList(list){
         });
         f.innerHTML = opts;
         f.value = curVal;
-        setTimeout(function(){ tgFilterByEmployee(f.value, 'pj-row'); }, 50);
+        setTimeout(function(){ tgApplyTaskFilters(); }, 50);
     }
 
     var h='';
@@ -1353,7 +1353,10 @@ function renderTasksMgmtList(list){
         var dlVal = t.deadline ? new Date(t.deadline).getTime() : 9999999999999;
         var empVal = escH(t.assignedToName || '');
 
-        h+='<div class="pj-row" data-prio="'+pVal+'" data-status="'+sVal+'" data-date="'+dVal+'" data-deadline="'+dlVal+'" data-emp="'+empVal+'"><div class="pj-t">'+escH(t.title||'بدون عنوان')+
+        var searchKey = ((t.title||'')+' '+(t.description||'')+' '+(t.assignedToName||'')).toLowerCase();
+        var lateTask = isOverdue(t.deadline, t.status);
+        h+='<div class="pj-row" data-prio="'+pVal+'" data-status="'+sVal+'" data-date="'+dVal+'" data-deadline="'+dlVal+'" data-emp="'+empVal+'" data-search="'+escH(searchKey)+'"><div class="pj-t">'+escH(t.title||'بدون عنوان')+
+           (lateTask?' <span class="badge badge-overdue">متأخرة — '+escH(t.deadline)+'</span>':'')+
            ' <span class="badge '+prioBadgeClass(t.priority)+'">'+escH(t.priority||'متوسطة')+'</span>'+
            ' <span class="badge '+pstatusBadgeClass(t.status)+'">'+escH(t.status||'لم يبدأ')+'</span></div>'+
            '<div class="pj-meta">👤 مكلَّف حالياً إلى: '+escH(t.assignedToName||'مجهول')+(t.deadline?(' · تاريخ التسليم: '+escH(t.deadline)):'')+'</div>'+
@@ -1367,6 +1370,66 @@ function renderTasksMgmtList(list){
            '</div>';
     });
     box.innerHTML=h;
+}
+
+// ─── بحث + تصفية موحّدة لقائمة المهام (نص + حالة + موظف) ─────────────
+function tgApplyTaskFilters(){
+    var qEl = document.getElementById('tgTasksSearch');
+    var stEl = document.getElementById('tgTasksStatusFilter');
+    var empEl = document.getElementById('tgTasksEmpFilter');
+    var q = qEl ? (qEl.value||'').toLowerCase().trim() : '';
+    var st = stEl ? stEl.value : '';
+    var emp = empEl ? empEl.value : '';
+    var rows = document.querySelectorAll('#tasksMgmtList .pj-row');
+    var visible = 0;
+    rows.forEach(function(r){
+        var ok = true;
+        if(q && (r.getAttribute('data-search')||'').indexOf(q) === -1) ok = false;
+        if(ok && emp && (r.getAttribute('data-emp')||'') !== emp) ok = false;
+        if(ok && st){
+            var sVal = r.getAttribute('data-status')||'';
+            if(st === 'late'){
+                var dl = parseInt(r.getAttribute('data-deadline'),10)||0;
+                if(!(sVal !== '3' && dl && dl !== 9999999999999 && dl < Date.now())) ok = false;
+            } else if(sVal !== st) ok = false;
+        }
+        r.style.display = ok ? '' : 'none';
+        if(ok) visible++;
+    });
+    var cnt = document.getElementById('tgTasksCount');
+    if(cnt) cnt.textContent = rows.length ? ('عرض '+visible+' من '+rows.length+' مهمة') : '';
+    tgRenderTaskStats(rows);
+}
+
+// ملخص سريع لحالة المهام — يُحسب من كروت المهام مباشرة
+function tgRenderTaskStats(rows){
+    var listBox = document.getElementById('tasksMgmtList');
+    if(!listBox) return;
+    var statsBox = document.getElementById('tasksMgmtStats');
+    if(!statsBox && listBox.parentNode){
+        statsBox = document.createElement('div');
+        statsBox.id = 'tasksMgmtStats';
+        statsBox.style.cssText = 'display:flex;gap:8px;flex-wrap:wrap;margin-bottom:10px';
+        listBox.parentNode.insertBefore(statsBox, listBox);
+    }
+    if(!statsBox) return;
+    rows = rows || document.querySelectorAll('#tasksMgmtList .pj-row');
+    var stNew=0, stProg=0, stDone=0, stLate=0;
+    rows.forEach(function(r){
+        var s = r.getAttribute('data-status');
+        if(s==='3') stDone++; else if(s==='2') stProg++; else stNew++;
+        var dl = parseInt(r.getAttribute('data-deadline'),10)||0;
+        if(s!=='3' && dl && dl !== 9999999999999 && dl < Date.now()) stLate++;
+    });
+    var stChip = function(lbl, val, clr){
+        return '<span style="display:inline-flex;align-items:center;gap:6px;background:var(--w);border:1px solid var(--bd2);border-radius:20px;padding:4px 12px;font-size:11px;font-weight:700;color:var(--tx2)">'+lbl+' <b style="color:'+clr+'">'+val+'</b></span>';
+    };
+    statsBox.innerHTML =
+        stChip('الإجمالي', rows.length, 'var(--tx)')+
+        stChip('لم يبدأ', stNew, 'var(--tx3)')+
+        stChip('جاري العمل', stProg, 'var(--inf)')+
+        stChip('مكتمل', stDone, 'var(--ok)')+
+        stChip('متأخرة', stLate, 'var(--no)');
 }
 
 function createTask(){
@@ -3198,7 +3261,11 @@ function load(id,c){
         h+='<div style="display:flex;align-items:center;gap:10px;"><div class="set-sec-title" style="margin:0">🗂 المهام الحالية</div>';
         h+='<select class="global-table-filter" style="margin:0;padding:4px;font-size:11px;min-height:auto;" onchange="tgSortVisibleList(this.value)">'+
            '<option value="">-- فرز حسب --</option><option value="date_desc">الأحدث</option><option value="date_asc">الأقدم</option><option value="prio_desc">الأولوية</option><option value="status_desc">الحالة</option><option value="deadline_asc">تاريخ التسليم</option><option value="emp_asc">الموظف المكلف</option></select>';
-        h+='<select id="tgTasksEmpFilter" class="global-table-filter" style="margin:0;padding:4px;font-size:11px;min-height:auto;" onchange="tgFilterByEmployee(this.value, \'pj-row\')"><option value="">تصفية بالموظف</option></select></div>';
+        h+='<select id="tgTasksStatusFilter" class="global-table-filter" style="margin:0;padding:4px;font-size:11px;min-height:auto;" onchange="tgApplyTaskFilters()">'+
+           '<option value="">كل الحالات</option><option value="1">لم يبدأ</option><option value="2">جاري العمل</option><option value="3">مكتمل</option><option value="late">متأخرة عن التسليم</option></select>';
+        h+='<input type="text" id="tgTasksSearch" class="global-table-filter" style="margin:0;padding:4px 10px;font-size:11px;min-height:auto;width:180px" placeholder="ابحث بالعنوان أو التفاصيل أو الموظف..." oninput="tgApplyTaskFilters()">';
+        h+='<select id="tgTasksEmpFilter" class="global-table-filter" style="margin:0;padding:4px;font-size:11px;min-height:auto;" onchange="tgApplyTaskFilters()"><option value="">تصفية بالموظف</option></select>';
+        h+='<span id="tgTasksCount" style="font-size:10.5px;font-weight:700;color:var(--tx3)"></span></div>';
         h+='<button class="bt bt-d" style="padding:5px 14px;font-size:11px" onclick="tgDeleteAllRecords(\'tasks\', \'المهام\', null, null, loadTasksMgmt)">🗑 حذف الكل</button>';
         h+='</div>';
         h+='<div id="tasksMgmtList"><div class="empty-hint">⏳ جارٍ تحميل المهام...</div></div>';
