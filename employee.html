@@ -1040,9 +1040,6 @@ function loadMyTasks(){
 
 function renderTasksHtml(rows){
     var box=document.getElementById('myTasksList');
-    // فصل المكتملة عن النشطة
-    var active = rows.filter(function(t){ return t.status !== 'مكتمل'; });
-    var done   = rows.filter(function(t){ return t.status === 'مكتمل'; });
 
     function taskCard(t){
         var attachHtml = '';
@@ -1119,33 +1116,15 @@ function renderTasksHtml(rows){
             '</div>';
     }
 
-    var h = '';
-
-    // ── المهام النشطة ──
-    if(active.length){
-        h += '<div style="font-size:11px;font-weight:800;color:var(--nv);margin-bottom:10px;padding-bottom:6px;border-bottom:2px solid var(--gd)">⚡ المهام الجارية ('+active.length+')</div>';
-        h += '<div class="tasks-grid">';
-        active.forEach(function(t){ h += taskCard(t); });
-        h += '</div>';
+    if(!rows.length){
+        box.innerHTML = '<div class="empty-hint">لا توجد مهام مكلّفة إليك حالياً.</div>';
     } else {
-        h += '<div class="empty-hint">لا توجد مهام جارية حالياً.</div>';
-    }
-
-    // ── أرشيف المكتملة ──
-    if(done.length){
-        var archId = 'archiveSec_tasks';
-        h += '<div style="margin-top:20px">';
-        h += '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;padding-bottom:6px;border-bottom:2px solid var(--ok)">';
-        h += '<span style="font-size:11px;font-weight:800;color:var(--ok)">✅ سجل المكتملة ('+done.length+')</span>';
-        h += '<button class="bt bt-o" style="padding:3px 12px;font-size:10px" onclick="var s=document.getElementById(\''+archId+'\');s.style.display=s.style.display===\'none\'?\'block\':\'none\'">📂 عرض / إخفاء</button>';
+        var h = '<div class="tasks-grid">';
+        rows.forEach(function(t){ h += taskCard(t); });
         h += '</div>';
-        h += '<div id="'+archId+'" style="display:none">';
-        h += '<div class="tasks-grid">';
-        done.forEach(function(t){ h += taskCard(t); });
-        h += '</div></div></div>';
+        box.innerHTML = h;
     }
 
-    box.innerHTML = h;
     tgUpdateEmpTaskTabCounts(rows);
     tgApplyEmpTaskFilter();
 }
@@ -1387,8 +1366,14 @@ function loadMyWeeklyReports(){
         window._wkrCache=rows;
         var h='';
         rows.forEach(function(r,i){
+            var waMsg = encodeURIComponent(
+                'التقرير الأسبوعي - ' + (TG_USER.name||'موظف') + '\n' +
+                'الأسبوع: ' + (r.weekStart||'') + '\n' +
+                '---\n' + (r.content||'')
+            );
             h+='<div class="ac-row"><div class="ac-t">📆 أسبوع '+esc(r.weekStart||'')+
-               ' <button class="bt bt-o" style="padding:2px 8px;font-size:10px;margin-right:8px" onclick="printWeeklyReportDoc(TG_USER,window._wkrCache['+i+'])">🖨 طباعة</button></div>'+
+               ' <button class="bt bt-o" style="padding:2px 8px;font-size:10px;margin-right:8px" onclick="printWeeklyReportDoc(TG_USER,window._wkrCache['+i+'])">🖨 طباعة</button>'+
+               ' <a href="https://wa.me/?text='+waMsg+'" target="_blank" class="bt bt-g" style="padding:2px 8px;font-size:10px;margin-right:8px;display:inline-flex;align-items:center;gap:4px;text-decoration:none">📲 واتساب</a></div>'+
                (r.content?'<div class="ac-meta">'+esc(r.content)+'</div>':'')+'</div>';
         });
         box.innerHTML=h;
@@ -1400,7 +1385,10 @@ function submitWeeklyReport(){
     var msg=document.getElementById('wkrMsg');
     if(!content){ msg.style.color='var(--no)'; msg.textContent='من فضلك اكتب ملخص الأسبوع.'; return; }
     db.collection('weeklyReports').add({
-        uid:TG_USER.uid, weekStart:weekStart, content:content,
+        uid:TG_USER.uid,
+        name: TG_USER.name || '',
+        email: TG_USER.email || '',
+        weekStart:weekStart, content:content,
         createdAt:new Date()
     }).then(function(){
         msg.style.color='var(--ok)'; msg.textContent='✅ تم إرسال التقرير';
