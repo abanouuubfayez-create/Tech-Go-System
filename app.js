@@ -3262,6 +3262,7 @@ function load(id,c){
            
         h+='<button class="bt bt-p" onclick="generateSystemReport()" style="min-width:120px">📊 إنشاء التقرير</button>';
         h+='<button class="bt bt-o" onclick="printSystemReport()" style="min-width:120px" id="sysrepPrintBtn" disabled>🖨 طباعة التقرير</button>';
+        h+='<button class="bt bt-g" onclick="sendWeeklyReportReminder()" style="min-width:120px" id="sysrepReminderBtn">🔔 تذكير الموظفين بالتقرير الأسبوعي</button>';
         h+='</div>';
         
         h+='<div id="sysrepContainer" class="sys-report-container" style="background:#fff;padding:24px;border-radius:12px;box-shadow:0 2px 10px rgba(0,0,0,.05);min-height:300px;">' +
@@ -5461,14 +5462,16 @@ function generateSystemReport() {
     var p2 = db.collection('requests').where('createdAt', '>=', startObj).where('createdAt', '<=', endObj).get();
     var p3 = db.collection('weeklyReports').where('createdAt', '>=', startObj).where('createdAt', '<=', endObj).get();
     var p4 = db.collection('achievements').where('date', '>=', startObj.toISOString().split('T')[0]).where('date', '<=', endObj.toISOString().split('T')[0]).get();
+    var p5 = db.collection('projects').where('createdAt', '>=', startObj).where('createdAt', '<=', endObj).get();
     
-    Promise.all([p1, p2, p3, p4]).then(function(results) {
-        var tasks = [], reqs = [], reports = [], achs = [];
+    Promise.all([p1, p2, p3, p4, p5]).then(function(results) {
+        var tasks = [], reqs = [], reports = [], achs = [], projects = [];
         
         results[0].forEach(function(d){ var x=d.data(); if(empId==='all' || x.assignedTo===empId) tasks.push(x); });
         results[1].forEach(function(d){ var x=d.data(); if(empId==='all' || x.uid===empId) reqs.push(x); });
         results[2].forEach(function(d){ var x=d.data(); if(empId==='all' || x.uid===empId) reports.push(x); });
         results[3].forEach(function(d){ var x=d.data(); if(empId==='all' || x.uid===empId) achs.push(x); });
+        results[4].forEach(function(d){ var x=d.data(); if(empId==='all' || (x.assignees && x.assignees.indexOf(empId) > -1)) projects.push(x); });
         
         var dateStr = startObj.toLocaleDateString('ar-EG') + ' — ' + endObj.toLocaleDateString('ar-EG');
         var empName = empId === 'all' ? "جميع الموظفين" : getEmpName(empId);
@@ -5478,17 +5481,48 @@ function generateSystemReport() {
         h += '<div style="font-size:14px;color:var(--t2)">' + dateStr + ' | الموظف: ' + empName + '</div>';
         h += '</div>';
 
+        // Projects Summary
+        h += '<div class="sys-report-section"><div class="sys-report-title">📁 المشاريع ونسب التقدم (' + projects.length + ')</div>';
+        if(projects.length > 0) {
+            h += '<table class="sys-report-table"><tr><th>المشروع</th><th>نسبة التقدم</th><th>الحالة</th><th>التاريخ</th></tr>';
+            projects.sort(function(a,b){ return b.createdAt - a.createdAt; }).forEach(function(p) {
+                var d = p.createdAt && p.createdAt.toDate ? p.createdAt.toDate().toLocaleDateString('ar-EG') : '';
+                var st = p.status || 'مخطط له';
+                var prog = 0;
+                if (empId !== 'all') {
+                    prog = (p.progressMap && p.progressMap[empId]) ? p.progressMap[empId].progress : 0;
+                } else {
+                    var tot = 0, cnt = 0;
+                    if(p.assignees && p.assignees.length) {
+                        p.assignees.forEach(function(a){
+                            if(p.progressMap && p.progressMap[a]) { tot += p.progressMap[a].progress; }
+                            cnt++;
+                        });
+                        if(cnt > 0) prog = Math.round(tot / cnt);
+                    }
+                }
+                var pBar = '<div style="background:#eee;border-radius:4px;width:100%;height:6px;margin-top:4px;overflow:hidden"><div style="background:var(--ok);height:100%;width:'+prog+'%"></div></div><span style="font-size:10px;color:var(--t2)">' + prog + '%</span>';
+                h += '<tr><td>' + escH(p.title) + '</td><td>' + pBar + '</td><td>' + escH(st) + '</td><td>' + d + '</td></tr>';
+            });
+            h += '</table>';
+        } else {
+            h += '<div style="font-size:12px;color:var(--t2)">لا توجد مشاريع في هذه الفترة.</div>';
+        }
+        h += '</div>';
+
         // Tasks Summary
         var compTasks = tasks.filter(function(t){ return t.status==='completed'; }).length;
         h += '<div class="sys-report-section"><div class="sys-report-title">📋 المهام والتكليفات (' + tasks.length + ')</div>';
         if(tasks.length > 0) {
             h += '<div style="margin-bottom:10px;font-size:12px">مهام مكتملة: <span style="color:var(--ok);font-weight:bold">' + compTasks + '</span> / ' + tasks.length + '</div>';
-            h += '<table class="sys-report-table"><tr><th>المهمة</th><th>الموظف</th><th>الحالة</th><th>التاريخ</th></tr>';
+            h += '<table class="sys-report-table"><tr><th>المهمة</th><th>الموظف</th><th>التقدم / الحالة</th><th>التاريخ</th></tr>';
             tasks.sort(function(a,b){ return b.createdAt - a.createdAt; }).forEach(function(t) {
                 var d = t.createdAt && t.createdAt.toDate ? t.createdAt.toDate().toLocaleDateString('ar-EG') : '';
-                var st = t.status==='completed' ? '✅ مكتملة' : (t.status==='in_progress' ? '⏳ جارية' : '📝 جديدة');
+                var prog = t.status==='completed' ? 100 : (t.status==='in_progress' ? 50 : 0);
+                var pBar = '<div style="background:#eee;border-radius:4px;width:100%;height:6px;margin-bottom:2px;overflow:hidden"><div style="background:var(--ok);height:100%;width:'+prog+'%"></div></div>';
+                var st = t.status==='completed' ? '✅ مكتملة ('+prog+'%)' : (t.status==='in_progress' ? '⏳ جارية ('+prog+'%)' : '📝 جديدة ('+prog+'%)');
                 var en = empId==='all' ? getEmpName(t.assignedTo) : empName;
-                h += '<tr><td>' + escH(t.title) + '</td><td>' + escH(en) + '</td><td>' + st + '</td><td>' + d + '</td></tr>';
+                h += '<tr><td>' + escH(t.title) + '</td><td>' + escH(en) + '</td><td>' + pBar + st + '</td><td>' + d + '</td></tr>';
             });
             h += '</table>';
         } else {
@@ -5586,4 +5620,24 @@ function printSystemReport() {
     win.document.open();
     win.document.write(h);
     win.document.close();
+}
+
+// ─── Weekly Report Reminder ───────────────────────────────────────────────
+function sendWeeklyReportReminder() {
+    var btn = document.getElementById('sysrepReminderBtn');
+    if(btn) { btn.disabled = true; btn.textContent = '⏳ جاري الإرسال...'; }
+    
+    db.collection('users').where('role', '==', 'employee').get().then(function(snap) {
+        var count = 0;
+        snap.forEach(function(d) {
+            tgSendPushToUser(d.id, '📆 تذكير بالتقرير الأسبوعي', 'يرجى إرسال تقريرك الأسبوعي في أقرب وقت. شكراً لتعاونك!', 'weekly-report-reminder');
+            count++;
+        });
+        if(btn) { btn.disabled = false; btn.textContent = '✅ تم تذكير ' + count + ' موظف'; }
+        setTimeout(function(){ if(btn) btn.textContent = '🔔 تذكير الموظفين بالتقرير الأسبوعي'; }, 3000);
+    }).catch(function(err) {
+        console.error(err);
+        if(btn) { btn.disabled = false; btn.textContent = '❌ حدث خطأ'; }
+        setTimeout(function(){ if(btn) btn.textContent = '🔔 تذكير الموظفين بالتقرير الأسبوعي'; }, 3000);
+    });
 }
