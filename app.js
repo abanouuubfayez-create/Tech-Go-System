@@ -901,8 +901,14 @@ function renderStaffList(list){
                 window._staffWkrCache=window._staffWkrCache||{};
                 window._staffWkrCache[idx]=emp.weeklyReports;
                 emp.weeklyReports.forEach(function(r,ri){
+                    var waMsg = encodeURIComponent(
+                        'التقرير الأسبوعي - ' + (emp.name||emp.email||'') + '\n' +
+                        'الأسبوع: ' + (r.weekStart||'') + '\n' +
+                        '---\n' + (r.content||'')
+                    );
                     h+='<div class="ac-row"><div class="ac-t">أسبوع '+escH(r.weekStart||'')+
-                       ' <button class="bt bt-o" style="padding:2px 8px;font-size:10px;margin-right:8px" onclick="printWeeklyReportDoc(window._staffEmpCache['+idx+'],window._staffWkrCache['+idx+']['+ri+'])">🖨 طباعة</button></div>'+
+                       ' <button class="bt bt-o" style="padding:2px 8px;font-size:10px;margin-right:8px" onclick="printWeeklyReportDoc(window._staffEmpCache['+idx+'],window._staffWkrCache['+idx+']['+ri+'])">🖨 طباعة</button>'+
+                       ' <a href="https://wa.me/?text='+waMsg+'" target="_blank" class="bt bt-g" style="padding:2px 8px;font-size:10px;margin-right:8px;display:inline-flex;align-items:center;gap:4px;text-decoration:none">📲 واتساب</a></div>'+
                        (r.content?'<div class="ac-meta">'+tgMakeExpandable(r.content, 120)+'</div>':'')+'</div>';
                 });
             }else h+='<div class="empty-hint">لم يُرسل الموظف أي تقرير أسبوعي بعد.</div>';
@@ -1492,8 +1498,14 @@ function renderStaffList(list){
                 window._staffWkrCache=window._staffWkrCache||{};
                 window._staffWkrCache[idx]=emp.weeklyReports;
                 emp.weeklyReports.forEach(function(r,ri){
+                    var waMsg = encodeURIComponent(
+                        'التقرير الأسبوعي - ' + (emp.name||emp.email||'') + '\n' +
+                        'الأسبوع: ' + (r.weekStart||'') + '\n' +
+                        '---\n' + (r.content||'')
+                    );
                     h+='<div class="ac-row"><div class="ac-t">أسبوع '+escH(r.weekStart||'')+
-                       ' <button class="bt bt-o" style="padding:2px 8px;font-size:10px;margin-right:8px" onclick="printWeeklyReportDoc(window._staffEmpCache['+idx+'],window._staffWkrCache['+idx+']['+ri+'])">🖨 طباعة</button></div>'+
+                       ' <button class="bt bt-o" style="padding:2px 8px;font-size:10px;margin-right:8px" onclick="printWeeklyReportDoc(window._staffEmpCache['+idx+'],window._staffWkrCache['+idx+']['+ri+'])">🖨 طباعة</button>'+
+                       ' <a href="https://wa.me/?text='+waMsg+'" target="_blank" class="bt bt-g" style="padding:2px 8px;font-size:10px;margin-right:8px;display:inline-flex;align-items:center;gap:4px;text-decoration:none">📲 واتساب</a></div>'+
                        (r.content?'<div class="ac-meta">'+tgMakeExpandable(r.content, 120)+'</div>':'')+'</div>';
                 });
             }else h+='<div class="empty-hint">لم يُرسل الموظف أي تقرير أسبوعي بعد.</div>';
