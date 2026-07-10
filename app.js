@@ -2644,7 +2644,7 @@ function projectChatHtml(projectId,logId,inputId){
        '<div class="pj-chat">'+
        '<div class="pj-chat-log" id="'+logId+'"></div>'+
        '<div class="pj-chat-input-row">'+
-       '<input type="text" id="'+inputId+'" placeholder="اكتب ملاحظة على المشروع..." onkeydown="if(event.key===\'Enter\'){event.preventDefault();postProjectComment(\''+projectId+'\',\''+inputId+'\')}">'+
+       '<textarea id="'+inputId+'" placeholder="اكتب ملاحظة على المشروع..." rows="2" onkeydown="if(event.key===\'Enter\' && !event.shiftKey){event.preventDefault();postProjectComment(\''+projectId+'\',\''+inputId+'\')}"></textarea>'+
        '<button class="bt bt-p" onclick="postProjectComment(\''+projectId+'\',\''+inputId+'\')">➕ إضافة</button>'+
        '</div></div>';
 }

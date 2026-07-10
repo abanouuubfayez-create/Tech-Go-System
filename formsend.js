@@ -570,7 +570,9 @@
         (pending ? '' :
           '<div style="margin-top:8px">' +
             (r.fields || []).map(function (f) {
-              return '<div class="pj-meta" style="margin-bottom:2px"><b>' + escH(f.label) + ':</b> ' + escH((r.values && r.values[f.id]) || '—') + '</div>';
+              var v = (r.values && r.values[f.id]) || '—';
+              var expText = (typeof tgMakeExpandable === 'function') ? tgMakeExpandable(v, 100) : escH(v);
+              return '<div class="pj-meta" style="margin-bottom:2px"><b>' + escH(f.label) + ':</b> ' + expText + '</div>';
             }).join('') +
             '<button type="button" class="bt bt-o" style="padding:4px 10px;font-size:11px;margin-top:6px" onclick="fsPrintSubmittedForm(\'' + r.id + '\')">🖨 طباعة</button>' +
           '</div>') +
