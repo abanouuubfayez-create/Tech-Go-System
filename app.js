@@ -1290,88 +1290,6 @@ function loadTasksMgmt(){
         listBox.innerHTML='<div class="empty-hint" style="color:var(--no)">تعذر تحميل المهام: '+escH(err.message)+'</div>';
     });
 }
-function renderTasksMgmtList(list){
-    var box=document.getElementById('tasksMgmtList');
-    if(!box)return;
-    window._tasksMgmtCache=list;
-    if(!list.length){ box.innerHTML='<div class="empty-hint">لا توجد مهام مُكلَّفة بعد.</div>'; return; }
-
-    var f = document.getElementById('tgTasksEmpFilter');
-    if(f) {
-        var empSet = new Set();
-        list.forEach(function(t) { if(t.assignedToName) empSet.add(t.assignedToName); });
-        var curVal = f.value;
-        var opts = '<option value="">الكل (تصفية بالموظف)</option>';
-        Array.from(empSet).sort(function(a,b){return a.localeCompare(b,'ar')}).forEach(function(e) {
-            opts += '<option value="'+escH(e)+'">'+escH(e)+'</option>';
-        });
-        f.innerHTML = opts;
-        f.value = curVal;
-    }
-
-    var h='';
-    list.forEach(function(t,i){
-        var attachHtml = '';
-        if(t.fileUrl && t.fileType){
-            if(t.fileType.indexOf('image/')===0){
-                attachHtml = '<div style="margin-top:6px"><a href="'+t.fileUrl+'" target="_blank"><img src="'+t.fileUrl+'" style="max-width:140px;max-height:100px;border-radius:6px;display:block"></a></div>';
-            } else if(t.fileType.indexOf('video/')===0){
-                attachHtml = '<div style="margin-top:6px"><video src="'+t.fileUrl+'" controls style="max-width:180px;border-radius:6px"></video></div>';
-            } else {
-                attachHtml = '<div style="margin-top:6px"><a href="'+t.fileUrl+'" target="_blank" style="color:var(--tx);font-weight:700;text-decoration:underline">📎 '+escH(t.fileName||'ملف مرفق')+'</a></div>';
-            }
-        }
-        var historyHtml = '';
-        if(t.history && t.history.length > 0) {
-            historyHtml += '<div style="margin-top:10px;padding:8px;background:var(--bg);border-radius:6px;font-size:11px">';
-            historyHtml += '<div style="font-weight:700;color:var(--gd);margin-bottom:6px">📜 سجل تحويل المهمة:</div>';
-            t.history.forEach(function(hi){
-                if(hi.action === 'forwarded') {
-                    var dStr = hi.date ? new Date(hi.date).toLocaleString('en-US', { hour12: true, year: 'numeric', month: 'numeric', day: 'numeric', hour: '2-digit', minute: '2-digit' }).replace('AM', 'ص').replace('PM', 'م') : '';
-                    historyHtml += '<div style="margin-bottom:6px;padding-bottom:6px;border-bottom:1px solid var(--bd)">';
-                    historyHtml += '<div><span style="color:var(--gd);font-weight:700">من:</span> '+escH(hi.fromName)+' <span style="color:var(--gd);font-weight:700">إلى:</span> '+escH(hi.toName)+' <span style="color:var(--tx3);font-size:9.5px">('+dStr+')</span></div>';
-                    historyHtml += '<div style="margin-top:2px;color:var(--tx2)">💬 '+escH(hi.note)+'</div>';
-                    historyHtml += '</div>';
-                }
-            });
-            historyHtml += '</div>';
-        }
-        var pVal = t.priority === 'عالية' ? 3 : (t.priority === 'متوسطة' ? 2 : 1);
-        var sVal = t.status === 'مكتمل' ? 3 : (t.status === 'جاري العمل' ? 2 : 1);
-        var dVal = (t.createdAt && t.createdAt.toMillis) ? t.createdAt.toMillis() : ((t.createdAt && new Date(t.createdAt).getTime()) || 0);
-
-        var createdAtStr = '';
-        if(t.createdAt && typeof t.createdAt.toDate === 'function') {
-            var cd = t.createdAt.toDate();
-            createdAtStr = cd.toLocaleString('en-US', { hour12: true, year: 'numeric', month: 'numeric', day: 'numeric', hour: '2-digit', minute: '2-digit' }).replace('AM', 'ص').replace('PM', 'م');
-        } else if(t.createdAt) {
-            var cd = new Date(t.createdAt);
-            if(!isNaN(cd.getTime())) createdAtStr = cd.toLocaleString('en-US', { hour12: true, year: 'numeric', month: 'numeric', day: 'numeric', hour: '2-digit', minute: '2-digit' }).replace('AM', 'ص').replace('PM', 'م');
-        }
-
-        var dlVal = t.deadline ? new Date(t.deadline).getTime() : 9999999999999;
-        var empVal = t.assignedToName || '';
-
-        var searchKey = ((t.title||'')+' '+(t.description||'')+' '+(t.assignedToName||'')).toLowerCase();
-        var lateTask = isOverdue(t.deadline, t.status);
-        h+='<div class="pj-row" data-prio="'+pVal+'" data-status="'+sVal+'" data-date="'+dVal+'" data-deadline="'+dlVal+'" data-emp="'+empVal+'" data-search="'+escH(searchKey)+'"><div class="pj-t">'+escH(t.title||'بدون عنوان')+
-           (lateTask?' <span class="badge badge-overdue">متأخرة — '+escH(t.deadline)+'</span>':'')+
-           ' <span class="badge '+prioBadgeClass(t.priority)+'">'+escH(t.priority||'متوسطة')+'</span>'+
-           ' <span class="badge '+pstatusBadgeClass(t.status)+'">'+escH(t.status||'لم يبدأ')+'</span></div>'+
-           '<div class="pj-meta">👤 مكلَّف حالياً إلى: '+escH(t.assignedToName||'مجهول')+(t.deadline?(' · تاريخ التسليم: '+escH(t.deadline)):'')+'</div>'+
-           (t.description?'<div class="pj-meta">'+escH(t.description)+'</div>':'')+
-           (createdAtStr?'<div class="pj-meta" style="margin-top:2px;color:var(--gd);font-weight:700">🕒 تاريخ الإنشاء: '+createdAtStr+'</div>':'')+
-           '<div class="pj-meta" style="margin-top:2px;font-size:10px;color:var(--tx2)">بواسطة: '+escH(t.createdBy||'الإدارة')+' ('+escH(t.createdByRole||'أدمن إداري')+')</div>'+
-           attachHtml+
-           historyHtml+
-           '<div style="text-align:right;margin-top:12px">'+
-           '<button class="bt bt-d" style="padding:4px 12px;font-size:11px;border-radius:6px" onclick="deleteTask(\''+t.id+'\')">🗑 حذف المهمة</button></div>'+
-           '</div>';
-    });
-    box.innerHTML=h;
-    tgApplyTaskFiltersFromState();
-}
-
 
 function playAdminNotif(){
     try{
@@ -1969,17 +1887,28 @@ function renderTasksMgmtList(list){
     window._tasksMgmtCache=list;
     if(!list.length){ box.innerHTML='<div class="empty-hint">لا توجد مهام مُكلَّفة بعد.</div>'; return; }
 
+    // حفظ قيم الفلاتر الحالية قبل إعادة البناء
+    var savedEmpVal = '';
+    var savedStatusVal = '';
+    var savedSearchVal = '';
+    var empEl = document.getElementById('tgTasksEmpFilter');
+    var stEl = document.getElementById('tgTasksStatusFilter');
+    var qEl = document.getElementById('tgTasksSearch');
+    if(empEl) savedEmpVal = empEl.value || '';
+    if(stEl) savedStatusVal = stEl.value || '';
+    if(qEl) savedSearchVal = qEl.value || '';
+
+    // بناء خيارات فلتر الموظف
     var f = document.getElementById('tgTasksEmpFilter');
     if(f) {
         var empSet = new Set();
         list.forEach(function(t) { if(t.assignedToName) empSet.add(t.assignedToName); });
-        var curVal = f.value;
         var opts = '<option value="">الكل (تصفية بالموظف)</option>';
         Array.from(empSet).sort(function(a,b){return a.localeCompare(b,'ar')}).forEach(function(e) {
             opts += '<option value="'+escH(e)+'">'+escH(e)+'</option>';
         });
         f.innerHTML = opts;
-        f.value = curVal;
+        f.value = savedEmpVal; // استعادة القيمة المحفوظة
     }
 
     var h='';
@@ -2042,6 +1971,22 @@ function renderTasksMgmtList(list){
            '</div>';
     });
     box.innerHTML=h;
+    
+    // استعادة قيم الفلاتر بعد إعادة الرسم
+    var empEl2 = document.getElementById('tgTasksEmpFilter');
+    var stEl2 = document.getElementById('tgTasksStatusFilter');
+    var qEl2 = document.getElementById('tgTasksSearch');
+    if(empEl2 && savedEmpVal) empEl2.value = savedEmpVal;
+    if(stEl2 && savedStatusVal) stEl2.value = savedStatusVal;
+    if(qEl2 && savedSearchVal) qEl2.value = savedSearchVal;
+    
+    // مزامنة حالة الفلتر العامة
+    if(savedEmpVal || savedStatusVal || savedSearchVal) {
+        _tgTaskFilter.emp = savedEmpVal;
+        _tgTaskFilter.st = savedStatusVal;
+        _tgTaskFilter.q = savedSearchVal.toLowerCase().trim();
+    }
+    
     tgApplyTaskFiltersFromState();
 }
 
@@ -3957,16 +3902,20 @@ function load(id,c){
         h+='<div id="tkCreateMsg" style="margin-top:8px;font-size:11px"></div>';
         h+='</div>';
 
-        h+='<div style="display:flex;justify-content:space-between;align-items:center;margin:18px 0 10px">';
-        h+='<div style="display:flex;align-items:center;gap:10px;"><div class="set-sec-title" style="margin:0">🗂 المهام الحالية</div>';
-        h+='<select class="global-table-filter" style="margin:0;padding:4px;font-size:11px;min-height:auto;" onchange="tgSortVisibleList(this.value)">'+
-           '<option value="">-- فرز حسب --</option><option value="date_desc">الأحدث</option><option value="date_asc">الأقدم</option><option value="prio_desc">الأولوية</option><option value="status_desc">الحالة</option><option value="deadline_asc">تاريخ التسليم</option><option value="emp_asc">الموظف المكلف</option></select>';
-        h+='<select id="tgTasksStatusFilter" class="global-table-filter" style="margin:0;padding:4px;font-size:11px;min-height:auto;" onchange="tgApplyTaskFilters()">'+
-           '<option value="">كل الحالات</option><option value="1">لم يبدأ</option><option value="2">جاري العمل</option><option value="3">مكتمل</option><option value="late">متأخرة عن التسليم</option></select>';
-        h+='<input type="text" id="tgTasksSearch" class="global-table-filter" style="margin:0;padding:4px 10px;font-size:11px;min-height:auto;width:180px" placeholder="ابحث بالعنوان أو التفاصيل أو الموظف..." oninput="tgApplyTaskFilters()">';
-        h+='<select id="tgTasksEmpFilter" class="global-table-filter" style="margin:0;padding:4px;font-size:11px;min-height:auto;" onchange="tgApplyTaskFilters()"><option value="">تصفية بالموظف</option></select>';
+        h+='<div style="display:flex;justify-content:space-between;align-items:center;margin:18px 0 10px;flex-wrap:wrap;gap:10px">';
+        h+='<div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;"><div class="set-sec-title" style="margin:0">🗂 المهام الحالية</div>';
+        h+='<select class="global-table-filter" style="margin:0;padding:4px;font-size:11px;min-height:auto;" onchange="tgSortTasksList(this.value)">'+
+           '<option value="">-- فرز حسب --</option><option value="date_desc">الأحدث</option><option value="date_asc">الأقدم</option><option value="prio_desc">الأولوية</option><option value="deadline_asc">تاريخ التسليم</option></select>';
+        h+='<input type="text" id="tgTasksSearch" class="global-table-filter" style="margin:0;padding:4px 10px;font-size:11px;min-height:auto;width:180px" placeholder="🔍 ابحث..." oninput="tgFilterTasksList()">';
         h+='<span id="tgTasksCount" style="font-size:10.5px;font-weight:700;color:var(--tx3)"></span></div>';
         h+='<button class="bt bt-d" style="padding:5px 14px;font-size:11px" onclick="tgDeleteAllRecords(\'tasks\', \'المهام\', null, null, loadTasksMgmt)">🗑 حذف الكل</button>';
+        h+='</div>';
+        h+='<div style="display:flex;gap:8px;margin-bottom:10px;flex-wrap:wrap" id="tgTaskStatusTabs">';
+        h+='<button class="tg-status-tab active" data-status="" onclick="tgSetTaskStatusTab(\'\')">الكل</button>';
+        h+='<button class="tg-status-tab" data-status="1" onclick="tgSetTaskStatusTab(\'1\')">لم يبدأ</button>';
+        h+='<button class="tg-status-tab" data-status="2" onclick="tgSetTaskStatusTab(\'2\')">جاري العمل</button>';
+        h+='<button class="tg-status-tab" data-status="3" onclick="tgSetTaskStatusTab(\'3\')">مكتمل</button>';
+        h+='<button class="tg-status-tab" data-status="late" onclick="tgSetTaskStatusTab(\'late\')">متأخرة</button>';
         h+='</div>';
         h+='<div id="tasksMgmtList"><div class="empty-hint">⏳ جارٍ تحميل المهام...</div></div>';
         h+='</div>';
