@@ -1887,195 +1887,135 @@ function renderTasksMgmtList(list){
     window._tasksMgmtCache=list;
     if(!list.length){ box.innerHTML='<div class="empty-hint">لا توجد مهام مُكلَّفة بعد.</div>'; return; }
 
-    // حفظ قيم الفلاتر الحالية قبل إعادة البناء
-    var savedEmpVal = '';
-    var savedStatusVal = '';
-    var savedSearchVal = '';
-    var empEl = document.getElementById('tgTasksEmpFilter');
-    var stEl = document.getElementById('tgTasksStatusFilter');
-    var qEl = document.getElementById('tgTasksSearch');
-    if(empEl) savedEmpVal = empEl.value || '';
-    if(stEl) savedStatusVal = stEl.value || '';
-    if(qEl) savedSearchVal = qEl.value || '';
+    // حساب عدد المهام لكل حالة
+    var counts = { all: list.length, '1': 0, '2': 0, '3': 0, late: 0 };
+    var now = Date.now();
+    list.forEach(function(t){
+        var sVal = t.status === 'مكتمل' ? '3' : (t.status === 'جاري العمل' ? '2' : '1');
+        if(counts[sVal] !== undefined) counts[sVal]++;
+        if(isOverdue(t.deadline, t.status)) counts.late++;
+    });
+    
+    // تحديث أرقام التبويبات
+    ['all', '1', '2', '3', 'late'].forEach(function(key){
+        var el = document.getElementById('tab-count-' + key);
+        if(el) el.textContent = counts[key] || 0;
+    });
 
-    // بناء خيارات فلتر الموظف
-    var f = document.getElementById('tgTasksEmpFilter');
-    if(f) {
-        var empSet = new Set();
-        list.forEach(function(t) { if(t.assignedToName) empSet.add(t.assignedToName); });
-        var opts = '<option value="">الكل (تصفية بالموظف)</option>';
-        Array.from(empSet).sort(function(a,b){return a.localeCompare(b,'ar')}).forEach(function(e) {
-            opts += '<option value="'+escH(e)+'">'+escH(e)+'</option>';
-        });
-        f.innerHTML = opts;
-        f.value = savedEmpVal; // استعادة القيمة المحفوظة
-    }
-
-    var h='';
-    list.forEach(function(t,i){
-        var attachHtml = '';
-        if(t.fileUrl && t.fileType){
-            if(t.fileType.indexOf('image/')===0){
-                attachHtml = '<div style="margin-top:6px"><a href="'+t.fileUrl+'" target="_blank"><img src="'+t.fileUrl+'" style="max-width:140px;max-height:100px;border-radius:6px;display:block"></a></div>';
-            } else if(t.fileType.indexOf('video/')===0){
-                attachHtml = '<div style="margin-top:6px"><video src="'+t.fileUrl+'" controls style="max-width:180px;border-radius:6px"></video></div>';
-            } else {
-                attachHtml = '<div style="margin-top:6px"><a href="'+t.fileUrl+'" target="_blank" style="color:var(--tx);font-weight:700;text-decoration:underline">📎 '+escH(t.fileName||'ملف مرفق')+'</a></div>';
-            }
-        }
-        var historyHtml = '';
-        if(t.history && t.history.length > 0) {
-            historyHtml += '<div style="margin-top:10px;padding:8px;background:var(--bg);border-radius:6px;font-size:11px">';
-            historyHtml += '<div style="font-weight:700;color:var(--gd);margin-bottom:6px">📜 سجل تحويل المهمة:</div>';
-            t.history.forEach(function(hi){
-                if(hi.action === 'forwarded') {
-                    var dStr = hi.date ? new Date(hi.date).toLocaleString('en-US', { hour12: true, year: 'numeric', month: 'numeric', day: 'numeric', hour: '2-digit', minute: '2-digit' }).replace('AM', 'ص').replace('PM', 'م') : '';
-                    historyHtml += '<div style="margin-bottom:6px;padding-bottom:6px;border-bottom:1px solid var(--bd)">';
-                    historyHtml += '<div><span style="color:var(--gd);font-weight:700">من:</span> '+escH(hi.fromName)+' <span style="color:var(--gd);font-weight:700">إلى:</span> '+escH(hi.toName)+' <span style="color:var(--tx3);font-size:9.5px">('+dStr+')</span></div>';
-                    historyHtml += '<div style="margin-top:2px;color:var(--tx2)">💬 '+escH(hi.note)+'</div>';
-                    historyHtml += '</div>';
-                }
-            });
-            historyHtml += '</div>';
-        }
-        var pVal = t.priority === 'عالية' ? 3 : (t.priority === 'متوسطة' ? 2 : 1);
-        var sVal = t.status === 'مكتمل' ? 3 : (t.status === 'جاري العمل' ? 2 : 1);
-        var dVal = (t.createdAt && t.createdAt.toMillis) ? t.createdAt.toMillis() : ((t.createdAt && new Date(t.createdAt).getTime()) || 0);
-
+    // بناء كروت المهام
+    var h = '<div class="tg-tasks-grid">';
+    list.forEach(function(t){
+        var sVal = t.status === 'مكتمل' ? '3' : (t.status === 'جاري العمل' ? '2' : '1');
+        var lateTask = isOverdue(t.deadline, t.status);
+        var prioClass = t.priority === 'عالية' ? 'prio-high' : (t.priority === 'متوسطة' ? 'prio-med' : 'prio-low');
+        var statusClass = 'status-' + sVal;
+        
         var createdAtStr = '';
         if(t.createdAt && typeof t.createdAt.toDate === 'function') {
             var cd = t.createdAt.toDate();
-            createdAtStr = cd.toLocaleString('en-US', { hour12: true, year: 'numeric', month: 'numeric', day: 'numeric', hour: '2-digit', minute: '2-digit' }).replace('AM', 'ص').replace('PM', 'م');
-        } else if(t.createdAt) {
-            var cd = new Date(t.createdAt);
-            if(!isNaN(cd.getTime())) createdAtStr = cd.toLocaleString('en-US', { hour12: true, year: 'numeric', month: 'numeric', day: 'numeric', hour: '2-digit', minute: '2-digit' }).replace('AM', 'ص').replace('PM', 'م');
+            createdAtStr = cd.toLocaleDateString('ar-EG', { year: 'numeric', month: 'short', day: 'numeric' });
         }
-
-        var dlVal = t.deadline ? new Date(t.deadline).getTime() : 9999999999999;
-        var empVal = t.assignedToName || '';
-
-        var searchKey = ((t.title||'')+' '+(t.description||'')+' '+(t.assignedToName||'')).toLowerCase();
-        var lateTask = isOverdue(t.deadline, t.status);
-        h+='<div class="pj-row" data-prio="'+pVal+'" data-status="'+sVal+'" data-date="'+dVal+'" data-deadline="'+dlVal+'" data-emp="'+empVal+'" data-search="'+escH(searchKey)+'"><div class="pj-t">'+escH(t.title||'بدون عنوان')+
-           (lateTask?' <span class="badge badge-overdue">متأخرة — '+escH(t.deadline)+'</span>':'')+
-           ' <span class="badge '+prioBadgeClass(t.priority)+'">'+escH(t.priority||'متوسطة')+'</span>'+
-           ' <span class="badge '+pstatusBadgeClass(t.status)+'">'+escH(t.status||'لم يبدأ')+'</span></div>'+
-           '<div class="pj-meta">👤 مكلَّف حالياً إلى: '+escH(t.assignedToName||'مجهول')+(t.deadline?(' · تاريخ التسليم: '+escH(t.deadline)):'')+'</div>'+
-           (t.description?'<div class="pj-meta">'+escH(t.description)+'</div>':'')+
-           (createdAtStr?'<div class="pj-meta" style="margin-top:2px;color:var(--gd);font-weight:700">🕒 تاريخ الإنشاء: '+createdAtStr+'</div>':'')+
-           '<div class="pj-meta" style="margin-top:2px;font-size:10px;color:var(--tx2)">بواسطة: '+escH(t.createdBy||'الإدارة')+' ('+escH(t.createdByRole||'أدمن إداري')+')</div>'+
-           attachHtml+
-           historyHtml+
-           '<div style="text-align:right;margin-top:12px">'+
-           '<button class="bt bt-d" style="padding:4px 12px;font-size:11px;border-radius:6px" onclick="deleteTask(\''+t.id+'\')">🗑 حذف المهمة</button></div>'+
-           '</div>';
-    });
-    box.innerHTML=h;
-    
-    // استعادة قيم الفلاتر بعد إعادة الرسم
-    var empEl2 = document.getElementById('tgTasksEmpFilter');
-    var stEl2 = document.getElementById('tgTasksStatusFilter');
-    var qEl2 = document.getElementById('tgTasksSearch');
-    if(empEl2 && savedEmpVal) empEl2.value = savedEmpVal;
-    if(stEl2 && savedStatusVal) stEl2.value = savedStatusVal;
-    if(qEl2 && savedSearchVal) qEl2.value = savedSearchVal;
-    
-    // مزامنة حالة الفلتر العامة
-    if(savedEmpVal || savedStatusVal || savedSearchVal) {
-        _tgTaskFilter.emp = savedEmpVal;
-        _tgTaskFilter.st = savedStatusVal;
-        _tgTaskFilter.q = savedSearchVal.toLowerCase().trim();
-    }
-    
-    tgApplyTaskFiltersFromState();
-}
-
-
-
-// ─── فلترة المهام ─────────────────────────────────────────────────────────
-var _tgTaskFilter = { q: '', st: '', emp: '' };
-
-// يُستدعى من UI (onchange/oninput)
-function tgApplyTaskFilters(){
-    var qEl  = document.getElementById('tgTasksSearch');
-    var stEl = document.getElementById('tgTasksStatusFilter');
-    var empEl= document.getElementById('tgTasksEmpFilter');
-    if(qEl)   _tgTaskFilter.q   = (qEl.value||'').toLowerCase().trim();
-    if(stEl)  _tgTaskFilter.st  = stEl.value || '';
-    if(empEl) _tgTaskFilter.emp = (empEl.value||'')
-        .replace(/&amp;/g,'&').replace(/&quot;/g,'"')
-        .replace(/&lt;/g,'<').replace(/&gt;/g,'>');
-    tgApplyTaskFiltersFromState();
-}
-
-// يُستدعى بعد كل إعادة رسم
-function tgApplyTaskFiltersFromState(){
-    var q   = _tgTaskFilter.q;
-    var st  = _tgTaskFilter.st;
-    var emp = _tgTaskFilter.emp;
-    var rows   = document.querySelectorAll('#tasksMgmtList .pj-row');
-    var total  = rows.length;
-    var visible= 0;
-    var now    = Date.now();
-    rows.forEach(function(r){
-        var ok = true;
-        if(q && (r.getAttribute('data-search')||'').indexOf(q) === -1) ok = false;
-        if(ok && emp){
-            var re = (r.getAttribute('data-emp')||'')
-                .replace(/&amp;/g,'&').replace(/&quot;/g,'"')
-                .replace(/&lt;/g,'<').replace(/&gt;/g,'>');
-            if(re !== emp) ok = false;
-        }
-        if(ok && st){
-            var sv = r.getAttribute('data-status') || '';
-            if(st === 'late'){
-                var dl = parseInt(r.getAttribute('data-deadline'),10) || 0;
-                if(!(sv !== '3' && dl > 0 && dl < 9999999999999 && dl < now)) ok = false;
+        
+        h += '<div class="tg-task-card ' + (lateTask ? 'task-late' : '') + '" data-status="' + sVal + '" data-late="' + (lateTask ? '1' : '0') + '">';
+        
+        // رأس الكارت
+        h += '<div class="task-card-header">';
+        h += '<div class="task-card-title">' + escH(t.title || 'بدون عنوان') + '</div>';
+        h += '<div class="task-card-badges">';
+        h += '<span class="task-badge ' + prioClass + '">' + escH(t.priority || 'متوسطة') + '</span>';
+        h += '<span class="task-badge ' + statusClass + '">' + escH(t.status || 'لم يبدأ') + '</span>';
+        if(lateTask) h += '<span class="task-badge badge-late">متأخرة ⚠️</span>';
+        h += '</div></div>';
+        
+        // معلومات المهمة
+        h += '<div class="task-card-body">';
+        h += '<div class="task-card-info"><span class="info-icon">👤</span><span class="info-text">' + escH(t.assignedToName || 'مجهول') + '</span></div>';
+        if(t.deadline) h += '<div class="task-card-info"><span class="info-icon">📅</span><span class="info-text">' + escH(t.deadline) + '</span></div>';
+        if(createdAtStr) h += '<div class="task-card-info"><span class="info-icon">🕒</span><span class="info-text">' + createdAtStr + '</span></div>';
+        if(t.description) h += '<div class="task-card-desc">' + escH(t.description) + '</div>';
+        
+        // المرفقات
+        if(t.fileUrl && t.fileType){
+            if(t.fileType.indexOf('image/') === 0){
+                h += '<div class="task-card-attach"><a href="' + t.fileUrl + '" target="_blank"><img src="' + t.fileUrl + '" alt="مرفق"></a></div>';
+            } else if(t.fileType.indexOf('video/') === 0){
+                h += '<div class="task-card-attach"><video src="' + t.fileUrl + '" controls></video></div>';
             } else {
-                if(sv !== st) ok = false;
+                h += '<div class="task-card-attach-file"><a href="' + t.fileUrl + '" target="_blank">📎 ' + escH(t.fileName || 'ملف مرفق') + '</a></div>';
             }
         }
-        r.style.display = ok ? '' : 'none';
-        if(ok) visible++;
+        
+        // سجل التحويل
+        if(t.history && t.history.length > 0) {
+            h += '<div class="task-card-history"><div class="history-title">📜 سجل تحويل المهمة</div>';
+            t.history.forEach(function(hi){
+                if(hi.action === 'forwarded') {
+                    var dStr = hi.date ? new Date(hi.date).toLocaleString('ar-EG', { hour12: true, month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' }) : '';
+                    h += '<div class="history-item">';
+                    h += '<div><strong>من:</strong> ' + escH(hi.fromName) + ' <strong>إلى:</strong> ' + escH(hi.toName) + ' <span class="history-date">(' + dStr + ')</span></div>';
+                    if(hi.note) h += '<div class="history-note">💬 ' + escH(hi.note) + '</div>';
+                    h += '</div>';
+                }
+            });
+            h += '</div>';
+        }
+        
+        h += '</div>'; // close body
+        
+        // تذييل الكارت
+        h += '<div class="task-card-footer">';
+        h += '<button class="bt bt-d bt-sm" onclick="deleteTask(\'' + t.id + '\')">🗑 حذف</button>';
+        h += '</div>';
+        
+        h += '</div>'; // close card
     });
-    var cnt = document.getElementById('tgTasksCount');
-    if(cnt) cnt.textContent = total ? ('عرض '+visible+' من '+total+' مهمة') : '';
-    tgRenderTaskStats(rows);
+    h += '</div>'; // close grid
+    
+    box.innerHTML = h;
+    
+    // تطبيق الفلتر النشط
+    tgApplyActiveTaskFilter();
 }
 
-// إحصائيات الكروت المرئية فقط
-function tgRenderTaskStats(rows){
-    var listBox = document.getElementById('tasksMgmtList');
-    if(!listBox) return;
-    var statsBox = document.getElementById('tasksMgmtStats');
-    if(!statsBox && listBox.parentNode){
-        statsBox = document.createElement('div');
-        statsBox.id = 'tasksMgmtStats';
-        statsBox.style.cssText = 'display:flex;gap:8px;flex-wrap:wrap;margin-bottom:10px';
-        listBox.parentNode.insertBefore(statsBox, listBox);
-    }
-    if(!statsBox) return;
-    rows = rows || document.querySelectorAll('#tasksMgmtList .pj-row');
-    var sN=0, sP=0, sD=0, sL=0, tot=0;
-    var now = Date.now();
-    rows.forEach(function(r){
-        if(r.style.display === 'none') return;
-        tot++;
-        var s  = r.getAttribute('data-status');
-        if(s==='3') sD++; else if(s==='2') sP++; else sN++;
-        var dl = parseInt(r.getAttribute('data-deadline'),10)||0;
-        if(s!=='3' && dl > 0 && dl < 9999999999999 && dl < now) sL++;
+// تبديل التبويب النشط
+window._tgActiveTaskTab = '';
+function tgSetTaskStatusTab(btn, status){
+    window._tgActiveTaskTab = status;
+    
+    // تحديث التبويب النشط
+    document.querySelectorAll('.tg-task-tab').forEach(function(tab){
+        tab.classList.remove('tg-task-tab-active');
     });
-    var chip = function(l,v,c){
-        return '<span style="display:inline-flex;align-items:center;gap:6px;background:var(--w);border:1px solid var(--bd2);border-radius:20px;padding:4px 12px;font-size:11px;font-weight:700;color:var(--tx2)">'+l+' <b style="color:'+c+'">'+v+'</b></span>';
-    };
-    statsBox.innerHTML =
-        chip('الإجمالي', tot, 'var(--tx)') +
-        chip('لم يبدأ', sN, 'var(--tx3)') +
-        chip('جاري العمل', sP, 'var(--inf)') +
-        chip('مكتمل', sD, 'var(--ok)') +
-        chip('متأخرة ⏰', sL, 'var(--no)');
+    btn.classList.add('tg-task-tab-active');
+    
+    // تطبيق الفلتر
+    tgApplyActiveTaskFilter();
 }
+
+// تطبيق الفلتر بناءً على التبويب النشط
+function tgApplyActiveTaskFilter(){
+    var status = window._tgActiveTaskTab || '';
+    var cards = document.querySelectorAll('.tg-task-card');
+    var now = Date.now();
+    
+    cards.forEach(function(card){
+        var show = false;
+        var cardStatus = card.getAttribute('data-status');
+        var isLate = card.getAttribute('data-late') === '1';
+        
+        if(status === ''){
+            show = true; // الكل
+        } else if(status === 'late'){
+            show = isLate;
+        } else {
+            show = (cardStatus === status);
+        }
+        
+        card.style.display = show ? '' : 'none';
+    });
+}
+
+
 
 function createTask(){
     var sel=document.getElementById('tkAssignee');
@@ -3902,21 +3842,19 @@ function load(id,c){
         h+='<div id="tkCreateMsg" style="margin-top:8px;font-size:11px"></div>';
         h+='</div>';
 
-        h+='<div style="display:flex;justify-content:space-between;align-items:center;margin:18px 0 10px;flex-wrap:wrap;gap:10px">';
-        h+='<div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;"><div class="set-sec-title" style="margin:0">🗂 المهام الحالية</div>';
-        h+='<select class="global-table-filter" style="margin:0;padding:4px;font-size:11px;min-height:auto;" onchange="tgSortTasksList(this.value)">'+
-           '<option value="">-- فرز حسب --</option><option value="date_desc">الأحدث</option><option value="date_asc">الأقدم</option><option value="prio_desc">الأولوية</option><option value="deadline_asc">تاريخ التسليم</option></select>';
-        h+='<input type="text" id="tgTasksSearch" class="global-table-filter" style="margin:0;padding:4px 10px;font-size:11px;min-height:auto;width:180px" placeholder="🔍 ابحث..." oninput="tgFilterTasksList()">';
-        h+='<span id="tgTasksCount" style="font-size:10.5px;font-weight:700;color:var(--tx3)"></span></div>';
+        h+='<div style="display:flex;justify-content:space-between;align-items:center;margin:24px 0 16px;flex-wrap:wrap;gap:12px">';
+        h+='<div class="set-sec-title" style="margin:0">🗂 المهام الحالية</div>';
         h+='<button class="bt bt-d" style="padding:5px 14px;font-size:11px" onclick="tgDeleteAllRecords(\'tasks\', \'المهام\', null, null, loadTasksMgmt)">🗑 حذف الكل</button>';
         h+='</div>';
-        h+='<div style="display:flex;gap:8px;margin-bottom:10px;flex-wrap:wrap" id="tgTaskStatusTabs">';
-        h+='<button class="tg-status-tab active" data-status="" onclick="tgSetTaskStatusTab(\'\')">الكل</button>';
-        h+='<button class="tg-status-tab" data-status="1" onclick="tgSetTaskStatusTab(\'1\')">لم يبدأ</button>';
-        h+='<button class="tg-status-tab" data-status="2" onclick="tgSetTaskStatusTab(\'2\')">جاري العمل</button>';
-        h+='<button class="tg-status-tab" data-status="3" onclick="tgSetTaskStatusTab(\'3\')">مكتمل</button>';
-        h+='<button class="tg-status-tab" data-status="late" onclick="tgSetTaskStatusTab(\'late\')">متأخرة</button>';
+        
+        h+='<div style="display:flex;gap:10px;margin-bottom:16px;flex-wrap:wrap;border-bottom:2px solid var(--bd);padding-bottom:2px" id="tgTaskStatusTabs">';
+        h+='<button class="tg-task-tab tg-task-tab-active" data-status="" onclick="tgSetTaskStatusTab(this, \'\')"><span class="tab-icon">📋</span><span class="tab-label">الكل</span><span class="tab-count" id="tab-count-all">0</span></button>';
+        h+='<button class="tg-task-tab" data-status="1" onclick="tgSetTaskStatusTab(this, \'1\')"><span class="tab-icon">⭕</span><span class="tab-label">لم يبدأ</span><span class="tab-count" id="tab-count-1">0</span></button>';
+        h+='<button class="tg-task-tab" data-status="2" onclick="tgSetTaskStatusTab(this, \'2\')"><span class="tab-icon">⏳</span><span class="tab-label">جاري العمل</span><span class="tab-count" id="tab-count-2">0</span></button>';
+        h+='<button class="tg-task-tab" data-status="3" onclick="tgSetTaskStatusTab(this, \'3\')"><span class="tab-icon">✅</span><span class="tab-label">مكتمل</span><span class="tab-count" id="tab-count-3">0</span></button>';
+        h+='<button class="tg-task-tab" data-status="late" onclick="tgSetTaskStatusTab(this, \'late\')"><span class="tab-icon">⚠️</span><span class="tab-label">متأخرة</span><span class="tab-count" id="tab-count-late">0</span></button>';
         h+='</div>';
+        
         h+='<div id="tasksMgmtList"><div class="empty-hint">⏳ جارٍ تحميل المهام...</div></div>';
         h+='</div>';
     }
