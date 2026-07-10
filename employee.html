@@ -229,25 +229,15 @@
   <div class="emp-pg" id="epg-tasks">
     <div class="p-stats" id="tasksEmployeeSummary" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap: 12px; margin-bottom: 16px;"></div>
 
-    <div style="display:flex;flex-wrap:wrap;gap:10px;align-items:center;justify-content:space-between;margin:10px 0;background:var(--w);padding:12px;border-radius:8px;border:1px solid var(--bd2)">
-      <div style="display:flex;flex-wrap:wrap;gap:8px;align-items:center;flex:1">
-        <div style="font-size:12px;font-weight:800;color:var(--nv)">🗂 تصفية وبحث:</div>
-        <input type="text" id="empTkSearch" placeholder="🔍 ابحث في مهامي..." oninput="tgFilterTasksEmployee()" style="margin:0;padding:5px 10px;font-size:11px;min-width:180px;height:30px;border-radius:6px;border:1px solid var(--bd2)">
-        <select id="empTkPriorityFilter" onchange="tgFilterTasksEmployee()" style="margin:0;padding:5px;font-size:11px;height:30px;border-radius:6px;border:1px solid var(--bd2);background:var(--w);color:var(--tx)"><option value="">كل الأولويات</option><option value="عالية">عالية</option><option value="متوسطة">متوسطة</option><option value="منخفضة">منخفضة</option></select>
-        <select id="empTkStatusFilter" onchange="tgFilterTasksEmployee()" style="margin:0;padding:5px;font-size:11px;height:30px;border-radius:6px;border:1px solid var(--bd2);background:var(--w);color:var(--tx)"><option value="">كل الحالات</option><option value="لم يبدأ">لم يبدأ</option><option value="جاري العمل">جاري العمل</option><option value="متوقف">متوقف</option><option value="مكتمل">مكتمل</option><option value="overdue">متأخرة ⏰</option></select>
-        <select class="global-table-filter" style="margin:0;padding:5px;font-size:11px;height:30px;border-radius:6px;border:1px solid var(--bd2);background:var(--w);color:var(--tx)" onchange="if(typeof window.parent.tgSortVisibleList==='function') window.parent.tgSortVisibleList(this.value); else if(typeof tgSortVisibleList==='function') tgSortVisibleList(this.value)">
-            <option value="">-- فرز حسب --</option>
-            <option value="date_desc">التاريخ: الأحدث</option>
-            <option value="date_asc">التاريخ: الأقدم</option>
-            <option value="prio_desc">الأولوية: الأعلى</option>
-            <option value="prio_asc">الأولوية: الأقل</option>
-            <option value="status_desc">الحالة: المكتمل أولاً</option>
-            <option value="status_asc">الحالة: غير المكتمل أولاً</option>
-            <option value="deadline_asc">تاريخ التسليم: الأقرب</option>
-            <option value="deadline_desc">تاريخ التسليم: الأبعد</option>
-        </select>
-      </div>
+    <div style="display:flex;gap:10px;margin-bottom:16px;flex-wrap:wrap;border-bottom:2px solid var(--bd);padding-bottom:2px" id="empTaskStatusTabs">
+      <button class="tg-task-tab tg-task-tab-active" data-status="" onclick="tgSetEmpTaskTab(this, '')"><span class="tab-icon">📋</span><span class="tab-label">الكل</span><span class="tab-count" id="emp-tab-count-all">0</span></button>
+      <button class="tg-task-tab" data-status="لم يبدأ" onclick="tgSetEmpTaskTab(this, 'لم يبدأ')"><span class="tab-icon">⭕</span><span class="tab-label">لم يبدأ</span><span class="tab-count" id="emp-tab-count-1">0</span></button>
+      <button class="tg-task-tab" data-status="جاري العمل" onclick="tgSetEmpTaskTab(this, 'جاري العمل')"><span class="tab-icon">⏳</span><span class="tab-label">جاري العمل</span><span class="tab-count" id="emp-tab-count-2">0</span></button>
+      <button class="tg-task-tab" data-status="متوقف" onclick="tgSetEmpTaskTab(this, 'متوقف')"><span class="tab-icon">⏸️</span><span class="tab-label">متوقف</span><span class="tab-count" id="emp-tab-count-paused">0</span></button>
+      <button class="tg-task-tab" data-status="مكتمل" onclick="tgSetEmpTaskTab(this, 'مكتمل')"><span class="tab-icon">✅</span><span class="tab-label">مكتمل</span><span class="tab-count" id="emp-tab-count-3">0</span></button>
+      <button class="tg-task-tab" data-status="overdue" onclick="tgSetEmpTaskTab(this, 'overdue')"><span class="tab-icon">⚠️</span><span class="tab-label">متأخرة</span><span class="tab-count" id="emp-tab-count-late">0</span></button>
     </div>
+    
     <div class="set-hint" style="margin-bottom:14px">المهام اللي كلّفك بيها الأدمن — حدّث حالتها أولاً بأول عشان يتابع الأدمن تنفيذك لها.</div>
     <div id="myTasksList"><div class="empty-hint">⏳ جارٍ التحميل...</div></div>
   </div>
@@ -1156,46 +1146,10 @@ function renderTasksHtml(rows){
     }
 
     box.innerHTML = h;
-    tgFilterTasksEmployee();
+    tgUpdateEmpTaskTabCounts(rows);
+    tgApplyEmpTaskFilter();
 }
 
-window.tgFilterTasksEmployee = function() {
-    var query = (document.getElementById('empTkSearch') ? document.getElementById('empTkSearch').value : '').toLowerCase().trim();
-    var prioFilter = document.getElementById('empTkPriorityFilter') ? document.getElementById('empTkPriorityFilter').value : '';
-    var statusFilter = document.getElementById('empTkStatusFilter') ? document.getElementById('empTkStatusFilter').value : '';
-
-    var cards = document.querySelectorAll('#myTasksList .pj-row');
-    cards.forEach(function(card) {
-        var text = card.textContent.toLowerCase();
-
-        // بحث نصي
-        var matchesSearch = !query || text.indexOf(query) > -1;
-
-        // فلترة الأولوية — نقرأ من data attribute مباشرة
-        var cardPrio = card.getAttribute('data-priority') || '';
-        var matchesPrio = !prioFilter || cardPrio === prioFilter;
-
-        // فلترة الحالة — نقرأ من data attribute مباشرة
-        var cardStatus = card.getAttribute('data-taskstatus') || 'لم يبدأ';
-
-        var dlVal = card.getAttribute('data-deadline');
-        var deadlineTime = parseFloat(dlVal);
-        var isOverdue = deadlineTime && deadlineTime < 9999999999999 && deadlineTime < Date.now() && cardStatus !== 'مكتمل';
-
-        var matchesStatus = true;
-        if (statusFilter) {
-            if (statusFilter === 'overdue') {
-                matchesStatus = isOverdue;
-            } else {
-                matchesStatus = cardStatus === statusFilter;
-            }
-        }
-
-        card.style.display = (matchesSearch && matchesPrio && matchesStatus) ? '' : 'none';
-    });
-
-    updateTasksEmployeeSummary();
-};
 
 window.updateTasksEmployeeSummary = function() {
     var cards = document.querySelectorAll('#myTasksList .pj-row');
@@ -1784,6 +1738,66 @@ function empDeleteDoc(docId, fileUrl) {
         }
     }).catch(function(err){
         alert('❌ خطأ أثناء الحذف: '+err.message);
+    });
+}
+
+// ═══ Tab-based filtering for employee tasks ═══
+window._empActiveTaskTab = '';
+function tgSetEmpTaskTab(btn, status){
+    window._empActiveTaskTab = status;
+    
+    // Update active tab
+    document.querySelectorAll('.tg-task-tab').forEach(function(tab){
+        tab.classList.remove('tg-task-tab-active');
+    });
+    btn.classList.add('tg-task-tab-active');
+    
+    // Apply filter
+    tgApplyEmpTaskFilter();
+}
+
+function tgApplyEmpTaskFilter(){
+    var status = window._empActiveTaskTab || '';
+    var cards = document.querySelectorAll('#myTasksList .pj-row');
+    
+    cards.forEach(function(card){
+        var show = false;
+        var cardStatus = card.getAttribute('data-taskstatus') || 'لم يبدأ';
+        var dlVal = parseFloat(card.getAttribute('data-deadline'));
+        var isOverdue = dlVal && dlVal < 9999999999999 && dlVal < Date.now() && cardStatus !== 'مكتمل';
+        
+        if(status === ''){
+            show = true; // All
+        } else if(status === 'overdue'){
+            show = isOverdue;
+        } else {
+            show = (cardStatus === status);
+        }
+        
+        card.style.display = show ? '' : 'none';
+    });
+}
+
+// Update tab counts after rendering
+function tgUpdateEmpTaskTabCounts(rows){
+    var counts = { all: rows.length, notstarted: 0, inprogress: 0, paused: 0, done: 0, overdue: 0 };
+    var now = Date.now();
+    
+    rows.forEach(function(t){
+        var status = t.status || 'لم يبدأ';
+        if(status === 'لم يبدأ') counts.notstarted++;
+        else if(status === 'جاري العمل') counts.inprogress++;
+        else if(status === 'متوقف') counts.paused++;
+        else if(status === 'مكتمل') counts.done++;
+        
+        var dlTime = t.deadline ? new Date(t.deadline).getTime() : 0;
+        if(dlTime && dlTime < now && status !== 'مكتمل') counts.overdue++;
+    });
+    
+    var map = { 'emp-tab-count-all': counts.all, 'emp-tab-count-1': counts.notstarted, 'emp-tab-count-2': counts.inprogress, 'emp-tab-count-paused': counts.paused, 'emp-tab-count-3': counts.done, 'emp-tab-count-late': counts.overdue };
+    Object.keys(map).forEach(function(id){
+        var el = document.getElementById(id);
+        if(el) el.textContent = map[id];
     });
 }
 </script>
