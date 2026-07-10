@@ -2727,10 +2727,6 @@ html.tg-auth-pending body { visibility: hidden; }
     border-bottom: 2px solid var(--w);
 }
 
-.tg-task-tab .tab-icon {
-    font-size: 16px;
-}
-
 .tg-task-tab .tab-label {
     font-weight: 700;
 }
@@ -3032,4 +3028,65 @@ body.dark-mode .task-card-desc {
 body.dark-mode .task-card-footer {
     background: rgba(0,0,0,0.2);
     border-top-color: rgba(255,255,255,0.1);
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   Expandable Text Content
+   ═══════════════════════════════════════════════════════════════ */
+.tg-expandable-text {
+    position: relative;
+}
+
+.tg-expandable-text.collapsed {
+    max-height: 80px;
+    overflow: hidden;
+}
+
+.tg-expandable-text.collapsed::after {
+    content: '';
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    height: 40px;
+    background: linear-gradient(to bottom, transparent, var(--w));
+    pointer-events: none;
+}
+
+.tg-expand-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    padding: 4px 12px;
+    margin-top: 6px;
+    background: var(--gd);
+    color: #fff;
+    border: none;
+    border-radius: 6px;
+    font-size: 11px;
+    font-weight: 700;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.tg-expand-btn:hover {
+    background: var(--nv);
+    transform: translateY(-1px);
+}
+
+.tg-expand-btn:active {
+    transform: translateY(0);
+}
+
+/* Dark mode */
+body.dark-mode .tg-expandable-text.collapsed::after {
+    background: linear-gradient(to bottom, transparent, rgba(26,26,26,0.95));
+}
+
+body.dark-mode .tg-expand-btn {
+    background: var(--gd);
+}
+
+body.dark-mode .tg-expand-btn:hover {
+    background: var(--nv);
 }

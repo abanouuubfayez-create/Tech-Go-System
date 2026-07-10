@@ -230,12 +230,12 @@
     <div class="p-stats" id="tasksEmployeeSummary" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap: 12px; margin-bottom: 16px;"></div>
 
     <div style="display:flex;gap:10px;margin-bottom:16px;flex-wrap:wrap;border-bottom:2px solid var(--bd);padding-bottom:2px" id="empTaskStatusTabs">
-      <button class="tg-task-tab tg-task-tab-active" data-status="" onclick="tgSetEmpTaskTab(this, '')"><span class="tab-icon">📋</span><span class="tab-label">الكل</span><span class="tab-count" id="emp-tab-count-all">0</span></button>
-      <button class="tg-task-tab" data-status="لم يبدأ" onclick="tgSetEmpTaskTab(this, 'لم يبدأ')"><span class="tab-icon">⭕</span><span class="tab-label">لم يبدأ</span><span class="tab-count" id="emp-tab-count-1">0</span></button>
-      <button class="tg-task-tab" data-status="جاري العمل" onclick="tgSetEmpTaskTab(this, 'جاري العمل')"><span class="tab-icon">⏳</span><span class="tab-label">جاري العمل</span><span class="tab-count" id="emp-tab-count-2">0</span></button>
-      <button class="tg-task-tab" data-status="متوقف" onclick="tgSetEmpTaskTab(this, 'متوقف')"><span class="tab-icon">⏸️</span><span class="tab-label">متوقف</span><span class="tab-count" id="emp-tab-count-paused">0</span></button>
-      <button class="tg-task-tab" data-status="مكتمل" onclick="tgSetEmpTaskTab(this, 'مكتمل')"><span class="tab-icon">✅</span><span class="tab-label">مكتمل</span><span class="tab-count" id="emp-tab-count-3">0</span></button>
-      <button class="tg-task-tab" data-status="overdue" onclick="tgSetEmpTaskTab(this, 'overdue')"><span class="tab-icon">⚠️</span><span class="tab-label">متأخرة</span><span class="tab-count" id="emp-tab-count-late">0</span></button>
+      <button class="tg-task-tab tg-task-tab-active" data-status="" onclick="tgSetEmpTaskTab(this, '')"><span class="tab-label">الكل</span><span class="tab-count" id="emp-tab-count-all">0</span></button>
+      <button class="tg-task-tab" data-status="لم يبدأ" onclick="tgSetEmpTaskTab(this, 'لم يبدأ')"><span class="tab-label">لم يبدأ</span><span class="tab-count" id="emp-tab-count-1">0</span></button>
+      <button class="tg-task-tab" data-status="جاري العمل" onclick="tgSetEmpTaskTab(this, 'جاري العمل')"><span class="tab-label">جاري العمل</span><span class="tab-count" id="emp-tab-count-2">0</span></button>
+      <button class="tg-task-tab" data-status="متوقف" onclick="tgSetEmpTaskTab(this, 'متوقف')"><span class="tab-label">متوقف</span><span class="tab-count" id="emp-tab-count-paused">0</span></button>
+      <button class="tg-task-tab" data-status="مكتمل" onclick="tgSetEmpTaskTab(this, 'مكتمل')"><span class="tab-label">مكتمل</span><span class="tab-count" id="emp-tab-count-3">0</span></button>
+      <button class="tg-task-tab" data-status="overdue" onclick="tgSetEmpTaskTab(this, 'overdue')"><span class="tab-label">متأخرة</span><span class="tab-count" id="emp-tab-count-late">0</span></button>
     </div>
     
     <div class="set-hint" style="margin-bottom:14px">المهام اللي كلّفك بيها الأدمن — حدّث حالتها أولاً بأول عشان يتابع الأدمن تنفيذك لها.</div>

@@ -54,6 +54,30 @@ function genDocNum(type){
 }
 function escH(s){ return (s||'').replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
 
+// ─── Make text expandable if longer than threshold ─────────────────────────
+function tgMakeExpandable(text, threshold) {
+    threshold = threshold || 150;
+    if(!text || text.length <= threshold) return escH(text);
+    
+    var id = 'exp_' + Math.random().toString(36).substr(2, 9);
+    return '<div class="tg-expandable-text collapsed" id="'+id+'">'+escH(text)+'</div>'+
+           '<button class="tg-expand-btn" onclick="tgToggleExpand(\''+id+'\', this)">'+
+           '<span>📖</span> عرض المزيد</button>';
+}
+
+function tgToggleExpand(id, btn) {
+    var el = document.getElementById(id);
+    if(!el) return;
+    
+    if(el.classList.contains('collapsed')) {
+        el.classList.remove('collapsed');
+        btn.innerHTML = '<span>📕</span> عرض أقل';
+    } else {
+        el.classList.add('collapsed');
+        btn.innerHTML = '<span>📖</span> عرض المزيد';
+    }
+}
+
 // ─── نافذة تأكيد عامة (Modal) ─────────────────────────────────────────────
 // tgConfirmModal(title, bodyHtml, [{label, cls, onClick}, ...])
 function tgConfirmModal(title, bodyHtml, buttons){
@@ -1932,7 +1956,7 @@ function renderTasksMgmtList(list){
         h += '<div class="task-card-info"><span class="info-icon">👤</span><span class="info-text">' + escH(t.assignedToName || 'مجهول') + '</span></div>';
         if(t.deadline) h += '<div class="task-card-info"><span class="info-icon">📅</span><span class="info-text">' + escH(t.deadline) + '</span></div>';
         if(createdAtStr) h += '<div class="task-card-info"><span class="info-icon">🕒</span><span class="info-text">' + createdAtStr + '</span></div>';
-        if(t.description) h += '<div class="task-card-desc">' + escH(t.description) + '</div>';
+        if(t.description) h += '<div class="task-card-desc">' + tgMakeExpandable(t.description, 120) + '</div>';
         
         // المرفقات
         if(t.fileUrl && t.fileType){
@@ -1953,7 +1977,7 @@ function renderTasksMgmtList(list){
                     var dStr = hi.date ? new Date(hi.date).toLocaleString('ar-EG', { hour12: true, month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' }) : '';
                     h += '<div class="history-item">';
                     h += '<div><strong>من:</strong> ' + escH(hi.fromName) + ' <strong>إلى:</strong> ' + escH(hi.toName) + ' <span class="history-date">(' + dStr + ')</span></div>';
-                    if(hi.note) h += '<div class="history-note">💬 ' + escH(hi.note) + '</div>';
+                    if(hi.note) h += '<div class="history-note">💬 ' + tgMakeExpandable(hi.note, 100) + '</div>';
                     h += '</div>';
                 }
             });
@@ -2676,7 +2700,7 @@ function renderProjectsList(list){
         h+='<div class="staff-card" id="pmCard'+idx+'" data-date="'+dVal+'" data-status="'+sVal+'" data-prio="'+pVal+'" data-deadline="'+dlVal+'" data-emp="'+empVal+'">';
         h+='<div class="staff-card-h" onclick="toggleProjCard('+idx+')">'+
            '<div><div class="staff-name">'+escH(p.title||'بدون عنوان')+'</div>'+
-           (p.description?'<div class="staff-email">'+escH(p.description)+'</div>':'')+
+           (p.description?'<div class="staff-email">'+tgMakeExpandable(p.description, 100)+'</div>':'')+
            projectTagsHtml(p)+
            '<div class="pj-meta" style="margin-top:4px;font-size:10px;color:var(--tx3)">بواسطة: '+escH(p.createdBy||'الإدارة')+' ('+escH(p.createdByRole||'أدمن إداري')+')</div>'+
            '</div>'+
@@ -2712,7 +2736,7 @@ function renderProjectsList(list){
                 var pm=(p.progressMap&&p.progressMap[uid])||{progress:0,status:'لم يبدأ',note:''};
                 h+='<div class="pj-row"><div class="pj-t">'+escH(nm)+'</div>'+
                    '<div class="pj-bar"><div class="pj-bar-in" style="width:'+(pm.progress||0)+'%"></div></div>'+
-                   '<div class="pj-meta">الحالة: <span class="badge '+badgeClassForStatus(pm.status)+'">'+escH(pm.status||'لم يبدأ')+'</span> · التقدم: '+(pm.progress||0)+'%'+(pm.note?(' · ملاحظة: '+escH(pm.note)):'')+'</div></div>';
+                   '<div class="pj-meta">الحالة: <span class="badge '+badgeClassForStatus(pm.status)+'">'+escH(pm.status||'لم يبدأ')+'</span> · التقدم: '+(pm.progress||0)+'%'+(pm.note?(' · ملاحظة: '+tgMakeExpandable(pm.note, 80)):'')+'</div></div>';
             });
         }else h+='<div class="empty-hint">لم يتم تعيين أي موظف على هذا المشروع بعد.</div>';
         h+='</div>';
@@ -3848,11 +3872,11 @@ function load(id,c){
         h+='</div>';
         
         h+='<div style="display:flex;gap:10px;margin-bottom:16px;flex-wrap:wrap;border-bottom:2px solid var(--bd);padding-bottom:2px" id="tgTaskStatusTabs">';
-        h+='<button class="tg-task-tab tg-task-tab-active" data-status="" onclick="tgSetTaskStatusTab(this, \'\')"><span class="tab-icon">📋</span><span class="tab-label">الكل</span><span class="tab-count" id="tab-count-all">0</span></button>';
-        h+='<button class="tg-task-tab" data-status="1" onclick="tgSetTaskStatusTab(this, \'1\')"><span class="tab-icon">⭕</span><span class="tab-label">لم يبدأ</span><span class="tab-count" id="tab-count-1">0</span></button>';
-        h+='<button class="tg-task-tab" data-status="2" onclick="tgSetTaskStatusTab(this, \'2\')"><span class="tab-icon">⏳</span><span class="tab-label">جاري العمل</span><span class="tab-count" id="tab-count-2">0</span></button>';
-        h+='<button class="tg-task-tab" data-status="3" onclick="tgSetTaskStatusTab(this, \'3\')"><span class="tab-icon">✅</span><span class="tab-label">مكتمل</span><span class="tab-count" id="tab-count-3">0</span></button>';
-        h+='<button class="tg-task-tab" data-status="late" onclick="tgSetTaskStatusTab(this, \'late\')"><span class="tab-icon">⚠️</span><span class="tab-label">متأخرة</span><span class="tab-count" id="tab-count-late">0</span></button>';
+        h+='<button class="tg-task-tab tg-task-tab-active" data-status="" onclick="tgSetTaskStatusTab(this, \'\')"><span class="tab-label">الكل</span><span class="tab-count" id="tab-count-all">0</span></button>';
+        h+='<button class="tg-task-tab" data-status="1" onclick="tgSetTaskStatusTab(this, \'1\')"><span class="tab-label">لم يبدأ</span><span class="tab-count" id="tab-count-1">0</span></button>';
+        h+='<button class="tg-task-tab" data-status="2" onclick="tgSetTaskStatusTab(this, \'2\')"><span class="tab-label">جاري العمل</span><span class="tab-count" id="tab-count-2">0</span></button>';
+        h+='<button class="tg-task-tab" data-status="3" onclick="tgSetTaskStatusTab(this, \'3\')"><span class="tab-label">مكتمل</span><span class="tab-count" id="tab-count-3">0</span></button>';
+        h+='<button class="tg-task-tab" data-status="late" onclick="tgSetTaskStatusTab(this, \'late\')"><span class="tab-label">متأخرة</span><span class="tab-count" id="tab-count-late">0</span></button>';
         h+='</div>';
         
         h+='<div id="tasksMgmtList"><div class="empty-hint">⏳ جارٍ تحميل المهام...</div></div>';
