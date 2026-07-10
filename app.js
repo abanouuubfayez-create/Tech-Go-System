@@ -3241,6 +3241,50 @@ function mexpSave(){
 function load(id,c){
     var h="";
 
+    if(id==="sysreport"){
+        h=H('التقارير الشاملة','تقارير النظام وإنجازات الموظفين (أسبوعي/شهري)','COMPREHENSIVE REPORTS','rep');
+        h+='<div class="sys-report-controls np" style="background:#fff;padding:16px;border-radius:12px;margin-bottom:16px;box-shadow:0 2px 10px rgba(0,0,0,.05);display:flex;gap:12px;flex-wrap:wrap;align-items:flex-end;">';
+        
+        h+='<div style="flex:1;min-width:200px"><label style="display:block;margin-bottom:6px;font-weight:700;color:var(--t2);font-size:12px">نوع التقرير</label>'+
+           '<select id="sysrepPeriod" class="inp" onchange="toggleSysrepCustomDates()">' +
+           '<option value="weekly">أسبوعي (الأسبوع الحالي)</option>' +
+           '<option value="monthly">شهري (الشهر الحالي)</option>' +
+           '<option value="custom">فترة مخصصة</option>' +
+           '</select></div>';
+           
+        h+='<div id="sysrepDates" style="display:none;flex:2;min-width:300px;gap:12px">'+
+           '<div style="flex:1"><label style="display:block;margin-bottom:6px;font-weight:700;color:var(--t2);font-size:12px">من</label><input type="date" id="sysrepStart" class="inp"></div>' +
+           '<div style="flex:1"><label style="display:block;margin-bottom:6px;font-weight:700;color:var(--t2);font-size:12px">إلى</label><input type="date" id="sysrepEnd" class="inp"></div>' +
+           '</div>';
+           
+        h+='<div style="flex:1;min-width:200px"><label style="display:block;margin-bottom:6px;font-weight:700;color:var(--t2);font-size:12px">الموظف (اختياري)</label>'+
+           '<select id="sysrepEmp" class="inp"><option value="all">الكل (تقرير النظام الشامل)</option></select></div>';
+           
+        h+='<button class="bt bt-p" onclick="generateSystemReport()" style="min-width:120px">📊 إنشاء التقرير</button>';
+        h+='<button class="bt bt-o" onclick="printSystemReport()" style="min-width:120px" id="sysrepPrintBtn" disabled>🖨 طباعة التقرير</button>';
+        h+='</div>';
+        
+        h+='<div id="sysrepContainer" class="sys-report-container" style="background:#fff;padding:24px;border-radius:12px;box-shadow:0 2px 10px rgba(0,0,0,.05);min-height:300px;">' +
+           '<div style="text-align:center;color:#999;padding:40px">اختر المحددات ثم اضغط على "إنشاء التقرير"</div>' +
+           '</div>';
+           
+        c.innerHTML = h;
+        db.collection('users').where('role','in',['employee','tech_admin']).get().then(function(snap){
+            var sel = document.getElementById("sysrepEmp");
+            if(!sel) return;
+            var emps = [];
+            snap.forEach(function(d){ var u = d.data(); u.uid=d.id; emps.push(u); });
+            emps.sort(function(a,b){ return (a.name||a.email||'').localeCompare(b.name||b.email||''); });
+            emps.forEach(function(u){
+                var opt = document.createElement("option");
+                opt.value = u.uid;
+                opt.textContent = u.name || u.email;
+                sel.appendChild(opt);
+            });
+        });
+        return;
+    }
+
     // ── خطاب إداري عام (تصميم رسمي FL — نفس تنسيق كل المستندات) ──────────
     if(id==="gen"){
         h=H('خطاب إداري عام','نظام الإدارة الشامل · وثيقة رسمية','General Memorandum','gen');
@@ -5349,4 +5393,197 @@ function tgCelebrate() {
         confetti(Object.assign({}, defaults, { particleCount: particleCount, origin: { x: randomInRange(0.1, 0.3), y: Math.random() - 0.2 } }));
         confetti(Object.assign({}, defaults, { particleCount: particleCount, origin: { x: randomInRange(0.7, 0.9), y: Math.random() - 0.2 } }));
     }, 250);
+}
+
+// ─── Sys Report (Weekly/Monthly) ──────────────────────────────────────────
+function toggleSysrepCustomDates() {
+    var p = document.getElementById("sysrepPeriod").value;
+    var d = document.getElementById("sysrepDates");
+    if(p === "custom") {
+        d.style.display = "flex";
+    } else {
+        d.style.display = "none";
+    }
+}
+
+window._sysrepCurrentData = "";
+
+function generateSystemReport() {
+    var period = document.getElementById("sysrepPeriod").value;
+    var startObj = null;
+    var endObj = null;
+    var now = new Date();
+    
+    if(period === "weekly") {
+        var day = now.getDay();
+        var diff = now.getDate() - day + (day === 0 ? -6 : 1);
+        startObj = new Date(now.setDate(diff));
+        startObj.setHours(0,0,0,0);
+        endObj = new Date(startObj);
+        endObj.setDate(startObj.getDate() + 6);
+        endObj.setHours(23,59,59,999);
+    } else if(period === "monthly") {
+        startObj = new Date(now.getFullYear(), now.getMonth(), 1);
+        endObj = new Date(now.getFullYear(), now.getMonth() + 1, 0);
+        endObj.setHours(23,59,59,999);
+    } else {
+        var s = document.getElementById("sysrepStart").value;
+        var e = document.getElementById("sysrepEnd").value;
+        if(!s || !e) { alert("يرجى تحديد تاريخ البداية والنهاية."); return; }
+        startObj = new Date(s); startObj.setHours(0,0,0,0);
+        endObj = new Date(e); endObj.setHours(23,59,59,999);
+    }
+
+    var empId = document.getElementById("sysrepEmp").value;
+    var container = document.getElementById("sysrepContainer");
+    var btn = document.getElementById("sysrepPrintBtn");
+    
+    var getEmpName = function(uid) {
+        var sel = document.getElementById("sysrepEmp");
+        if(sel && sel.options) {
+            for(var i=0; i<sel.options.length; i++) {
+                if(sel.options[i].value === uid) return sel.options[i].text;
+            }
+        }
+        return uid;
+    };
+    
+    container.innerHTML = '<div style="text-align:center;padding:40px"><div class="spinner" style="margin:0 auto 10px;border:3px solid #f3f3f3;border-top:3px solid var(--pr);border-radius:50%;width:30px;height:30px;animation:spin 1s linear infinite;"></div>جاري تجميع البيانات...</div>';
+    if(!document.getElementById('spinStyle')) {
+        var style = document.createElement('style');
+        style.id = 'spinStyle';
+        style.innerHTML = '@keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }';
+        document.head.appendChild(style);
+    }
+    btn.disabled = true;
+
+    var p1 = db.collection('tasks').where('createdAt', '>=', startObj).where('createdAt', '<=', endObj).get();
+    var p2 = db.collection('requests').where('createdAt', '>=', startObj).where('createdAt', '<=', endObj).get();
+    var p3 = db.collection('weeklyReports').where('createdAt', '>=', startObj).where('createdAt', '<=', endObj).get();
+    var p4 = db.collection('achievements').where('date', '>=', startObj.toISOString().split('T')[0]).where('date', '<=', endObj.toISOString().split('T')[0]).get();
+    
+    Promise.all([p1, p2, p3, p4]).then(function(results) {
+        var tasks = [], reqs = [], reports = [], achs = [];
+        
+        results[0].forEach(function(d){ var x=d.data(); if(empId==='all' || x.assignedTo===empId) tasks.push(x); });
+        results[1].forEach(function(d){ var x=d.data(); if(empId==='all' || x.uid===empId) reqs.push(x); });
+        results[2].forEach(function(d){ var x=d.data(); if(empId==='all' || x.uid===empId) reports.push(x); });
+        results[3].forEach(function(d){ var x=d.data(); if(empId==='all' || x.uid===empId) achs.push(x); });
+        
+        var dateStr = startObj.toLocaleDateString('ar-EG') + ' — ' + endObj.toLocaleDateString('ar-EG');
+        var empName = empId === 'all' ? "جميع الموظفين" : getEmpName(empId);
+        
+        var h = '<div class="sys-report-section" style="text-align:center;margin-bottom:30px">';
+        h += '<div style="font-size:20px;font-weight:900;color:var(--pr);margin-bottom:8px">التقرير النظامي الشامل</div>';
+        h += '<div style="font-size:14px;color:var(--t2)">' + dateStr + ' | الموظف: ' + empName + '</div>';
+        h += '</div>';
+
+        // Tasks Summary
+        var compTasks = tasks.filter(function(t){ return t.status==='completed'; }).length;
+        h += '<div class="sys-report-section"><div class="sys-report-title">📋 المهام والتكليفات (' + tasks.length + ')</div>';
+        if(tasks.length > 0) {
+            h += '<div style="margin-bottom:10px;font-size:12px">مهام مكتملة: <span style="color:var(--ok);font-weight:bold">' + compTasks + '</span> / ' + tasks.length + '</div>';
+            h += '<table class="sys-report-table"><tr><th>المهمة</th><th>الموظف</th><th>الحالة</th><th>التاريخ</th></tr>';
+            tasks.sort(function(a,b){ return b.createdAt - a.createdAt; }).forEach(function(t) {
+                var d = t.createdAt && t.createdAt.toDate ? t.createdAt.toDate().toLocaleDateString('ar-EG') : '';
+                var st = t.status==='completed' ? '✅ مكتملة' : (t.status==='in_progress' ? '⏳ جارية' : '📝 جديدة');
+                var en = empId==='all' ? getEmpName(t.assignedTo) : empName;
+                h += '<tr><td>' + escH(t.title) + '</td><td>' + escH(en) + '</td><td>' + st + '</td><td>' + d + '</td></tr>';
+            });
+            h += '</table>';
+        } else {
+            h += '<div style="font-size:12px;color:var(--t2)">لا توجد مهام في هذه الفترة.</div>';
+        }
+        h += '</div>';
+
+        // Achievements
+        h += '<div class="sys-report-section"><div class="sys-report-title">🌟 الإنجازات (' + achs.length + ')</div>';
+        if(achs.length > 0) {
+            h += '<table class="sys-report-table"><tr><th>الإنجاز</th><th>الموظف</th><th>التاريخ</th></tr>';
+            achs.sort(function(a,b){ return new Date(b.date) - new Date(a.date); }).forEach(function(a) {
+                var en = empId==='all' ? getEmpName(a.uid) : empName;
+                h += '<tr><td>' + escH(a.title) + '</td><td>' + escH(en) + '</td><td>' + escH(a.date) + '</td></tr>';
+            });
+            h += '</table>';
+        } else {
+            h += '<div style="font-size:12px;color:var(--t2)">لا توجد إنجازات مسجلة في هذه الفترة.</div>';
+        }
+        h += '</div>';
+
+        // Requests
+        h += '<div class="sys-report-section"><div class="sys-report-title">✉️ الطلبات الإدارية (' + reqs.length + ')</div>';
+        if(reqs.length > 0) {
+            h += '<table class="sys-report-table"><tr><th>الطلب</th><th>الموظف</th><th>الحالة</th><th>التاريخ</th></tr>';
+            reqs.sort(function(a,b){ return b.createdAt - a.createdAt; }).forEach(function(r) {
+                var d = r.createdAt && r.createdAt.toDate ? r.createdAt.toDate().toLocaleDateString('ar-EG') : '';
+                var st = r.status==='approved' ? '✅ مقبول' : (r.status==='rejected' ? '❌ مرفوض' : '⏳ معلق');
+                var en = empId==='all' ? getEmpName(r.uid) : empName;
+                h += '<tr><td>' + escH(r.type || 'طلب') + '</td><td>' + escH(en) + '</td><td>' + st + '</td><td>' + d + '</td></tr>';
+            });
+            h += '</table>';
+        } else {
+            h += '<div style="font-size:12px;color:var(--t2)">لا توجد طلبات في هذه الفترة.</div>';
+        }
+        h += '</div>';
+
+        // Weekly Reports
+        h += '<div class="sys-report-section"><div class="sys-report-title">📆 التقارير الأسبوعية المُرسلة (' + reports.length + ')</div>';
+        if(reports.length > 0) {
+            h += '<table class="sys-report-table"><tr><th>الموظف</th><th>أبرز المهام (مقتطف)</th><th>التاريخ</th></tr>';
+            reports.sort(function(a,b){ return b.createdAt - a.createdAt; }).forEach(function(r) {
+                var d = r.createdAt && r.createdAt.toDate ? r.createdAt.toDate().toLocaleDateString('ar-EG') : '';
+                var en = empId==='all' ? getEmpName(r.uid) : empName;
+                var exc = (r.tasksCompleted || '').substring(0, 60) + '...';
+                h += '<tr><td>' + escH(en) + '</td><td>' + escH(exc) + '</td><td>' + d + '</td></tr>';
+            });
+            h += '</table>';
+        } else {
+            h += '<div style="font-size:12px;color:var(--t2)">لم تُرسل تقارير في هذه الفترة.</div>';
+        }
+        h += '</div>';
+
+        window._sysrepCurrentData = h;
+        container.innerHTML = h;
+        btn.disabled = false;
+        
+    }).catch(function(err){
+        console.error(err);
+        container.innerHTML = '<div style="color:var(--no);text-align:center;padding:20px">حدث خطأ أثناء جلب البيانات. حاول مرة أخرى.</div>';
+        btn.disabled = false;
+    });
+}
+
+function printSystemReport() {
+    if(!window._sysrepCurrentData) return;
+    var win = window.open('','_blank');
+    if(!win) { alert("يرجى السماح بالنوافذ المنبثقة لطباعة التقرير."); return; }
+    
+    var h = '<html dir="rtl"><head><title>تقرير النظام الشامل</title>';
+    h += '<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Alexandria:wght@400;700;900&display=swap">';
+    h += '<style>';
+    h += 'body { font-family: Alexandria, sans-serif; margin: 0; padding: 20px; background: #fff; color: #000; }';
+    h += '.sys-report-table { width: 100%; border-collapse: collapse; margin-top: 15px; font-size: 13px; }';
+    h += '.sys-report-table th, .sys-report-table td { border: 1px solid #ccc; padding: 10px; text-align: right; }';
+    h += '.sys-report-table th { background: #f5f5f5; color: #000; font-weight: 700; -webkit-print-color-adjust: exact; print-color-adjust: exact; }';
+    h += '.sys-report-section { margin-bottom: 30px; page-break-inside: avoid; }';
+    h += '.sys-report-title { font-size: 18px; font-weight: 800; color: #000; margin-bottom: 12px; border-bottom: 2px solid #000; padding-bottom: 4px; display: inline-block; }';
+    h += '.ph-header { text-align: center; margin-bottom: 30px; border-bottom: 1px solid #ddd; padding-bottom: 15px; }';
+    h += '.ph-header h1 { margin: 0 0 5px 0; font-size: 24px; font-weight: 900; }';
+    h += '.ph-header p { margin: 0; font-size: 14px; color: #555; }';
+    h += '@media print { body { padding: 0; } @page { margin: 1.5cm; } }';
+    h += '</style></head><body>';
+    
+    h += '<div class="ph-header">';
+    h += '<h1>Tech Go - تقرير النظام الشامل</h1>';
+    h += '<p>تاريخ استخراج التقرير: ' + new Date().toLocaleString('ar-EG') + '</p>';
+    h += '</div>';
+    
+    h += window._sysrepCurrentData;
+    
+    h += '<script>window.onload=function(){window.print();window.close();}</script>';
+    h += '</body></html>';
+    
+    win.document.open();
+    win.document.write(h);
+    win.document.close();
 }

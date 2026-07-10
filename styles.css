@@ -3090,3 +3090,24 @@ body.dark-mode .tg-expand-btn {
 body.dark-mode .tg-expand-btn:hover {
     background: var(--nv);
 }
+
+/* --- Sys Report --- */
+.sys-report-table { width: 100%; border-collapse: collapse; margin-top: 15px; font-size: 12px; }
+.sys-report-table th, .sys-report-table td { border: 1px solid var(--bd); padding: 8px; text-align: right; }
+.sys-report-table th { background: var(--gd); color: var(--t1); font-weight: 700; }
+.sys-report-section { margin-bottom: 24px; page-break-inside: avoid; }
+.sys-report-title { font-size: 16px; font-weight: 800; color: var(--pr); margin-bottom: 12px; border-bottom: 2px solid var(--pr); padding-bottom: 4px; display: inline-block; }
+
+@media print {
+    body { background: #fff !important; color: #000 !important; }
+    .sys-report-controls, .S, .TB, .notif-wrap, .sb-scroll-top, .sb-logout-wrap, .pwa-install-bar, #offlineBanner, #ppBar { display: none !important; }
+    .sys-report-container { box-shadow: none !important; padding: 0 !important; background: #fff !important; margin: 0 !important; width: 100% !important; }
+    .M { margin-right: 0 !important; padding: 0 !important; }
+    .CT { padding: 0 !important; margin: 0 !important; }
+    .sys-report-table th { background: #f0f0f0 !important; color: #000 !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+    .sys-report-table th, .sys-report-table td { border-color: #ccc !important; }
+    .sys-report-title { color: #000 !important; border-bottom-color: #000 !important; }
+    .sys-report-section { page-break-inside: avoid; }
+    
+    /* Show print header and footer only for sys report if needed, or hide them and rely on internal print header */
+}
