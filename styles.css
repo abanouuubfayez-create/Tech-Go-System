@@ -1406,7 +1406,7 @@ html.tg-auth-pending body { visibility: hidden; }
 .emp-proj-back:hover { background: var(--nv); color: #fff; border-color: var(--nv); }
 
 .pj-chat { margin-top: 0; border: none; border-radius: 16px; background: #f0f2f5; overflow: hidden; box-shadow: var(--sh-lg); }
-.pj-chat-log { height: 400px; overflow-y: auto; padding: 16px; display: flex; flex-direction: column; gap: 8px; background: #e5ddd5; /* WhatsApp-like background color */ }
+.pj-chat-log { min-height: 100px; max-height: 400px; overflow-y: auto; padding: 16px; display: flex; flex-direction: column; gap: 8px; background: #e5ddd5; /* WhatsApp-like background color */ }
 .pj-chat-log::-webkit-scrollbar { width: 6px; }
 .pj-chat-log::-webkit-scrollbar-thumb { background: rgba(0,0,0,0.1); border-radius: 10px; }
 

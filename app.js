@@ -1,4 +1,4 @@
-﻿// ─── STATE & INIT ─────────────────────────────────────────────────────────
+// ─── STATE & INIT ─────────────────────────────────────────────────────────
 var CN   = "شركة تيك جو";
 var MGRS = { admin:'', exec:'', tech:'' };
 var EMPLOYEES = [];
@@ -57,11 +57,11 @@ function escH(s){ return (s||'').replace(/&/g,'&amp;').replace(/"/g,'&quot;').re
 // ─── Make text expandable if longer than threshold ─────────────────────────
 function tgMakeExpandable(text, threshold) {
     threshold = threshold || 150;
-    if(!text || text.length <= threshold) return escH(text);
+    if(!text || text.length <= threshold) return escH(text).replace(/\n/g, '<br>');
     
     var id = 'exp_' + Math.random().toString(36).substr(2, 9);
-    return '<div class="tg-expandable-text collapsed" id="'+id+'">'+escH(text)+'</div>'+
-           '<button class="tg-expand-btn" onclick="tgToggleExpand(\''+id+'\', this)">'+
+    return '<div class="tg-expandable-text collapsed" id="'+id+'">'+escH(text).replace(/\n/g, '<br>')+'</div>'+
+           '<button class="tg-expand-btn" onclick="event.stopPropagation(); tgToggleExpand(\''+id+'\', this)">'+
            '<span>📖</span> عرض المزيد</button>';
 }
 
@@ -885,7 +885,7 @@ function renderStaffList(list){
             emp.projects.forEach(function(p){
                 var pm=(p.progressMap&&p.progressMap[emp.uid])||{progress:0,status:'لم يبدأ',note:''};
                 h+='<div class="pj-row"><div class="pj-t">'+escH(p.title||'بدون عنوان')+'</div>'+
-                   (p.description?'<div class="pj-meta">'+escH(p.description)+'</div>':'')+
+                   (p.description?'<div class="pj-meta">'+tgMakeExpandable(p.description, 120)+'</div>':'')+
                    '<div class="pj-bar"><div class="pj-bar-in" style="width:'+(pm.progress||0)+'%"></div></div>'+
                    '<div class="pj-meta">الحالة: <span class="badge '+badgeClassForStatus(pm.status)+'">'+escH(pm.status||'لم يبدأ')+'</span> · التقدم: '+(pm.progress||0)+'%'+(pm.note?(' · ملاحظة: '+escH(pm.note)):'')+'</div>'+
                    '</div>';
@@ -903,7 +903,7 @@ function renderStaffList(list){
                 emp.weeklyReports.forEach(function(r,ri){
                     h+='<div class="ac-row"><div class="ac-t">أسبوع '+escH(r.weekStart||'')+
                        ' <button class="bt bt-o" style="padding:2px 8px;font-size:10px;margin-right:8px" onclick="printWeeklyReportDoc(window._staffEmpCache['+idx+'],window._staffWkrCache['+idx+']['+ri+'])">🖨 طباعة</button></div>'+
-                       (r.content?'<div class="ac-meta">'+escH(r.content)+'</div>':'')+'</div>';
+                       (r.content?'<div class="ac-meta">'+tgMakeExpandable(r.content, 120)+'</div>':'')+'</div>';
                 });
             }else h+='<div class="empty-hint">لم يُرسل الموظف أي تقرير أسبوعي بعد.</div>';
 
@@ -917,7 +917,7 @@ function renderStaffList(list){
                 emp.achievements.forEach(function(a,ai){
                     h+='<div class="ac-row"><div class="ac-t">'+escH(a.title||'')+
                        ' <button class="bt bt-o" style="padding:2px 8px;font-size:10px;margin-right:8px" onclick="printAchievementDoc(window._staffEmpCache['+idx+'],window._staffAchCache['+idx+']['+ai+'])">🖨 طباعة</button></div>'+
-                       (a.description?'<div class="ac-meta">'+escH(a.description)+'</div>':'')+
+                       (a.description?'<div class="ac-meta">'+tgMakeExpandable(a.description, 120)+'</div>':'')+
                        (a.date?'<div class="ac-meta">📅 '+escH(a.date)+'</div>':'')+'</div>';
                 });
             }else h+='<div class="empty-hint">لا توجد إنجازات مسجّلة بعد.</div>';
@@ -942,7 +942,7 @@ function renderStaffList(list){
                     }
                     h+='<div class="rq-row"><div class="rq-t">'+escH(r.type||'طلب')+' <span class="badge '+badgeClassForReq(r.status)+'">'+reqStatusLabel(r.status)+'</span>'+
                        ' <button class="bt bt-o" style="padding:2px 8px;font-size:10px;margin-right:8px" onclick="printRequestDoc(window._staffEmpCache['+idx+'],window._staffReqCache['+idx+']['+qi+'])">🖨 طباعة</button></div>'+
-                       (r.details?'<div class="pj-meta">'+escH(r.details)+'</div>':'')+
+                       (r.details?'<div class="pj-meta">'+tgMakeExpandable(r.details, 120)+'</div>':'')+
                        (r.fromDate?('<div class="pj-meta">من '+escH(r.fromDate)+(r.toDate?(' إلى '+escH(r.toDate)):'')+'</div>'):'')+
                        (r.reviewedBy?('<div class="pj-meta">تمت المراجعة بواسطة: '+escH(r.reviewedBy)+'</div>'):'')+
                        attachHtml+
@@ -1476,7 +1476,7 @@ function renderStaffList(list){
             emp.projects.forEach(function(p){
                 var pm=(p.progressMap&&p.progressMap[emp.uid])||{progress:0,status:'لم يبدأ',note:''};
                 h+='<div class="pj-row"><div class="pj-t">'+escH(p.title||'بدون عنوان')+'</div>'+
-                   (p.description?'<div class="pj-meta">'+escH(p.description)+'</div>':'')+
+                   (p.description?'<div class="pj-meta">'+tgMakeExpandable(p.description, 120)+'</div>':'')+
                    '<div class="pj-bar"><div class="pj-bar-in" style="width:'+(pm.progress||0)+'%"></div></div>'+
                    '<div class="pj-meta">الحالة: <span class="badge '+badgeClassForStatus(pm.status)+'">'+escH(pm.status||'لم يبدأ')+'</span> · التقدم: '+(pm.progress||0)+'%'+(pm.note?(' · ملاحظة: '+escH(pm.note)):'')+'</div>'+
                    '</div>';
@@ -1494,7 +1494,7 @@ function renderStaffList(list){
                 emp.weeklyReports.forEach(function(r,ri){
                     h+='<div class="ac-row"><div class="ac-t">أسبوع '+escH(r.weekStart||'')+
                        ' <button class="bt bt-o" style="padding:2px 8px;font-size:10px;margin-right:8px" onclick="printWeeklyReportDoc(window._staffEmpCache['+idx+'],window._staffWkrCache['+idx+']['+ri+'])">🖨 طباعة</button></div>'+
-                       (r.content?'<div class="ac-meta">'+escH(r.content)+'</div>':'')+'</div>';
+                       (r.content?'<div class="ac-meta">'+tgMakeExpandable(r.content, 120)+'</div>':'')+'</div>';
                 });
             }else h+='<div class="empty-hint">لم يُرسل الموظف أي تقرير أسبوعي بعد.</div>';
 
@@ -1508,7 +1508,7 @@ function renderStaffList(list){
                 emp.achievements.forEach(function(a,ai){
                     h+='<div class="ac-row"><div class="ac-t">'+escH(a.title||'')+
                        ' <button class="bt bt-o" style="padding:2px 8px;font-size:10px;margin-right:8px" onclick="printAchievementDoc(window._staffEmpCache['+idx+'],window._staffAchCache['+idx+']['+ai+'])">🖨 طباعة</button></div>'+
-                       (a.description?'<div class="ac-meta">'+escH(a.description)+'</div>':'')+
+                       (a.description?'<div class="ac-meta">'+tgMakeExpandable(a.description, 120)+'</div>':'')+
                        (a.date?'<div class="ac-meta">📅 '+escH(a.date)+'</div>':'')+'</div>';
                 });
             }else h+='<div class="empty-hint">لا توجد إنجازات مسجّلة بعد.</div>';
@@ -1533,7 +1533,7 @@ function renderStaffList(list){
                     }
                     h+='<div class="rq-row"><div class="rq-t">'+escH(r.type||'طلب')+' <span class="badge '+badgeClassForReq(r.status)+'">'+reqStatusLabel(r.status)+'</span>'+
                        ' <button class="bt bt-o" style="padding:2px 8px;font-size:10px;margin-right:8px" onclick="printRequestDoc(window._staffEmpCache['+idx+'],window._staffReqCache['+idx+']['+qi+'])">🖨 طباعة</button></div>'+
-                       (r.details?'<div class="pj-meta">'+escH(r.details)+'</div>':'')+
+                       (r.details?'<div class="pj-meta">'+tgMakeExpandable(r.details, 120)+'</div>':'')+
                        (r.fromDate?('<div class="pj-meta">من '+escH(r.fromDate)+(r.toDate?(' إلى '+escH(r.toDate)):'')+'</div>'):'')+
                        (r.reviewedBy?('<div class="pj-meta">تمت المراجعة بواسطة: '+escH(r.reviewedBy)+'</div>'):'')+
                        attachHtml+
