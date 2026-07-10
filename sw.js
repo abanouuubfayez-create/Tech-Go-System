@@ -1,5 +1,5 @@
 // ─── Service Worker for Tech Go PWA ─────────────────────────────────────────
-const CACHE_NAME = 'techgo-v5';
+const CACHE_NAME = 'techgo-v6';
 const STATIC_ASSETS = [
     './',
     './login.html',

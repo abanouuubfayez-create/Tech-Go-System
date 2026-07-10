@@ -341,7 +341,7 @@
     var h = '';
     list.forEach(function (n) {
       var unread = !n.read;
-      h += '<div class="notif-item' + (unread ? ' unread' : '') + '" onclick="tgNotifItemClick(\'' + n.id + '\', event)">';
+      h += '<div class="notif-item' + (unread ? ' unread' : '') + '" onclick="tgNotifItemClick(\'' + n.id + '\', event, \'' + (n.tag || '') + '\')">';
       h += '<div class="notif-item-dot"></div>';
       h += '<div class="notif-item-body">';
       h += '<div class="notif-item-title">' + escH(n.title || 'إشعار') + '</div>';
@@ -354,9 +354,18 @@
     listEl.innerHTML = h;
   }
 
-  function tgNotifItemClick(id, ev) {
+  function tgNotifItemClick(id, ev, tag) {
     if (ev) ev.stopPropagation();
     if (typeof tgMarkNotifRead === 'function') tgMarkNotifRead(id);
+    var panel = document.getElementById('notifPanel');
+    if (panel) panel.style.display = 'none';
+
+    if (tag === 'form-new') go('gen');
+    else if (tag === 'request-reviewed' || tag === 'request-new') go('staff');
+    else if (tag === 'project-new' || tag === 'project-update') go('pmgmt');
+    else if (tag === 'task-new' || tag === 'task-update' || tag === 'task-status') go('tasksmgmt');
+    else if (tag === 'weekly-report-new' || tag === 'weekly-report-reminder') go('sysreport');
+    else if (tag === 'achievement-new') go('staff');
   }
   function tgNotifDelClick(id, ev) {
     if (ev) ev.stopPropagation();

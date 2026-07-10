@@ -5579,7 +5579,7 @@ function generateSystemReport() {
             reports.sort(function(a,b){ return b.createdAt - a.createdAt; }).forEach(function(r) {
                 var d = r.createdAt && r.createdAt.toDate ? r.createdAt.toDate().toLocaleDateString('ar-EG') : '';
                 var en = empId==='all' ? getEmpName(r.uid) : empName;
-                var exc = (r.tasksCompleted || '').substring(0, 60) + '...';
+                var exc = (r.content || '').substring(0, 60) + '...';
                 h += '<tr><td>' + escH(en) + '</td><td>' + escH(exc) + '</td><td>' + d + '</td></tr>';
             });
             h += '</table>';
