@@ -105,6 +105,39 @@ function tgCloseModal(){
     if(bd) bd.remove();
 }
 
+// ─── إرسال إشعار خاص من الأدمن لموظف واحد بعينه (لا يراه إلا هو) ──────────
+function tgOpenSendNotifModal(idx){
+    var emp=(window._staffEmpCache||[])[idx];
+    if(!emp){ alert('تعذر العثور على بيانات الموظف.'); return; }
+    tgConfirmModal(
+        '📩 إرسال إشعار خاص إلى: '+escH(emp.name||emp.email||''),
+        '<div class="fg"><label>عنوان الإشعار</label><input type="text" id="tgNotifTitleInput" placeholder="مثال: تنبيه هام" maxlength="80"></div>'+
+        '<div class="fg" style="margin-top:10px"><label>نص الإشعار</label><textarea id="tgNotifBodyInput" rows="4" placeholder="اكتب رسالتك هنا..." maxlength="500" style="width:100%;resize:vertical"></textarea></div>'+
+        '<div class="set-hint" style="margin-top:8px">🔒 هذا الإشعار سيصل لهذا الموظف فقط، ولن يظهر لأي موظف آخر أو حتى في مركز إشعارات الأدمن.</div>',
+        [
+            {label:'إلغاء', cls:'bt-o', onClick:tgCloseModal},
+            {label:'📨 إرسال الإشعار', cls:'bt-p', onClick:function(){ tgSendCustomNotifToEmployee(emp.uid); }}
+        ]
+    );
+    setTimeout(function(){
+        var t=document.getElementById('tgNotifTitleInput');
+        if(t) t.focus();
+    }, 50);
+}
+function tgSendCustomNotifToEmployee(uid){
+    var titleEl=document.getElementById('tgNotifTitleInput');
+    var bodyEl=document.getElementById('tgNotifBodyInput');
+    var title=((titleEl && titleEl.value) || '').trim();
+    var body=((bodyEl && bodyEl.value) || '').trim();
+    if(!title && !body){ alert('اكتب عنوان الإشعار أو نصه أولاً.'); return; }
+    if(!title) title='إشعار من الإدارة';
+    if(typeof tgSendPushToUser !== 'function'){ alert('تعذر إرسال الإشعار (خطأ في النظام).'); return; }
+    tgSendPushToUser(uid, title, body, 'admin-custom');
+    tgCloseModal();
+    if(typeof tgToast === 'function') tgToast('✅ تم إرسال الإشعار للموظف بنجاح', 'ok');
+    else alert('✅ تم إرسال الإشعار بنجاح');
+}
+
 // ─── NAVIGATION ───────────────────────────────────────────────────────────
 // الصفحات التي يمكن للأدمن التقني الوصول إليها
 var TECH_ALLOWED = ['pmgmt','tasksmgmt','livetrack','account','announcements'];
@@ -868,6 +901,7 @@ function renderStaffList(list){
            '<button class="bt '+(emp.disabled?'bt-p':'bt-o')+'" onclick="event.stopPropagation();toggleEmpDisabled(\''+emp.uid+'\','+(!!emp.disabled)+')">'+
            (emp.disabled?'✅ إعادة تفعيل الحساب':'🚫 تعطيل الحساب')+'</button>'+
            '<button class="bt bt-d" onclick="event.stopPropagation();openDeleteEmpModal(\''+emp.uid+'\','+idx+')">🗑 حذف الموظف</button>'+
+           '<button class="bt bt-o" onclick="event.stopPropagation();tgOpenSendNotifModal('+idx+')">📩 إرسال إشعار</button>'+
            '</div>'+
            '<div class="emp-inline-edit" id="empNameEdit'+idx+'" style="display:none">'+
            '<input type="text" id="empNameInput'+idx+'" value="'+escH(emp.name||'')+'">'+
@@ -1465,6 +1499,7 @@ function renderStaffList(list){
            '<button class="bt '+(emp.disabled?'bt-p':'bt-o')+'" onclick="event.stopPropagation();toggleEmpDisabled(\''+emp.uid+'\','+(!!emp.disabled)+')">'+
            (emp.disabled?'✅ إعادة تفعيل الحساب':'🚫 تعطيل الحساب')+'</button>'+
            '<button class="bt bt-d" onclick="event.stopPropagation();openDeleteEmpModal(\''+emp.uid+'\','+idx+')">🗑 حذف الموظف</button>'+
+           '<button class="bt bt-o" onclick="event.stopPropagation();tgOpenSendNotifModal('+idx+')">📩 إرسال إشعار</button>'+
            '</div>'+
            '<div class="emp-inline-edit" id="empNameEdit'+idx+'" style="display:none">'+
            '<input type="text" id="empNameInput'+idx+'" value="'+escH(emp.name||'')+'">'+
@@ -4414,6 +4449,7 @@ function openAdminEmployeeDetail(idx) {
         h += '  <button class="bt bt-o" onclick="toggleEmpWorkMode(' + idx + ')">🏢 نظام العمل (' + (emp.workMode === 'remote' ? 'ريموتلي' : 'مكتب') + ')</button>';
         h += '  <button class="bt ' + (emp.disabled ? 'bt-p' : 'bt-o') + '" onclick="toggleEmpDisabled(\'' + emp.uid + '\',' + (!!emp.disabled) + ')">' + (emp.disabled ? '✅ تفعيل الحساب' : '🚫 تعطيل الحساب') + '</button>';
         h += '  <button class="bt bt-d" onclick="openDeleteEmpModal(\'' + emp.uid + '\',' + idx + ')">🗑 حذف الموظف</button>';
+        h += '  <button class="bt bt-o" onclick="tgOpenSendNotifModal(' + idx + ')">📩 إرسال إشعار</button>';
         h += '  <button class="bt bt-o" style="background:linear-gradient(135deg,#1b2a4a,#2980b9);color:#fff;border:0" onclick="printEmployeeWorkReport(' + idx + ')">🖨 طباعة تقرير الشغل</button>';
         h += '</div>';
         h += '<div class="emp-inline-edit" id="empNameEdit' + idx + '" style="display:none">' +
