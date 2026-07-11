@@ -362,7 +362,7 @@
 
     if (tag === 'form-new') go('gen');
     else if (tag === 'request-reviewed' || tag === 'request-new') go('staff');
-    else if (tag === 'project-new' || tag === 'project-update') go('pmgmt');
+    else if (tag === 'project-new' || tag === 'project-update' || tag === 'project-progress' || tag === 'project-note') go('pmgmt');
     else if (tag === 'task-new' || tag === 'task-update' || tag === 'task-status') go('tasksmgmt');
     else if (tag === 'weekly-report-new' || tag === 'weekly-report-reminder') go('sysreport');
     else if (tag === 'achievement-new') go('staff');
