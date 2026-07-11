@@ -105,39 +105,6 @@ function tgCloseModal(){
     if(bd) bd.remove();
 }
 
-// ─── إرسال إشعار خاص من الأدمن لموظف واحد بعينه (لا يراه إلا هو) ──────────
-function tgOpenSendNotifModal(idx){
-    var emp=(window._staffEmpCache||[])[idx];
-    if(!emp){ alert('تعذر العثور على بيانات الموظف.'); return; }
-    tgConfirmModal(
-        '📩 إرسال إشعار خاص إلى: '+escH(emp.name||emp.email||''),
-        '<div class="fg"><label>عنوان الإشعار</label><input type="text" id="tgNotifTitleInput" placeholder="مثال: تنبيه هام" maxlength="80"></div>'+
-        '<div class="fg" style="margin-top:10px"><label>نص الإشعار</label><textarea id="tgNotifBodyInput" rows="4" placeholder="اكتب رسالتك هنا..." maxlength="500" style="width:100%;resize:vertical"></textarea></div>'+
-        '<div class="set-hint" style="margin-top:8px">🔒 هذا الإشعار سيصل لهذا الموظف فقط، ولن يظهر لأي موظف آخر أو حتى في مركز إشعارات الأدمن.</div>',
-        [
-            {label:'إلغاء', cls:'bt-o', onClick:tgCloseModal},
-            {label:'📨 إرسال الإشعار', cls:'bt-p', onClick:function(){ tgSendCustomNotifToEmployee(emp.uid); }}
-        ]
-    );
-    setTimeout(function(){
-        var t=document.getElementById('tgNotifTitleInput');
-        if(t) t.focus();
-    }, 50);
-}
-function tgSendCustomNotifToEmployee(uid){
-    var titleEl=document.getElementById('tgNotifTitleInput');
-    var bodyEl=document.getElementById('tgNotifBodyInput');
-    var title=((titleEl && titleEl.value) || '').trim();
-    var body=((bodyEl && bodyEl.value) || '').trim();
-    if(!title && !body){ alert('اكتب عنوان الإشعار أو نصه أولاً.'); return; }
-    if(!title) title='إشعار من الإدارة';
-    if(typeof tgSendPushToUser !== 'function'){ alert('تعذر إرسال الإشعار (خطأ في النظام).'); return; }
-    tgSendPushToUser(uid, title, body, 'admin-custom');
-    tgCloseModal();
-    if(typeof tgToast === 'function') tgToast('✅ تم إرسال الإشعار للموظف بنجاح', 'ok');
-    else alert('✅ تم إرسال الإشعار بنجاح');
-}
-
 // ─── NAVIGATION ───────────────────────────────────────────────────────────
 // الصفحات التي يمكن للأدمن التقني الوصول إليها
 var TECH_ALLOWED = ['pmgmt','tasksmgmt','livetrack','account','announcements'];
@@ -901,7 +868,6 @@ function renderStaffList(list){
            '<button class="bt '+(emp.disabled?'bt-p':'bt-o')+'" onclick="event.stopPropagation();toggleEmpDisabled(\''+emp.uid+'\','+(!!emp.disabled)+')">'+
            (emp.disabled?'✅ إعادة تفعيل الحساب':'🚫 تعطيل الحساب')+'</button>'+
            '<button class="bt bt-d" onclick="event.stopPropagation();openDeleteEmpModal(\''+emp.uid+'\','+idx+')">🗑 حذف الموظف</button>'+
-           '<button class="bt bt-o" onclick="event.stopPropagation();tgOpenSendNotifModal('+idx+')">📩 إرسال إشعار</button>'+
            '</div>'+
            '<div class="emp-inline-edit" id="empNameEdit'+idx+'" style="display:none">'+
            '<input type="text" id="empNameInput'+idx+'" value="'+escH(emp.name||'')+'">'+
@@ -1499,7 +1465,6 @@ function renderStaffList(list){
            '<button class="bt '+(emp.disabled?'bt-p':'bt-o')+'" onclick="event.stopPropagation();toggleEmpDisabled(\''+emp.uid+'\','+(!!emp.disabled)+')">'+
            (emp.disabled?'✅ إعادة تفعيل الحساب':'🚫 تعطيل الحساب')+'</button>'+
            '<button class="bt bt-d" onclick="event.stopPropagation();openDeleteEmpModal(\''+emp.uid+'\','+idx+')">🗑 حذف الموظف</button>'+
-           '<button class="bt bt-o" onclick="event.stopPropagation();tgOpenSendNotifModal('+idx+')">📩 إرسال إشعار</button>'+
            '</div>'+
            '<div class="emp-inline-edit" id="empNameEdit'+idx+'" style="display:none">'+
            '<input type="text" id="empNameInput'+idx+'" value="'+escH(emp.name||'')+'">'+
@@ -4101,6 +4066,16 @@ function load(id,c){
     else if(id==="announcements"){
         h='<div class="SP">';
         h+='<h3>&#128226; إدارة الإعلانات</h3>';
+        h+='<div class="fg fg-full" style="margin-bottom:12px">';
+        h+='<label>نوع الإعلان</label>';
+        h+='<div style="display:flex;gap:16px;margin-top:6px">';
+        h+='<label style="display:flex;align-items:center;gap:6px;font-weight:400;cursor:pointer"><input type="radio" name="annAudience" value="all" checked onchange="toggleAnnTargetWrap()"> &#128226; عام لكل الموظفين</label>';
+        h+='<label style="display:flex;align-items:center;gap:6px;font-weight:400;cursor:pointer"><input type="radio" name="annAudience" value="private" onchange="toggleAnnTargetWrap()"> &#128100; خاص لموظف معين</label>';
+        h+='</div></div>';
+        h+='<div class="fg fg-full" id="annTargetWrap" style="display:none;margin-bottom:12px">';
+        h+='<label>الموظف المرسل إليه</label>';
+        h+='<select id="annTargetEmployee"><option value="">جارٍ تحميل الموظفين...</option></select>';
+        h+='</div>';
         h+='<div class="fr fr2" style="margin-bottom:12px">';
         h+='<div class="fg"><label>عنوان الإعلان</label><input type="text" id="annTitle"></div>';
         h+='<div class="fg"><label>التاريخ (اختياري)</label><input type="text" id="annDate" placeholder="مثال: 1 أكتوبر 2026"></div>';
@@ -4131,13 +4106,37 @@ function load(id,c){
     if(id==="staff") loadStaffOverview();
     if(id==="pmgmt") loadPmgmtData();
     if(id==="tasksmgmt") loadTasksMgmt();
-    if(id==="announcements") loadAdminAnnouncements();
+    if(id==="announcements") { loadAdminAnnouncements(); loadAnnouncementTargetEmployees(); }
     if(id==="empdocs") loadEmpDocsOverview();
     if(id==="cal") initGeneralCalendar();
 }
 // ═══════════════════════════════════════════════════════════════
 // ── الإعلانات ─────────────────────────────────────────────────
 // ═══════════════════════════════════════════════════════════════
+function toggleAnnTargetWrap() {
+    var checked = document.querySelector('input[name="annAudience"]:checked');
+    var wrap = document.getElementById('annTargetWrap');
+    if(!wrap) return;
+    wrap.style.display = (checked && checked.value === 'private') ? 'block' : 'none';
+}
+function loadAnnouncementTargetEmployees() {
+    var sel = document.getElementById('annTargetEmployee');
+    if(!sel) return;
+    db.collection('users').where('role','in',['employee','tech_admin']).get().then(function(snap) {
+        if(snap.empty) { sel.innerHTML = '<option value="">لا يوجد موظفون مسجّلون</option>'; return; }
+        var opts = '<option value="">اختر الموظف...</option>';
+        var list = [];
+        snap.forEach(function(doc) { list.push(Object.assign({uid:doc.id}, doc.data())); });
+        list.sort(function(a,b){ return (a.name||'').localeCompare(b.name||'', 'ar'); });
+        list.forEach(function(emp) {
+            opts += '<option value="'+emp.uid+'">'+escH(emp.name||emp.email||emp.uid)+'</option>';
+        });
+        sel.innerHTML = opts;
+    }).catch(function(err) {
+        sel.innerHTML = '<option value="">تعذر تحميل الموظفين</option>';
+        console.error(err);
+    });
+}
 function loadAdminAnnouncements() {
     var box = document.getElementById('annList');
     if(!box) return;
@@ -4148,8 +4147,14 @@ function loadAdminAnnouncements() {
         snap.forEach(function(d) {
             var a = d.data();
             var ts = (a.createdAt && a.createdAt.seconds) ? new Date(a.createdAt.seconds*1000).toLocaleDateString('ar-EG') : '';
-            h += '<div class="pj-row" style="border-right:4px solid var(--nv)">';
+            var isPrivate = a.audience === 'private';
+            h += '<div class="pj-row" style="border-right:4px solid '+(isPrivate?'var(--gd)':'var(--nv)')+'">';
+            h += '<div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:4px">';
             h += '<div class="pj-t" style="font-size:14px;font-weight:800">'+escH(a.title)+'</div>';
+            h += isPrivate
+                ? '<span class="badge" style="background:var(--gd);color:#1b2a4a">&#128100; خاص &rarr; '+escH(a.targetName||'موظف')+'</span>'
+                : '<span class="badge" style="background:var(--nv);color:#fff">&#128226; عام لكل الموظفين</span>';
+            h += '</div>';
             h += '<div class="pj-meta" style="margin:6px 0 10px;font-size:12px;color:var(--tx);line-height:1.6">'+escH(a.content)+'</div>';
             h += '<div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:6px">';
             h += '<div class="pj-meta" style="display:flex;gap:12px;opacity:0.85">';
@@ -4449,7 +4454,6 @@ function openAdminEmployeeDetail(idx) {
         h += '  <button class="bt bt-o" onclick="toggleEmpWorkMode(' + idx + ')">🏢 نظام العمل (' + (emp.workMode === 'remote' ? 'ريموتلي' : 'مكتب') + ')</button>';
         h += '  <button class="bt ' + (emp.disabled ? 'bt-p' : 'bt-o') + '" onclick="toggleEmpDisabled(\'' + emp.uid + '\',' + (!!emp.disabled) + ')">' + (emp.disabled ? '✅ تفعيل الحساب' : '🚫 تعطيل الحساب') + '</button>';
         h += '  <button class="bt bt-d" onclick="openDeleteEmpModal(\'' + emp.uid + '\',' + idx + ')">🗑 حذف الموظف</button>';
-        h += '  <button class="bt bt-o" onclick="tgOpenSendNotifModal(' + idx + ')">📩 إرسال إشعار</button>';
         h += '  <button class="bt bt-o" style="background:linear-gradient(135deg,#1b2a4a,#2980b9);color:#fff;border:0" onclick="printEmployeeWorkReport(' + idx + ')">🖨 طباعة تقرير الشغل</button>';
         h += '</div>';
         h += '<div class="emp-inline-edit" id="empNameEdit' + idx + '" style="display:none">' +
@@ -4676,31 +4680,51 @@ function addAnnouncement() {
     var date = (document.getElementById('annDate').value||'').trim();
     var content = (document.getElementById('annContent').value||'').trim();
     var msg = document.getElementById('annMsg');
-    
+    var audienceEl = document.querySelector('input[name="annAudience"]:checked');
+    var audience = audienceEl ? audienceEl.value : 'all';
+    var targetUid = '', targetName = '';
+
+    if(audience === 'private') {
+        var targetSel = document.getElementById('annTargetEmployee');
+        targetUid = targetSel ? targetSel.value : '';
+        targetName = (targetSel && targetSel.selectedOptions && targetSel.selectedOptions[0]) ? targetSel.selectedOptions[0].textContent : '';
+        if(!targetUid) { msg.style.color = 'var(--no)'; msg.textContent = 'اختر الموظف المرسل إليه الإعلان الخاص.'; return; }
+    }
+
     if(!title || !content) { msg.style.color = 'var(--no)'; msg.textContent = 'عنوان ومحتوى الإعلان مطلوبان.'; return; }
     
     msg.style.color = 'var(--tx3)'; msg.textContent = '⏳ جارٍ النشر...';
     
     var createdByRole = (TG_USER && TG_USER.role === 'tech_admin') ? 'أدمن تقني' : 'أدمن إداري';
     try {
-        db.collection('announcements').add({
+        var annData = {
             title: title,
             date: date,
             content: content,
+            audience: audience,
             createdAt: new Date(),
             createdBy: TG_USER ? (TG_USER.name || TG_USER.email || 'الإدارة') : 'الإدارة',
             createdByRole: createdByRole
-        }).then(function() {
+        };
+        if(audience === 'private') {
+            annData.targetUid = targetUid;
+            annData.targetName = targetName;
+        }
+        db.collection('announcements').add(annData).then(function() {
             msg.style.color = 'var(--ok)'; msg.textContent = '✅ تم نشر الإعلان.';
             document.getElementById('annTitle').value = '';
             document.getElementById('annDate').value = '';
             document.getElementById('annContent').value = '';
             setTimeout(function(){ msg.textContent = ''; }, 3000);
             loadAdminAnnouncements();
-            // إرسال إشعار لكل المستخدمين (الموظفين والأدمنز) بالإعلان الجديد
+            // إرسال إشعار — للجميع لو عام، أو نص خاص بيوضح إنه إعلان موجّه لو خاص
             if (typeof tgBroadcastPush === 'function') {
                 var preview = content.length > 70 ? content.slice(0, 70) + '…' : content;
-                tgBroadcastPush('📢 إعلان جديد: ' + title, preview, 'announcement-new', TG_USER ? TG_USER.uid : '');
+                if(audience === 'private') {
+                    tgBroadcastPush('📩 إعلان خاص: ' + title, preview, 'announcement-new', TG_USER ? TG_USER.uid : '');
+                } else {
+                    tgBroadcastPush('📢 إعلان جديد: ' + title, preview, 'announcement-new', TG_USER ? TG_USER.uid : '');
+                }
             }
         }).catch(function(err) {
             msg.style.color = 'var(--no)'; msg.textContent = '❌ ' + err.message;
@@ -4712,28 +4736,58 @@ function addAnnouncement() {
     }
 }
 
-// Loads announcements in employee dashboard
+// Loads announcements in employee dashboard — مقسّمة لقسمين: عام + خاص بالموظف الحالي
 function loadEmpAnnouncements() {
     var box = document.getElementById('empAnnouncementsList');
     var panel = document.getElementById('empAnnouncementsPanel');
     if(!box || !panel) return;
-    
-    db.collection('announcements').orderBy('createdAt', 'desc').limit(5).onSnapshot(function(snap) {
+    var myUid = TG_USER ? TG_USER.uid : '';
+
+    function annCard(data, isPrivate) {
+        var borderColor = isPrivate ? 'var(--gd)' : 'var(--nv)';
+        var h = '<div style="background:rgba(255,255,255,.1);padding:14px 18px;border-radius:10px;border-right:4px solid '+borderColor+';margin-bottom:8px">';
+        h += '<div style="font-size:15px;font-weight:800;margin-bottom:6px">'+esc(data.title)+'</div>';
+        h += '<div style="font-size:13px;opacity:.9;line-height:1.6">'+esc(data.content)+'</div>';
+        if(data.createdBy) h += '<div style="font-size:11px;opacity:.75;margin-top:8px">👤 '+esc(data.createdBy)+(data.createdByRole?' <span style="opacity:.8">('+esc(data.createdByRole)+')</span>':'')+'</div>';
+        if(data.date) h += '<div style="font-size:11px;opacity:.6;margin-top:4px">📅 '+esc(data.date)+'</div>';
+        h += '</div>';
+        return h;
+    }
+
+    // نجيب أحدث 30 إعلان ونقسمهم على العميل — بيغطي الإعلانات القديمة اللي مفيهاش حقل audience (بتتعامل كـ "عام")
+    db.collection('announcements').orderBy('createdAt', 'desc').limit(30).onSnapshot(function(snap) {
         if(snap.empty) {
             panel.style.display = 'none';
             return;
         }
-        panel.style.display = 'block';
-        var h = '';
+        var publicOnes = [];
+        var privateOnes = [];
         snap.forEach(function(d) {
             var data = d.data();
-            h += '<div style="background:rgba(255,255,255,.1);padding:14px 18px;border-radius:10px;border-right:4px solid var(--gd);margin-bottom:8px">';
-            h += '<div style="font-size:15px;font-weight:800;margin-bottom:6px">'+esc(data.title)+'</div>';
-            h += '<div style="font-size:13px;opacity:.9;line-height:1.6">'+esc(data.content)+'</div>';
-            if(data.createdBy) h += '<div style="font-size:11px;opacity:.75;margin-top:8px">👤 '+esc(data.createdBy)+(data.createdByRole?' <span style="opacity:.8">('+esc(data.createdByRole)+')</span>':'')+'</div>';
-            if(data.date) h += '<div style="font-size:11px;opacity:.6;margin-top:4px">📅 '+esc(data.date)+'</div>';
-            h += '</div>';
+            if(data.audience === 'private') {
+                if(data.targetUid === myUid) privateOnes.push(data);
+            } else {
+                publicOnes.push(data);
+            }
         });
+        publicOnes = publicOnes.slice(0, 5);
+        privateOnes = privateOnes.slice(0, 5);
+
+        if(!publicOnes.length && !privateOnes.length) {
+            panel.style.display = 'none';
+            return;
+        }
+        panel.style.display = 'block';
+
+        var h = '';
+        if(privateOnes.length) {
+            h += '<div style="font-size:13px;font-weight:800;margin:0 0 8px;opacity:.9">👤 إعلانات خاصة بيك</div>';
+            privateOnes.forEach(function(data){ h += annCard(data, true); });
+        }
+        if(publicOnes.length) {
+            if(privateOnes.length) h += '<div style="font-size:13px;font-weight:800;margin:14px 0 8px;opacity:.9">📢 إعلانات عامة</div>';
+            publicOnes.forEach(function(data){ h += annCard(data, false); });
+        }
         box.innerHTML = h;
     });
 }
