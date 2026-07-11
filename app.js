@@ -4717,12 +4717,14 @@ function addAnnouncement() {
             document.getElementById('annContent').value = '';
             setTimeout(function(){ msg.textContent = ''; }, 3000);
             loadAdminAnnouncements();
-            // إرسال إشعار — للجميع لو عام، أو نص خاص بيوضح إنه إعلان موجّه لو خاص
-            if (typeof tgBroadcastPush === 'function') {
-                var preview = content.length > 70 ? content.slice(0, 70) + '…' : content;
-                if(audience === 'private') {
-                    tgBroadcastPush('📩 إعلان خاص: ' + title, preview, 'announcement-new', TG_USER ? TG_USER.uid : '');
-                } else {
+            // إرسال إشعار — للجميع لو عام (tgBroadcastPush)، أو للموظف المستهدف فقط لو خاص (tgSendPushToUser)
+            var preview = content.length > 70 ? content.slice(0, 70) + '…' : content;
+            if(audience === 'private') {
+                if (typeof tgSendPushToUser === 'function') {
+                    tgSendPushToUser(targetUid, '📩 إعلان خاص: ' + title, preview, 'announcement-new');
+                }
+            } else {
+                if (typeof tgBroadcastPush === 'function') {
                     tgBroadcastPush('📢 إعلان جديد: ' + title, preview, 'announcement-new', TG_USER ? TG_USER.uid : '');
                 }
             }
