@@ -2181,6 +2181,7 @@ html.tg-auth-pending body { visibility: hidden; }
 [data-theme='dark'] .pj-row { background: var(--w) !important; background-image: none !important; border-color: var(--bd) !important; }
 [data-theme='dark'] .pj-row:hover { background: var(--bd) !important; background-image: none !important; }
 [data-theme='dark'] .staff-card-body { background: rgba(255, 255, 255, 0.02); border-top-color: var(--bd); }
+[data-theme='dark'] .staff-stat { color: var(--gd); }
 [data-theme='dark'] .staff-sub-title { color: var(--gd); }
 [data-theme='dark'] .modern-card { background: var(--w); border-color: var(--bd); }
 [data-theme='dark'] .p-card, [data-theme='dark'] .p-stat-box, [data-theme='dark'] .p-timeline-content { background: var(--w); border-color: var(--bd); }

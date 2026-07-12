@@ -33,7 +33,7 @@ var T={
     mexp:"شيت المصروفات الشهري",
     res:"طلب استقالة", promo:"قرار ترقية", contract:"عقد عمل", raise:"زيادة راتب / علاوة",
     staff:"متابعة الموظفين", pmgmt:"إدارة المشاريع", account:"حسابي",
-    tasksmgmt:"توزيع المهام", announcements:"إدارة الإعلانات", empdocs:"ملفات الموظفين"
+    tasksmgmt:"توزيع المهام", announcements:"إدارة الإعلانات", empdocs:"ملفات الموظفين", wkreports:"بريد التقارير الأسبوعية"
 };
 
 // ─── DOCUMENT NUMBERING ───────────────────────────────────────────────────
@@ -2406,6 +2406,113 @@ function printWeeklyReportDoc(u,r){
     h+=FT(['نسخة للموظف','نسخة للإدارة']);
     printDoc(h);
 }
+
+// ─── بريد التقارير الأسبوعية (Inbox) ───────────────────────────────────────
+function loadWeeklyReportsInbox(){
+    var listEl = document.getElementById('wkrInboxList');
+    Promise.all([
+        db.collection('weeklyReports').orderBy('createdAt','desc').get(),
+        db.collection('users').where('role','in',['employee','tech_admin']).get()
+    ]).then(function(res){
+        var reports = res[0].docs.map(function(d){ return Object.assign({id:d.id}, d.data()); });
+        var users = {};
+        var empList = [];
+        res[1].forEach(function(d){ var u=d.data(); u.uid=d.id; users[d.id]=u; empList.push(u); });
+        empList.sort(function(a,b){ return (a.name||a.email||'').localeCompare(b.name||b.email||''); });
+        window._wkrInboxData = reports;
+        window._wkrInboxUsers = users;
+
+        var empSel = document.getElementById('wkrInboxEmpFilter');
+        if(empSel){
+            empList.forEach(function(u){
+                var opt = document.createElement('option');
+                opt.value = u.uid; opt.textContent = u.name || u.email;
+                empSel.appendChild(opt);
+            });
+        }
+
+        var weekSel = document.getElementById('wkrInboxWeekFilter');
+        if(weekSel){
+            var weeks = [];
+            reports.forEach(function(r){ if(r.weekStart && weeks.indexOf(r.weekStart)===-1) weeks.push(r.weekStart); });
+            weeks.sort().reverse();
+            weeks.forEach(function(w){
+                var opt = document.createElement('option');
+                opt.value = w; opt.textContent = 'أسبوع '+w;
+                weekSel.appendChild(opt);
+            });
+        }
+
+        renderWeeklyReportsInbox();
+    }).catch(function(err){
+        if(listEl) listEl.innerHTML = '<div class="empty-hint" style="color:var(--no)">تعذر تحميل التقارير: '+escH(err.message)+'</div>';
+    });
+}
+function renderWeeklyReportsInbox(){
+    var reports = window._wkrInboxData || [];
+    var users = window._wkrInboxUsers || {};
+    var empFilter = (document.getElementById('wkrInboxEmpFilter')||{}).value || 'all';
+    var weekFilter = (document.getElementById('wkrInboxWeekFilter')||{}).value || 'all';
+    var statusFilter = (document.getElementById('wkrInboxStatusFilter')||{}).value || 'all';
+
+    var filtered = reports.filter(function(r){
+        if(empFilter!=='all' && r.uid!==empFilter) return false;
+        if(weekFilter!=='all' && r.weekStart!==weekFilter) return false;
+        if(statusFilter==='unreviewed' && r.reviewedByAdmin) return false;
+        if(statusFilter==='reviewed' && !r.reviewedByAdmin) return false;
+        return true;
+    });
+    window._wkrInboxFiltered = filtered;
+
+    var unreviewedTotal = reports.filter(function(r){ return !r.reviewedByAdmin; }).length;
+    var statsEl = document.getElementById('wkrInboxStats');
+    if(statsEl){
+        statsEl.innerHTML =
+            '<div style="background:var(--w);padding:8px 16px;border-radius:10px;border:1px solid var(--bd);font-size:12px;font-weight:700;color:var(--tx2)">📥 إجمالي التقارير: '+reports.length+'</div>'+
+            '<div style="background:var(--w);padding:8px 16px;border-radius:10px;border:1px solid var(--bd);font-size:12px;font-weight:700;color:'+(unreviewedTotal?'var(--no)':'var(--ok)')+'">⏳ غير مراجَعة: '+unreviewedTotal+'</div>';
+    }
+
+    var listEl = document.getElementById('wkrInboxList');
+    if(!listEl) return;
+    if(!filtered.length){ listEl.innerHTML='<div class="empty-hint">لا توجد تقارير مطابقة لهذا الفلتر.</div>'; return; }
+
+    var h='';
+    filtered.forEach(function(r,i){
+        var u = users[r.uid] || {name:r.name, email:r.email};
+        var waMsg = encodeURIComponent('التقرير الأسبوعي - '+(u.name||r.name||'')+'\n'+'الأسبوع: '+(r.weekStart||'')+'\n---\n'+(r.content||''));
+        h+='<div class="ac-row" style="border-right:3px solid '+(r.reviewedByAdmin?'var(--ok)':'var(--no)')+'">'+
+           '<div class="ac-t" style="display:flex;justify-content:space-between;flex-wrap:wrap;gap:8px;align-items:center">'+
+           '<span>👤 '+escH(u.name||u.email||'موظف')+' — أسبوع '+escH(r.weekStart||'')+'</span>'+
+           '<span style="display:flex;gap:6px;flex-wrap:wrap">'+
+           (r.reviewedByAdmin ? '<span class="badge" style="background:var(--ok);color:#fff">✅ تمت المراجعة</span>' :
+              '<button class="bt bt-g" style="padding:2px 10px;font-size:10px" onclick="markWeeklyReportReviewed(\''+r.id+'\',this)">✔ تحديد كمراجَع</button>')+
+           ' <button class="bt bt-o" style="padding:2px 8px;font-size:10px" onclick="printWeeklyReportInboxItem('+i+')">🖨 طباعة</button>'+
+           ' <a href="https://wa.me/?text='+waMsg+'" target="_blank" class="bt bt-g" style="padding:2px 8px;font-size:10px;text-decoration:none">📲 واتساب</a>'+
+           '</span></div>'+
+           (r.content?'<div class="ac-meta">'+tgMakeExpandable(escH(r.content),160)+'</div>':'')+
+           '</div>';
+    });
+    listEl.innerHTML = h;
+}
+function printWeeklyReportInboxItem(i){
+    var r = (window._wkrInboxFiltered||[])[i];
+    if(!r) return;
+    var u = (window._wkrInboxUsers||{})[r.uid] || {name:r.name, email:r.email};
+    printWeeklyReportDoc(u, r);
+}
+function markWeeklyReportReviewed(id, btn){
+    if(btn){ btn.disabled = true; btn.textContent = '⏳ ...'; }
+    db.collection('weeklyReports').doc(id).update({ reviewedByAdmin:true, reviewedAt:new Date() }).then(function(){
+        var rep = (window._wkrInboxData||[]).filter(function(x){ return x.id===id; })[0];
+        if(rep) rep.reviewedByAdmin = true;
+        renderWeeklyReportsInbox();
+        if(typeof tgToast === 'function') tgToast('✅ تم تحديد التقرير كمراجَع', 'ok');
+    }).catch(function(err){
+        if(btn){ btn.disabled = false; btn.textContent = '✔ تحديد كمراجَع'; }
+        if(typeof tgToast === 'function') tgToast('❌ '+err.message, 'err');
+    });
+}
+
 function printAchievementDoc(u,a){
     var h=H('توثيق إنجاز','إنجاز مُسجّل من الموظف','ACHIEVEMENT RECORD','ach');
     h+=SC('١','بيانات الموظف');
@@ -3341,6 +3448,25 @@ function load(id,c){
         h+='</div>'; // close staffListViewContainer
         h+='<div id="staffDetailViewContainer" style="display:none"></div>';
         h+='</div>';
+    }
+
+    // ── بريد التقارير الأسبوعية ─────────────────────────────────────────
+    else if(id==="wkreports"){
+        h='<div class="SP"><h3>📥 بريد التقارير الأسبوعية</h3>';
+        h+='<div class="set-hint">كل التقارير الأسبوعية المُرسلة من الموظفين في مكان واحد — فلترة حسب الموظف أو الأسبوع، تحديد ما تمت مراجعته، وطباعة مباشرة.</div>';
+        h+='<div id="wkrInboxStats" style="display:flex;gap:10px;margin:14px 0;flex-wrap:wrap"></div>';
+        h+='<div class="staff-toolbar">';
+        h+='<select id="wkrInboxEmpFilter" class="global-table-filter" style="width:220px" onchange="renderWeeklyReportsInbox()"><option value="all">كل الموظفين</option></select>';
+        h+='<select id="wkrInboxWeekFilter" class="global-table-filter" style="width:180px" onchange="renderWeeklyReportsInbox()"><option value="all">كل الأسابيع</option></select>';
+        h+='<select id="wkrInboxStatusFilter" class="global-table-filter" style="width:170px" onchange="renderWeeklyReportsInbox()">'+
+           '<option value="all">كل الحالات</option><option value="unreviewed">⏳ غير مراجَعة</option><option value="reviewed">✅ تمت مراجعتها</option></select>';
+        h+='</div>';
+        h+='<div id="wkrInboxList" style="margin-top:14px"><div class="empty-hint">⏳ جارٍ تحميل التقارير...</div></div>';
+        h+='</div>';
+        c.innerHTML = h;
+        loadWeeklyReportsInbox();
+        clearAdminBadge('notif-wkr-badge','notif-wkr-badge-sb');
+        return;
     }
 
     // ── التقويم العام ──────────────────────────────────────────────────

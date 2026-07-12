@@ -86,6 +86,7 @@
             <div class="S-i" onclick="go('pmgmt',this)" style="border-right:2px solid var(--gd)"><span class="ic">📁</span> إدارة المشاريع <span class="S-b">جديد</span></div>
             <div class="S-i" onclick="go('tasksmgmt',this)" style="border-right:2px solid var(--gd)"><span class="ic">🗂</span> توزيع المهام <span class="S-b">جديد</span></div>
             <div class="S-i" onclick="go('staff',this);clearAdminBadge('notif-req-badge','notif-req-badge-sb')" style="border-right:2px solid var(--gd)"><span class="ic">👥</span> متابعة الموظفين <span class="S-b">جديد</span> <span id="notif-req-badge-sb" style="display:none;background:var(--no);color:#fff;border-radius:50%;min-width:18px;height:18px;font-size:10px;font-weight:800;align-items:center;justify-content:center;padding:0 3px;margin-right:4px">0</span></div>
+            <div class="S-i" onclick="go('wkreports',this);clearAdminBadge('notif-wkr-badge','notif-wkr-badge-sb')" style="border-right:2px solid var(--gd)"><span class="ic">📥</span> بريد التقارير الأسبوعية <span id="notif-wkr-badge-sb" style="display:none;background:var(--no);color:#fff;border-radius:50%;min-width:18px;height:18px;font-size:10px;font-weight:800;align-items:center;justify-content:center;padding:0 3px;margin-right:4px">0</span></div>
             <div class="S-i" onclick="go('empdocs',this)" style="border-right:2px solid var(--gd)"><span class="ic">📂</span> ملفات الموظفين <span class="S-b">جديد</span></div>
             <div class="S-i" onclick="goLiveTrack(this)" style="border-right:2px solid var(--gd)"><span class="ic">📡</span> متابعة لحظية <span class="S-b" style="background:var(--ok)">مباشر</span></div>
             <div class="S-i" onclick="goSendForm(this)" style="border-right:2px solid var(--gd)"><span class="ic">📝</span> إرسال نموذج لموظف <span class="S-b">جديد</span></div>
@@ -272,7 +273,7 @@
 <div class="pg" id="pg-exp"></div><div class="pg" id="pg-clr"></div><div class="pg" id="pg-task"></div><div class="pg" id="pg-sal"></div>
 <div class="pg" id="pg-res"></div><div class="pg" id="pg-promo"></div><div class="pg" id="pg-raise"></div><div class="pg" id="pg-contract"></div>
 <div class="pg" id="pg-att_live"></div><div class="pg" id="pg-att"></div><div class="pg" id="pg-cal"></div><div class="pg" id="pg-comp"></div><div class="pg" id="pg-set"></div><div class="pg" id="pg-proj"></div><div class="pg" id="pg-mexp"></div>
-<div class="pg" id="pg-staff"></div><div class="pg" id="pg-pmgmt"></div><div class="pg" id="pg-tasksmgmt"></div><div class="pg" id="pg-account"></div><div class="pg" id="pg-announcements"></div><div class="pg" id="pg-livetrack"></div><div class="pg" id="pg-sendform"></div><div class="pg" id="pg-empdocs"></div>
+<div class="pg" id="pg-staff"></div><div class="pg" id="pg-pmgmt"></div><div class="pg" id="pg-tasksmgmt"></div><div class="pg" id="pg-account"></div><div class="pg" id="pg-announcements"></div><div class="pg" id="pg-livetrack"></div><div class="pg" id="pg-sendform"></div><div class="pg" id="pg-empdocs"></div><div class="pg" id="pg-wkreports"></div>
 </div>
 </div>
 <datalist id="tgEmpDL"></datalist>
@@ -363,7 +364,7 @@
     else if (tag === 'request-reviewed' || tag === 'request-new') go('staff');
     else if (tag === 'project-new' || tag === 'project-update' || tag === 'project-progress' || tag === 'project-note') go('pmgmt');
     else if (tag === 'task-new' || tag === 'task-update' || tag === 'task-status') go('tasksmgmt');
-    else if (tag === 'weekly-report-new' || tag === 'weekly-report-reminder') go('staff');
+    else if (tag === 'weekly-report-new' || tag === 'weekly-report-reminder') go('wkreports');
     else if (tag === 'achievement-new') go('staff');
   }
   function tgNotifDelClick(id, ev) {
