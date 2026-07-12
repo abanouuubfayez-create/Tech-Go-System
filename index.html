@@ -90,7 +90,6 @@
             <div class="S-i" onclick="goLiveTrack(this)" style="border-right:2px solid var(--gd)"><span class="ic">📡</span> متابعة لحظية <span class="S-b" style="background:var(--ok)">مباشر</span></div>
             <div class="S-i" onclick="goSendForm(this)" style="border-right:2px solid var(--gd)"><span class="ic">📝</span> إرسال نموذج لموظف <span class="S-b">جديد</span></div>
             <div class="S-i" onclick="go('announcements',this)" style="border-right:2px solid var(--gd)"><span class="ic">📢</span> إدارة الإعلانات <span class="S-b">جديد</span></div>
-            <div class="S-i" onclick="go('sysreport',this)" style="border-right:2px solid var(--gd)"><span class="ic">📊</span> التقارير الشاملة <span class="S-b">جديد</span></div>
             <div class="S-i" onclick="go('account',this)" style="border-right:2px solid var(--gd)"><span class="ic">👤</span> حسابي <span class="S-b">جديد</span></div>
         </div>
     </div>
@@ -273,7 +272,7 @@
 <div class="pg" id="pg-exp"></div><div class="pg" id="pg-clr"></div><div class="pg" id="pg-task"></div><div class="pg" id="pg-sal"></div>
 <div class="pg" id="pg-res"></div><div class="pg" id="pg-promo"></div><div class="pg" id="pg-raise"></div><div class="pg" id="pg-contract"></div>
 <div class="pg" id="pg-att_live"></div><div class="pg" id="pg-att"></div><div class="pg" id="pg-cal"></div><div class="pg" id="pg-comp"></div><div class="pg" id="pg-set"></div><div class="pg" id="pg-proj"></div><div class="pg" id="pg-mexp"></div>
-<div class="pg" id="pg-staff"></div><div class="pg" id="pg-pmgmt"></div><div class="pg" id="pg-tasksmgmt"></div><div class="pg" id="pg-account"></div><div class="pg" id="pg-announcements"></div><div class="pg" id="pg-livetrack"></div><div class="pg" id="pg-sendform"></div><div class="pg" id="pg-empdocs"></div><div class="pg" id="pg-sysreport"></div>
+<div class="pg" id="pg-staff"></div><div class="pg" id="pg-pmgmt"></div><div class="pg" id="pg-tasksmgmt"></div><div class="pg" id="pg-account"></div><div class="pg" id="pg-announcements"></div><div class="pg" id="pg-livetrack"></div><div class="pg" id="pg-sendform"></div><div class="pg" id="pg-empdocs"></div>
 </div>
 </div>
 <datalist id="tgEmpDL"></datalist>
@@ -364,7 +363,7 @@
     else if (tag === 'request-reviewed' || tag === 'request-new') go('staff');
     else if (tag === 'project-new' || tag === 'project-update' || tag === 'project-progress' || tag === 'project-note') go('pmgmt');
     else if (tag === 'task-new' || tag === 'task-update' || tag === 'task-status') go('tasksmgmt');
-    else if (tag === 'weekly-report-new' || tag === 'weekly-report-reminder') go('sysreport');
+    else if (tag === 'weekly-report-new' || tag === 'weekly-report-reminder') go('staff');
     else if (tag === 'achievement-new') go('staff');
   }
   function tgNotifDelClick(id, ev) {
