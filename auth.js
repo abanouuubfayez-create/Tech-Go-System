@@ -110,7 +110,7 @@ function tgSendPushToUser(toUid, title, body, tag) {
         tag: tag || 'techgo',
         read: false,
         seen: false,
-        createdAt: new Date()
+        createdAt: firebase.firestore.FieldValue.serverTimestamp()
     }).catch(function() {});
 }
 

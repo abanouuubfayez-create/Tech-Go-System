@@ -927,7 +927,7 @@ function sendAchievementNotification(achTitle) {
                 body: 'قام ' + TG_USER.name + ' بإضافة إنجاز: ' + achTitle,
                 type: 'achievement',
                 read: false,
-                createdAt: new Date()
+                createdAt: firebase.firestore.FieldValue.serverTimestamp()
             });
         });
         // إشعار للأدمن أيضاً

@@ -304,19 +304,21 @@
   });
 
   function tgTimeAgo(d) {
-    if (!d) return '';
+    if (!d) return 'الآن';
     var ms = (d && d.toMillis) ? d.toMillis() : new Date(d).getTime();
-    if (!ms) return '';
-    var diff = Math.max(0, Date.now() - ms);
-    var mins = Math.floor(diff / 60000);
-    if (mins < 1) return 'الآن';
-    if (mins < 60) return 'منذ ' + mins + ' د';
-    var hrs = Math.floor(mins / 60);
-    if (hrs < 24) return 'منذ ' + hrs + ' س';
-    var days = Math.floor(hrs / 24);
-    if (days < 7) return 'منذ ' + days + ' يوم';
-    var wks = Math.floor(days / 7);
-    return 'منذ ' + wks + ' أسبوع';
+    if (!ms || isNaN(ms)) return 'توقيت غير معروف';
+    var now = Date.now();
+    var s = Math.floor(Math.abs(now - ms) / 1000);
+    
+    if (s < 2) return 'الآن';
+    if (s < 60) return 'منذ ' + s + ' ثانية';
+    var m = Math.floor(s / 60);
+    if (m < 60) return (m === 1 ? 'منذ دقيقة' : m === 2 ? 'منذ دقيقتين' : m <= 10 ? 'منذ ' + m + ' دقائق' : 'منذ ' + m + ' دقيقة');
+    var h = Math.floor(m / 60);
+    if (h < 24) return (h === 1 ? 'منذ ساعة' : h === 2 ? 'منذ ساعتين' : h <= 10 ? 'منذ ' + h + ' ساعات' : 'منذ ' + h + ' ساعة');
+    var days = Math.floor(h / 24);
+    if (days < 30) return (days === 1 ? 'منذ يوم' : days === 2 ? 'منذ يومين' : days <= 10 ? 'منذ ' + days + ' أيام' : 'منذ ' + days + ' يوم');
+    return new Date(ms).toLocaleDateString('ar-EG');
   }
 
   function tgRenderNotifPanel(list, unreadCount) {
@@ -360,7 +362,8 @@
     var panel = document.getElementById('notifPanel');
     if (panel) panel.style.display = 'none';
 
-    if (tag === 'form-new') go('gen');
+    if (tag === 'form-submitted') { if (typeof goSendForm === 'function') goSendForm(null); else go('sendform'); }
+    else if (tag === 'form-new') go('gen');
     else if (tag === 'request-reviewed' || tag === 'request-new') go('staff');
     else if (tag === 'project-new' || tag === 'project-update' || tag === 'project-progress' || tag === 'project-note') go('pmgmt');
     else if (tag === 'task-new' || tag === 'task-update' || tag === 'task-status') go('tasksmgmt');
