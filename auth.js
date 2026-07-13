@@ -84,11 +84,9 @@ function tgShowNotification(title, body, opts) {
     }, opts || {});
 
     if ('serviceWorker' in navigator && navigator.serviceWorker.controller) {
-        // Use SW for richer notifications
         navigator.serviceWorker.ready.then(function(reg) {
             reg.showNotification(title, options);
         }).catch(function() {
-            // Fallback to basic Notification
             if ('Notification' in window && Notification.permission === 'granted') {
                 try { new Notification(title, options); } catch(e) {}
             }
@@ -97,9 +95,8 @@ function tgShowNotification(title, body, opts) {
         try { new Notification(title, options); } catch(e) {}
     }
 
-    // Always show in-app toast as well
     if (typeof tgToast === 'function') {
-        tgToast('\uD83D\uDD14 ' + title + (body ? ' — ' + body : ''), 'ok');
+        tgToast(body || title, 'info', false, title);
     }
 }
 
@@ -132,33 +129,43 @@ var _tgMyNotifUnsub = null;
 var _tgMyNotifShownIds = {}; // درع إضافي: يمنع إعادة عرض نفس الإشعار مرتين في نفس الجلسة حتى لو فشل تحديث Firestore
 function tgListenMyNotifications(uid) {
     if (!uid) return;
-    // يمنع تراكم أكثر من مستمع (listener) واحد على نفس الحساب، وهو ما كان يسبب
-    // إعادة عرض عشرات الإشعارات القديمة كل مرة تُعاد فيها المصادقة (auth state) خلال نفس الجلسة
     if (_tgMyNotifUnsub) { _tgMyNotifUnsub(); _tgMyNotifUnsub = null; }
-    // ملاحظة: 'seen' يُستخدم فقط لمنع تكرار عرض التوست/الإشعار المنبثق لنفس العنصر،
-    // وهو مستقل عن 'read' التي تتحكم بحالة القراءة داخل لوحة الإشعارات (Facebook-style)
+    
+    var _isInitialLoad = true;
     _tgMyNotifUnsub = db.collection('notifications').where('toUid', '==', uid).where('seen', '==', false)
         .onSnapshot(function(snap) {
-            snap.docChanges().forEach(function(change) {
+            var changes = snap.docChanges();
+            
+            if (_isInitialLoad) {
+                _isInitialLoad = false;
+                var count = 0;
+                changes.forEach(function(change) {
+                    if (change.type === 'added') {
+                        count++;
+                        var id = change.doc.id;
+                        _tgMyNotifShownIds[id] = true;
+                        db.collection('notifications').doc(id).update({ seen: true }).catch(function(){});
+                    }
+                });
+                if (count > 0 && typeof tgToast === 'function') {
+                    tgToast('تم نقلها لمركز الإشعارات', 'info', false, 'لديك ' + count + ' إشعار سابق غير مقروء');
+                }
+                return;
+            }
+
+            changes.forEach(function(change) {
                 if (change.type === 'added') {
                     var id = change.doc.id;
-                    if (_tgMyNotifShownIds[id]) return; // اتعرض قبل كده في نفس الجلسة، تجاهله
+                    if (_tgMyNotifShownIds[id]) return;
                     _tgMyNotifShownIds[id] = true;
 
                     var d = change.doc.data();
-                    // tag ثابت لكل إشعار حتى لو تكرر عرضه (مثلاً بسبب فشل تحديث seen) يستبدل نفسه
-                    // في نظام تشغيل المستخدم بدل ما يتكدّس كإشعار جديد منفصل
                     tgShowNotification(d.title || 'إشعار', d.body || '', { tag: 'techgo-notif-' + id });
                     
-                    // إذا كان الإشعار بخصوص انتهاء مشروع، شغل الاحتفال عند الموظف
                     if (d.tag === 'project-completed' && typeof tgCelebrate === 'function') {
-                        setTimeout(tgCelebrate, 500); // تأخير بسيط ليظهر الإشعار أولاً
+                        setTimeout(tgCelebrate, 500);
                     }
-
-                    // تمييزها كـ "تم عرضها" فوراً حتى لا يتكرر التوست، مع إبقاء حالة القراءة كما هي
-                    db.collection('notifications').doc(id).update({ seen: true }).catch(function(err) {
-                        console.warn('تعذّر تحديث حالة seen للإشعار (تأكد من نشر firestore.rules المحدّثة):', err && err.message);
-                    });
+                    db.collection('notifications').doc(id).update({ seen: true }).catch(function() {});
                 }
             });
         }, function() {});

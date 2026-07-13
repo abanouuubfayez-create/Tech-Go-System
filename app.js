@@ -338,18 +338,51 @@ document.addEventListener('DOMContentLoaded', function(){
 });
 
 // ─── Toast Notification Helper ────────────────────────────────────────────
-function tgToast(msg, type){
+function tgToast(msg, type, isPersistent, titleOverride){
     var container = document.getElementById('tg-toast-container');
     if (!container) {
         container = document.createElement('div');
         container.id = 'tg-toast-container';
         document.body.appendChild(container);
     }
+    
+    var title = titleOverride || 'إشعار';
+    var body = msg;
+    var icon = '🔔';
+    if(type === 'ok') icon = '✅';
+    else if(type === 'err') icon = '❌';
+
+    var msgParts = msg.split(' — ');
+    if(msgParts.length > 1) {
+        title = msgParts[0].replace('🔔 ', '').replace('✅ ', '').replace('❌ ', '');
+        body = msgParts.slice(1).join(' — ');
+    } else {
+        body = msg.replace('🔔 ', '').replace('✅ ', '').replace('❌ ', '');
+        if(!titleOverride) {
+            title = type === 'ok' ? 'نجاح' : (type === 'err' ? 'خطأ' : 'تنبيه');
+        }
+    }
+
     var t=document.createElement('div');
-    t.className='tg-toast'+(type==='ok'?' toast-ok':type==='err'?' toast-err':'');
-    t.textContent=msg;
+    t.className='tg-toast tg-toast-'+(type||'info');
+    
+    var h = '<div class="tg-toast-icon">' + icon + '</div>';
+    h += '<div class="tg-toast-content">';
+    h += '<div class="tg-toast-title">' + (typeof escH === 'function' ? escH(title) : title) + '</div>';
+    if(body) h += '<div class="tg-toast-body">' + (typeof escH === 'function' ? escH(body) : body) + '</div>';
+    h += '</div>';
+    h += '<div class="tg-toast-close" onclick="this.parentElement.remove()">✕</div>';
+    if(!isPersistent) {
+        h += '<div class="tg-toast-progress"></div>';
+    }
+    
+    t.innerHTML = h;
     container.appendChild(t);
-    setTimeout(function(){ if(t.parentNode) t.parentNode.removeChild(t); }, 3100);
+    
+    if(!isPersistent) {
+        setTimeout(function(){ if(t.parentNode) t.parentNode.removeChild(t); }, 4000);
+    }
+    return t;
 }
 
 // ─── تقييد صلاحيات الأدمن التقني ────────────────────────────────────────
