@@ -141,10 +141,13 @@ function tgListenMyNotifications(uid) {
                 var count = 0;
                 changes.forEach(function(change) {
                     if (change.type === 'added') {
-                        count++;
                         var id = change.doc.id;
+                        var d = change.doc.data();
                         _tgMyNotifShownIds[id] = true;
                         db.collection('notifications').doc(id).update({ seen: true }).catch(function(){});
+                        if (!d.read) {
+                            count++;
+                        }
                     }
                 });
                 if (count > 0 && typeof tgToast === 'function') {
@@ -160,7 +163,10 @@ function tgListenMyNotifications(uid) {
                     _tgMyNotifShownIds[id] = true;
 
                     var d = change.doc.data();
-                    tgShowNotification(d.title || 'إشعار', d.body || '', { tag: 'techgo-notif-' + id });
+                    
+                    if (!d.read) {
+                        tgShowNotification(d.title || 'إشعار', d.body || '', { tag: 'techgo-notif-' + id });
+                    }
                     
                     if (d.tag === 'project-completed' && typeof tgCelebrate === 'function') {
                         setTimeout(tgCelebrate, 500);
@@ -199,7 +205,7 @@ function tgListenNotifCenter(uid, onUpdate) {
 
 function tgMarkNotifRead(notifId) {
     if (!notifId) return;
-    db.collection('notifications').doc(notifId).update({ read: true }).catch(function() {});
+    db.collection('notifications').doc(notifId).update({ read: true, seen: true }).catch(function() {});
 }
 
 function tgMarkAllNotifsRead(uid) {
@@ -207,7 +213,7 @@ function tgMarkAllNotifsRead(uid) {
     db.collection('notifications').where('toUid', '==', uid).where('read', '==', false).get()
         .then(function(snap) {
             var batch = db.batch();
-            snap.forEach(function(doc) { batch.update(doc.ref, { read: true }); });
+            snap.forEach(function(doc) { batch.update(doc.ref, { read: true, seen: true }); });
             return batch.commit();
         }).catch(function() {});
 }
