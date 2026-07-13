@@ -1352,6 +1352,18 @@ function renderTasksMgmtList(list){
         if(el) el.textContent = counts[key] || 0;
     });
 
+    var empBtns = document.getElementById('tgEmpFilterBtns');
+    if(empBtns) {
+        var empSet2 = new Set();
+        list.forEach(function(t){ if(t.assignedToName) empSet2.add(t.assignedToName); });
+        var savedEmp = window._tgActiveEmpTaskFilter || '';
+        var btnsH = '<button class="tg-emp-btn'+(savedEmp===''?' tg-emp-active':'')+'" onclick="tgSetTaskEmpFilter(this,\'\')">الكل</button>';
+        Array.from(empSet2).sort(function(a,b){return a.localeCompare(b,'ar');}).forEach(function(e){
+            btnsH += '<button class="tg-emp-btn'+(e===savedEmp?' tg-emp-active':'')+'" onclick="tgSetTaskEmpFilter(this,\''+e.replace(/'/g,'\\x27')+'\')">'+escH(e)+'</button>';
+        });
+        empBtns.innerHTML = btnsH;
+    }
+
     // بناء كروت المهام
     var h = '<div class="tg-tasks-grid">';
     list.forEach(function(t){
@@ -1442,27 +1454,68 @@ function tgSetTaskStatusTab(btn, status){
     tgApplyActiveTaskFilter();
 }
 
+window._tgActiveEmpTaskFilter = '';
+function tgSetTaskEmpFilter(btn, emp){
+    window._tgActiveEmpTaskFilter = emp;
+    var p = btn.parentNode;
+    if(p) {
+        p.querySelectorAll('.tg-emp-btn').forEach(function(b){ b.classList.remove('tg-emp-active'); });
+        btn.classList.add('tg-emp-active');
+    }
+    tgApplyActiveTaskFilter();
+}
+
 // تطبيق الفلتر بناءً على التبويب النشط
 function tgApplyActiveTaskFilter(){
     var status = window._tgActiveTaskTab || '';
-    var cards = document.querySelectorAll('.tg-task-card');
-    var now = Date.now();
+    var empFilter = window._tgActiveEmpTaskFilter || '';
+    var searchInput = document.getElementById('tgTasksSearch');
+    var search = searchInput ? searchInput.value.trim().toLowerCase() : '';
+    var sortInput = document.getElementById('tgTasksSortBy');
+    var sortBy = sortInput ? sortInput.value : '';
+
+    var box = document.querySelector('.tg-tasks-grid');
+    if(!box) return;
+    var cardsArray = Array.from(box.querySelectorAll('.tg-task-card'));
     
-    cards.forEach(function(card){
-        var show = false;
+    cardsArray.forEach(function(card){
+        var show = true;
         var cardStatus = card.getAttribute('data-status');
         var isLate = card.getAttribute('data-late') === '1';
         
-        if(status === ''){
-            show = true; // الكل
-        } else if(status === 'late'){
-            show = isLate;
-        } else {
-            show = (cardStatus === status);
+        if(status === 'late'){
+            if(!isLate) show = false;
+        } else if(status !== ''){
+            if(cardStatus !== status) show = false;
+        }
+
+        if(empFilter !== ''){
+            if(card.textContent.indexOf(empFilter) === -1) show = false;
+        }
+
+        if(search !== ''){
+            if(card.textContent.toLowerCase().indexOf(search) === -1) show = false;
         }
         
         card.style.display = show ? '' : 'none';
     });
+
+    if(sortBy !== ''){
+        cardsArray.sort(function(a, b){
+            if(sortBy === 'prio'){
+                var pA = a.querySelector('.task-badge.prio-high') ? 3 : (a.querySelector('.task-badge.prio-med') ? 2 : 1);
+                var pB = b.querySelector('.task-badge.prio-high') ? 3 : (b.querySelector('.task-badge.prio-med') ? 2 : 1);
+                return pB - pA;
+            }
+            if(sortBy === 'emp'){
+                var nA = a.querySelector('.task-card-info .info-text') ? a.querySelector('.task-card-info .info-text').textContent : '';
+                var nB = b.querySelector('.task-card-info .info-text') ? b.querySelector('.task-card-info .info-text').textContent : '';
+                return nA.localeCompare(nB, 'ar');
+            }
+            return 0;
+        });
+        cardsArray.forEach(function(card){ box.appendChild(card); });
+    }
 }
 
 
