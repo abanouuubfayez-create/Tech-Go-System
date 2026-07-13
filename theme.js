@@ -43,3 +43,41 @@ function tgUpdateThemeUI(theme) {
 
 // Run initialization immediately — icon will be fixed once DOM is ready
 tgInitTheme();
+
+// ─── Offline/Online UX ────────────────────────────────────────────────────
+if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', tgInitOfflineUX);
+} else {
+    tgInitOfflineUX();
+}
+
+function tgInitOfflineUX() {
+    var banner = document.getElementById('tg-offline-banner');
+    if (!banner) {
+        banner = document.createElement('div');
+        banner.id = 'tg-offline-banner';
+        banner.innerHTML = '<span style="font-size:18px;">⚠️</span> أنت غير متصل بالإنترنت. يرجى التحقق من اتصالك.';
+        document.body.appendChild(banner);
+    }
+
+    function updateOnlineStatus() {
+        if (!navigator.onLine) {
+            banner.innerHTML = '<span style="font-size:18px;">⚠️</span> أنت غير متصل بالإنترنت. يرجى التحقق من اتصالك.';
+            banner.classList.remove('online');
+            banner.classList.add('show');
+        } else {
+            banner.innerHTML = '<span style="font-size:18px;">✅</span> عاد الاتصال بالإنترنت!';
+            banner.classList.add('online');
+            setTimeout(function() {
+                if (navigator.onLine) banner.classList.remove('show');
+            }, 3000);
+        }
+    }
+
+    window.addEventListener('online', updateOnlineStatus);
+    window.addEventListener('offline', updateOnlineStatus);
+    
+    if (!navigator.onLine) {
+        updateOnlineStatus();
+    }
+}
