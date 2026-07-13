@@ -1805,13 +1805,19 @@ html.tg-auth-pending body { visibility: hidden; }
 /* ══════════════════════════════════════════════ */
 /*              TOAST NOTIFICATION               */
 /* ══════════════════════════════════════════════ */
-.tg-toast {
+#tg-toast-container {
     position: fixed; bottom: 20px; right: 20px; z-index: 99999;
+    display: flex; flex-direction: column; gap: 10px;
+    align-items: flex-end;
+    pointer-events: none;
+}
+.tg-toast {
     background: var(--nv); color: #fff; padding: 11px 18px; border-radius: 10px;
     font-size: 12.5px; font-weight: 600; box-shadow: var(--sh-lg);
     display: flex; align-items: center; gap: 10px;
     animation: slideInRight .25s ease, fadeOut .3s ease 2.7s forwards;
     max-width: 340px; border-right: 4px solid var(--gd);
+    pointer-events: auto;
 }
 .tg-toast.toast-ok { border-right-color: var(--ok); }
 .tg-toast.toast-err { border-right-color: var(--no); }

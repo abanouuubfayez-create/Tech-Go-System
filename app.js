@@ -339,10 +339,16 @@ document.addEventListener('DOMContentLoaded', function(){
 
 // ─── Toast Notification Helper ────────────────────────────────────────────
 function tgToast(msg, type){
+    var container = document.getElementById('tg-toast-container');
+    if (!container) {
+        container = document.createElement('div');
+        container.id = 'tg-toast-container';
+        document.body.appendChild(container);
+    }
     var t=document.createElement('div');
     t.className='tg-toast'+(type==='ok'?' toast-ok':type==='err'?' toast-err':'');
     t.textContent=msg;
-    document.body.appendChild(t);
+    container.appendChild(t);
     setTimeout(function(){ if(t.parentNode) t.parentNode.removeChild(t); }, 3100);
 }
 
