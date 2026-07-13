@@ -702,6 +702,7 @@ var _adminNotifInitialDone = false;
 
 function startAdminNotifications(){
     if(_adminNotifUnsub) return;
+    _adminNotifUnsub = true; // Prevent multiple executions
     // فك قفل الصوت عند أول تفاعل
     var unlockFn = function(){
         if(_adminNotifAudioUnlocked) return;

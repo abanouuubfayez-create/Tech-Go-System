@@ -174,14 +174,24 @@
   }
 
   // ── ربط المستمعين اللحظيين بـ Firestore ─────────────────────────────────
+  var _ltUsersUnsub = null;
+  var _ltTasksUnsub = null;
+  var _ltProjUnsub = null;
+  var _ltLogsUnsub = null;
+  
   function ltMountListeners() {
-    db.collection('users').where('role', '==', 'employee')
+    if (_ltUsersUnsub) { _ltUsersUnsub(); _ltUsersUnsub = null; }
+    if (_ltTasksUnsub) { _ltTasksUnsub(); _ltTasksUnsub = null; }
+    if (_ltProjUnsub) { _ltProjUnsub(); _ltProjUnsub = null; }
+    if (_ltLogsUnsub) { _ltLogsUnsub(); _ltLogsUnsub = null; }
+
+    _ltUsersUnsub = db.collection('users').where('role', '==', 'employee')
       .onSnapshot(function (snap) {
         ltEmployees = snap.docs.map(function (d) { return Object.assign({ uid: d.id }, d.data()); });
         ltRenderTeam();
       });
 
-    db.collection('tasks').orderBy('createdAt', 'desc').limit(300)
+    _ltTasksUnsub = db.collection('tasks').orderBy('createdAt', 'desc').limit(300)
       .onSnapshot(function (snap) {
         snap.docChanges().forEach(function (ch) {
           if (!ltTasksFirstSnap && (ch.type === 'added' || ch.type === 'modified')) {
@@ -239,12 +249,12 @@
         ltRenderTasks();
       });
 
-    db.collection('projects').limit(100).onSnapshot(function (snap) {
+    _ltProjUnsub = db.collection('projects').limit(100).onSnapshot(function (snap) {
       ltProjects = snap.docs.map(function (d) { return Object.assign({ id: d.id }, d.data()); });
       ltRenderTeam();
     });
 
-    db.collection('attendance_logs').orderBy('serverTimestamp', 'desc').limit(30)
+    _ltLogsUnsub = db.collection('attendance_logs').orderBy('serverTimestamp', 'desc').limit(30)
       .onSnapshot(function(snap) {
         snap.docChanges().forEach(function(ch) {
           if (ch.type === 'added' || ch.type === 'modified') {

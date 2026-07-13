@@ -537,8 +537,10 @@
     });
   };
 
+  var _fsWatchSentUnsub = null;
   function fsWatchSentForms() {
-    db.collection('formRequests').where('sentByUid', '==', TG_USER.uid)
+    if (_fsWatchSentUnsub) { _fsWatchSentUnsub(); _fsWatchSentUnsub = null; }
+    _fsWatchSentUnsub = db.collection('formRequests').where('sentByUid', '==', TG_USER.uid)
       .onSnapshot(function (snap) {
         fsSentCache = snap.docs.map(function (d) { return Object.assign({ id: d.id }, d.data()); });
         fsSentCache.sort(function (a, b) {
@@ -658,8 +660,10 @@
   // ══════════════════════════ جهة الموظف (employee.html) ══════════════════════════
   var fsMyCache = [];
 
+  var _fsMyReqUnsub = null;
   window.loadMyFormRequests = function (uid) {
-    db.collection('formRequests').where('targetUid', '==', uid)
+    if (_fsMyReqUnsub) { _fsMyReqUnsub(); _fsMyReqUnsub = null; }
+    _fsMyReqUnsub = db.collection('formRequests').where('targetUid', '==', uid)
       .onSnapshot(function (snap) {
         fsMyCache = snap.docs.map(function (d) { return Object.assign({ id: d.id }, d.data()); });
         fsRenderMyForms();
