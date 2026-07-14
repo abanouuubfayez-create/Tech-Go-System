@@ -3199,15 +3199,37 @@ body.dark-mode .tg-expand-btn:hover {
     background: rgba(40, 167, 69, 0.95);
 }
 
-/* ── Print Styles for Notifications ── */
+/* ── Print Styles for Notifications & Employee Portal ── */
 @media print {
-    #tg-offline-banner,
-    #tg-toast-container,
-    .tg-toast,
-    .toast,
-    #_toast,
-    .notif-panel,
-    .notif-wrap {
+    /* Hide UI Elements & Notifications */
+    .emp-topbar, .emp-nav, #offlineBanner, .zaghrouta-container, #zaghroutaWrap,
+    #tg-offline-banner, #tg-toast-container, .tg-toast, .toast, #_toast, 
+    .notif-panel, .notif-wrap {
         display: none !important;
     }
+    
+    /* Reset heights to avoid empty pages */
+    html, body, .emp-body {
+        height: auto !important;
+        min-height: auto !important;
+        overflow: visible !important;
+        margin: 0 !important;
+        padding: 0 !important;
+        background: #fff !important;
+    }
+    
+    /* Show only active tab in employee portal */
+    .emp-ct {
+        margin: 0 !important;
+        padding: 0 !important;
+        max-width: none !important;
+    }
+    .emp-pg:not(.a) {
+        display: none !important;
+    }
+    .emp-pg.a {
+        display: block !important;
+        page-break-inside: auto;
+    }
 }
+

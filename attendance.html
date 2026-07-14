@@ -4970,12 +4970,10 @@ ${empBlocks}
     }
 
     // حساب الاستحقاق السنوي حسب اللائحة (م.١٢٤):
-    // - ذوو الإعاقة والأقزام → 45 يوم
     // - السنة الأولى → 15 يوم
-    // - السنة الثانية فأكثر → 21 يوم
+    // - الحد الأقصى (السنة الثانية فأكثر) → 21 يوم
     function getAnnualEntitlement(year, empId) {
         const profile = getProfile(empId || _currentLeaveEmpId);
-        if (profile.disability) return 45;
         if (!profile.hireDate) return 21; // افتراضي: سنة ثانية
         const hireYear = parseInt(profile.hireDate.slice(0, 4), 10);
         const leaveYear = parseInt(year, 10);
@@ -4998,7 +4996,7 @@ ${empBlocks}
         const badge = document.getElementById('lm-entitlement-badge');
         if (!badge) return;
         const ent = getAnnualEntitlement(_currentLeaveYear);
-        const labels = { 15: 'السنة الأولى — ١٥ يوم', 21: 'السنة الثانية+ — ٢١ يوم', 45: 'ذو إعاقة — ٤٥ يوم' };
+        const labels = { 15: 'السنة الأولى — ١٥ يوم', 21: 'الحد الأقصى — ٢١ يوم' };
         badge.textContent = '📋 ' + (labels[ent] || ent + ' يوم');
     }
 

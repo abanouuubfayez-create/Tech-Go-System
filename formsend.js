@@ -44,7 +44,7 @@
         { id: 'dept', label: 'القسم / الإدارة', type: 'text' },
         { id: 'jobTitle', label: 'المسمى الوظيفي', type: 'text' },
         { id: 'phone', label: 'رقم التواصل أثناء الإجازة', type: 'tel' },
-        { id: 'leaveType', label: 'نوع الإجازة', type: 'select', options: ['إجازة سنوية (م.١٢٤)', 'إجازة عارضة (م.١٢٨)'] },
+        { id: 'leaveType', label: 'نوع الإجازة', type: 'select', options: ['إجازة سنوية (م.١٢٤)', 'إجازة عارضة (م.١٢٨)', 'إجازة رسمية / أعياد (م.١٢٩)'] },
         { id: 'fromDate', label: 'تاريخ البدء', type: 'date' },
         { id: 'toDate', label: 'تاريخ الانتهاء', type: 'date' },
         { id: 'days', label: 'عدد الأيام', type: 'number' },
@@ -248,9 +248,10 @@
         h += F2(fgIn('الاسم بالكامل', 'name'), fgIn('القسم / الإدارة', 'dept'));
         h += F2(fgIn('المسمى الوظيفي', 'jobTitle'), fgIn('رقم التواصل أثناء الإجازة', 'phone', 'tel'));
         h += SC('٢', 'نوع الإجازة');
-        h += '<div class="chk-grid" style="grid-template-columns:1fr 1fr">' +
+        h += '<div class="chk-grid" style="grid-template-columns:1fr 1fr 1fr">' +
           fsRadioIn('leaveType', 'fsLt', 'إجازة سنوية (م.١٢٤)', '<strong>إجازة سنوية</strong> (م.١٢٤)') +
-          fsRadioIn('leaveType', 'fsLt', 'إجازة عارضة (م.١٢٨)', '<strong>إجازة عارضة</strong> (م.١٢٨)') + '</div>';
+          fsRadioIn('leaveType', 'fsLt', 'إجازة عارضة (م.١٢٨)', '<strong>إجازة عارضة</strong> (م.١٢٨)') +
+          fsRadioIn('leaveType', 'fsLt', 'إجازة رسمية / أعياد (م.١٢٩)', '<strong>إجازة رسمية</strong> (م.١٢٩)') + '</div>';
         h += SC('٣', 'مدة الإجازة');
         h += F3(fgIn('تاريخ البدء', 'fromDate', 'date'), fgIn('تاريخ الانتهاء', 'toDate', 'date'), fgIn('عدد الأيام', 'days', 'number'));
         h += SC('٤', 'سبب الإجازة والبديل');
@@ -263,9 +264,10 @@
         h += F2(fgOut('الاسم بالكامل', v.name), fgOut('القسم / الإدارة', v.dept));
         h += F2(fgOut('المسمى الوظيفي', v.jobTitle), fgOut('رقم التواصل أثناء الإجازة', v.phone));
         h += SC('٢', 'نوع الإجازة');
-        h += '<div class="chk-grid" style="grid-template-columns:1fr 1fr">' +
+        h += '<div class="chk-grid" style="grid-template-columns:1fr 1fr 1fr">' +
           fsRadioOut(v.leaveType, 'إجازة سنوية (م.١٢٤)', '<strong>إجازة سنوية</strong> (م.١٢٤)') +
-          fsRadioOut(v.leaveType, 'إجازة عارضة (م.١٢٨)', '<strong>إجازة عارضة</strong> (م.١٢٨)') + '</div>';
+          fsRadioOut(v.leaveType, 'إجازة عارضة (م.١٢٨)', '<strong>إجازة عارضة</strong> (م.١٢٨)') +
+          fsRadioOut(v.leaveType, 'إجازة رسمية / أعياد (م.١٢٩)', '<strong>إجازة رسمية</strong> (م.١٢٩)') + '</div>';
         h += SC('٣', 'مدة الإجازة');
         h += F3(fgOut('تاريخ البدء', v.fromDate), fgOut('تاريخ الانتهاء', v.toDate), fgOut('عدد الأيام', v.days));
         h += SC('٤', 'سبب الإجازة والبديل');
