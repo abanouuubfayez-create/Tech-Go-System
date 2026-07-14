@@ -2996,7 +2996,7 @@ function load(id,c){
         h+=F3(FG('الحد الأقصى السنوي'),FG('إجمالي الأيام المستخدمة'),FG('الرصيد المتبقي من ٧'));
         h+='<div class="wb wb-gd" style="font-size:9px">⊳ الإجازة العارضة تخصم تلقائياً من رصيد الإجازة السنوية (م. ١٢٨)<br>⊳ الحد الأقصى في المرة الواحدة: يومان فقط — أي طلب يتجاوز اليومين يحول تلقائياً إلى إجازة سنوية</div>';
         h+='<table class="dt"><tr><th>م</th><th>السبب</th><th>تاريخ البدء</th><th>تاريخ العودة</th><th>عدد الأيام</th><th>الموافقة</th><th>ملاحظات</th></tr>';
-        for(var bb=1;bb<=12;bb++) h+='<tr><td>'+bb+'</td><td><input type="text"></td><td><input type="text"></td><td><input type="text"></td><td><input type="text"></td><td><input type="text"></td><td><input type="text"></td></tr>';
+        for(var bb=1;bb<=7;bb++) h+='<tr><td>'+bb+'</td><td><input type="text"></td><td><input type="text"></td><td><input type="text"></td><td><input type="text"></td><td><input type="text"></td><td><input type="text"></td></tr>';
         h+='</table>';
 
         // ملحق ج
@@ -3006,7 +3006,7 @@ function load(id,c){
         h+=F3(FG('إجمالي أيام الأعياد'),FG('أيام عمل في عطلة (مثلي الأجر)'),FG('أيام راحة بديلة مستحقة'));
         h+='<div class="wb wb-gd" style="font-size:9px">⊳ التشغيل في أيام الأعياد يستوجب مثلي الأجر أو يوم راحة بديل — م. ١٢٩</div>';
         h+='<table class="dt"><tr><th>م</th><th>التاريخ</th><th>المناسبة</th><th>هل عمل؟</th><th>البديل</th><th>الموافقة</th><th>ملاحظات</th></tr>';
-        for(var cc=1;cc<=15;cc++) h+='<tr><td>'+cc+'</td><td><input type="text"></td><td><input type="text"></td><td><input type="text"></td><td><input type="text"></td><td><input type="text"></td><td><input type="text"></td></tr>';
+        for(var cc=1;cc<=25;cc++) h+='<tr><td>'+cc+'</td><td><input type="text"></td><td><input type="text"></td><td><input type="text"></td><td><input type="text"></td><td><input type="text"></td><td><input type="text"></td></tr>';
         h+='</table>';
 
         // ملحق د
