@@ -2284,7 +2284,7 @@ function renderProjectsList(list){
            '<div class="fg"><label>حالة المشروع</label><select id="pmEditStatus'+idx+'">'+
              ['مخطط له','جاري العمل','متوقف','مكتمل'].map(function(s){return '<option'+((p.status||'مخطط له')===s?' selected':'')+'>'+s+'</option>';}).join('')+
            '</select></div>'+
-           '<div class="fg"><label>تاريخ الاستحقاق</label><input type="date" lang="en-GB" id="pmEditDeadline'+idx+'" value="'+escH(p.deadline||'')+'"></div>'+
+           '<div class="fg"><label>تاريخ الاستحقاق</label><input type="date" id="pmEditDeadline'+idx+'" value="'+escH(p.deadline||'')+'"></div>'+
            '</div>'+
            '<div class="fg fg-full" style="margin-bottom:6px"><label>الموظفون المسؤولون</label></div>'+
            '<div class="chk-grid" id="pmEditAssignees'+idx+'">'+PMGMT_EMPLOYEES.map(function(e){
@@ -2373,7 +2373,7 @@ function deleteProject(id){
 
 function setD(c){
     var t=new Date().toISOString().split("T")[0];
-    c.querySelectorAll('input[type="date" lang="en-GB"]').forEach(function(i){if(!i.value)i.value=t});
+    c.querySelectorAll('input[type="date"]').forEach(function(i){if(!i.value)i.value=t});
 }
 function toggleAnon(cb){
     var d=document.getElementById("cud");
@@ -2397,7 +2397,7 @@ function H(title,sub,en,docId,ext){
     h+='<div class="FL-rule"></div>';
     h+='<div class="FL-meta">'+
        '<div class="FL-meta-item"><span class="FL-meta-lbl">رقم المستند</span><input type="text" class="FL-meta-val doc-num-fld" value="'+escH(num)+'"></div>'+
-       '<div class="FL-meta-item"><span class="FL-meta-lbl">التاريخ</span><input type="date" lang="en-GB" class="FL-meta-val" value="'+new Date().toISOString().split('T')[0]+'"></div>'+
+       '<div class="FL-meta-item"><span class="FL-meta-lbl">التاريخ</span><input type="date" class="FL-meta-val" value="'+new Date().toISOString().split('T')[0]+'"></div>'+
        '</div>';
     h+='<div class="FL-body">';
     return h;
@@ -2823,7 +2823,7 @@ function mexpAddRow(row){
         '<td><input type="text" class="mexp-spender" value="' + escH(row && row.spender || '') + '"></td>' +
         '<td><input type="text" class="mexp-cat" value="' + escH(row && row.cat || '') + '"></td>' +
         '<td><input type="number" step="0.01" class="mexp-amt" value="' + escH(amtVal) + '" oninput="mexpCalc()"></td>' +
-        '<td><input type="date" lang="en-GB" class="mexp-date" value="' + escH(row && row.date || '') + '"></td>' +
+        '<td><input type="date" class="mexp-date" value="' + escH(row && row.date || '') + '"></td>' +
         '<td><input type="text" class="mexp-notes" value="' + escH(row && row.notes || '') + '"></td>' +
         '<td class="np" style="text-align:center"><button class="bt bt-d" style="padding:3px 8px;font-size:10px" onclick="mexpDelRow(this)">✕</button></td>';
     tbody.appendChild(tr);
@@ -3195,12 +3195,12 @@ function load(id,c){
     else if(id==="exp"){
         h=H('شهادة خبرة','إدارة الموارد البشرية','EXPERIENCE CERTIFICATE','exp',true);
         h+='<div class="cert"><h2 style="text-align:center;color:var(--nv);font-size:20px;font-weight:800;text-decoration:underline;margin-bottom:24px">شـهـادة خـبـرة</h2>';
-        h+='<div style="text-align:left;margin-bottom:24px">التاريخ: <input type="date" lang="en-GB"></div>';
+        h+='<div style="text-align:left;margin-bottom:24px">التاريخ: <input type="date"></div>';
         h+='تشهد إدارة الموارد البشرية بشركة <strong><span class="dcn"></span></strong> بأن:<br><br>';
         h+='السيد/ة: <input type="text" style="width:280px;font-weight:bold"><br>';
         h+='والذي يحمل جنسية: <input type="text" style="width:150px"><br><br>';
         h+='قد عمل لدينا بوظيفة: <input type="text" style="width:230px;font-weight:bold"><br>';
-        h+='خلال الفترة من <input type="date" lang="en-GB"> إلى <input type="date" lang="en-GB"><br><br>';
+        h+='خلال الفترة من <input type="date"> إلى <input type="date"><br><br>';
         h+='وقد أُعطيت له هذه الشهادة بناءً على طلبه دون أدنى مسؤولية على الشركة.';
         h+='<div style="margin-top:50px;display:flex;justify-content:space-between;align-items:flex-end;text-align:center">'+
            '<div><div style="font-weight:700;color:var(--nv);margin-bottom:24px">ختم الشركة</div>'+
@@ -3382,7 +3382,7 @@ function load(id,c){
         h='<div style="background:var(--w);border:1px solid var(--bd);border-radius:6px;padding:20px">';
         h+='<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px;flex-wrap:wrap;gap:10px">';
         h+='<div><h2 style="margin:0;color:var(--nv);font-size:18px">📡 سجل الحضور الحي (مباشر)</h2><p style="margin:4px 0 0;color:var(--tx3);font-size:13px">يعرض حركات تسجيل الدخول والخروج من حسابات الموظفين مباشرة</p></div>';
-        h+='<div style="display:flex;gap:10px;align-items:center"><input type="date" lang="en-GB" id="liveAttDate" value="'+todayDate+'" onchange="fetchLiveAttendance()" style="padding:8px 12px;border-radius:6px;border:1px solid var(--bd);outline:none;font-family:inherit"><button class="bt bt-o" onclick="fetchLiveAttendance()">🔄 تحديث</button></div>';
+        h+='<div style="display:flex;gap:10px;align-items:center"><input type="date" id="liveAttDate" value="'+todayDate+'" onchange="fetchLiveAttendance()" style="padding:8px 12px;border-radius:6px;border:1px solid var(--bd);outline:none;font-family:inherit"><button class="bt bt-o" onclick="fetchLiveAttendance()">🔄 تحديث</button></div>';
         h+='</div>';
         h+='<div style="overflow-x:auto"><table class="dt" style="width:100%;text-align:center" id="liveAttTable">';
         h+='<thead><tr><th style="text-align:center">اسم الموظف</th><th style="text-align:center">تاريخ اليوم</th><th style="text-align:center">وقت الدخول</th><th style="text-align:center">وقت الخروج</th><th style="text-align:center">ساعات العمل</th></tr></thead>';
@@ -3451,7 +3451,7 @@ function load(id,c){
         h+='<div class="fr fr3" style="margin-bottom:10px">'+
            '<div class="fg"><label>الأولوية</label><select id="pmPriority"><option>منخفضة</option><option selected>متوسطة</option><option>عالية</option></select></div>'+
            '<div class="fg"><label>حالة المشروع</label><select id="pmStatus"><option selected>مخطط له</option><option>جاري العمل</option><option>متوقف</option><option>مكتمل</option></select></div>'+
-           '<div class="fg"><label>تاريخ الاستحقاق (اختياري)</label><input type="date" lang="en-GB" id="pmDeadline"></div>'+
+           '<div class="fg"><label>تاريخ الاستحقاق (اختياري)</label><input type="date" id="pmDeadline"></div>'+
            '</div>';
         h+='<div class="fg fg-full" style="margin-bottom:6px"><label>الموظفون المسؤولون عن المشروع</label></div>';
         h+='<div class="chk-grid" id="pmgmtAssignees"><div class="empty-hint">⏳ جارٍ تحميل قائمة الموظفين...</div></div>';
@@ -3496,7 +3496,7 @@ function load(id,c){
         h+='<div class="fg" style="margin-bottom:10px"><label>عنوان المهمة</label><input type="text" id="tkTitle" placeholder="مثلاً: تجهيز تصميمات كتالوج المنتجات"></div>';
         h+='<div class="fg fg-full" style="margin-bottom:10px"><label>تفاصيل المهمة (اختياري)</label><textarea rows="2" id="tkDesc"></textarea></div>';
         h+='<div class="fr fr2" style="margin-bottom:10px">';
-        h+='  <div class="fg"><label>تاريخ التسليم (اختياري)</label><input type="date" lang="en-GB" id="tkDeadline"></div>';
+        h+='  <div class="fg"><label>تاريخ التسليم (اختياري)</label><input type="date" id="tkDeadline"></div>';
         h+='  <div class="fg" style="justify-content: flex-end; margin-bottom: 2px;">';
         h+='    <label class="file-upload-label" style="margin-bottom: 0; align-self: stretch; text-align: center; display: block;">';
         h+='      📎 مرفق اختياري';
@@ -3919,7 +3919,7 @@ function openAdminProjectDetail(idx) {
              '    <div class="fg"><label>حالة المشروع</label><select id="pmEditStatus' + idx + '">' +
                     ['مخطط له','جاري العمل','متوقف','مكتمل'].map(function(s){ return '<option' + ((p.status || 'مخطط له') === s ? ' selected' : '') + '>' + s + '</option>'; }).join('') +
              '    </select></div>' +
-             '    <div class="fg"><label>تاريخ الاستحقاق</label><input type="date" lang="en-GB" id="pmEditDeadline' + idx + '" value="' + escH(p.deadline || '') + '"></div>' +
+             '    <div class="fg"><label>تاريخ الاستحقاق</label><input type="date" id="pmEditDeadline' + idx + '" value="' + escH(p.deadline || '') + '"></div>' +
              '  </div>' +
              '  <div class="fg fg-full" style="margin-bottom:6px"><label>الموظفون المسؤولون</label></div>' +
              '  <div class="chk-grid" id="pmEditAssignees' + idx + '">' + PMGMT_EMPLOYEES.map(function(e){

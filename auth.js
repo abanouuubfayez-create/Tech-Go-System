@@ -205,7 +205,7 @@ function tgListenNotifCenter(uid, onUpdate) {
 
 function tgMarkNotifRead(notifId) {
     if (!notifId) return;
-    db.collection('notifications').doc(notifId).update({ read: true, seen: true }).catch(function(e) { alert("Error marking read: " + e.message); });
+    db.collection('notifications').doc(notifId).update({ read: true, seen: true }).catch(function() {});
 }
 
 function tgMarkAllNotifsRead(uid) {
@@ -225,7 +225,7 @@ function tgMarkAllNotifsRead(uid) {
 
 function tgDeleteNotif(notifId) {
     if (!notifId) return;
-    db.collection('notifications').doc(notifId).delete().catch(function(e) { alert("Error deleting notif: " + e.message); });
+    db.collection('notifications').doc(notifId).delete().catch(function() {});
 }
 
 // هل المستخدم الحالي لديه صلاحية الأدمن الكاملة؟

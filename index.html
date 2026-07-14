@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="ar" dir="rtl">
 <head>
 <meta charset="UTF-8">
@@ -8,8 +8,8 @@
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-title" content="Tech Go">
-<title>ظ„ظˆط­ط© ط§ظ„طھط­ظƒظ… آ· طھظٹظƒ ط¬ظˆ</title>
-<link rel="stylesheet" href="styles.css?v=1784056196">
+<title>لوحة التحكم · تيك جو</title>
+<link rel="stylesheet" href="styles.css?v=3">
 <link rel="manifest" href="manifest.json">
 <link rel="icon" type="image/png" sizes="192x192" href="icon-192.png">
 <link rel="apple-touch-icon" href="icon-192.png">
@@ -17,8 +17,8 @@
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-storage-compat.js"></script>
-<script src="firebase-config.js?v=1784056196"></script>
-<script src="auth.js?v=1784056196"></script>
+<script src="firebase-config.js?v=2"></script>
+<script src="auth.js?v=3"></script>
 <script>
     (function() {
         const theme = localStorage.getItem('tg-theme') || 'light';
@@ -27,9 +27,9 @@
 </script>
 </head>
 <body>
-<!-- â•گâ•گâ•گ ط´ط±ظٹط· ط­ط§ظ„ط© ط§ظ„ط§طھطµط§ظ„ â•گâ•گâ•گ -->
+<!-- ═══ شريط حالة الاتصال ═══ -->
 <div id="offlineBanner" style="display:none;position:fixed;top:0;left:0;right:0;z-index:99999;background:#ef4444;color:#fff;text-align:center;padding:10px 16px;font-size:13px;font-weight:700;box-shadow:0 2px 8px rgba(0,0,0,.3);animation:slideDown .3s ease">
-    ًں“µ ظ„ط§ ظٹظˆط¬ط¯ ط§طھطµط§ظ„ ط¨ط§ظ„ط¥ظ†طھط±ظ†طھ â€” ط¨ط¹ط¶ ط§ظ„ظˆط¸ط§ط¦ظپ ط؛ظٹط± ظ…طھط§ط­ط© ط­ط§ظ„ظٹط§ظ‹
+    📵 لا يوجد اتصال بالإنترنت — بعض الوظائف غير متاحة حالياً
 </div>
 <style>
 @keyframes slideDown{from{transform:translateY(-100%)}to{transform:translateY(0)}}
@@ -50,162 +50,162 @@
     window.addEventListener('offline', checkConn);
     window.addEventListener('online', function(){
         var b=document.getElementById('offlineBanner');
-        if(b){ b.style.background='#10b981'; b.textContent='âœ… ط¹ط§ط¯ ط§ظ„ط§طھطµط§ظ„ ط¨ط§ظ„ط¥ظ†طھط±ظ†طھ'; b.style.display='block'; document.body.style.marginTop='44px'; }
+        if(b){ b.style.background='#10b981'; b.textContent='✅ عاد الاتصال بالإنترنت'; b.style.display='block'; document.body.style.marginTop='44px'; }
         setTimeout(function(){ checkConn(); document.body.style.marginTop=''; },2500);
     });
     checkConn();
 })();
 </script>
-<iframe id="tgPrintFrame" style="position:fixed;top:-9999px;left:-9999px;width:0;height:0;border:0" title="ط·ط¨ط§ط¹ط©"></iframe>
-<button class="mtg" onclick="document.getElementById('sb').classList.toggle('opn')">âک°</button>
+<iframe id="tgPrintFrame" style="position:fixed;top:-9999px;left:-9999px;width:0;height:0;border:0" title="طباعة"></iframe>
+<button class="mtg" onclick="document.getElementById('sb').classList.toggle('opn')">☰</button>
 
-<!-- طھط±ظˆظٹط³ط© ظˆطھط°ظٹظٹظ„ ط§ظ„ط·ط¨ط§ط¹ط© (ظ…ط®ظپظٹط© ط¹ظ„ظ‰ ط§ظ„ط´ط§ط´ط©) -->
+<!-- ترويسة وتذييل الطباعة (مخفية على الشاشة) -->
 <div class="print-header" aria-hidden="true">
-    <span class="ph-r">TECH GO آ· ط´ط±ظƒط© طھظٹظƒ ط¬ظˆ</span>
-    <span class="ph-l" id="phTitle">ظ†ط¸ط§ظ… ط§ظ„ط¥ط¯ط§ط±ط© ط§ظ„ط´ط§ظ…ظ„</span>
+    <span class="ph-r">TECH GO · شركة تيك جو</span>
+    <span class="ph-l" id="phTitle">نظام الإدارة الشامل</span>
 </div>
 <div class="print-footer" aria-hidden="true">
-    <span class="pf-r">ظˆط«ظٹظ‚ط© ط³ط±ظٹط© آ· ط´ط±ظƒط© طھظٹظƒ ط¬ظˆ</span>
-    <span class="pf-l">TECH GO آ· ظ†ط¸ط§ظ… ط§ظ„ط¥ط¯ط§ط±ط© ط§ظ„ط´ط§ظ…ظ„</span>
+    <span class="pf-r">وثيقة سرية · شركة تيك جو</span>
+    <span class="pf-l">TECH GO · نظام الإدارة الشامل</span>
 </div>
 <aside class="S" id="sb">
 <div class="S-h">
-    <div class="logo"><span>TECH - GO</span><small>طھظٹظƒ â€“ ط¬ظˆ</small></div>
-    <div class="sub">ظ†ط¸ط§ظ… ط§ظ„ط¥ط¯ط§ط±ط© ط§ظ„ط´ط§ظ…ظ„</div>
+    <div class="logo"><span>TECH - GO</span><small>تيك – جو</small></div>
+    <div class="sub">نظام الإدارة الشامل</div>
 </div>
 <nav class="S-n" id="sidebarNav">
     <div class="sb-search-wrap">
-      <input type="search" class="sb-search" id="sbSearch" placeholder="ط§ط¨ط­ط« ظپظٹ ط§ظ„ظ‚ط§ط¦ظ…ط©..." oninput="sbFilterNav(this.value)" autocomplete="off">
+      <input type="search" class="sb-search" id="sbSearch" placeholder="ابحث في القائمة..." oninput="sbFilterNav(this.value)" autocomplete="off">
     </div>
-    <div class="sb-no-results" id="sbNoResults">ظ„ط§ طھظˆط¬ط¯ ظ†طھط§ط¦ط¬</div>
+    <div class="sb-no-results" id="sbNoResults">لا توجد نتائج</div>
 
     <div class="sb-group open">
-        <div class="S-s" onclick="tgToggleNavGroup(this)">ط§ظ„ط±ط¦ظٹط³ظٹط© ظˆط§ظ„ظ…طھط§ط¨ط¹ط© <span class="arr">â–¼</span></div>
+        <div class="S-s" onclick="tgToggleNavGroup(this)">الرئيسية والمتابعة <span class="arr">▼</span></div>
         <div class="sb-items">
-            <div class="S-i a" onclick="go('dash',this)"><span class="ic">ًںڈ </span> ظ„ظˆط­ط© ط§ظ„طھط­ظƒظ…</div>
-            <div class="S-i" onclick="go('pmgmt',this)" style="border-right:2px solid var(--gd)"><span class="ic">ًں“پ</span> ط¥ط¯ط§ط±ط© ط§ظ„ظ…ط´ط§ط±ظٹط¹ <span class="S-b">ط¬ط¯ظٹط¯</span> <span id="tpd" class="S-b" style="display:none;background:var(--nv);color:#fff">0</span></div>
-            <div class="S-i" onclick="go('tasksmgmt',this)" style="border-right:2px solid var(--gd)"><span class="ic">ًں—‚</span> طھظˆط²ظٹط¹ ط§ظ„ظ…ظ‡ط§ظ… <span class="S-b">ط¬ط¯ظٹط¯</span></div>
-            <div class="S-i" onclick="go('staff',this);clearAdminBadge('notif-req-badge','notif-req-badge-sb')" style="border-right:2px solid var(--gd)"><span class="ic">ًں‘¥</span> ظ…طھط§ط¨ط¹ط© ط§ظ„ظ…ظˆط¸ظپظٹظ† <span class="S-b">ط¬ط¯ظٹط¯</span> <span id="notif-req-badge-sb" style="display:none;background:var(--no);color:#fff;border-radius:50%;min-width:18px;height:18px;font-size:10px;font-weight:800;align-items:center;justify-content:center;padding:0 3px;margin-right:4px">0</span></div>
-            <div class="S-i" onclick="go('wkreports',this);clearAdminBadge('notif-wkr-badge','notif-wkr-badge-sb')" style="border-right:2px solid var(--gd)"><span class="ic">ًں“¥</span> ط¨ط±ظٹط¯ ط§ظ„طھظ‚ط§ط±ظٹط± ط§ظ„ط£ط³ط¨ظˆط¹ظٹط© <span id="notif-wkr-badge-sb" style="display:none;background:var(--no);color:#fff;border-radius:50%;min-width:18px;height:18px;font-size:10px;font-weight:800;align-items:center;justify-content:center;padding:0 3px;margin-right:4px">0</span></div>
-            <div class="S-i" onclick="go('empdocs',this)" style="border-right:2px solid var(--gd)"><span class="ic">ًں“‚</span> ظ…ظ„ظپط§طھ ط§ظ„ظ…ظˆط¸ظپظٹظ† <span class="S-b">ط¬ط¯ظٹط¯</span></div>
-            <div class="S-i" onclick="goLiveTrack(this)" style="border-right:2px solid var(--gd)"><span class="ic">ًں“،</span> ظ…طھط§ط¨ط¹ط© ظ„ط­ط¸ظٹط© <span class="S-b" style="background:var(--ok)">ظ…ط¨ط§ط´ط±</span></div>
-            <div class="S-i" onclick="goSendForm(this)" style="border-right:2px solid var(--gd)"><span class="ic">ًں“‌</span> ط¥ط±ط³ط§ظ„ ظ†ظ…ظˆط°ط¬ ظ„ظ…ظˆط¸ظپ <span class="S-b">ط¬ط¯ظٹط¯</span></div>
-            <div class="S-i" onclick="go('announcements',this)" style="border-right:2px solid var(--gd)"><span class="ic">ًں“¢</span> ط¥ط¯ط§ط±ط© ط§ظ„ط¥ط¹ظ„ط§ظ†ط§طھ <span class="S-b">ط¬ط¯ظٹط¯</span></div>
-            <div class="S-i" onclick="go('account',this)" style="border-right:2px solid var(--gd)"><span class="ic">ًں‘¤</span> ط­ط³ط§ط¨ظٹ <span class="S-b">ط¬ط¯ظٹط¯</span></div>
+            <div class="S-i a" onclick="go('dash',this)"><span class="ic">🏠</span> لوحة التحكم</div>
+            <div class="S-i" onclick="go('pmgmt',this)" style="border-right:2px solid var(--gd)"><span class="ic">📁</span> إدارة المشاريع <span class="S-b">جديد</span> <span id="tpd" class="S-b" style="display:none;background:var(--nv);color:#fff">0</span></div>
+            <div class="S-i" onclick="go('tasksmgmt',this)" style="border-right:2px solid var(--gd)"><span class="ic">🗂</span> توزيع المهام <span class="S-b">جديد</span></div>
+            <div class="S-i" onclick="go('staff',this);clearAdminBadge('notif-req-badge','notif-req-badge-sb')" style="border-right:2px solid var(--gd)"><span class="ic">👥</span> متابعة الموظفين <span class="S-b">جديد</span> <span id="notif-req-badge-sb" style="display:none;background:var(--no);color:#fff;border-radius:50%;min-width:18px;height:18px;font-size:10px;font-weight:800;align-items:center;justify-content:center;padding:0 3px;margin-right:4px">0</span></div>
+            <div class="S-i" onclick="go('wkreports',this);clearAdminBadge('notif-wkr-badge','notif-wkr-badge-sb')" style="border-right:2px solid var(--gd)"><span class="ic">📥</span> بريد التقارير الأسبوعية <span id="notif-wkr-badge-sb" style="display:none;background:var(--no);color:#fff;border-radius:50%;min-width:18px;height:18px;font-size:10px;font-weight:800;align-items:center;justify-content:center;padding:0 3px;margin-right:4px">0</span></div>
+            <div class="S-i" onclick="go('empdocs',this)" style="border-right:2px solid var(--gd)"><span class="ic">📂</span> ملفات الموظفين <span class="S-b">جديد</span></div>
+            <div class="S-i" onclick="goLiveTrack(this)" style="border-right:2px solid var(--gd)"><span class="ic">📡</span> متابعة لحظية <span class="S-b" style="background:var(--ok)">مباشر</span></div>
+            <div class="S-i" onclick="goSendForm(this)" style="border-right:2px solid var(--gd)"><span class="ic">📝</span> إرسال نموذج لموظف <span class="S-b">جديد</span></div>
+            <div class="S-i" onclick="go('announcements',this)" style="border-right:2px solid var(--gd)"><span class="ic">📢</span> إدارة الإعلانات <span class="S-b">جديد</span></div>
+            <div class="S-i" onclick="go('account',this)" style="border-right:2px solid var(--gd)"><span class="ic">👤</span> حسابي <span class="S-b">جديد</span></div>
         </div>
     </div>
 
     <div class="sb-group">
-        <div class="S-s" onclick="tgToggleNavGroup(this)">ظ†ظ…ط§ط°ط¬ ط§ظ„ظ…ظˆط¸ظپظٹظ† <span class="arr">â–¼</span></div>
+        <div class="S-s" onclick="tgToggleNavGroup(this)">نماذج الموظفين <span class="arr">▼</span></div>
         <div class="sb-items">
-            <div class="S-i" onclick="go('emp',this)"><span class="ic">ًں‘¤</span> ظ…ظ„ظپ ط¨ظٹط§ظ†ط§طھ ط§ظ„ظ…ظˆط¸ظپ</div>
-            <div class="S-i" onclick="go('leave',this)"><span class="ic">ًںڈ–</span> ط·ظ„ط¨ ط¥ط¬ط§ط²ط©</div>
-            <div class="S-i" onclick="go('perm',this)"><span class="ic">ًں•گ</span> ط¥ط°ظ† ط­ط¶ظˆط± / ط§ظ†طµط±ط§ظپ</div>
-            <div class="S-i" onclick="go('delay',this)"><span class="ic">âڈ°</span> ط§ظ„طھظ…ط§ط³ طھط¹ط¯ظٹظ„ ط§ظ„ط­ط¶ظˆط± <span class="S-b">ط¬ط¯ظٹط¯</span></div>
+            <div class="S-i" onclick="go('emp',this)"><span class="ic">👤</span> ملف بيانات الموظف</div>
+            <div class="S-i" onclick="go('leave',this)"><span class="ic">🏖</span> طلب إجازة</div>
+            <div class="S-i" onclick="go('perm',this)"><span class="ic">🕐</span> إذن حضور / انصراف</div>
+            <div class="S-i" onclick="go('delay',this)"><span class="ic">⏰</span> التماس تعديل الحضور <span class="S-b">جديد</span></div>
         </div>
     </div>
 
     <div class="sb-group">
-        <div class="S-s" onclick="tgToggleNavGroup(this)">ط§ظ„ط³ط¬ظ„ط§طھ <span class="arr">â–¼</span></div>
+        <div class="S-s" onclick="tgToggleNavGroup(this)">السجلات <span class="arr">▼</span></div>
         <div class="sb-items">
-            <div class="S-i" onclick="go('la',this)"><span class="ic">ًں“…</span> ط³ط¬ظ„ ط§ظ„ط¥ط¬ط§ط²ط© ط§ظ„ط³ظ†ظˆظٹط©</div>
-            <div class="S-i" onclick="go('lb',this)"><span class="ic">âڑ،</span> ط³ط¬ظ„ ط§ظ„ط¥ط¬ط§ط²ط© ط§ظ„ط¹ط§ط±ط¶ط©</div>
-            <div class="S-i" onclick="go('lc',this)"><span class="ic">ًںژ‰</span> ط³ط¬ظ„ ط§ظ„ط£ط¹ظٹط§ط¯</div>
-            <div class="S-i" onclick="go('ld',this)"><span class="ic">â‌Œ</span> ط³ط¬ظ„ ط§ظ„ط؛ظٹط§ط¨ ط¨ط§ظ„ط®طµظ…</div>
+            <div class="S-i" onclick="go('la',this)"><span class="ic">📅</span> سجل الإجازة السنوية</div>
+            <div class="S-i" onclick="go('lb',this)"><span class="ic">⚡</span> سجل الإجازة العارضة</div>
+            <div class="S-i" onclick="go('lc',this)"><span class="ic">🎉</span> سجل الأعياد</div>
+            <div class="S-i" onclick="go('ld',this)"><span class="ic">❌</span> سجل الغياب بالخصم</div>
         </div>
     </div>
 
     <div class="sb-group">
-        <div class="S-s" onclick="tgToggleNavGroup(this)">ظ†ظ…ط§ط°ط¬ ط¥ط¯ط§ط±ظٹط© <span class="arr">â–¼</span></div>
+        <div class="S-s" onclick="tgToggleNavGroup(this)">نماذج إدارية <span class="arr">▼</span></div>
         <div class="sb-items">
-            <div class="S-i" onclick="go('gen',this)" style="border-right:2px solid var(--gd)"><span class="ic">âœ‰ï¸ڈ</span> ط®ط·ط§ط¨ ط¥ط¯ط§ط±ظٹ ط¹ط§ظ… <span class="S-b">ط¬ط¯ظٹط¯</span></div>
-            <div class="S-i" onclick="go('notice',this)"><span class="ic">ًں‘پ</span> ظ†ظ…ظˆط°ط¬ ظ„ظپطھ ظ†ط¸ط± <span class="S-b">ط¬ط¯ظٹط¯</span></div>
-            <div class="S-i" onclick="go('warn',this)"><span class="ic">âڑ ï¸ڈ</span> ط®ط·ط§ط¨ ط¥ظ†ط°ط§ط±</div>
-            <div class="S-i" onclick="go('inv',this)"><span class="ic">ًں”چ</span> ظ…ط­ط¶ط± طھط­ظ‚ظٹظ‚</div>
-            <div class="S-i" onclick="go('exp',this)"><span class="ic">ًں“œ</span> ط´ظ‡ط§ط¯ط© ط®ط¨ط±ط©</div>
-            <div class="S-i" onclick="go('clr',this)"><span class="ic">âœ…</span> ط¥ط®ظ„ط§ط، ط·ط±ظپ</div>
-            <div class="S-i" onclick="go('res',this)"><span class="ic">ًںڑھ</span> ط·ظ„ط¨ ط§ط³طھظ‚ط§ظ„ط© <span class="S-b">ط¬ط¯ظٹط¯</span></div>
-            <div class="S-i" onclick="go('promo',this)"><span class="ic">ًں“ˆ</span> ظ‚ط±ط§ط± طھط±ظ‚ظٹط© <span class="S-b">ط¬ط¯ظٹط¯</span></div>
-            <div class="S-i" onclick="go('raise',this)"><span class="ic">ًں’¹</span> ط²ظٹط§ط¯ط© ط±ط§طھط¨ / ط¹ظ„ط§ظˆط© <span class="S-b">ط¬ط¯ظٹط¯</span></div>
-            <div class="S-i" onclick="go('contract',this)"><span class="ic">ًں“„</span> ط¹ظ‚ط¯ ط¹ظ…ظ„ <span class="S-b">ط¬ط¯ظٹط¯</span></div>
-            <div class="S-i" onclick="go('task',this)"><span class="ic">ًں“‹</span> طھظƒظ„ظٹظپ ط¨ظ…ظ‡ظ…ط©</div>
-            <div class="S-i" onclick="go('proj',this)"><span class="ic">ًں“پ</span> ط¥ط¯ط§ط±ط© ط§ظ„ظ…ط´ط±ظˆط¹ <span class="S-b">ط¬ط¯ظٹط¯</span></div>
-            <div class="S-i" onclick="go('sal',this)"><span class="ic">ًں’°</span> ط´ظ‡ط§ط¯ط© ط±ط§طھط¨</div>
+            <div class="S-i" onclick="go('gen',this)" style="border-right:2px solid var(--gd)"><span class="ic">✉️</span> خطاب إداري عام <span class="S-b">جديد</span></div>
+            <div class="S-i" onclick="go('notice',this)"><span class="ic">👁</span> نموذج لفت نظر <span class="S-b">جديد</span></div>
+            <div class="S-i" onclick="go('warn',this)"><span class="ic">⚠️</span> خطاب إنذار</div>
+            <div class="S-i" onclick="go('inv',this)"><span class="ic">🔍</span> محضر تحقيق</div>
+            <div class="S-i" onclick="go('exp',this)"><span class="ic">📜</span> شهادة خبرة</div>
+            <div class="S-i" onclick="go('clr',this)"><span class="ic">✅</span> إخلاء طرف</div>
+            <div class="S-i" onclick="go('res',this)"><span class="ic">🚪</span> طلب استقالة <span class="S-b">جديد</span></div>
+            <div class="S-i" onclick="go('promo',this)"><span class="ic">📈</span> قرار ترقية <span class="S-b">جديد</span></div>
+            <div class="S-i" onclick="go('raise',this)"><span class="ic">💹</span> زيادة راتب / علاوة <span class="S-b">جديد</span></div>
+            <div class="S-i" onclick="go('contract',this)"><span class="ic">📄</span> عقد عمل <span class="S-b">جديد</span></div>
+            <div class="S-i" onclick="go('task',this)"><span class="ic">📋</span> تكليف بمهمة</div>
+            <div class="S-i" onclick="go('proj',this)"><span class="ic">📁</span> إدارة المشروع <span class="S-b">جديد</span></div>
+            <div class="S-i" onclick="go('sal',this)"><span class="ic">💰</span> شهادة راتب</div>
         </div>
     </div>
 
     <div class="sb-group">
-        <div class="S-s" onclick="tgToggleNavGroup(this)">ط§ظ„ظ…ط§ظ„ظٹط© <span class="arr">â–¼</span></div>
+        <div class="S-s" onclick="tgToggleNavGroup(this)">المالية <span class="arr">▼</span></div>
         <div class="sb-items">
-            <div class="S-i" onclick="go('mexp',this)"><span class="ic">ًں’µ</span> ط´ظٹطھ ط§ظ„ظ…طµط±ظˆظپط§طھ ط§ظ„ط´ظ‡ط±ظٹ <span class="S-b">ط¬ط¯ظٹط¯</span></div>
+            <div class="S-i" onclick="go('mexp',this)"><span class="ic">💵</span> شيت المصروفات الشهري <span class="S-b">جديد</span></div>
         </div>
     </div>
 
     <div class="sb-group">
-        <div class="S-s" onclick="tgToggleNavGroup(this)">ط§ظ„ط£ظ†ط¸ظ…ط© <span class="arr">â–¼</span></div>
+        <div class="S-s" onclick="tgToggleNavGroup(this)">الأنظمة <span class="arr">▼</span></div>
         <div class="sb-items">
-            <div class="S-i" onclick="go('att_live',this)"><span class="ic">ًں“،</span> ط§ظ„ط­ط¶ظˆط± ط§ظ„ط­ظٹ (ظ…ط¨ط§ط´ط±) <span class="S-b">ط¬ط¯ظٹط¯</span></div>
-            <div class="S-i" onclick="go('att',this)"><span class="ic">âڈ±</span> طھط­ظ„ظٹظ„ ط§ظ„ط­ط¶ظˆط± ظˆط§ظ„ط§ظ†طµط±ط§ظپ</div>
-            <div class="S-i" onclick="go('cal',this)"><span class="ic">ًں“…</span> ط§ظ„طھظ‚ظˆظٹظ… ط§ظ„ط¹ط§ظ… <span class="S-b">ط¬ط¯ظٹط¯</span></div>
-            <div class="S-i" onclick="go('comp',this)"><span class="ic">ًں“‌</span> ط§ظ„ط´ظƒط§ظˆظ‰ ظˆط§ظ„ظ…ظ‚طھط±ط­ط§طھ</div>
+            <div class="S-i" onclick="go('att_live',this)"><span class="ic">📡</span> الحضور الحي (مباشر) <span class="S-b">جديد</span></div>
+            <div class="S-i" onclick="go('att',this)"><span class="ic">⏱</span> تحليل الحضور والانصراف</div>
+            <div class="S-i" onclick="go('cal',this)"><span class="ic">📅</span> التقويم العام <span class="S-b">جديد</span></div>
+            <div class="S-i" onclick="go('comp',this)"><span class="ic">📝</span> الشكاوى والمقترحات</div>
         </div>
     </div>
 
     <div class="sb-group">
-        <div class="S-s" onclick="tgToggleNavGroup(this)">ط§ظ„ط¥ط¹ط¯ط§ط¯ط§طھ <span class="arr">â–¼</span></div>
+        <div class="S-s" onclick="tgToggleNavGroup(this)">الإعدادات <span class="arr">▼</span></div>
         <div class="sb-items">
-            <div class="S-i" onclick="go('set',this)"><span class="ic">âڑ™ï¸ڈ</span> طھط®طµظٹطµ ط§ظ„ظ†ط¸ط§ظ…</div>
+            <div class="S-i" onclick="go('set',this)"><span class="ic">⚙️</span> تخصيص النظام</div>
         </div>
     </div>
 </nav>
-<button class="sb-scroll-top" id="sbScrollTop" onclick="document.getElementById('sb').scrollTop=0" title="ط§ظ„ط±ط¬ظˆط¹ ظ„ط£ط¹ظ„ظ‰ ط§ظ„ظ‚ط§ط¦ظ…ط©">â¬†</button>
+<button class="sb-scroll-top" id="sbScrollTop" onclick="document.getElementById('sb').scrollTop=0" title="الرجوع لأعلى القائمة">⬆</button>
 <div class="sb-logout-wrap">
   <button class="sb-logout-btn" onclick="tgLogout()">
-    <span>ًںڑھ</span> طھط³ط¬ظٹظ„ ط§ظ„ط®ط±ظˆط¬
+    <span>🚪</span> تسجيل الخروج
   </button>
 </div>
 <div id="sbUser" style="padding:6px 16px 10px;font-size:10px;color:rgba(255,255,255,.45);border-top:1px solid rgba(255,255,255,.07);text-align:center"></div>
 </aside>
 <div class="M">
-<!-- ط´ط±ظٹط· طھط«ط¨ظٹطھ ط§ظ„طھط·ط¨ظٹظ‚ (ظٹط¸ظ‡ط± طھظ„ظ‚ط§ط¦ظٹط§ظ‹ ط¹ظ†ط¯ ط§ظ„ط¯ط¹ظ…) -->
+<!-- شريط تثبيت التطبيق (يظهر تلقائياً عند الدعم) -->
 <div class="pwa-install-bar np" id="pwaInstallBar">
-  <span>ًں“² ط«ط¨ظ‘طھ طھط·ط¨ظٹظ‚ Tech Go ط¹ظ„ظ‰ ط¬ظ‡ط§ط²ظƒ ظ„ظ„ظˆطµظˆظ„ ط§ظ„ط³ط±ظٹط¹ ط¨ط¯ظˆظ† ظ…طھطµظپط­</span>
+  <span>📲 ثبّت تطبيق Tech Go على جهازك للوصول السريع بدون متصفح</span>
   <div style="display:flex;gap:8px;align-items:center">
-    <button class="pwa-install-btn" onclick="tgInstallPWA()">ًں“¥ طھط«ط¨ظٹطھ ط§ظ„طھط·ط¨ظٹظ‚</button>
-    <span class="pwa-install-close" onclick="document.getElementById('pwaInstallBar').style.display='none'">âœ•</span>
+    <button class="pwa-install-btn" onclick="tgInstallPWA()">📥 تثبيت التطبيق</button>
+    <span class="pwa-install-close" onclick="document.getElementById('pwaInstallBar').style.display='none'">✕</span>
   </div>
 </div>
 <div class="TB">
   <div style="display:flex;align-items:center;gap:12px">
-    <button id="tgBackBtn" class="bt bt-o np" style="display:none;padding:5px 12px;font-size:12px;box-shadow:none;border-color:var(--bd)" onclick="tgGoBack()" title="ط±ط¬ظˆط¹">ًں”™ ط±ط¬ظˆط¹</button>
-    <div class="t" id="pT">ظ„ظˆط­ط© ط§ظ„طھط­ظƒظ…</div>
+    <button id="tgBackBtn" class="bt bt-o np" style="display:none;padding:5px 12px;font-size:12px;box-shadow:none;border-color:var(--bd)" onclick="tgGoBack()" title="رجوع">🔙 رجوع</button>
+    <div class="t" id="pT">لوحة التحكم</div>
   </div>
   <div class="ac np">
-    <input type="text" id="globalTableFilter" name="tg-global-search-field-admin" class="global-table-filter" placeholder="ًں”چ طھطµظپظٹط© ط¨ظٹط§ظ†ط§طھ ط§ظ„ط¬ط¯ظˆظ„..." oninput="if(typeof tgFilterVisibleTables==='function') tgFilterVisibleTables(this.value)" autocomplete="new-password" style="margin-left:8px;">
-    <button class="bt bt-o" onclick="tgClearForm()" style="font-size:11px;padding:4px 10px;margin-left:4px">ًں§¹ ظ…ط³ط­ ط§ظ„ظ†ظ…ظˆط°ط¬</button>
-    <button class="bt bt-o" onclick="tgLoadFormDrafts()" style="font-size:11px;padding:4px 10px;margin-left:4px">ًں“‚ ط§ظ„ظ†ظ…ط§ط°ط¬ ط§ظ„ظ…ط­ظپظˆط¸ط©</button>
+    <input type="text" id="globalTableFilter" name="tg-global-search-field-admin" class="global-table-filter" placeholder="🔍 تصفية بيانات الجدول..." oninput="if(typeof tgFilterVisibleTables==='function') tgFilterVisibleTables(this.value)" autocomplete="new-password" style="margin-left:8px;">
+    <button class="bt bt-o" onclick="tgClearForm()" style="font-size:11px;padding:4px 10px;margin-left:4px">🧹 مسح النموذج</button>
+    <button class="bt bt-o" onclick="tgLoadFormDrafts()" style="font-size:11px;padding:4px 10px;margin-left:4px">📂 النماذج المحفوظة</button>
     <div class="notif-wrap np" id="notifWrap">
-      <button class="bt bt-o notif-bell-btn" id="notifBellBtn" onclick="tgToggleNotifPanel(event)" title="ط§ظ„ط¥ط´ط¹ط§ط±ط§طھ" style="font-size:16px;padding:4px 10px;margin-left:4px;position:relative">
-        ًں””<span class="notif-badge" id="notifBadge" style="display:none">0</span>
+      <button class="bt bt-o notif-bell-btn" id="notifBellBtn" onclick="tgToggleNotifPanel(event)" title="الإشعارات" style="font-size:16px;padding:4px 10px;margin-left:4px;position:relative">
+        🔔<span class="notif-badge" id="notifBadge" style="display:none">0</span>
       </button>
       <div class="notif-panel" id="notifPanel" style="display:none">
         <div class="notif-panel-hd">
-          <span>ط§ظ„ط¥ط´ط¹ط§ط±ط§طھ</span>
-          <span class="notif-mark-all" id="notifMarkAll" onclick="tgMarkAllNotifsRead(TG_USER && TG_USER.uid)">طھط­ط¯ظٹط¯ ط§ظ„ظƒظ„ ظƒظ…ظ‚ط±ظˆط،</span>
+          <span>الإشعارات</span>
+          <span class="notif-mark-all" id="notifMarkAll" onclick="tgMarkAllNotifsRead(TG_USER && TG_USER.uid)">تحديد الكل كمقروء</span>
         </div>
         <div class="notif-list" id="notifList">
-          <div class="notif-empty">ظ„ط§ طھظˆط¬ط¯ ط¥ط´ط¹ط§ط±ط§طھ ط¨ط¹ط¯</div>
+          <div class="notif-empty">لا توجد إشعارات بعد</div>
         </div>
       </div>
     </div>
-    <button class="bt bt-o" id="themeToggle" onclick="tgToggleTheme()" title="طھط¨ط¯ظٹظ„ ط§ظ„ظˆط¶ط¹ ط§ظ„ظ„ظٹظ„ظٹ" style="font-size:16px;padding:4px 10px;margin-left:4px">ًںŒ™</button>
-    <button class="bt bt-p" onclick="tgSaveFormDraft(false)" style="font-size:11px;padding:4px 10px;margin-left:4px" title="ط­ظپط¸ ط§ظ„طھط¹ط¯ظٹظ„ط§طھ ط¹ظ„ظ‰ ظ†ظپط³ ط§ظ„ظ†ظ…ظˆط°ط¬">ًں’¾ ط­ظپط¸</button>
-    <button class="bt bt-p" onclick="tgSaveFormDraft(true)" style="font-size:11px;padding:4px 10px;margin-left:8px" title="ط­ظپط¸ ظ†ط³ط®ط© ط¬ط¯ظٹط¯ط©">ًں’¾ ط­ظپط¸ ظƒظ€...</button>
-    <button class="bt bt-o" onclick="openPrintPreview()">ًں–¨ ظ…ط¹ط§ظٹظ†ط© ظˆط·ط¨ط§ط¹ط©</button>
+    <button class="bt bt-o" id="themeToggle" onclick="tgToggleTheme()" title="تبديل الوضع الليلي" style="font-size:16px;padding:4px 10px;margin-left:4px">🌙</button>
+    <button class="bt bt-p" onclick="tgSaveFormDraft(false)" style="font-size:11px;padding:4px 10px;margin-left:4px" title="حفظ التعديلات على نفس النموذج">💾 حفظ</button>
+    <button class="bt bt-p" onclick="tgSaveFormDraft(true)" style="font-size:11px;padding:4px 10px;margin-left:8px" title="حفظ نسخة جديدة">💾 حفظ كـ...</button>
+    <button class="bt bt-o" onclick="openPrintPreview()">🖨 معاينة وطباعة</button>
 </div></div>
 <div id="tgFormDraftsSidebar" class="form-drafts-sidebar np" style="display:none;">
   <div class="fds-header">
-    <span>ًں“‚ ط§ظ„ظ†ظ…ط§ط°ط¬ ط§ظ„ظ…ط­ظپظˆط¸ط©</span>
+    <span>📂 النماذج المحفوظة</span>
   </div>
   <div class="fds-list" id="fdsList"></div>
 </div>
@@ -215,60 +215,60 @@
 <div class="dash-wrap">
 
   <div class="dash-group">
-      <div class="dash-sec-title"><div class="di">ًںڑ€</div> ط§ظ„ط¥ط¯ط§ط±ط© ظˆط§ظ„ظ…طھط§ط¨ط¹ط©</div>
+      <div class="dash-sec-title"><div class="di">🚀</div> الإدارة والمتابعة</div>
       <div class="DG">
-          <div class="DC" onclick="go('pmgmt')"><div class="di-wrap"><div class="di">ًں“پ</div><span class="badge-new">ط¬ط¯ظٹط¯</span></div><div class="dt2">ط¥ط¯ط§ط±ط© ط§ظ„ظ…ط´ط§ط±ظٹط¹</div><div class="dd">ط¥ظ†ط´ط§ط، ظ…ط´ط§ط±ظٹط¹ ظˆطھط¹ظٹظٹظ† ط§ظ„ظ…ظˆط¸ظپظٹظ† ط§ظ„ظ…ط³ط¤ظˆظ„ظٹظ† ط¹ظ†ظ‡ط§</div></div>
-          <div class="DC" onclick="go('tasksmgmt')"><div class="di-wrap"><div class="di">ًں—‚</div><span class="badge-new">ط¬ط¯ظٹط¯</span></div><div class="dt2">طھظˆط²ظٹط¹ ط§ظ„ظ…ظ‡ط§ظ…</div><div class="dd">طھظƒظ„ظٹظپ ظƒظ„ ظ…ظˆط¸ظپ ط¨ظ…ظ‡ظ…ط© ظٹطھط§ط¨ط¹ظ‡ط§ ظ…ظ† ط¨ظˆط§ط¨طھظ‡</div></div>
-          <div class="DC" onclick="go('staff')"><div class="di-wrap"><div class="di">ًں‘¥</div><span class="badge-new">ط¬ط¯ظٹط¯</span></div><div class="dt2">ظ…طھط§ط¨ط¹ط© ط§ظ„ظ…ظˆط¸ظپظٹظ†</div><div class="dd">ط­ط³ط§ط¨ط§طھ ط§ظ„ط¯ط®ظˆظ„طŒ ط§ظ„ظ…ط´ط§ط±ظٹط¹طŒ ط§ظ„ط¥ظ†ط¬ط§ط²ط§طھطŒ ط§ظ„ط·ظ„ط¨ط§طھ</div></div>
-          <div class="DC" onclick="go('announcements')"><div class="di-wrap"><div class="di">ًں“¢</div><span class="badge-new">ط¬ط¯ظٹط¯</span></div><div class="dt2">ط¥ط¯ط§ط±ط© ط§ظ„ط¥ط¹ظ„ط§ظ†ط§طھ</div><div class="dd">ظ†ط´ط± ظˆطھط¹ط¯ظٹظ„ ط§ظ„ط¥ط¹ظ„ط§ظ†ط§طھ ظ„ظ„ظ…ظˆط¸ظپظٹظ†</div></div>
+          <div class="DC" onclick="go('pmgmt')"><div class="di-wrap"><div class="di">📁</div><span class="badge-new">جديد</span></div><div class="dt2">إدارة المشاريع</div><div class="dd">إنشاء مشاريع وتعيين الموظفين المسؤولين عنها</div></div>
+          <div class="DC" onclick="go('tasksmgmt')"><div class="di-wrap"><div class="di">🗂</div><span class="badge-new">جديد</span></div><div class="dt2">توزيع المهام</div><div class="dd">تكليف كل موظف بمهمة يتابعها من بوابته</div></div>
+          <div class="DC" onclick="go('staff')"><div class="di-wrap"><div class="di">👥</div><span class="badge-new">جديد</span></div><div class="dt2">متابعة الموظفين</div><div class="dd">حسابات الدخول، المشاريع، الإنجازات، الطلبات</div></div>
+          <div class="DC" onclick="go('announcements')"><div class="di-wrap"><div class="di">📢</div><span class="badge-new">جديد</span></div><div class="dt2">إدارة الإعلانات</div><div class="dd">نشر وتعديل الإعلانات للموظفين</div></div>
       </div>
   </div>
 
   <div class="dash-group">
-      <div class="dash-sec-title"><div class="di">ًں‘¥</div> ظ†ظ…ط§ط°ط¬ ط§ظ„ظ…ظˆط¸ظپظٹظ†</div>
+      <div class="dash-sec-title"><div class="di">👥</div> نماذج الموظفين</div>
       <div class="DG">
-          <div class="DC" onclick="go('emp')"><div class="di-wrap"><div class="di">ًں‘¤</div></div><div class="dt2">ظ…ظ„ظپ ط¨ظٹط§ظ†ط§طھ ط§ظ„ظ…ظˆط¸ظپ</div><div class="dd">ط§ظ„ط¨ظٹط§ظ†ط§طھ ط§ظ„ط´ط®طµظٹط© آ· ط§ظ„ظˆط¸ظٹظپظٹط© آ· ط³ط§ط¹ط§طھ ط§ظ„ط¹ظ…ظ„</div></div>
-          <div class="DC" onclick="go('leave')"><div class="di-wrap"><div class="di">ًںڈ–</div></div><div class="dt2">ط·ظ„ط¨ ط¥ط¬ط§ط²ط©</div><div class="dd">ط³ظ†ظˆظٹط© آ· ط¹ط§ط±ط¶ط© آ· ط§ظ„ظ…ظˆط§ظپظ‚ط§طھ ظˆط§ظ„ط±طµظٹط¯</div></div>
-          <div class="DC" onclick="go('perm')"><div class="di-wrap"><div class="di">ًں•گ</div></div><div class="dt2">ط¥ط°ظ† ط­ط¶ظˆط± / ط§ظ†طµط±ط§ظپ</div><div class="dd">طھط£ط®ظٹط± آ· ظ…ط؛ط§ط¯ط±ط© ظ…ط¨ظƒط±ط© آ· طھظˆظ‚ظٹط¹ط§طھ</div></div>
-          <div class="DC" onclick="go('delay')"><div class="di-wrap"><div class="di">âڈ°</div><span class="badge-new">ط¬ط¯ظٹط¯</span></div><div class="dt2">ط§ظ„طھظ…ط§ط³ طھط¹ط¯ظٹظ„ ط§ظ„ط­ط¶ظˆط±</div><div class="dd">ط·ظ„ط¨ طھط¹ط¯ظٹظ„ ظ…ظˆط¹ط¯ ط§ظ„ط­ط¶ظˆط± ط§ظ„ط±ط³ظ…ظٹ ط¨طµظپط© ط¯ط§ط¦ظ…ط©</div></div>
+          <div class="DC" onclick="go('emp')"><div class="di-wrap"><div class="di">👤</div></div><div class="dt2">ملف بيانات الموظف</div><div class="dd">البيانات الشخصية · الوظيفية · ساعات العمل</div></div>
+          <div class="DC" onclick="go('leave')"><div class="di-wrap"><div class="di">🏖</div></div><div class="dt2">طلب إجازة</div><div class="dd">سنوية · عارضة · الموافقات والرصيد</div></div>
+          <div class="DC" onclick="go('perm')"><div class="di-wrap"><div class="di">🕐</div></div><div class="dt2">إذن حضور / انصراف</div><div class="dd">تأخير · مغادرة مبكرة · توقيعات</div></div>
+          <div class="DC" onclick="go('delay')"><div class="di-wrap"><div class="di">⏰</div><span class="badge-new">جديد</span></div><div class="dt2">التماس تعديل الحضور</div><div class="dd">طلب تعديل موعد الحضور الرسمي بصفة دائمة</div></div>
       </div>
   </div>
 
   <div class="dash-group">
-      <div class="dash-sec-title"><div class="di">ًں“‚</div> ط§ظ„ط³ط¬ظ„ط§طھ</div>
+      <div class="dash-sec-title"><div class="di">📂</div> السجلات</div>
       <div class="DG">
-          <div class="DC" onclick="go('la')"><div class="di-wrap"><div class="di">ًں“…</div></div><div class="dt2">ط³ط¬ظ„ ط§ظ„ط¥ط¬ط§ط²ط© ط§ظ„ط³ظ†ظˆظٹط©</div><div class="dd">ظ…ظ„ط­ظ‚ ط£ â€” ط§ظ„ط±طµظٹط¯ ظˆط§ظ„ظ…ط³طھط®ط¯ظ…</div></div>
-          <div class="DC" onclick="go('lb')"><div class="di-wrap"><div class="di">âڑ،</div></div><div class="dt2">ط³ط¬ظ„ ط§ظ„ط¥ط¬ط§ط²ط© ط§ظ„ط¹ط§ط±ط¶ط©</div><div class="dd">ظ…ظ„ط­ظ‚ ط¨ â€” ط­ط¯ ظ§ ط£ظٹط§ظ…</div></div>
-          <div class="DC" onclick="go('lc')"><div class="di-wrap"><div class="di">ًںژ‰</div></div><div class="dt2">ط³ط¬ظ„ ط§ظ„ط£ط¹ظٹط§ط¯</div><div class="dd">ظ…ظ„ط­ظ‚ ط¬ â€” ط§ظ„ط¹ط·ظ„ ط§ظ„ط±ط³ظ…ظٹط©</div></div>
-          <div class="DC" onclick="go('ld')"><div class="di-wrap"><div class="di">â‌Œ</div></div><div class="dt2">ط³ط¬ظ„ ط§ظ„ط؛ظٹط§ط¨ ط¨ط§ظ„ط®طµظ…</div><div class="dd">ظ…ظ„ط­ظ‚ ط¯ â€” ظ….ظ،ظ£ظ </div></div>
+          <div class="DC" onclick="go('la')"><div class="di-wrap"><div class="di">📅</div></div><div class="dt2">سجل الإجازة السنوية</div><div class="dd">ملحق أ — الرصيد والمستخدم</div></div>
+          <div class="DC" onclick="go('lb')"><div class="di-wrap"><div class="di">⚡</div></div><div class="dt2">سجل الإجازة العارضة</div><div class="dd">ملحق ب — حد ٧ أيام</div></div>
+          <div class="DC" onclick="go('lc')"><div class="di-wrap"><div class="di">🎉</div></div><div class="dt2">سجل الأعياد</div><div class="dd">ملحق ج — العطل الرسمية</div></div>
+          <div class="DC" onclick="go('ld')"><div class="di-wrap"><div class="di">❌</div></div><div class="dt2">سجل الغياب بالخصم</div><div class="dd">ملحق د — م.١٣٠</div></div>
       </div>
   </div>
 
   <div class="dash-group">
-      <div class="dash-sec-title"><div class="di">ًں“‌</div> ظ†ظ…ط§ط°ط¬ ط¥ط¯ط§ط±ظٹط©</div>
+      <div class="dash-sec-title"><div class="di">📝</div> نماذج إدارية</div>
       <div class="DG">
-          <div class="DC" onclick="go('gen')"><div class="di-wrap"><div class="di">âœ‰ï¸ڈ</div><span class="badge-new">ط¬ط¯ظٹط¯</span></div><div class="dt2">ط®ط·ط§ط¨ ط¥ط¯ط§ط±ظٹ ط¹ط§ظ…</div><div class="dd">ظ‚ط§ظ„ط¨ ط±ط³ظ…ظٹ ظ‚ط§ط¨ظ„ ظ„ظ„طھط®طµظٹطµ ظ„ط£ظٹ ظ…ظˆط¶ظˆط¹</div></div>
-          <div class="DC" onclick="go('notice')"><div class="di-wrap"><div class="di">ًں‘پ</div><span class="badge-new">ط¬ط¯ظٹط¯</span></div><div class="dt2">ظ†ظ…ظˆط°ط¬ ظ„ظپطھ ظ†ط¸ط±</div><div class="dd">ط¥ظ†ط°ط§ط± ط±ط³ظ…ظٹ ظˆظپظ‚ ط§ظ„ظ„ط§ط¦ط­ط© ط§ظ„طھظ†ط¸ظٹظ…ظٹط©</div></div>
-          <div class="DC" onclick="go('warn')"><div class="di-wrap"><div class="di">âڑ ï¸ڈ</div></div><div class="dt2">ط®ط·ط§ط¨ ط¥ظ†ط°ط§ط±</div><div class="dd">ط£ظˆظ„ آ· ط«ط§ظ†ظچ آ· ظ†ظ‡ط§ط¦ظٹ</div></div>
-          <div class="DC" onclick="go('inv')"><div class="di-wrap"><div class="di">ًں”چ</div></div><div class="dt2">ظ…ط­ط¶ط± طھط­ظ‚ظٹظ‚</div><div class="dd">طھظˆط«ظٹظ‚ ظˆظ…ط¬ط±ظٹط§طھ</div></div>
-          <div class="DC" onclick="go('exp')"><div class="di-wrap"><div class="di">ًں“œ</div></div><div class="dt2">ط´ظ‡ط§ط¯ط© ط®ط¨ط±ط©</div><div class="dd">ط´ظ‡ط§ط¯ط© ط±ط³ظ…ظٹط©</div></div>
-          <div class="DC" onclick="go('clr')"><div class="di-wrap"><div class="di">âœ…</div></div><div class="dt2">ط¥ط®ظ„ط§ط، ط·ط±ظپ</div><div class="dd">ط¨ط±ط§ط،ط© ط°ظ…ط©</div></div>
-          <div class="DC" onclick="go('res')"><div class="di-wrap"><div class="di">ًںڑھ</div><span class="badge-new">ط¬ط¯ظٹط¯</span></div><div class="dt2">ط·ظ„ط¨ ط§ط³طھظ‚ط§ظ„ط©</div><div class="dd">ط¥ط´ط¹ط§ط± ط¥ظ†ظ‡ط§ط، ط§ظ„ط®ط¯ظ…ط© ظˆط§ظ„ط¥ظ‚ط±ط§ط±</div></div>
-          <div class="DC" onclick="go('promo')"><div class="di-wrap"><div class="di">ًں“ˆ</div><span class="badge-new">ط¬ط¯ظٹط¯</span></div><div class="dt2">ظ‚ط±ط§ط± طھط±ظ‚ظٹط©</div><div class="dd">طھط¹ط¯ظٹظ„ ط§ظ„ظ…ط³ظ…ظ‰ ط§ظ„ظˆط¸ظٹظپظٹ ظˆط§ظ„ط¯ط±ط¬ط©</div></div>
-          <div class="DC" onclick="go('raise')"><div class="di-wrap"><div class="di">ًں’¹</div><span class="badge-new">ط¬ط¯ظٹط¯</span></div><div class="dt2">ط²ظٹط§ط¯ط© ط±ط§طھط¨ / ط¹ظ„ط§ظˆط©</div><div class="dd">ط¯ظˆط±ظٹط© آ· ط§ط³طھط«ظ†ط§ط¦ظٹط© آ· طھظ‚ط¯ظٹط±ظٹط©</div></div>
-          <div class="DC" onclick="go('contract')"><div class="di-wrap"><div class="di">ًں“„</div><span class="badge-new">ط¬ط¯ظٹط¯</span></div><div class="dt2">ط¹ظ‚ط¯ ط¹ظ…ظ„</div><div class="dd">ط§طھظپط§ظ‚ظٹط© طھظˆط¸ظٹظپ ط¨ظٹظ† ط§ظ„ط·ط±ظپظٹظ†</div></div>
-          <div class="DC" onclick="go('task')"><div class="di-wrap"><div class="di">ًں“‹</div></div><div class="dt2">طھظƒظ„ظٹظپ ط¨ظ…ظ‡ظ…ط©</div><div class="dd">ظ…ظ‡ط§ظ… ظˆظ…ظˆط§ط¹ظٹط¯</div></div>
-          <div class="DC" onclick="go('proj')"><div class="di-wrap"><div class="di">ًں“پ</div><span class="badge-new">ط¬ط¯ظٹط¯</span></div><div class="dt2">ظ†ظ…ظˆط°ط¬ ط¥ط¯ط§ط±ط© ط§ظ„ظ…ط´ط±ظˆط¹</div><div class="dd">ظ…طھط§ط¨ط¹ط© ط§ظ„ظ…ط´ط§ط±ظٹط¹ ظˆط§ظ„ظ…ظ‡ط§ظ… ظˆط§ظ„ظپط±ظٹظ‚</div></div>
-          <div class="DC" onclick="go('sal')"><div class="di-wrap"><div class="di">ًں’°</div></div><div class="dt2">ط´ظ‡ط§ط¯ط© ط±ط§طھط¨</div><div class="dd">ظ…ظپط±ط¯ط§طھ ط§ظ„ظ…ط±طھط¨</div></div>
+          <div class="DC" onclick="go('gen')"><div class="di-wrap"><div class="di">✉️</div><span class="badge-new">جديد</span></div><div class="dt2">خطاب إداري عام</div><div class="dd">قالب رسمي قابل للتخصيص لأي موضوع</div></div>
+          <div class="DC" onclick="go('notice')"><div class="di-wrap"><div class="di">👁</div><span class="badge-new">جديد</span></div><div class="dt2">نموذج لفت نظر</div><div class="dd">إنذار رسمي وفق اللائحة التنظيمية</div></div>
+          <div class="DC" onclick="go('warn')"><div class="di-wrap"><div class="di">⚠️</div></div><div class="dt2">خطاب إنذار</div><div class="dd">أول · ثانٍ · نهائي</div></div>
+          <div class="DC" onclick="go('inv')"><div class="di-wrap"><div class="di">🔍</div></div><div class="dt2">محضر تحقيق</div><div class="dd">توثيق ومجريات</div></div>
+          <div class="DC" onclick="go('exp')"><div class="di-wrap"><div class="di">📜</div></div><div class="dt2">شهادة خبرة</div><div class="dd">شهادة رسمية</div></div>
+          <div class="DC" onclick="go('clr')"><div class="di-wrap"><div class="di">✅</div></div><div class="dt2">إخلاء طرف</div><div class="dd">براءة ذمة</div></div>
+          <div class="DC" onclick="go('res')"><div class="di-wrap"><div class="di">🚪</div><span class="badge-new">جديد</span></div><div class="dt2">طلب استقالة</div><div class="dd">إشعار إنهاء الخدمة والإقرار</div></div>
+          <div class="DC" onclick="go('promo')"><div class="di-wrap"><div class="di">📈</div><span class="badge-new">جديد</span></div><div class="dt2">قرار ترقية</div><div class="dd">تعديل المسمى الوظيفي والدرجة</div></div>
+          <div class="DC" onclick="go('raise')"><div class="di-wrap"><div class="di">💹</div><span class="badge-new">جديد</span></div><div class="dt2">زيادة راتب / علاوة</div><div class="dd">دورية · استثنائية · تقديرية</div></div>
+          <div class="DC" onclick="go('contract')"><div class="di-wrap"><div class="di">📄</div><span class="badge-new">جديد</span></div><div class="dt2">عقد عمل</div><div class="dd">اتفاقية توظيف بين الطرفين</div></div>
+          <div class="DC" onclick="go('task')"><div class="di-wrap"><div class="di">📋</div></div><div class="dt2">تكليف بمهمة</div><div class="dd">مهام ومواعيد</div></div>
+          <div class="DC" onclick="go('proj')"><div class="di-wrap"><div class="di">📁</div><span class="badge-new">جديد</span></div><div class="dt2">نموذج إدارة المشروع</div><div class="dd">متابعة المشاريع والمهام والفريق</div></div>
+          <div class="DC" onclick="go('sal')"><div class="di-wrap"><div class="di">💰</div></div><div class="dt2">شهادة راتب</div><div class="dd">مفردات المرتب</div></div>
       </div>
   </div>
 
   <div class="dash-group">
-      <div class="dash-sec-title"><div class="di">âڑ™ï¸ڈ</div> ط§ظ„ظ…ط§ظ„ظٹط© ظˆط§ظ„ط£ظ†ط¸ظ…ط©</div>
+      <div class="dash-sec-title"><div class="di">⚙️</div> المالية والأنظمة</div>
       <div class="DG">
-          <div class="DC" onclick="go('mexp')"><div class="di-wrap"><div class="di">ًں’µ</div><span class="badge-new">ط¬ط¯ظٹط¯</span></div><div class="dt2">ط´ظٹطھ ط§ظ„ظ…طµط±ظˆظپط§طھ ط§ظ„ط´ظ‡ط±ظٹ</div><div class="dd">ظ…ط³ظ„ط³ظ„ آ· طµط§ط±ظپ آ· ط¨ظ†ط¯ آ· ظ…ط¨ظ„ط؛ آ· ط¥ط¬ظ…ط§ظ„ظٹ طھظ„ظ‚ط§ط¦ظٹ</div></div>
-          <div class="DC" onclick="go('att')"><div class="di-wrap"><div class="di">âڈ±</div></div><div class="dt2">ط§ظ„ط­ط¶ظˆط± ظˆط§ظ„ط§ظ†طµط±ط§ظپ</div><div class="dd">ظ†ط¸ط§ظ… ظ…طھظƒط§ظ…ظ„</div></div>
-          <div class="DC" onclick="go('comp')"><div class="di-wrap"><div class="di">ًں“‌</div></div><div class="dt2">ط´ظƒط§ظˆظ‰ ظˆظ…ظ‚طھط±ط­ط§طھ</div><div class="dd">ط¨ط³ط±ظٹط© طھط§ظ…ط©</div></div>
+          <div class="DC" onclick="go('mexp')"><div class="di-wrap"><div class="di">💵</div><span class="badge-new">جديد</span></div><div class="dt2">شيت المصروفات الشهري</div><div class="dd">مسلسل · صارف · بند · مبلغ · إجمالي تلقائي</div></div>
+          <div class="DC" onclick="go('att')"><div class="di-wrap"><div class="di">⏱</div></div><div class="dt2">الحضور والانصراف</div><div class="dd">نظام متكامل</div></div>
+          <div class="DC" onclick="go('comp')"><div class="di-wrap"><div class="di">📝</div></div><div class="dt2">شكاوى ومقترحات</div><div class="dd">بسرية تامة</div></div>
       </div>
   </div>
 
@@ -284,18 +284,18 @@
 </div>
 </div>
 <datalist id="tgEmpDL"></datalist>
-<script src="auth.js?v=1784056196"></script>
+<script src="auth.js?v=3"></script>
 
 <!-- FullCalendar -->
 <script src="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.15/index.global.min.js"></script>
 
-<script src="app.js?v=1784056196"></script>
-<script src="livetrack.js?v=1784056196"></script>
-<script src="formsend.js?v=1784056196"></script>
+<script src="app.js?v=3"></script>
+<script src="livetrack.js?v=2"></script>
+<script src="formsend.js?v=2"></script>
 
 
 <script>
-  // â”€â”€ ظ…ط±ظƒط² ط§ظ„ط¥ط´ط¹ط§ط±ط§طھ (Facebook-style) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+  // ── مركز الإشعارات (Facebook-style) ──────────────────────────────────────
   function tgToggleNotifPanel(ev) {
     if (ev) ev.stopPropagation();
     var panel = document.getElementById('notifPanel');
@@ -311,20 +311,20 @@
   });
 
   function tgTimeAgo(d) {
-    if (!d) return 'ط§ظ„ط¢ظ†';
+    if (!d) return 'الآن';
     var ms = (d && d.toMillis) ? d.toMillis() : new Date(d).getTime();
-    if (!ms || isNaN(ms)) return 'طھظˆظ‚ظٹطھ ط؛ظٹط± ظ…ط¹ط±ظˆظپ';
+    if (!ms || isNaN(ms)) return 'توقيت غير معروف';
     var now = Date.now();
     var s = Math.floor(Math.abs(now - ms) / 1000);
     
-    if (s < 2) return 'ط§ظ„ط¢ظ†';
-    if (s < 60) return 'ظ…ظ†ط° ' + s + ' ط«ط§ظ†ظٹط©';
+    if (s < 2) return 'الآن';
+    if (s < 60) return 'منذ ' + s + ' ثانية';
     var m = Math.floor(s / 60);
-    if (m < 60) return (m === 1 ? 'ظ…ظ†ط° ط¯ظ‚ظٹظ‚ط©' : m === 2 ? 'ظ…ظ†ط° ط¯ظ‚ظٹظ‚طھظٹظ†' : m <= 10 ? 'ظ…ظ†ط° ' + m + ' ط¯ظ‚ط§ط¦ظ‚' : 'ظ…ظ†ط° ' + m + ' ط¯ظ‚ظٹظ‚ط©');
+    if (m < 60) return (m === 1 ? 'منذ دقيقة' : m === 2 ? 'منذ دقيقتين' : m <= 10 ? 'منذ ' + m + ' دقائق' : 'منذ ' + m + ' دقيقة');
     var h = Math.floor(m / 60);
-    if (h < 24) return (h === 1 ? 'ظ…ظ†ط° ط³ط§ط¹ط©' : h === 2 ? 'ظ…ظ†ط° ط³ط§ط¹طھظٹظ†' : h <= 10 ? 'ظ…ظ†ط° ' + h + ' ط³ط§ط¹ط§طھ' : 'ظ…ظ†ط° ' + h + ' ط³ط§ط¹ط©');
+    if (h < 24) return (h === 1 ? 'منذ ساعة' : h === 2 ? 'منذ ساعتين' : h <= 10 ? 'منذ ' + h + ' ساعات' : 'منذ ' + h + ' ساعة');
     var days = Math.floor(h / 24);
-    if (days < 30) return (days === 1 ? 'ظ…ظ†ط° ظٹظˆظ…' : days === 2 ? 'ظ…ظ†ط° ظٹظˆظ…ظٹظ†' : days <= 10 ? 'ظ…ظ†ط° ' + days + ' ط£ظٹط§ظ…' : 'ظ…ظ†ط° ' + days + ' ظٹظˆظ…');
+    if (days < 30) return (days === 1 ? 'منذ يوم' : days === 2 ? 'منذ يومين' : days <= 10 ? 'منذ ' + days + ' أيام' : 'منذ ' + days + ' يوم');
     return new Date(ms).toLocaleDateString('ar-EG');
   }
 
@@ -344,7 +344,7 @@
     var listEl = document.getElementById('notifList');
     if (!listEl) return;
     if (!list || !list.length) {
-      listEl.innerHTML = '<div class="notif-empty">ظ„ط§ طھظˆط¬ط¯ ط¥ط´ط¹ط§ط±ط§طھ ط¨ط¹ط¯</div>';
+      listEl.innerHTML = '<div class="notif-empty">لا توجد إشعارات بعد</div>';
       return;
     }
     var h = '';
@@ -353,11 +353,11 @@
       h += '<div class="notif-item' + (unread ? ' unread' : '') + '" onclick="tgNotifItemClick(\'' + n.id + '\', event, \'' + (n.tag || '') + '\')">';
       h += '<div class="notif-item-dot"></div>';
       h += '<div class="notif-item-body">';
-      h += '<div class="notif-item-title">' + escH(n.title || 'ط¥ط´ط¹ط§ط±') + '</div>';
+      h += '<div class="notif-item-title">' + escH(n.title || 'إشعار') + '</div>';
       if (n.body) h += '<div class="notif-item-text">' + escH(n.body) + '</div>';
       h += '<div class="notif-item-time">' + tgTimeAgo(n.createdAt) + '</div>';
       h += '</div>';
-      h += '<div class="notif-item-del" title="ط­ط°ظپ" onclick="tgNotifDelClick(\'' + n.id + '\', event)">âœ•</div>';
+      h += '<div class="notif-item-del" title="حذف" onclick="tgNotifDelClick(\'' + n.id + '\', event)">✕</div>';
       h += '</div>';
     });
     listEl.innerHTML = h;
@@ -382,7 +382,7 @@
     if (typeof tgDeleteNotif === 'function') tgDeleteNotif(id);
   }
 
-  // â”€â”€ ظ…ط¹ط§ظٹظ†ط© ط§ظ„ط·ط¨ط§ط¹ط© ط§ظ„ظ…ط­ط³ظ‘ظ†ط© â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+  // ── معاينة الطباعة المحسّنة ──────────────────
   function openPrintPreview() {
     var t = document.getElementById('pT');
     var ph = document.getElementById('phTitle');
@@ -390,7 +390,7 @@
       var label = t.textContent.trim();
       var activePg = document.querySelector('.pg.a');
       var numFld = activePg ? activePg.querySelector('.doc-num-fld') : null;
-      if (numFld && numFld.value) label += ' آ· ' + numFld.value;
+      if (numFld && numFld.value) label += ' · ' + numFld.value;
       ph.textContent = label;
     }
 
@@ -405,12 +405,12 @@
         return '<option value="' + sz + '"' + (sz === savedPaper ? ' selected' : '') + '>' + sz + '</option>';
       }).join('');
       bar.innerHTML =
-        '<span style="font-weight:800;font-size:13px">ًں–¨ ط¬ط§ظ‡ط² ظ„ظ„ط·ط¨ط§ط¹ط©</span>' +
-        '<label style="font-size:11px;display:flex;align-items:center;gap:4px;cursor:pointer"><input type="checkbox" id="ppBw" onchange="toggleBwPrint(this.checked)"> ط£ط¨ظٹط¶/ط£ط³ظˆط¯</label>' +
-        '<label style="font-size:11px;display:flex;align-items:center;gap:4px;cursor:pointer"><input type="checkbox" id="ppKeepData" onchange="togglePrintKeepData(this.checked)"' + (PRINT_KEEP_DATA ? ' checked' : '') + '> ط§ط·ط¨ط¹ ط§ظ„ط¨ظٹط§ظ†ط§طھ ط§ظ„ظ…ظƒطھظˆط¨ط©</label>' +
-        '<label style="font-size:11px;display:flex;align-items:center;gap:4px;cursor:pointer">ط­ط¬ظ… ط§ظ„ظˆط±ظ‚ <select id="ppPaperSize" onchange="setPaperSize(this.value)" style="font-family:inherit;font-size:11px;border-radius:4px;border:none;padding:2px 4px">' + paperOpts + '</select></label>' +
-        '<button onclick="doPrintNow()" style="background:#c9a227;color:#1b2a4a;border:0;padding:6px 14px;border-radius:4px;font-weight:800;cursor:pointer;font-family:inherit">ط·ط¨ط§ط¹ط© / ط­ظپط¸ PDF</button>' +
-        '<button onclick="closePrintPreview()" style="background:transparent;color:#fff;border:1px solid rgba(255,255,255,.4);padding:6px 12px;border-radius:4px;cursor:pointer;font-family:inherit">ط¥ط؛ظ„ط§ظ‚</button>';
+        '<span style="font-weight:800;font-size:13px">🖨 جاهز للطباعة</span>' +
+        '<label style="font-size:11px;display:flex;align-items:center;gap:4px;cursor:pointer"><input type="checkbox" id="ppBw" onchange="toggleBwPrint(this.checked)"> أبيض/أسود</label>' +
+        '<label style="font-size:11px;display:flex;align-items:center;gap:4px;cursor:pointer"><input type="checkbox" id="ppKeepData" onchange="togglePrintKeepData(this.checked)"' + (PRINT_KEEP_DATA ? ' checked' : '') + '> اطبع البيانات المكتوبة</label>' +
+        '<label style="font-size:11px;display:flex;align-items:center;gap:4px;cursor:pointer">حجم الورق <select id="ppPaperSize" onchange="setPaperSize(this.value)" style="font-family:inherit;font-size:11px;border-radius:4px;border:none;padding:2px 4px">' + paperOpts + '</select></label>' +
+        '<button onclick="doPrintNow()" style="background:#c9a227;color:#1b2a4a;border:0;padding:6px 14px;border-radius:4px;font-weight:800;cursor:pointer;font-family:inherit">طباعة / حفظ PDF</button>' +
+        '<button onclick="closePrintPreview()" style="background:transparent;color:#fff;border:1px solid rgba(255,255,255,.4);padding:6px 12px;border-radius:4px;cursor:pointer;font-family:inherit">إغلاق</button>';
       document.body.appendChild(bar);
       if (savedPaper !== 'A4') setPaperSize(savedPaper);
     } else {
@@ -428,7 +428,7 @@
     document.documentElement.classList.toggle('bw-print', !!on);
   }
 
-  // â”€â”€ ط§ط®طھظٹط§ط± ط­ط¬ظ… ط§ظ„ظˆط±ظ‚ (A4 / Legal / Letter) â€” ظٹطھط­ظƒظ… ظپظٹ @page ط¯ظٹظ†ط§ظ…ظٹظƒظٹط§ظ‹ â”€â”€
+  // ── اختيار حجم الورق (A4 / Legal / Letter) — يتحكم في @page ديناميكياً ──
   function setPaperSize(sz) {
     var st = document.getElementById('paperSizeStyle');
     if (!st) { st = document.createElement('style'); st.id = 'paperSizeStyle'; document.head.appendChild(st); }
@@ -436,8 +436,8 @@
     localStorage.setItem('tg_paper_size', sz || 'A4');
   }
 
-  // â”€â”€ ط®ظٹط§ط±: ظ‡ظ„ طھظڈط·ط¨ط¹ ط§ظ„ط¨ظٹط§ظ†ط§طھ ط§ظ„ظ…ظƒطھظˆط¨ط© ظپظٹ ط§ظ„ط­ظ‚ظˆظ„ ط£ظ… طھظڈظپط±ظژظ‘ط؛ ظ„ظ„طھط¹ط¨ط¦ط© ط§ظ„ظٹط¯ظˆظٹط©طں â”€â”€
-  // ظ‡ط°ط§ ط§ظ„ط®ظٹط§ط± ظٹط´ظ…ظ„ ط£ظٹط¶ط§ظ‹ ط®ط§ظ†ط§طھ ط§ظ„ط¥ط¬ظ…ط§ظ„ظٹ ط§ظ„ظ…ط­ط³ظˆط¨ط© طھظ„ظ‚ط§ط¦ظٹط§ظ‹ (ط§ظ„ظ…طµط±ظˆظپط§طھطŒ ط§ظ„ط±ط§طھط¨طŒ طھظ‚ط±ظٹط± ط§ظ„ط­ط¶ظˆط±)
+  // ── خيار: هل تُطبع البيانات المكتوبة في الحقول أم تُفرَّغ للتعبئة اليدوية؟ ──
+  // هذا الخيار يشمل أيضاً خانات الإجمالي المحسوبة تلقائياً (المصروفات، الراتب، تقرير الحضور)
   var PRINT_KEEP_DATA = (localStorage.getItem('tg_print_keep_data') === '1');
   document.documentElement.classList.toggle('print-keep-data', PRINT_KEEP_DATA);
   function togglePrintKeepData(on) {
@@ -458,9 +458,9 @@
     window.print();
   }
 
-  // ط¥ط®ظپط§ط، ط´ط±ظٹط· ط§ظ„ظ…ط¹ط§ظٹظ†ط© ظپط¹ظ„ظٹط§ظ‹ ظ‚ط¨ظ„ ط¥ط±ط³ط§ظ„ ط§ظ„ط·ط¨ط§ط¹ط© + ط§ط³طھط¹ط§ط¯ط© ط­ظ‚ظˆظ„ ط§ظ„طھط§ط±ظٹط®
-  // ط§ظ„ط­ظ‚ظˆظ„ ط§ظ„طھظٹ طھظڈظپط±ظژظ‘ط؛ ط¹ظ†ط¯ ط§ظ„ط·ط¨ط§ط¹ط© ظ„طھطµط¨ط­ ط¬ط§ظ‡ط²ط© ظ„ظ„طھط¹ط¨ط¦ط© ط§ظ„ظٹط¯ظˆظٹط© ط¨ط§ظ„ظ‚ظ„ظ… â€”
-  // ط¨ط§ط³طھط«ظ†ط§ط، ط±ظ‚ظ… ط§ظ„ظ…ط³طھظ†ط¯ (ظ…ط±ط¬ط¹ ط±ط³ظ…ظٹ ظ…ظ† ط§ظ„ظ†ط¸ط§ظ…) ظˆط§ظ„ط­ظ‚ظˆظ„ ط§ظ„ظ‚ط§ط¨ظ„ط© ظ„ظ„ظ‚ط±ط§ط،ط© ظپظ‚ط· (ط§ظ„ظ…ط¬ط§ظ…ظٹط¹ ط§ظ„ظ…ط­ط³ظˆط¨ط©)
+  // إخفاء شريط المعاينة فعلياً قبل إرسال الطباعة + استعادة حقول التاريخ
+  // الحقول التي تُفرَّغ عند الطباعة لتصبح جاهزة للتعبئة اليدوية بالقلم —
+  // باستثناء رقم المستند (مرجع رسمي من النظام) والحقول القابلة للقراءة فقط (المجاميع المحسوبة)
   var PRINT_CLEAR_SELECTOR =
       'input[type="text"]:not(.doc-num-fld), input[type="tel"], input[type="email"], ' +
       'input[type="number"], input[type="month"], input[type="time"], ' +
@@ -469,37 +469,37 @@
   window.addEventListener('beforeprint', function () {
     var b = document.getElementById('ppBar'); if (b) b.style.display = 'none';
     var now = new Date();
-    var stamp = 'ط·ظڈط¨ط¹ ط¨طھط§ط±ظٹط® ' + now.toLocaleDateString('ar-EG') + ' â€” ' + now.toLocaleTimeString('ar-EG', { hour: '2-digit', minute: '2-digit' });
+    var stamp = 'طُبع بتاريخ ' + now.toLocaleDateString('ar-EG') + ' — ' + now.toLocaleTimeString('ar-EG', { hour: '2-digit', minute: '2-digit' });
     document.querySelectorAll('.FL-foot-ts').forEach(function (el) { el.textContent = stamp; });
 
-    // ظ…ط±ط¬ط¹ ط§ظ„ظ…ط³طھظ†ط¯ ظپظٹ ط§ظ„طھط°ظٹظٹظ„ â€” ظ†ظپط³ ط±ظ‚ظ… ط§ظ„ظ…ط³طھظ†ط¯ ظ„طھط£ظƒظٹط¯ طھط±ط§ط¨ط· طµظپط­ط§طھ ط§ظ„ظ…ط³طھظ†ط¯ ط§ظ„ظˆط§ط­ط¯
+    // مرجع المستند في التذييل — نفس رقم المستند لتأكيد ترابط صفحات المستند الواحد
     document.querySelectorAll('.FL').forEach(function (fl) {
       var numFld = fl.querySelector('.doc-num-fld');
       var ref = fl.querySelector('.FL-foot-ref');
-      if (ref) ref.textContent = (numFld && numFld.value) ? ('ظ…ط±ط¬ط¹: ' + numFld.value) : '';
+      if (ref) ref.textContent = (numFld && numFld.value) ? ('مرجع: ' + numFld.value) : '';
     });
 
-    // ط®طھظ… ط§ظ„ط­ط§ظ„ط© (ظ…ظˆط§ظپظ‚/ظ…ط±ظپظˆط¶/ظ‚ظٹط¯ ط§ظ„ظ…ط±ط§ط¬ط¹ط©) ظپظˆظ‚ ط§ظ„ظ…ط³طھظ†ط¯ط§طھ ط§ظ„طھظٹ ط¨ظ‡ط§ ط­ط§ظ„ط© ط·ظ„ط¨
-    // ط§ظ„ط®طھظ… ظٹط¸ظ‡ط± ظپظ‚ط· ط¹ظ†ط¯ ط§ط®طھظٹط§ط± "ط·ط¨ط§ط¹ط© ط§ظ„ط¨ظٹط§ظ†ط§طھ ط§ظ„ظ…ظƒطھظˆط¨ط©" â€” ظˆط¥ظ„ط§ ظٹظڈط®ظپظ‰
+    // ختم الحالة (موافق/مرفوض/قيد المراجعة) فوق المستندات التي بها حالة طلب
+    // الختم يظهر فقط عند اختيار "طباعة البيانات المكتوبة" — وإلا يُخفى
     document.querySelectorAll('.stg').forEach(function (stg) {
       var active = stg.querySelector('.stb.a');
       var fl = stg.closest('.FL');
       if (!fl) return;
-      // ط¥ط²ط§ظ„ط© ط£ظٹ ط®طھظ… ظ…ظˆط¬ظˆط¯ ط£ظˆظ„ط§ظ‹
+      // إزالة أي ختم موجود أولاً
       var existingSt = fl.querySelector('.print-stamp');
       if (existingSt) { existingSt.remove(); }
-      // ط¥ط¶ط§ظپط© ط§ظ„ط®طھظ… ظپظ‚ط· ط¥ط°ط§ ط§ط®طھط§ط± ط§ظ„ظ…ط³طھط®ط¯ظ… ط·ط¨ط§ط¹ط© ط§ظ„ط¨ظٹط§ظ†ط§طھ ط§ظ„ظ…ظƒطھظˆط¨ط©
+      // إضافة الختم فقط إذا اختار المستخدم طباعة البيانات المكتوبة
       if (!PRINT_KEEP_DATA || !active) return;
       var st = document.createElement('div');
       st.className = 'print-stamp';
       fl.appendChild(st);
       st.classList.remove('st-ok', 'st-no', 'st-pn');
-      if (active.classList.contains('ok')) { st.classList.add('st-ok'); st.textContent = 'âœ“ ظ…ط¹طھظ…ط¯'; }
-      else if (active.classList.contains('no')) { st.classList.add('st-no'); st.textContent = 'âœ— ظ…ط±ظپظˆط¶'; }
-      else { st.classList.add('st-pn'); st.textContent = 'âڈ³ ظ‚ظٹط¯ ط§ظ„ظ…ط±ط§ط¬ط¹ط©'; }
+      if (active.classList.contains('ok')) { st.classList.add('st-ok'); st.textContent = '✓ معتمد'; }
+      else if (active.classList.contains('no')) { st.classList.add('st-no'); st.textContent = '✗ مرفوض'; }
+      else { st.classList.add('st-pn'); st.textContent = '⏳ قيد المراجعة'; }
     });
 
-    // طھظ…ظٹظٹط² طµظپظˆظپ ط§ظ„ط¬ط¯ط§ظˆظ„ ط§ظ„ظ…ظƒطھظˆط¨ ظپظٹظ‡ط§ ط¨ظٹط§ظ†ط§طھ ظپط¹ظ„ظٹط§ظ‹ ط¹ظ† ط§ظ„طµظپظˆظپ ط§ظ„ظپط§ط±ط؛ط© (ط§ظ„ط³ط¬ظ„ط§طھ ظˆط§ظ„ظ…ظ„ط§ط­ظ‚ ط§ظ„ط·ظˆظٹظ„ط©)
+    // تمييز صفوف الجداول المكتوب فيها بيانات فعلياً عن الصفوف الفارغة (السجلات والملاحق الطويلة)
     document.querySelectorAll('.dt tr').forEach(function (tr) {
       var inputs = tr.querySelectorAll('input');
       if (!inputs.length) { tr.classList.remove('row-filled'); return; }
@@ -507,13 +507,13 @@
       tr.classList.toggle('row-filled', hasValue);
     });
 
-    if (PRINT_KEEP_DATA) return; // ط§ظ„ظ…ط³طھط®ط¯ظ… ط§ط®طھط§ط± ط·ط¨ط§ط¹ط© ط§ظ„ط¨ظٹط§ظ†ط§طھ ط§ظ„ظ…ظƒطھظˆط¨ط© ظƒظ…ط§ ظ‡ظٹ â€” ط¨ط¯ظˆظ† طھظپط±ظٹط؛
-    document.querySelectorAll('input[type="date" lang="en-GB"]').forEach(function (el) {
+    if (PRINT_KEEP_DATA) return; // المستخدم اختار طباعة البيانات المكتوبة كما هي — بدون تفريغ
+    document.querySelectorAll('input[type="date"]').forEach(function (el) {
       el._pv = el.value;
       el.type = 'text';
       el.value = '';
     });
-    // ط¥ط®ظپط§ط، ط§ظ„ظ†طµظˆطµ ظˆط§ظ„ط§ط®طھظٹط§ط±ط§طھ ط§ظ„ط§ظپطھط±ط§ط¶ظٹط© (ط؛ظٹط± ط§ظ„ظ…ظڈط¯ط®ظ„ط© ظپط¹ظ„ظٹط§ظ‹ ظ…ظ† ط§ظ„ظ…ط³طھط®ط¯ظ…) ط¹ظ†ط¯ ط§ظ„ط·ط¨ط§ط¹ط©
+    // إخفاء النصوص والاختيارات الافتراضية (غير المُدخلة فعلياً من المستخدم) عند الطباعة
     document.querySelectorAll('input.tpl-default, textarea.tpl-default').forEach(function (el) {
       el._tpv = el.value;
       el.value = '';
@@ -522,10 +522,10 @@
       el._tpc = el.checked;
       if (el.checked) el.checked = false;
     });
-    // طھظپط±ظٹط؛ ط¨ط§ظ‚ظٹ ط§ظ„ط­ظ‚ظˆظ„ (ط§ظ„ط§ط³ظ…طŒ ط§ظ„ظ…ظ„ط§ط­ط¸ط§طھطŒ ط£ط±ظ‚ط§ظ… ط§ظ„ظ‡ظˆط§طھظپ...) ظ„طھظڈط·ط¨ط¹ ط¨ظٹط¶ط§ط، ظپط§ط±ط؛ط© ظ„ظ„ظƒطھط§ط¨ط© ط§ظ„ظٹط¯ظˆظٹط©
+    // تفريغ باقي الحقول (الاسم، الملاحظات، أرقام الهواتف...) لتُطبع بيضاء فارغة للكتابة اليدوية
     document.querySelectorAll(PRINT_CLEAR_SELECTOR).forEach(function (el) {
       if (el.readOnly || el.disabled) return;
-      if (el._bpv !== undefined) return; // طھظ… ط§ظ„طھط¹ط§ظ…ظ„ ظ…ط¹ظ‡ ط¨ط§ظ„ظپط¹ظ„ (tpl-default)
+      if (el._bpv !== undefined) return; // تم التعامل معه بالفعل (tpl-default)
       el._bpv = el.value;
       el.value = '';
     });
@@ -533,9 +533,9 @@
   window.addEventListener('afterprint', function () {
     document.querySelectorAll('.FL-foot-ts').forEach(function (el) { el.textContent = ''; });
     document.querySelectorAll('.FL-foot-ref').forEach(function (el) { el.textContent = ''; });
-    // ط¥ط²ط§ظ„ط© ط§ظ„ط®طھظ… ط¨ط¹ط¯ ط§ظ„ط·ط¨ط§ط¹ط©
+    // إزالة الختم بعد الطباعة
     document.querySelectorAll('.print-stamp').forEach(function (el) { el.remove(); });
-    document.querySelectorAll('input[type="date" lang="en-GB"]').forEach(function (el) {
+    document.querySelectorAll('input[type="date"]').forEach(function (el) {
       if (el._pv !== undefined) {
         el.type = 'date';
         el.value = el._pv;
@@ -555,21 +555,21 @@
     });
   });
 
-  // â”€â”€ ط­ظ…ط§ظٹط© ط§ظ„طµظپط­ط©: ظ„ط§ط²ظ… طھط³ط¬ظٹظ„ ط¯ط®ظˆظ„ ط¨طµظ„ط§ط­ظٹط© ط£ط¯ظ…ظ† ط£ظˆ ط£ط¯ظ…ظ† طھظ‚ظ†ظٹ â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+  // ── حماية الصفحة: لازم تسجيل دخول بصلاحية أدمن أو أدمن تقني ──────────────────
   tgRequireAuth('admin', function (u) {
-    var roleLabel = u.role === 'tech_admin' ? 'ط£ط¯ظ…ظ† طھظ‚ظ†ظٹ' : 'ط£ط¯ظ…ظ†';
+    var roleLabel = u.role === 'tech_admin' ? 'أدمن تقني' : 'أدمن';
     var box = document.getElementById('sbUser');
-    if (box) box.innerHTML = 'ًں‘¤ <strong style="color:#fff">' + (u.name || u.email) + '</strong><br><small style="color:rgba(255,255,255,.5)">' + u.email + '</small><br><small style="color:var(--gd);font-weight:700">' + roleLabel + '</small>';
+    if (box) box.innerHTML = '👤 <strong style="color:#fff">' + (u.name || u.email) + '</strong><br><small style="color:rgba(255,255,255,.5)">' + u.email + '</small><br><small style="color:var(--gd);font-weight:700">' + roleLabel + '</small>';
 
     if (u.role === 'tech_admin') {
-      // ط§ظ„ط£ط¯ظ…ظ† ط§ظ„طھظ‚ظ†ظٹ: طھط®ط·ظ‘ظ‰ ظ„ظˆط­ط© ط§ظ„طھط­ظƒظ… â€” ط§ط¹ط±ط¶ ط§ظ„ظ…طھط§ط¨ط¹ط© ط§ظ„ظ„ط­ط¸ظٹط© ظ…ط¨ط§ط´ط±ط©ظ‹
+      // الأدمن التقني: تخطّى لوحة التحكم — اعرض المتابعة اللحظية مباشرةً
       applyTechAdminRestrictions(u);
       if (typeof tgListenMyNotifications === 'function') tgListenMyNotifications(u.uid);
       if (typeof tgListenNotifCenter === 'function') tgListenNotifCenter(u.uid, tgRenderNotifPanel);
-      // goLiveTrack طھطھظˆظ„ظ‰ ظƒظ„ ط´ظٹط،: ط¥ط®ظپط§ط، pg-dashطŒ طھظپط¹ظٹظ„ pg-livetrackطŒ طھط­ظ…ظٹظ„ ط§ظ„ظ…ط­طھظˆظ‰
+      // goLiveTrack تتولى كل شيء: إخفاء pg-dash، تفعيل pg-livetrack، تحميل المحتوى
       if (typeof goLiveTrack === 'function') goLiveTrack();
     } else {
-      // ط§ظ„ط£ط¯ظ…ظ† ط§ظ„ط±ط¦ظٹط³ظٹ: ط§ظ„ط³ظ„ظˆظƒ ط§ظ„ط·ط¨ظٹط¹ظٹ
+      // الأدمن الرئيسي: السلوك الطبيعي
       loadDashboardSummary();
       tgChatMount();
       tgChatWatch();
@@ -597,8 +597,8 @@
     _deferredInstall.userChoice.then(function(){ _deferredInstall=null; var bar=document.getElementById('pwaInstallBar'); if(bar) bar.style.display='none'; });
   }
 </script>
-<div style="position:fixed;bottom:4px;left:50%;transform:translateX(-50%);font-size:9px;color:rgba(255,255,255,0.25);z-index:9999;pointer-events:none;white-space:nowrap;font-family:inherit">طھط·ظˆظٹط± ظˆطھطµظ…ظٹظ…: ط£ط¨ط§ظ†ظˆط¨ ظپط§ظٹط²</div>
+<div style="position:fixed;bottom:4px;left:50%;transform:translateX(-50%);font-size:9px;color:rgba(255,255,255,0.25);z-index:9999;pointer-events:none;white-space:nowrap;font-family:inherit">تطوير وتصميم: أبانوب فايز</div>
 <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
-<script src="theme.js?v=1784056196"></script>
+<script src="theme.js?v=1"></script>
 </body>
 </html>
