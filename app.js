@@ -4620,18 +4620,18 @@ function tgSaveFormDraft() {
                 }},
                 {label: 'حفظ كنموذج جديد', cls: 'bt-g', onClick: function() {
                     tgCloseModal();
-                    _tgSaveAsNewDraft(formId, data);
+                    _tgSaveAsNewDraft(formId, data, null);
                 }},
                 {label: 'إلغاء', cls: 'bt-o', onClick: tgCloseModal}
             ]
         );
     } else {
-        _tgSaveAsNewDraft(formId, data);
+        _tgSaveAsNewDraft(formId, data, title);
     }
 }
 
-function _tgSaveAsNewDraft(formId, data) {
-    var title = prompt('اسم النموذج (المرجع للحفظ):');
+function _tgSaveAsNewDraft(formId, data, providedTitle) {
+    var title = providedTitle || prompt('اسم النموذج (المرجع للحفظ):');
     if(!title) return;
     var msgId = tgToast('⏳ جارٍ الحفظ...', 'info', true);
     db.collection('savedForms').add({
