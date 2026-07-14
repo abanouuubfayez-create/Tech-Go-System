@@ -81,3 +81,67 @@ function tgInitOfflineUX() {
         updateOnlineStatus();
     }
 }
+
+
+// Load Flatpickr dynamically to override date inputs
+(function loadFlatpickr() {
+    var link = document.createElement('link');
+    link.rel = 'stylesheet';
+    link.href = 'flatpickr.min.css';
+    document.head.appendChild(link);
+    
+    var script = document.createElement('script');
+    script.src = 'flatpickr.min.js';
+    script.onload = function() {
+        initGlobalDatepickers();
+    };
+    document.head.appendChild(script);
+})();
+
+function initGlobalDatepickers() {
+    if (typeof flatpickr === 'undefined') return;
+    
+    function applyFlatpickr(el) {
+        if (!el._flatpickr) {
+            flatpickr(el, {
+                altInput: true,
+                altFormat: 'd/m/Y', // DD/MM/YYYY
+                dateFormat: 'Y-m-d',
+                disableMobile: "true",
+                onReady: function(selectedDates, dateStr, instance) {
+                    if (instance.altInput && el.getAttribute('style')) {
+                        instance.altInput.setAttribute('style', el.getAttribute('style'));
+                    }
+                }
+            });
+        }
+    }
+
+    document.querySelectorAll('input[type="date"]').forEach(applyFlatpickr);
+
+    // Watch for dynamically added date inputs (e.g. in modals)
+    var observer = new MutationObserver(function(mutations) {
+        mutations.forEach(function(mutation) {
+            mutation.addedNodes.forEach(function(node) {
+                if (node.nodeType === 1) {
+                    if (node.matches('input[type="date"]')) applyFlatpickr(node);
+                    node.querySelectorAll('input[type="date"]').forEach(applyFlatpickr);
+                }
+            });
+        });
+    });
+    observer.observe(document.body, { childList: true, subtree: true });
+
+    // Aggressive fallback to catch any date inputs that escape the observer
+    setInterval(function() {
+        if (typeof flatpickr !== 'undefined') {
+            var dateInputs = document.querySelectorAll('input[type="date"]');
+            for (var i = 0; i < dateInputs.length; i++) {
+                if (!dateInputs[i]._flatpickr) {
+                    applyFlatpickr(dateInputs[i]);
+                }
+            }
+        }
+    }, 500);
+
+}

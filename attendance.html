@@ -1981,7 +1981,7 @@
                 <div class="settings-tab-content" id="stab-holidays">
                     <div class="holidays-list" id="holidaysList" style="margin-bottom:1rem;"></div>
                     <div class="holidays-add-row">
-                        <input type="date" id="holidayDateInput" />
+                        <input type="date" lang="en-GB" id="holidayDateInput" />
                         <input type="text" id="holidayLabelInput" placeholder="اسم الإجازة"
                             style="background:rgba(30,41,59,0.8);border:1px solid rgba(71,85,105,0.6);border-radius:8px;padding:0.4rem 0.7rem;color:#e2e8f0;font-family:'Cairo',sans-serif;font-size:0.95rem;width:180px;" />
                         <button class="btn-add-holiday" onclick="addHoliday()">➕ إضافة</button>
@@ -1999,7 +1999,7 @@
                     </div>
                     <div class="extra-days-list" id="extraWorkDaysList"></div>
                     <div class="holidays-add-row">
-                        <input type="date" id="extraDayDateInput" />
+                        <input type="date" lang="en-GB" id="extraDayDateInput" />
                         <input type="text" id="extraDayLabelInput" placeholder="سبب / وصف اليوم الإضافي"
                             style="background:rgba(30,41,59,0.8);border:1px solid rgba(71,85,105,0.6);border-radius:8px;padding:0.4rem 0.7rem;color:#e2e8f0;font-family:'Cairo',sans-serif;font-size:0.95rem;width:220px;" />
                         <button class="btn-add-holiday" style="background:rgba(245,158,11,0.2);border-color:rgba(245,158,11,0.5);color:#f59e0b;" onclick="addExtraWorkDay()">⭐ إضافة</button>
@@ -2016,11 +2016,11 @@
                     <div class="holidays-add-row">
                         <div style="display:flex;flex-direction:column;gap:3px;">
                             <span style="font-size:0.72rem;color:#64748b;font-weight:600;">من</span>
-                            <input type="date" id="globalWfhFrom" style="background:rgba(30,41,59,0.8);border:1px solid rgba(71,85,105,0.6);border-radius:8px;padding:0.4rem 0.7rem;color:#e2e8f0;font-family:'Cairo',sans-serif;font-size:0.95rem;" />
+                            <input type="date" lang="en-GB" id="globalWfhFrom" style="background:rgba(30,41,59,0.8);border:1px solid rgba(71,85,105,0.6);border-radius:8px;padding:0.4rem 0.7rem;color:#e2e8f0;font-family:'Cairo',sans-serif;font-size:0.95rem;" />
                         </div>
                         <div style="display:flex;flex-direction:column;gap:3px;">
                             <span style="font-size:0.72rem;color:#64748b;font-weight:600;">إلى</span>
-                            <input type="date" id="globalWfhTo" style="background:rgba(30,41,59,0.8);border:1px solid rgba(71,85,105,0.6);border-radius:8px;padding:0.4rem 0.7rem;color:#e2e8f0;font-family:'Cairo',sans-serif;font-size:0.95rem;" />
+                            <input type="date" lang="en-GB" id="globalWfhTo" style="background:rgba(30,41,59,0.8);border:1px solid rgba(71,85,105,0.6);border-radius:8px;padding:0.4rem 0.7rem;color:#e2e8f0;font-family:'Cairo',sans-serif;font-size:0.95rem;" />
                         </div>
                         <input type="text" id="globalWfhNote" placeholder="ملاحظة (اختياري)"
                             style="background:rgba(30,41,59,0.8);border:1px solid rgba(71,85,105,0.6);border-radius:8px;padding:0.4rem 0.7rem;color:#e2e8f0;font-family:'Cairo',sans-serif;font-size:0.95rem;width:180px;" />
@@ -4419,7 +4419,7 @@ window._EMBED_wfhRecords = ${JSON.stringify(wfhData)};
                             </div>
                         </div>
                         <div style="font-size:8px;color:#64748b;white-space:nowrap;">
-                            سنوي: ${pdfLs.usedAnnual}ي · عارضة: ${pdfLs.usedCasual}/7ي · رسمية: ${pdfLs.usedOfficial}ي
+                            سنوي: ${pdfLs.usedAnnual}ي · عارضة: ${pdfLs.usedCasual}/7ي <span style="color:#b91c1c;font-weight:700;">(تُخصم من السنوية)</span> · رسمية: ${pdfLs.usedOfficial}ي
                             <br><span style="color:#7c3aed;">${pdfEntLabel}</span>
                             ${pdfLs.remainAnnual <= 3 ? '<br><span style="color:#dc2626;font-weight:700;">⚠️ الرصيد منخفض — يُصرف نقداً عند انتهاء العقد</span>' : ''}
                         </div>
@@ -4739,6 +4739,7 @@ ${empBlocks}
 <div style="position:fixed;bottom:20px;left:20px;z-index:9999">
 <button onclick="window.print()" style="background:#c9a227;color:#1b2a4a;border:none;border-radius:8px;padding:10px 20px;font-family:Cairo;font-size:14px;font-weight:700;cursor:pointer;box-shadow:0 4px 12px rgba(0,0,0,0.3)">🖨 طباعة التقرير</button>
 </div>
+    <script src="theme.js?v=1784056196"></script>
 </body></html>`;
         }
 
@@ -4809,11 +4810,11 @@ ${empBlocks}
                 <div class="wfh-add-row">
                     <div class="wfh-field">
                         <label>من تاريخ</label>
-                        <input type="date" id="wfh-date-from" />
+                        <input type="date" lang="en-GB" id="wfh-date-from" />
                     </div>
                     <div class="wfh-field">
                         <label>إلى تاريخ</label>
-                        <input type="date" id="wfh-date-to" />
+                        <input type="date" lang="en-GB" id="wfh-date-to" />
                     </div>
                     <div class="wfh-field">
                         <label>ملاحظة (اختياري)</label>
@@ -4854,7 +4855,7 @@ ${empBlocks}
                 <div style="display:flex;align-items:center;gap:0.5rem;font-size:0.85rem;color:#94a3b8;">
                     <span>📅</span>
                     <label for="lm-hire-date" style="white-space:nowrap;color:#94a3b8;">تاريخ التعيين:</label>
-                    <input type="date" id="lm-hire-date"
+                    <input type="date" lang="en-GB" id="lm-hire-date"
                         style="background:rgba(15,23,42,0.8);border:1px solid rgba(71,85,105,0.5);border-radius:6px;padding:0.3rem 0.6rem;color:#e2e8f0;font-family:'Cairo',sans-serif;font-size:0.85rem;"
                         onchange="onHireDateOrDisabilityChange()" />
                 </div>
@@ -4875,7 +4876,7 @@ ${empBlocks}
                 <div class="leave-bal-card lbc-casual">
                     <div class="lbc-val" id="lm-bal-casual">—</div>
                     <div class="lbc-lbl">إجازة عارضة</div>
-                    <div class="lbc-sub">م. ١٢٨ — حد أقصى ٧ أيام</div>
+                    <div class="lbc-sub">م. ١٢٨ — حد أقصى ٧ أيام<br><span style="color:#ef4444;font-weight:700;font-size:0.9em;margin-top:2px;display:block;">تخصم من الرصيد السنوي</span></div>
                 </div>
                 <div class="leave-bal-card lbc-official">
                     <div class="lbc-val" id="lm-bal-official">—</div>
@@ -4900,11 +4901,11 @@ ${empBlocks}
                     </div>
                     <div class="leave-field">
                         <label>من تاريخ</label>
-                        <input type="date" id="lm-date-from" />
+                        <input type="date" lang="en-GB" id="lm-date-from" />
                     </div>
                     <div class="leave-field">
                         <label>إلى تاريخ</label>
-                        <input type="date" id="lm-date-to" />
+                        <input type="date" lang="en-GB" id="lm-date-to" />
                     </div>
                     <div class="leave-field">
                         <label>ملاحظة (اختياري)</label>
@@ -5668,5 +5669,6 @@ ${empBlocks}
         });
     }
     </script>
+    <script src="theme.js?v=1784056196"></script>
 </body>
 </html>

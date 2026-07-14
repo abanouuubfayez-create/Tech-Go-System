@@ -161,10 +161,9 @@ service cloud.firestore {
       // أي مستخدم مسجّل يبعت إشعار
       allow create: if isSignedIn();
       // المستلم بس يقدر يعلمها مقروءة
-      allow update: if isSignedIn() && resource.data.toUid == myUid()
-                    && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['read']);
+      allow update: if isSignedIn() && resource.data.toUid == myUid();
       // الأدمن أو المستلم يحذف
-      allow delete: if isAdmin() || (isSignedIn() && resource.data.toUid == myUid());
+      allow delete: if isAnyAdmin() || (isSignedIn() && resource.data.toUid == myUid());
     }
 
     // الإعلانات: الأدمن أو الأدمن التقني يكتب ويعدّل. الأدمن الرئيسي وحده يحذف
