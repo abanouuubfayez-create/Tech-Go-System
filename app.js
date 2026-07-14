@@ -2979,7 +2979,7 @@ function load(id,c){
         h+='<div class="wb wb-gd">أقر بأنني اطلعت على اللائحة التنظيمية لشركة تيك جو وأتعهد بالالتزام الكامل بجميع بنودها.</div>';
 
         // ملحق أ
-        h+='<div class="sec" style="margin-top:0"><div class="num">أ</div><div class="stx">ملحق (أ) — سجل الإجازة السنوية</div></div>';
+        h+='<div class="sec" style="margin-top:0; page-break-before: always; break-before: page;"><div class="num">أ</div><div class="stx">ملحق (أ) — سجل الإجازة السنوية</div></div>';
         h+='<div style="font-size:9px;color:var(--tx3);margin-bottom:6px">استناداً للمادتين ١٢٤ و١٢٥ من اللائحة التنظيمية</div>';
         h+=F2(FG('السنة'),FGE('اسم الموظف'));
         h+=F3(FG('إجمالي الاستحقاق (يوم)'),FG('الأيام المستخدمة'),FG('الرصيد المتبقي'));
@@ -2990,7 +2990,7 @@ function load(id,c){
         h+='<div class="wb wb-bl" style="font-size:8px">⊳ م. ١٢٤: يستحق الموظف إجازة سنوية بأجر لا تحتسب فيها أيام العطلات والأعياد وأيام الراحة الأسبوعية.<br>⊳ م. ١٢٥: يحدد صاحب العمل مواعيد الإجازة وفق مقتضيات العمل، ولا يجوز قطعها إلا لأسباب قوية.<br>⊳ م. ١٢٧: يحق لصاحب العمل استرداد أجر الإجازة إذا ثبت اشتغال الموظف لدى جهة أخرى خلالها.<br>⊳ عند انتهاء العلاقة الوظيفية يستحق الموظف أجر رصيد الإجازات غير المستخدمة كاملاً.</div>';
 
         // ملحق ب
-        h+='<div class="sec" style="margin-top:0"><div class="num">ب</div><div class="stx">ملحق (ب) — سجل الإجازة العارضة</div></div>';
+        h+='<div class="sec" style="margin-top:0; page-break-before: always; break-before: page;"><div class="num">ب</div><div class="stx">ملحق (ب) — سجل الإجازة العارضة</div></div>';
         h+='<div style="font-size:9px;color:var(--tx3);margin-bottom:6px">استناداً للمادة ١٢٨ من اللائحة التنظيمية</div>';
         h+=F2(FG('السنة'),FGE('اسم الموظف'));
         h+=F3(FG('الحد الأقصى السنوي'),FG('إجمالي الأيام المستخدمة'),FG('الرصيد المتبقي من ٧'));
@@ -3000,7 +3000,7 @@ function load(id,c){
         h+='</table>';
 
         // ملحق ج
-        h+='<div class="sec" style="margin-top:0"><div class="num">ج</div><div class="stx">ملحق (ج) — سجل إجازات الأعياد والمناسبات</div></div>';
+        h+='<div class="sec" style="margin-top:0; page-break-before: always; break-before: page;"><div class="num">ج</div><div class="stx">ملحق (ج) — سجل إجازات الأعياد والمناسبات</div></div>';
         h+='<div style="font-size:9px;color:var(--tx3);margin-bottom:6px">استناداً للمادة ١٢٩ من اللائحة التنظيمية</div>';
         h+=F2(FG('السنة'),FGE('اسم الموظف'));
         h+=F3(FG('إجمالي أيام الأعياد'),FG('أيام عمل في عطلة (مثلي الأجر)'),FG('أيام راحة بديلة مستحقة'));
@@ -3010,7 +3010,7 @@ function load(id,c){
         h+='</table>';
 
         // ملحق د
-        h+='<div class="sec" style="margin-top:0"><div class="num">د</div><div class="stx">ملحق (د) — سجل الغياب بالخصم</div></div>';
+        h+='<div class="sec" style="margin-top:0; page-break-before: always; break-before: page;"><div class="num">د</div><div class="stx">ملحق (د) — سجل الغياب بالخصم</div></div>';
         h+='<div style="font-size:9px;color:var(--tx3);margin-bottom:6px">استناداً للمادة ١٣٠ من اللائحة التنظيمية</div>';
         h+=F2(FG('السنة'),FGE('اسم الموظف'));
         h+='<div class="wb wb-gd" style="font-size:9px">⊳ يسجل الغياب بغير عذر مقبول ويخصم من أجر الموظف بواقع أجر اليوم الواحد (م. ١٣٠)<br>⊳ الحد الأقصى للخصم الشهري لا يتجاوز أجر ستة أيام — الزيادة تحال لمسار الجزاءات التأديبية</div>';
@@ -3020,7 +3020,7 @@ function load(id,c){
         h+='<div class="wb wb-bl" style="font-size:8px">⊳ م. ١٣٠: يخصم من أجر الموظف عن كل يوم غياب بدون عذر بواقع أجر يوم واحد كامل.<br>⊳ م. ١٣١: يوثق قرار الخصم بموافقة خطية من المدير المباشر ويحفظ في ملف الموظف.<br>⊳ لا يحتسب الغياب بعذر مقبول (مرض بتقرير طبي أو إجازة معتمدة) ضمن هذا السجل.</div>';
 
         // ملاحظات 1
-        h+='<div class="sec" style="margin-top:0"><div class="num">✎</div><div class="stx">ملاحظات (١)</div></div>';
+        h+='<div class="sec" style="margin-top:0; page-break-before: always; break-before: page;"><div class="num">✎</div><div class="stx">ملاحظات (١)</div></div>';
         h+='<div class="fg fg-full"><label>صفحة الملاحظات ١</label><textarea rows="13" style="line-height:2.1;border:1px solid var(--bd)"></textarea></div>';
 
         // ملاحظات 2
