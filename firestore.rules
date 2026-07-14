@@ -157,9 +157,8 @@ service cloud.firestore {
       allow read: if isSignedIn() && resource.data.toUid == myUid();
       // أي مستخدم مسجّل يبعت إشعار
       allow create: if isSignedIn();
-      // المستلم بس يقدر يعلمها مقروءة/معروضة
-      allow update: if isSignedIn() && resource.data.toUid == myUid()
-                    && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['read', 'seen']);
+      // المستلم بس يقدر يعلمها مقروءة/معروضة أو يعدل فيها
+      allow update: if isSignedIn() && resource.data.toUid == myUid();
       // الأدمن أو المستلم يحذف
       allow delete: if isAnyAdmin() || (isSignedIn() && resource.data.toUid == myUid());
     }

@@ -212,15 +212,14 @@ function tgMarkAllNotifsRead(uid) {
     if (!uid) return;
     db.collection('notifications').where('toUid', '==', uid).get()
         .then(function(snap) {
-            var batch = db.batch();
             var count = 0;
             snap.forEach(function(doc) { 
                 if (!doc.data().read) {
-                    batch.update(doc.ref, { read: true, seen: true }); 
+                    db.collection('notifications').doc(doc.id).update({ read: true, seen: true }).catch(function(){}); 
                     count++;
                 }
             });
-            if (count > 0) return batch.commit();
+            console.log('Marked ' + count + ' notifications as read.');
         }).catch(function(e) { console.error('Mark all read error:', e); });
 }
 
