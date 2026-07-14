@@ -3032,13 +3032,13 @@ function load(id,c){
         // ملاحظات 1
         h+='<div style="page-break-before: always; break-before: page; page-break-inside: avoid; break-inside: avoid; margin-bottom: 20px;">';
         h+='<div class="sec" style="margin-top:0"><div class="num">✎</div><div class="stx">ملاحظات (١)</div></div>';
-        h+='<div class="fg fg-full"><label>صفحة الملاحظات ١</label><textarea rows="36" style="line-height:2.1;border:1px solid var(--bd)"></textarea></div>';
+        h+='<div class="fg fg-full"><label>صفحة الملاحظات ١</label><textarea rows="28" style="line-height:2.1;border:1px solid var(--bd)"></textarea></div>';
         h+='</div>';
 
         // ملاحظات 2
         h+='<div style="page-break-before: always; break-before: page; page-break-inside: avoid; break-inside: avoid; margin-bottom: 20px;">';
         h+='<div class="sec" style="margin-top:0"><div class="num">✎</div><div class="stx">ملاحظات (٢)</div></div>';
-        h+='<div class="fg fg-full"><label>صفحة الملاحظات ٢</label><textarea rows="30" style="line-height:2.1;border:1px solid var(--bd)"></textarea></div>';
+        h+='<div class="fg fg-full"><label>صفحة الملاحظات ٢</label><textarea rows="20" style="line-height:2.1;border:1px solid var(--bd)"></textarea></div>';
         h+=SG3('توقيع الموظف','','المدير الإداري / مدير المشروعات','','المدير التنفيذي','',null,'admin','exec');
         h+='</div>';
         h+=FT();
