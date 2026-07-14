@@ -210,12 +210,18 @@ function tgMarkNotifRead(notifId) {
 
 function tgMarkAllNotifsRead(uid) {
     if (!uid) return;
-    db.collection('notifications').where('toUid', '==', uid).where('read', '==', false).get()
+    db.collection('notifications').where('toUid', '==', uid).get()
         .then(function(snap) {
             var batch = db.batch();
-            snap.forEach(function(doc) { batch.update(doc.ref, { read: true, seen: true }); });
-            return batch.commit();
-        }).catch(function() {});
+            var count = 0;
+            snap.forEach(function(doc) { 
+                if (!doc.data().read) {
+                    batch.update(doc.ref, { read: true, seen: true }); 
+                    count++;
+                }
+            });
+            if (count > 0) return batch.commit();
+        }).catch(function(e) { console.error('Mark all read error:', e); });
 }
 
 function tgDeleteNotif(notifId) {
