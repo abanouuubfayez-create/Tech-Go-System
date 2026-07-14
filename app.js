@@ -2975,11 +2975,14 @@ function load(id,c){
         h+=SC('٥','الإجازات — المادة ٣');
         h+='<table class="dt"><tr><th>نوع الإجازة</th><th>الاستحقاق</th><th>ملاحظات</th></tr><tr><td>سنوية — السنة الأولى</td><td>١٥ يوماً</td><td>السنة الأولى: ٦ أيام متصلة على الأقل</td></tr><tr><td>سنوية — السنة الثانية +</td><td>٢١ يوماً</td><td>الحد الأقصى للإجازة السنوية</td></tr><tr><td>عارضة (م. ١٢٨)</td><td>٧ أيام/سنة — حد أقصى يومان/مرة</td><td>تحتسب من الإجازة السنوية</td></tr><tr><td>أعياد ومناسبات (م. ١٢٩)</td><td>بأجر كامل</td><td>بقرار من الوزير المختص</td></tr></table>';
         h+='<div style="font-size:9px;color:var(--tx3);margin-top:4px">⊳ التفاصيل الكاملة وسجلات الإجازة في الملاحق (أ، ب، ج) المرفقة</div>';
+        h+='<div style="page-break-inside: avoid; break-inside: avoid; margin-bottom: 20px;">';
         h+=SC('٦','الإقرار والتوقيع');
         h+='<div class="wb wb-gd">أقر بأنني اطلعت على اللائحة التنظيمية لشركة تيك جو وأتعهد بالالتزام الكامل بجميع بنودها.</div>';
+        h+='</div>';
 
         // ملحق أ
-        h+='<div class="sec" style="margin-top:0; page-break-before: always; break-before: page;"><div class="num">أ</div><div class="stx">ملحق (أ) — سجل الإجازة السنوية</div></div>';
+        h+='<div style="page-break-inside: avoid; break-inside: avoid; margin-bottom: 20px;">';
+        h+='<div class="sec" style="margin-top:0"><div class="num">أ</div><div class="stx">ملحق (أ) — سجل الإجازة السنوية</div></div>';
         h+='<div style="font-size:9px;color:var(--tx3);margin-bottom:6px">استناداً للمادتين ١٢٤ و١٢٥ من اللائحة التنظيمية</div>';
         h+=F2(FG('السنة'),FGE('اسم الموظف'));
         h+=F3(FG('إجمالي الاستحقاق (يوم)'),FG('الأيام المستخدمة'),FG('الرصيد المتبقي'));
@@ -2988,9 +2991,11 @@ function load(id,c){
         for(var aa=1;aa<=21;aa++) h+='<tr><td>'+aa+'</td><td><input type="text"></td><td><input type="text"></td><td><input type="text"></td><td><input type="text"></td><td><input type="text"></td><td><input type="text"></td></tr>';
         h+='</table>';
         h+='<div class="wb wb-bl" style="font-size:8px">⊳ م. ١٢٤: يستحق الموظف إجازة سنوية بأجر لا تحتسب فيها أيام العطلات والأعياد وأيام الراحة الأسبوعية.<br>⊳ م. ١٢٥: يحدد صاحب العمل مواعيد الإجازة وفق مقتضيات العمل، ولا يجوز قطعها إلا لأسباب قوية.<br>⊳ م. ١٢٧: يحق لصاحب العمل استرداد أجر الإجازة إذا ثبت اشتغال الموظف لدى جهة أخرى خلالها.<br>⊳ عند انتهاء العلاقة الوظيفية يستحق الموظف أجر رصيد الإجازات غير المستخدمة كاملاً.</div>';
+        h+='</div>';
 
         // ملحق ب
-        h+='<div class="sec" style="margin-top:0; page-break-before: always; break-before: page;"><div class="num">ب</div><div class="stx">ملحق (ب) — سجل الإجازة العارضة</div></div>';
+        h+='<div style="page-break-inside: avoid; break-inside: avoid; margin-bottom: 20px;">';
+        h+='<div class="sec" style="margin-top:0"><div class="num">ب</div><div class="stx">ملحق (ب) — سجل الإجازة العارضة</div></div>';
         h+='<div style="font-size:9px;color:var(--tx3);margin-bottom:6px">استناداً للمادة ١٢٨ من اللائحة التنظيمية</div>';
         h+=F2(FG('السنة'),FGE('اسم الموظف'));
         h+=F3(FG('الحد الأقصى السنوي'),FG('إجمالي الأيام المستخدمة'),FG('الرصيد المتبقي من ٧'));
@@ -2998,9 +3003,11 @@ function load(id,c){
         h+='<table class="dt"><tr><th>م</th><th>السبب</th><th>تاريخ البدء</th><th>تاريخ العودة</th><th>عدد الأيام</th><th>الموافقة</th><th>ملاحظات</th></tr>';
         for(var bb=1;bb<=7;bb++) h+='<tr><td>'+bb+'</td><td><input type="text"></td><td><input type="text"></td><td><input type="text"></td><td><input type="text"></td><td><input type="text"></td><td><input type="text"></td></tr>';
         h+='</table>';
+        h+='</div>';
 
         // ملحق ج
-        h+='<div class="sec" style="margin-top:0; page-break-before: always; break-before: page;"><div class="num">ج</div><div class="stx">ملحق (ج) — سجل إجازات الأعياد والمناسبات</div></div>';
+        h+='<div style="page-break-inside: avoid; break-inside: avoid; margin-bottom: 20px;">';
+        h+='<div class="sec" style="margin-top:0"><div class="num">ج</div><div class="stx">ملحق (ج) — سجل إجازات الأعياد والمناسبات</div></div>';
         h+='<div style="font-size:9px;color:var(--tx3);margin-bottom:6px">استناداً للمادة ١٢٩ من اللائحة التنظيمية</div>';
         h+=F2(FG('السنة'),FGE('اسم الموظف'));
         h+=F3(FG('إجمالي أيام الأعياد'),FG('أيام عمل في عطلة (مثلي الأجر)'),FG('أيام راحة بديلة مستحقة'));
@@ -3008,9 +3015,11 @@ function load(id,c){
         h+='<table class="dt"><tr><th>م</th><th>التاريخ</th><th>المناسبة</th><th>هل عمل؟</th><th>البديل</th><th>الموافقة</th><th>ملاحظات</th></tr>';
         for(var cc=1;cc<=25;cc++) h+='<tr><td>'+cc+'</td><td><input type="text"></td><td><input type="text"></td><td><input type="text"></td><td><input type="text"></td><td><input type="text"></td><td><input type="text"></td></tr>';
         h+='</table>';
+        h+='</div>';
 
         // ملحق د
-        h+='<div class="sec" style="margin-top:0; page-break-before: always; break-before: page;"><div class="num">د</div><div class="stx">ملحق (د) — سجل الغياب بالخصم</div></div>';
+        h+='<div style="page-break-inside: avoid; break-inside: avoid; margin-bottom: 20px;">';
+        h+='<div class="sec" style="margin-top:0"><div class="num">د</div><div class="stx">ملحق (د) — سجل الغياب بالخصم</div></div>';
         h+='<div style="font-size:9px;color:var(--tx3);margin-bottom:6px">استناداً للمادة ١٣٠ من اللائحة التنظيمية</div>';
         h+=F2(FG('السنة'),FGE('اسم الموظف'));
         h+='<div class="wb wb-gd" style="font-size:9px">⊳ يسجل الغياب بغير عذر مقبول ويخصم من أجر الموظف بواقع أجر اليوم الواحد (م. ١٣٠)<br>⊳ الحد الأقصى للخصم الشهري لا يتجاوز أجر ستة أيام — الزيادة تحال لمسار الجزاءات التأديبية</div>';
@@ -3018,15 +3027,20 @@ function load(id,c){
         for(var dd=1;dd<=13;dd++) h+='<tr><td>'+dd+'</td><td><input type="text"></td><td><input type="text"></td><td><input type="text"></td><td><input type="text"></td><td><input type="text"></td><td><input type="text"></td><td><input type="text"></td></tr>';
         h+='</table>';
         h+='<div class="wb wb-bl" style="font-size:8px">⊳ م. ١٣٠: يخصم من أجر الموظف عن كل يوم غياب بدون عذر بواقع أجر يوم واحد كامل.<br>⊳ م. ١٣١: يوثق قرار الخصم بموافقة خطية من المدير المباشر ويحفظ في ملف الموظف.<br>⊳ لا يحتسب الغياب بعذر مقبول (مرض بتقرير طبي أو إجازة معتمدة) ضمن هذا السجل.</div>';
+        h+='</div>';
 
         // ملاحظات 1
-        h+='<div class="sec" style="margin-top:0; page-break-before: always; break-before: page;"><div class="num">✎</div><div class="stx">ملاحظات (١)</div></div>';
+        h+='<div style="page-break-inside: avoid; break-inside: avoid; margin-bottom: 20px;">';
+        h+='<div class="sec" style="margin-top:0"><div class="num">✎</div><div class="stx">ملاحظات (١)</div></div>';
         h+='<div class="fg fg-full"><label>صفحة الملاحظات ١</label><textarea rows="13" style="line-height:2.1;border:1px solid var(--bd)"></textarea></div>';
+        h+='</div>';
 
         // ملاحظات 2
+        h+='<div style="page-break-inside: avoid; break-inside: avoid; margin-bottom: 20px;">';
         h+='<div class="sec" style="margin-top:6px"><div class="num">✎</div><div class="stx">ملاحظات (٢)</div></div>';
         h+='<div class="fg fg-full"><label>صفحة الملاحظات ٢</label><textarea rows="13" style="line-height:2.1;border:1px solid var(--bd)"></textarea></div>';
         h+=SG3('توقيع الموظف','','المدير الإداري / مدير المشروعات','','المدير التنفيذي','',null,'admin','exec');
+        h+='</div>';
         h+=FT();
     }
 
