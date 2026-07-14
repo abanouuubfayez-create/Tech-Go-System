@@ -4266,6 +4266,7 @@ function autofillEmployeeFields() {
 function onPageChange(id) {
     setTimeout(function() {
         autofillEmployeeFields();
+        if(typeof populateDraftsSidebar === 'function') populateDraftsSidebar(id);
         if (TG_USER && TG_USER.uid && !TG_USER.employeeCode && TG_USER.role === 'employee') {
             ensureEmployeeCode(TG_USER.uid, TG_USER.name, function(code) {
                 if (code) {
@@ -4612,6 +4613,7 @@ function tgSaveFormDraft() {
                         updatedAt: firebase.firestore.FieldValue.serverTimestamp()
                     }, { merge: true }).then(function() {
                         tgToast('✅ تم التحديث بنجاح!', 'ok');
+                        if(typeof populateDraftsSidebar === 'function') populateDraftsSidebar(formId);
                     }).catch(function(err) {
                         tgToast('❌ تعذر التحديث: ' + err.message, 'err');
                     });
@@ -4642,8 +4644,60 @@ function _tgSaveAsNewDraft(formId, data) {
         window._currentLoadedFormId = docRef.id;
         window._currentLoadedFormTitle = title;
         tgToast('✅ تم حفظ النموذج بنجاح!', 'ok');
+        if(typeof populateDraftsSidebar === 'function') populateDraftsSidebar(formId);
     }).catch(function(err) {
         tgToast('❌ تعذر الحفظ: ' + err.message, 'err');
+    });
+}
+
+function populateDraftsSidebar(formId) {
+    var sb = document.getElementById('tgFormDraftsSidebar');
+    var lst = document.getElementById('fdsList');
+    if(!sb || !lst) return;
+    
+    if(['dash', 'account', 'livetrack', 'empdocs', 'announcements'].includes(formId)) {
+        sb.style.display = 'none';
+        return;
+    }
+    
+    sb.style.display = 'flex';
+    lst.innerHTML = '<div class="empty-hint" style="font-size:11px">⏳ جلب النماذج...</div>';
+    
+    db.collection('savedForms').where('formId','==',formId).get().then(function(snap){
+        if(snap.empty) {
+            lst.innerHTML = '<div class="empty-hint" style="font-size:11px">لا توجد نماذج محفوظة.</div>';
+            return;
+        }
+        var docs = [];
+        window._savedFormsData = window._savedFormsData || {};
+        window._savedFormsTitles = window._savedFormsTitles || {};
+        snap.forEach(function(d){ docs.push(d); });
+        docs.sort(function(a,b){
+            var ta = a.data().createdAt ? (a.data().createdAt.toDate ? a.data().createdAt.toDate().getTime() : new Date(a.data().createdAt).getTime()) : 0;
+            var tb = b.data().createdAt ? (b.data().createdAt.toDate ? b.data().createdAt.toDate().getTime() : new Date(b.data().createdAt).getTime()) : 0;
+            return tb - ta;
+        });
+        
+        var h = '';
+        docs.forEach(function(doc){
+            var d = doc.data();
+            window._savedFormsData[doc.id] = d.data || '';
+            window._savedFormsTitles[doc.id] = d.title || '';
+            
+            var dateStr = d.createdAt && d.createdAt.toDate ? d.createdAt.toDate().toLocaleString('ar-EG') : '';
+            
+            h += '<div class="fds-item">';
+            h += '<div class="fds-item-title">'+escH(d.title)+'</div>';
+            h += '<div class="fds-item-date">'+dateStr+'</div>';
+            h += '<div class="fds-item-actions">';
+            h += '<button class="bt bt-p" onclick="tgApplySavedForm(\''+formId+'\', \''+doc.id+'\')">استرجاع</button>';
+            h += '<button class="bt bt-g" onclick="tgPrintSavedForm(\''+formId+'\', \''+doc.id+'\')">طباعة</button>';
+            h += '<button class="bt bt-d" onclick="tgDeleteSavedForm(\''+doc.id+'\', this)">حذف</button>';
+            h += '</div></div>';
+        });
+        lst.innerHTML = h;
+    }).catch(function(err){
+        lst.innerHTML = '<div class="empty-hint" style="font-size:11px;color:var(--no)">خطأ!</div>';
     });
 }
 
