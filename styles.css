@@ -3198,3 +3198,16 @@ body.dark-mode .tg-expand-btn:hover {
 #tg-offline-banner.online {
     background: rgba(40, 167, 69, 0.95);
 }
+
+/* ── Print Styles for Notifications ── */
+@media print {
+    #tg-offline-banner,
+    #tg-toast-container,
+    .tg-toast,
+    .toast,
+    #_toast,
+    .notif-panel,
+    .notif-wrap {
+        display: none !important;
+    }
+}
