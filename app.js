@@ -4568,7 +4568,7 @@ function deleteEmpDoc(docId, fileUrl) {
 
 // ═══════════════════════════════════════════════════════════════
 // ── حفظ واسترجاع النماذج (المسودات) ──────────────────────────
-function tgSaveFormDraft() {
+function tgSaveFormDraft(saveAsNew) {
     var activePg = document.querySelector('.pg.a');
     if(!activePg) return;
     var formId = activePg.id.replace('pg-', '');
@@ -4587,45 +4587,34 @@ function tgSaveFormDraft() {
         }
     }
     
-    var title = prompt('أدخل اسماً مميزاً لحفظ هذا النموذج (مثال: اسم الموظف):', defaultTitle);
-    if(!title) return;
-    
     var data = [];
     inputs.forEach(function(inp) {
         if(inp.type === 'file' || inp.type === 'button' || inp.type === 'submit') return;
         var val = (inp.type === 'checkbox' || inp.type === 'radio') ? inp.checked : inp.value;
         data.push(val);
     });
-    
-    if (window._currentLoadedFormId) {
-        tgConfirmModal(
-            'خيارات الحفظ',
-            'أنت تقوم بتعديل نموذج محفوظ مسبقاً ('+escH(window._currentLoadedFormTitle)+'). ماذا تريد أن تفعل؟',
-            [
-                {label: 'تحديث النموذج الحالي', cls: 'bt-p', onClick: function() {
-                    tgCloseModal();
-                    var msgId = tgToast('⏳ جارٍ التحديث...', 'info', true);
-                    db.collection('savedForms').doc(window._currentLoadedFormId).set({
-                        formId: formId,
-                        title: window._currentLoadedFormTitle || defaultTitle || 'بدون اسم',
-                        data: JSON.stringify(data),
-                        savedBy: TG_USER.uid,
-                        updatedAt: firebase.firestore.FieldValue.serverTimestamp()
-                    }, { merge: true }).then(function() {
-                        tgToast('✅ تم التحديث بنجاح!', 'ok');
-                        if(typeof populateDraftsSidebar === 'function') populateDraftsSidebar(formId);
-                    }).catch(function(err) {
-                        tgToast('❌ تعذر التحديث: ' + err.message, 'err');
-                    });
-                }},
-                {label: 'حفظ كنموذج جديد', cls: 'bt-g', onClick: function() {
-                    tgCloseModal();
-                    _tgSaveAsNewDraft(formId, data, null);
-                }},
-                {label: 'إلغاء', cls: 'bt-o', onClick: tgCloseModal}
-            ]
-        );
+
+    if (saveAsNew) {
+        var newTitle = prompt('أدخل اسماً للنسخة الجديدة من النموذج:', window._currentLoadedFormTitle ? window._currentLoadedFormTitle + ' (نسخة)' : defaultTitle);
+        if(!newTitle) return;
+        _tgSaveAsNewDraft(formId, data, newTitle);
+    } else if (window._currentLoadedFormId) {
+        var msgId = tgToast('⏳ جارٍ الحفظ...', 'info', true);
+        db.collection('savedForms').doc(window._currentLoadedFormId).set({
+            formId: formId,
+            title: window._currentLoadedFormTitle || defaultTitle || 'بدون اسم',
+            data: JSON.stringify(data),
+            savedBy: TG_USER.uid,
+            updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+        }, { merge: true }).then(function() {
+            tgToast('✅ تم الحفظ بنجاح!', 'ok');
+            if(typeof populateDraftsSidebar === 'function') populateDraftsSidebar(formId);
+        }).catch(function(err) {
+            tgToast('❌ تعذر الحفظ: ' + err.message, 'err');
+        });
     } else {
+        var title = prompt('أدخل اسماً مميزاً لحفظ هذا النموذج (مثال: اسم الموظف):', defaultTitle);
+        if(!title) return;
         _tgSaveAsNewDraft(formId, data, title);
     }
 }
