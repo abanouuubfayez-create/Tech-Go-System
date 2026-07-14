@@ -4264,6 +4264,21 @@ function onPageChange(id) {
 }
 document.addEventListener('DOMContentLoaded', function(){
     setTimeout(autofillEmployeeFields, 800);
+    document.addEventListener('input', function(e) {
+        if (!e.target.closest('#pg-emp')) return;
+        var lbl = e.target.previousElementSibling ? e.target.previousElementSibling.textContent.trim() : "";
+        if (lbl === "الاسم الكامل" || lbl === "اسم الموظف") {
+            document.querySelectorAll('#pg-emp input').forEach(function(inp) {
+                var l = inp.previousElementSibling ? inp.previousElementSibling.textContent.trim() : "";
+                if ((l === "الاسم الكامل" || l === "اسم الموظف") && inp !== e.target) inp.value = e.target.value;
+            });
+        } else if (lbl === "السنة") {
+            document.querySelectorAll('#pg-emp input').forEach(function(inp) {
+                var l = inp.previousElementSibling ? inp.previousElementSibling.textContent.trim() : "";
+                if (l === "السنة" && inp !== e.target) inp.value = e.target.value;
+            });
+        }
+    });
 });
 
 
