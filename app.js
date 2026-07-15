@@ -2484,19 +2484,23 @@ function tgBlock(val){
 // إبقاء الأسماء القديمة كمرادفات (متوافقة مع الكود القديم في بوابة الموظف)
 function empLine(lbl,val){ return tgLine(lbl,val); }
 function empBlock(val){ return tgBlock(val); }
-function printDoc(bodyHtml){
+function printDoc(bodyHtml, docTitle){
     var ifr=document.getElementById('tgPrintFrame');
     if(!ifr)return;
     fetch('styles.css?v='+Date.now()).then(function(res){return res.text();}).then(function(css){
         var doc=ifr.contentWindow.document;
         doc.open();
         doc.write('<!DOCTYPE html><html lang="ar" dir="rtl"><head><meta charset="UTF-8">'+
+            (docTitle ? '<title>'+docTitle+'</title>' : '') +
             '<style>'+css+'</style></head><body>'+bodyHtml+'</body></html>');
         doc.close();
         doc.querySelectorAll('.dcn').forEach(function(e){e.innerText=CN;});
         setTimeout(function(){
+            var oldTitle = document.title;
+            if(docTitle) document.title = docTitle;
             ifr.contentWindow.focus();
             ifr.contentWindow.print();
+            if(docTitle) document.title = oldTitle;
         },500);
     }).catch(function(err){
         console.error('Failed to load CSS for print', err);
@@ -2511,7 +2515,8 @@ function printWeeklyReportDoc(u,r){
     h+=SC('٢','ملخص الأسبوع');
     h+=tgBlock(r.content);
     h+=FT(['نسخة للموظف','نسخة للإدارة']);
-    printDoc(h);
+    var docTitle = 'تقرير أسبوعي' + (u.name ? ' - ' + u.name : '');
+    printDoc(h, docTitle);
 }
 
 // ─── بريد التقارير الأسبوعية (Inbox) ───────────────────────────────────────
@@ -2642,7 +2647,8 @@ function printAchievementDoc(u,a){
     h+=SC('٢','وصف الإنجاز');
     h+=tgBlock(a.description);
     h+=FT(['نسخة للموظف','نسخة للإدارة']);
-    printDoc(h);
+    var docTitle = 'توثيق إنجاز' + (u.name ? ' - ' + u.name : '');
+    printDoc(h, docTitle);
 }
 function printRequestDoc(u,r){
     var h=H('طلب موظف','طلب مُقدَّم من الموظف','EMPLOYEE REQUEST','req');
@@ -2656,7 +2662,8 @@ function printRequestDoc(u,r){
     h+=SC('٢','تفاصيل الطلب');
     h+=tgBlock(r.details);
     h+=FT(['نسخة للموظف','نسخة للإدارة']);
-    printDoc(h);
+    var docTitle = 'طلب موظف' + (u.name ? ' - ' + u.name : '');
+    printDoc(h, docTitle);
 }
 function printProjectDoc(p){
     if(!p) return;
@@ -2709,7 +2716,8 @@ function printProjectDoc(p){
         }
 
         h+=FT(['نسخة للإدارة','نسخة للأرشيف']);
-        printDoc(h);
+        var docTitle = 'تقرير مشروع' + (p.title ? ' - ' + p.title : '');
+        printDoc(h, docTitle);
     }).catch(function(err){
         console.error('Error fetching comments for print', err);
         alert('حدث خطأ أثناء تحميل بيانات التقرير للطباعة.');
