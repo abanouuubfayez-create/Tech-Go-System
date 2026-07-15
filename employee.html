@@ -316,7 +316,7 @@
       <div class="set-sec-title">➕ تقديم طلب جديد</div>
       <div class="fr fr2" style="margin-top:8px">
         <div class="fg"><label>نوع الطلب</label>
-          <select id="reqType" onchange="document.getElementById('reqFormTemplateWrap').style.display = this.value === 'طلب نموذج' ? 'block' : 'none';">
+          <select id="reqType" onchange="var isForm = this.value === 'طلب نموذج'; document.getElementById('reqFormTemplateWrap').style.display = isForm ? 'block' : 'none'; var ext = document.getElementById('reqExtraFields'); if(ext) ext.style.display = isForm ? 'none' : 'block';">
             <option>إجازة</option><option>إذن حضور / انصراف</option><option>غياب</option><option>طلب نموذج</option><option>أخرى</option>
           </select>
         </div>
@@ -334,18 +334,20 @@
           </select>
         </div>
       </div>
-      <div class="fr fr2">
-        <div class="fg"><label>من تاريخ (اختياري)</label><input type="date" id="reqFrom"></div>
-        <div class="fg"><label>إلى تاريخ (اختياري)</label><input type="date" id="reqTo"></div>
-      </div>
-      <div class="fg fg-full"><label>تفاصيل الطلب</label><textarea id="reqDetails" rows="3"></textarea></div>
-      <!-- رفع مرفق اختياري -->
-      <div style="margin-top:10px;display:flex;align-items:center;gap:10px;flex-wrap:wrap">
-        <label class="file-upload-label">
-          📎 مرفق (اختياري)
-          <input type="file" id="reqFile" accept="image/*,video/*,.pdf,.doc,.docx,.xls,.xlsx,.txt,.zip" style="display:none" onchange="document.getElementById('reqFileName').textContent=this.files[0]?this.files[0].name:''">
-        </label>
-        <span id="reqFileName" style="font-size:11px;color:var(--tx3);max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap"></span>
+      <div id="reqExtraFields">
+        <div class="fr fr2">
+          <div class="fg"><label>من تاريخ (اختياري)</label><input type="date" id="reqFrom"></div>
+          <div class="fg"><label>إلى تاريخ (اختياري)</label><input type="date" id="reqTo"></div>
+        </div>
+        <div class="fg fg-full"><label>تفاصيل الطلب</label><textarea id="reqDetails" rows="3"></textarea></div>
+        <!-- رفع مرفق اختياري -->
+        <div style="margin-top:10px;display:flex;align-items:center;gap:10px;flex-wrap:wrap">
+          <label class="file-upload-label">
+            📎 مرفق (اختياري)
+            <input type="file" id="reqFile" accept="image/*,video/*,.pdf,.doc,.docx,.xls,.xlsx,.txt,.zip" style="display:none" onchange="document.getElementById('reqFileName').textContent=this.files[0]?this.files[0].name:''">
+          </label>
+          <span id="reqFileName" style="font-size:11px;color:var(--tx3);max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap"></span>
+        </div>
       </div>
       <div id="reqUploadProg" style="display:none" class="file-upload-progress"></div>
       <button class="bt bt-p" style="margin-top:12px" onclick="submitRequest()">📨 إرسال الطلب</button>
@@ -359,7 +361,7 @@
   <div class="emp-pg" id="epg-forms">
     <div style="display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:14px;">
       <div class="set-hint" style="margin:0">نماذج أرسلها لك الأدمن لتعبئتها وإرسالها مرة أخرى.</div>
-      <button class="bt bt-p" style="font-size:11px; padding:6px 12px; white-space:nowrap; margin-right:12px" onclick="var t=document.querySelector('.emp-tab[data-pg=\'req\']'); if(t){t.click(); setTimeout(function(){document.getElementById('reqType').value='طلب نموذج'; document.getElementById('reqFormTemplateWrap').style.display='block'; document.getElementById('reqDetails').focus(); document.getElementById('reqDetails').placeholder='أضف أي تفاصيل أو أسباب لطلب النموذج (اختياري)...';}, 100)}">➕ طلب نموذج</button>
+      <button class="bt bt-p" style="font-size:11px; padding:6px 12px; white-space:nowrap; margin-right:12px" onclick="var t=document.querySelector('.emp-tab[data-pg=\'req\']'); if(t){t.click(); setTimeout(function(){document.getElementById('reqType').value='طلب نموذج'; document.getElementById('reqFormTemplateWrap').style.display='block'; var ext=document.getElementById('reqExtraFields'); if(ext) ext.style.display='none';}, 100)}">➕ طلب نموذج</button>
     </div>
     <div id="myFormsList"><div class="empty-hint">⏳ جارٍ التحميل...</div></div>
   </div>

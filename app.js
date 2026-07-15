@@ -2388,6 +2388,8 @@ function toggleAnon(cb){
 // ext=true: مستند خارجي (يُسلَّم لجهة خارج الشركة) — يأخذ برواز رسمي مزدوج عند الطباعة
 function H(title,sub,en,docId,ext){
     var num=docId?genDocNum(docId):'';
+    var today = new Date();
+    var ddStr = ('0' + today.getDate()).slice(-2) + '/' + ('0' + (today.getMonth()+1)).slice(-2) + '/' + today.getFullYear();
     var h='<div class="FL'+(ext?' FL-external':'')+'">';
     h+='<div class="FL-head">'+
        '<div class="FL-brand">'+
@@ -2399,7 +2401,7 @@ function H(title,sub,en,docId,ext){
     h+='<div class="FL-rule"></div>';
     h+='<div class="FL-meta">'+
        '<div class="FL-meta-item"><span class="FL-meta-lbl">رقم المستند</span><input type="text" class="FL-meta-val doc-num-fld" value="'+escH(num)+'"></div>'+
-       '<div class="FL-meta-item"><span class="FL-meta-lbl">التاريخ</span><input type="date" class="FL-meta-val" value="'+new Date().toISOString().split('T')[0]+'"></div>'+
+       '<div class="FL-meta-item"><span class="FL-meta-lbl">التاريخ</span><input type="text" class="FL-meta-val FL-date-str" value="'+ddStr+'"></div>'+
        '</div>';
     h+='<div class="FL-body">';
     return h;
