@@ -4639,17 +4639,51 @@ function _tgSaveAsNewDraft(formId, data, providedTitle) {
     });
 }
 
+function tgToggleDraftsSidebar() {
+    var sb = document.getElementById('tgFormDraftsSidebar');
+    var collapsed = document.getElementById('tgFormDraftsSidebarCollapsed');
+    if(!sb || !collapsed) return;
+    
+    var isHidden = localStorage.getItem('tgHideDraftsSidebar') === 'true';
+    if(isHidden) {
+        localStorage.setItem('tgHideDraftsSidebar', 'false');
+        sb.style.display = 'flex';
+        collapsed.style.display = 'none';
+        
+        var activePg = document.querySelector('.pg.a');
+        if(activePg) {
+            var formId = activePg.id.replace('pg-', '');
+            populateDraftsSidebar(formId);
+        }
+    } else {
+        localStorage.setItem('tgHideDraftsSidebar', 'true');
+        sb.style.display = 'none';
+        collapsed.style.display = 'block';
+    }
+}
+
 function populateDraftsSidebar(formId) {
     var sb = document.getElementById('tgFormDraftsSidebar');
     var lst = document.getElementById('fdsList');
+    var collapsed = document.getElementById('tgFormDraftsSidebarCollapsed');
     if(!sb || !lst) return;
     
     if(['dash', 'account', 'livetrack', 'empdocs', 'announcements'].includes(formId)) {
         sb.style.display = 'none';
+        if(collapsed) collapsed.style.display = 'none';
         return;
     }
     
-    sb.style.display = 'flex';
+    var isHidden = localStorage.getItem('tgHideDraftsSidebar') === 'true';
+    if(isHidden) {
+        sb.style.display = 'none';
+        if(collapsed) collapsed.style.display = 'block';
+        return;
+    } else {
+        sb.style.display = 'flex';
+        if(collapsed) collapsed.style.display = 'none';
+    }
+    
     lst.innerHTML = '<div class="empty-hint" style="font-size:11px">⏳ جلب النماذج...</div>';
     
     db.collection('savedForms').where('formId','==',formId).get().then(function(snap){

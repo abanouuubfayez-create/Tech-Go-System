@@ -206,8 +206,12 @@
 <div id="tgFormDraftsSidebar" class="form-drafts-sidebar np" style="display:none;">
   <div class="fds-header">
     <span>📂 النماذج المحفوظة</span>
+    <button class="bt bt-o np" onclick="tgToggleDraftsSidebar()" style="padding:2px 6px; font-size:10px; border:none; box-shadow:none; background:transparent" title="إخفاء">❌</button>
   </div>
   <div class="fds-list" id="fdsList"></div>
+</div>
+<div id="tgFormDraftsSidebarCollapsed" onclick="tgToggleDraftsSidebar()" class="np" style="display:none; position:fixed; top:60px; left:20px; background:var(--bg2); border:1px solid var(--bd); padding:10px; border-radius:8px; cursor:pointer; z-index:90; box-shadow:0 2px 5px rgba(0,0,0,0.1);" title="إظهار النماذج المحفوظة">
+  📂
 </div>
 <div class="CT">
 <div class="pg a" id="pg-dash">
