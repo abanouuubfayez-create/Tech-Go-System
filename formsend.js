@@ -372,7 +372,7 @@
   var fsSentCache = [];
 
   // ══════════════════════════ جهة الأدمن (index.html) ══════════════════════════
-  window.goSendForm = function (nav) {
+  window.goSendForm = function (nav, targetUid, templateTitle) {
     document.querySelectorAll('.S-i').forEach(function (e) { e.classList.remove('a'); });
     if (nav) { nav.classList.add('a'); }
     document.querySelectorAll('.pg').forEach(function (e) { e.classList.remove('a'); });
@@ -390,6 +390,32 @@
       fsLoadEmployees();
       fsWatchSentForms();
       c.dataset.mounted = '1';
+    }
+    if (targetUid) {
+      setTimeout(function(){
+          var sel = document.getElementById('fsTargetEmp');
+          if (sel) sel.value = targetUid;
+          if (templateTitle) {
+              var parsedTitle = templateTitle;
+              var m = templateTitle.match(/النموذج المطلوب:\s*(.+?)(?:\n|$)/);
+              if (m) parsedTitle = m[1].trim();
+              
+              var tpl = document.getElementById('fsTemplateKey');
+              if (tpl) {
+                  if (parsedTitle.indexOf('نموذج مخصص') > -1) {
+                      tpl.value = 'custom';
+                  } else {
+                      for (var k in FS_TEMPLATES) {
+                          if (FS_TEMPLATES[k].title === parsedTitle) {
+                              tpl.value = k;
+                              break;
+                          }
+                      }
+                  }
+                  if (typeof fsOnTemplateChange === 'function') fsOnTemplateChange();
+              }
+          }
+      }, 500);
     }
   };
 

@@ -997,7 +997,9 @@ function renderStaffList(list){
                        (r.fromDate?('<div class="pj-meta">من '+escH(r.fromDate)+(r.toDate?(' إلى '+escH(r.toDate)):'')+'</div>'):'')+
                        (r.reviewedBy?('<div class="pj-meta">تمت المراجعة بواسطة: '+escH(r.reviewedBy)+'</div>'):'')+
                        attachHtml+
-                       (r.status==='pending'?('<div class="rq-actions" style="margin-top:8px"><button class="bt bt-p" onclick="reviewRequest(\''+r.id+'\',\'approved\')">✔ موافقة</button><button class="bt bt-d" onclick="reviewRequest(\''+r.id+'\',\'rejected\')">✕ رفض</button></div>'):'')+
+                       (r.status==='pending'?('<div class="rq-actions" style="margin-top:8px">'+
+                           (r.type==='طلب نموذج'?'<button class="bt bt-o" style="border-color:var(--pr);color:var(--pr);margin-left:8px" onclick="goSendForm(document.querySelector(\'[onclick*=\\\'goSendForm\\\']\'), \''+emp.uid+'\', window._staffReqCache['+idx+']['+qi+'].details)">📨 إرسال نموذج للموظف</button>':'')+
+                           '<button class="bt bt-p" onclick="reviewRequest(\''+r.id+'\',\'approved\')">✔ موافقة</button><button class="bt bt-d" onclick="reviewRequest(\''+r.id+'\',\'rejected\')">✕ رفض</button></div>'):'')+
                        '</div>';
                 });
             }else h+='<div class="empty-hint">لا توجد طلبات بعد.</div>';
