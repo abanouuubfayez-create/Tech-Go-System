@@ -37,49 +37,6 @@
         { id: 'manager',    label: 'المدير المباشر',          type: 'text' }
       ]
     },
-    leave: {
-      title: 'نموذج طلب إجازة',
-      fields: [
-        { id: 'name', label: 'الاسم بالكامل', type: 'text' },
-        { id: 'dept', label: 'القسم / الإدارة', type: 'text' },
-        { id: 'jobTitle', label: 'المسمى الوظيفي', type: 'text' },
-        { id: 'phone', label: 'رقم التواصل أثناء الإجازة', type: 'tel' },
-        { id: 'leaveType', label: 'نوع الإجازة', type: 'select', options: ['إجازة سنوية (م.١٢٤)', 'إجازة عارضة (م.١٢٨)', 'إجازة رسمية / أعياد (م.١٢٩)'] },
-        { id: 'fromDate', label: 'تاريخ البدء', type: 'date' },
-        { id: 'toDate', label: 'تاريخ الانتهاء', type: 'date' },
-        { id: 'days', label: 'عدد الأيام', type: 'number' },
-        { id: 'reason', label: 'سبب الإجازة', type: 'text' },
-        { id: 'substitute', label: 'البديل أثناء الغياب', type: 'text' }
-      ]
-    },
-    perm: {
-      title: 'إذن حضور / انصراف',
-      fields: [
-        { id: 'permType', label: 'نوع الإذن', type: 'select', options: ['حضور بعد مواعيد العمل', 'انصراف قبل مواعيد العمل'] },
-        { id: 'name', label: 'اسم الموظف', type: 'text' },
-        { id: 'empId', label: 'الرقم الوظيفي', type: 'text' },
-        { id: 'dept', label: 'القسم / الإدارة', type: 'text' },
-        { id: 'date', label: 'التاريخ', type: 'date' },
-        { id: 'officialTime', label: 'الموعد الرسمي', type: 'time' },
-        { id: 'actualTime', label: 'الحضور / الانصراف الفعلي', type: 'time' },
-        { id: 'diff', label: 'مدة الفارق', type: 'text' },
-        { id: 'reason', label: 'السبب', type: 'textarea' }
-      ]
-    },
-    delay: {
-      title: 'التماس تعديل موعد الحضور',
-      fields: [
-        { id: 'name', label: 'اسم الموظف الكامل', type: 'text' },
-        { id: 'empId', label: 'الرقم الوظيفي', type: 'text' },
-        { id: 'jobTitle', label: 'المسمى الوظيفي', type: 'text' },
-        { id: 'dept', label: 'القسم / الإدارة', type: 'text' },
-        { id: 'phone', label: 'رقم التواصل', type: 'tel' },
-        { id: 'date', label: 'التاريخ', type: 'date' },
-        { id: 'currentTime', label: 'موعد الحضور الرسمي الحالي', type: 'time' },
-        { id: 'proposedTime', label: 'الموعد المقترح بعد التعديل', type: 'time' },
-        { id: 'reason', label: 'سبب طلب التعديل', type: 'textarea' }
-      ]
-    },
     res: {
       title: 'نموذج طلب استقالة',
       fields: [
@@ -139,42 +96,6 @@
         h += SG3('توقيع الموظف', 'مقدم الإخلاء', 'المدير الإداري', 'استلام العهد', 'المدير التنفيذي', 'اعتماد نهائي', null, 'admin', 'exec');
         return h;
       }
-    },
-    eval: {
-      title: 'تقييم أداء ذاتي',
-      noteSection: '٥',
-      fill: function () {
-        var h = SC('١', 'بيانات الموظف');
-        h += F2(fgIn('الاسم بالكامل', 'name'), fgIn('القسم / الإدارة', 'dept'));
-        h += F2(fgIn('فترة التقييم (من - إلى)', 'period'), fgIn('المسمى الوظيفي', 'jobTitle'));
-        h += SC('٢', 'التقييم الذاتي');
-        h += '<div class="fg fg-full"><label>أبرز إنجازاتك خلال هذه الفترة</label><textarea rows="3" data-fid="achievements"></textarea></div>';
-        h += '<div class="fg fg-full"><label>أبرز التحديات أو الصعوبات</label><textarea rows="2" data-fid="challenges"></textarea></div>';
-        h += '<div class="fg fg-full"><label>مقترحات التطوير أو التدريب المطلوب</label><textarea rows="2" data-fid="proposals"></textarea></div>';
-        h += SC('٣', 'التقييم الرقمي الذاتي');
-        h += '<div class="chk-grid" style="grid-template-columns:1fr 1fr">' +
-          '<label>جودة العمل: <input type="number" min="1" max="10" data-fid="score1" placeholder="/ 10" style="width:60px"></label>' +
-          '<label>الالتزام بالمواعيد: <input type="number" min="1" max="10" data-fid="score2" placeholder="/ 10" style="width:60px"></label>' +
-          '</div>';
-        return h;
-      },
-      print: function (v) {
-        var h = SC('١', 'بيانات الموظف');
-        h += F2(fgOut('الاسم بالكامل', v.name), fgOut('القسم / الإدارة', v.dept));
-        h += F2(fgOut('فترة التقييم', v.period), fgOut('المسمى الوظيفي', v.jobTitle));
-        h += SC('٢', 'التقييم الذاتي');
-        h += fgOut('أبرز إنجازاتك خلال هذه الفترة', v.achievements, true);
-        h += fgOut('أبرز التحديات أو الصعوبات', v.challenges, true);
-        h += fgOut('مقترحات التطوير أو التدريب المطلوب', v.proposals, true);
-        h += SC('٣', 'التقييم الرقمي الذاتي');
-        h += '<div class="chk-grid" style="grid-template-columns:1fr 1fr">' +
-          fgOut('جودة العمل', (v.score1||'0')+'/10') +
-          fgOut('الالتزام بالمواعيد', (v.score2||'0')+'/10') +
-          '</div>';
-        h += SC('٤', 'اعتماد المدير المباشر');
-        h += fsStatusBlock();
-        h += '<div style="margin-top:16px">'+SG3('توقيع الموظف', '', 'المدير المباشر', '', 'المدير الإداري', 'اعتماد', null, 'admin', 'exec')+'</div>';
-        return h;
       }
     }
   };
