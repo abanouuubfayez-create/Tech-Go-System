@@ -2405,14 +2405,14 @@ function H(title,sub,en,docId,ext){
 function FT(copies){
     var cp=copies||['نسخة للموظف','نسخة للإدارة','نسخة للأرشيف'];
     var sp='';for(var i=0;i<cp.length;i++)sp+='<span>'+cp[i]+'</span>';
-    return '</div><div class="FL-foot">'+
+    return '</div><div style="break-inside: avoid; page-break-inside: avoid;"><div class="FL-foot">'+
     '<span>شركة تيك – جو | وثيقة سرية تُحفظ في ملف الموظف</span>'+
     '<span class="FL-foot-ts print-only-ts"></span>'+
     '<span class="FL-foot-ref print-only-ts"></span>'+
     '<span class="FL-foot-copies">'+sp+'</span>'+
     '</div>'+
     '<div style="text-align:center;font-size:8px;color:var(--tx3);padding:4px 0 2px;border-top:1px solid var(--bd);margin-top:2px">تطوير وتصميم: أبانوب فايز</div>'+
-    '</div>';
+    '</div></div>';
 }
 
 function SC(n,t){return '<div class="sec"><div class="num">'+n+'</div><div class="stx">'+t+'</div></div>'}
