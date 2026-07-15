@@ -1382,11 +1382,20 @@ function loadMyWeeklyReports(){
     var box=document.getElementById('myWkrList');
     db.collection('weeklyReports').where('uid','==',TG_USER.uid).get().then(function(snap){
         if(snap.empty){ box.innerHTML='<div class="empty-hint">لا توجد تقارير أسبوعية مُرسلة بعد.</div>'; return; }
-        var rows=[]; snap.forEach(function(d){rows.push(d.data());});
-        rows.sort(function(a,b){return (a.weekStart<b.weekStart)?1:-1;});
-        window._wkrCache=rows;
+        var rows=[]; snap.forEach(function(d){rows.push(Object.assign({id:d.id}, d.data()));});
+        rows.sort(function(a,b){return (a.createdAt>b.createdAt)?-1:1;}); // Sort newest first
+        var uniqueRows = [];
+        var seen = {};
+        rows.forEach(function(r){
+            if(!seen[r.weekStart]){
+                seen[r.weekStart] = true;
+                uniqueRows.push(r);
+            }
+        });
+        uniqueRows.sort(function(a,b){return (a.weekStart<b.weekStart)?1:-1;});
+        window._wkrCache=uniqueRows;
         var h='';
-        rows.forEach(function(r,i){
+        uniqueRows.forEach(function(r,i){
             var waMsg = encodeURIComponent(
                 'التقرير الأسبوعي - ' + (TG_USER.name||'موظف') + '\n' +
                 'الأسبوع: ' + (r.weekStart||'') + '\n' +
@@ -1401,23 +1410,46 @@ function loadMyWeeklyReports(){
     }).catch(function(err){ box.innerHTML='<div class="empty-hint" style="color:var(--no)">تعذر التحميل: '+esc(err.message)+'</div>'; });
 }
 function submitWeeklyReport(){
+    var btn = event ? event.currentTarget : null;
+    if(btn) btn.disabled = true;
     var weekStart=document.getElementById('wkrStart').value||sundayOf(new Date());
     var content=(document.getElementById('wkrContent').value||'').trim();
     var msg=document.getElementById('wkrMsg');
-    if(!content){ msg.style.color='var(--no)'; msg.textContent='من فضلك اكتب ملخص الأسبوع.'; return; }
-    db.collection('weeklyReports').add({
-        uid:TG_USER.uid,
-        name: TG_USER.name || '',
-        email: TG_USER.email || '',
-        weekStart:weekStart, content:content,
-        createdAt:new Date()
+    if(!content){ 
+        msg.style.color='var(--no)'; msg.textContent='من فضلك اكتب ملخص الأسبوع.'; 
+        if(btn) btn.disabled = false;
+        return; 
+    }
+    
+    db.collection('weeklyReports').where('uid','==',TG_USER.uid).where('weekStart','==',weekStart).get().then(function(snap){
+        if(!snap.empty){
+            // Update existing report
+            var docId = snap.docs[0].id;
+            return db.collection('weeklyReports').doc(docId).update({
+                content: content,
+                createdAt: new Date(),
+                reviewedByAdmin: false
+            });
+        } else {
+            // Create new report
+            return db.collection('weeklyReports').add({
+                uid:TG_USER.uid,
+                name: TG_USER.name || '',
+                email: TG_USER.email || '',
+                weekStart:weekStart, content:content,
+                createdAt:new Date()
+            });
+        }
     }).then(function(){
-        msg.style.color='var(--ok)'; msg.textContent='✅ تم إرسال التقرير';
+        msg.style.color='var(--ok)'; msg.textContent='✅ تم حفظ التقرير بنجاح';
         document.getElementById('wkrContent').value='';
         loadMyWeeklyReports();
-        // إشعار كل الأدمن/الأدمن التقني بوصول تقرير أسبوعي جديد
-        tgNotifyAdmins('📆 تقرير أسبوعي جديد', (TG_USER.name||'موظف') + ' أرسل تقريره الأسبوعي', 'weekly-report-new');
-    }).catch(function(err){ msg.style.color='var(--no)'; msg.textContent='❌ '+err.message; });
+        tgNotifyAdmins('📆 تقرير أسبوعي', (TG_USER.name||'موظف') + ' قام بتقديم تقريره الأسبوعي', 'weekly-report-new');
+        if(btn) btn.disabled = false;
+    }).catch(function(err){ 
+        msg.style.color='var(--no)'; msg.textContent='❌ '+err.message; 
+        if(btn) btn.disabled = false;
+    });
 }
 document.getElementById('wkrStart').value=sundayOf(new Date());
 

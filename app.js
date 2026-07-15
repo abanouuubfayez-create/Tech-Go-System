@@ -2557,6 +2557,19 @@ function loadWeeklyReportsInbox(){
 }
 function renderWeeklyReportsInbox(){
     var reports = window._wkrInboxData || [];
+    
+    // إزالة التكرار: نحتفظ بأحدث تقرير لكل موظف لكل أسبوع (التقارير مرتبة مسبقاً بالأحدث)
+    var uniqueReports = [];
+    var seen = {};
+    reports.forEach(function(r){
+        var key = r.uid + '_' + r.weekStart;
+        if(!seen[key]){
+            seen[key] = true;
+            uniqueReports.push(r);
+        }
+    });
+    reports = uniqueReports;
+
     var users = window._wkrInboxUsers || {};
     var empFilter = (document.getElementById('wkrInboxEmpFilter')||{}).value || 'all';
     var weekFilter = (document.getElementById('wkrInboxWeekFilter')||{}).value || 'all';
