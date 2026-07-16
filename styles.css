@@ -1177,12 +1177,21 @@ input, select, textarea, button { font-family: inherit; }
 @media print {
     html:not(.print-keep-data) #mexp-total,
     html:not(.print-keep-data) #mexp-total-cell,
-    html:not(.print-keep-data) .sal-total-fld {
-        color: transparent !important;
-    }
+    html:not(.print-keep-data) .sal-total-fld,
     html:not(.print-keep-data) input[type="date"],
+    html:not(.print-keep-data) input[type="date"]::-webkit-datetime-edit,
+    html:not(.print-keep-data) input[type="date"]::-webkit-datetime-edit-text,
+    html:not(.print-keep-data) input[type="date"]::-webkit-datetime-edit-month-field,
+    html:not(.print-keep-data) input[type="date"]::-webkit-datetime-edit-day-field,
+    html:not(.print-keep-data) input[type="date"]::-webkit-datetime-edit-year-field,
     html:not(.print-keep-data) input.flatpickr-input,
     html:not(.print-keep-data) input.flatpickr-input + input {
+        color: transparent !important;
+    }
+    html:not(.print-keep-data) input[type="date"]::-webkit-calendar-picker-indicator {
+        display: none !important;
+    }
+    html:not(.print-keep-data) input.flatpickr-input + input::placeholder {
         color: transparent !important;
     }
 }
