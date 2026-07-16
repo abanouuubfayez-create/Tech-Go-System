@@ -1,0 +1,1853 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="theme-color" content="#1b2a4a">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Tech Go">
+<title>بوابة الموظف · تيك جو</title>
+<link rel="stylesheet" href="styles.css?v=391484">
+<link rel="manifest" href="manifest.json">
+<link rel="icon" type="image/png" sizes="192x192" href="icon-192.png">
+<link rel="apple-touch-icon" href="icon-192.png">
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-storage-compat.js"></script>
+<script src="firebase-config.js?v=2"></script>
+<script src="auth.js?v=391484"></script>
+<script src="app.js?v=391484"></script>
+<script src="formsend.js?v=3"></script>
+<script>
+    (function() {
+        const theme = localStorage.getItem('tg-theme') || 'light';
+        document.documentElement.setAttribute('data-theme', theme);
+    })();
+</script>
+<style>
+.emp-body{margin:0; background:var(--bg);}
+.emp-nav{
+    display:flex;gap:2px;padding:0 20px;
+    background:var(--w);border-bottom:2px solid var(--bd2);
+    flex-wrap:wrap; position:sticky; top:56px; z-index:70;
+    box-shadow:0 2px 8px rgba(27,42,74,.05);
+}
+.emp-tab{
+    padding:13px 18px;font-size:12.5px;font-weight:600;
+    color:var(--tx3);cursor:pointer;
+    border-bottom:3px solid transparent;
+    margin-bottom:-2px; transition:var(--tr);
+    display:flex;align-items:center;gap:6px;
+}
+.emp-tab:hover{color:var(--nv); background:rgba(27,42,74,.03);}
+.emp-tab.a{
+    color:var(--nv);border-bottom-color:var(--gd);
+    font-weight:800; background:linear-gradient(180deg,transparent,rgba(201,162,39,.06));
+}
+.emp-ct{padding:22px 24px;max-width:960px;margin:0 auto}
+.emp-pg{display:none; animation:fi .22s ease;}
+.emp-pg.a{display:block}
+.tab-badge{
+    background:var(--no);color:#fff;font-size:9px;font-weight:800;
+    padding:2px 7px;border-radius:10px;display:inline-flex;
+    align-items:center;line-height:1; min-width:18px;justify-content:center;
+}
+/* upload styles */
+.file-upload-label{
+    display:inline-flex;align-items:center;gap:6px;
+    padding:8px 14px;background:var(--bg2);border:1.5px solid var(--bd);
+    border-radius:8px;cursor:pointer;font-size:12px;font-weight:600;
+    color:var(--tx2);transition:var(--tr);
+}
+.file-upload-label:hover{border-color:var(--nv);color:var(--nv);}
+.file-upload-progress{
+    font-size:11px;color:var(--tx3);margin-top:6px;padding:6px 10px;
+    background:var(--bg2);border-radius:6px;border-right:3px solid var(--gd);
+}
+.ach-tabs {
+    display: flex; gap: 6px; background: var(--bg2); padding: 4px; 
+    border-radius: 12px; border: 1px solid var(--bd2);
+}
+.ach-tab {
+    padding: 6px 14px; font-size: 11px; font-weight: 700; cursor: pointer;
+    border-radius: 9px; color: var(--tx3); transition: all .2s; white-space: nowrap;
+}
+.ach-tab.active {
+    background: var(--nv); color: #fff; box-shadow: 0 2px 6px rgba(15,23,42,.15);
+}
+[data-theme='dark'] .ach-tab.active {
+    background: var(--gd); color: var(--nv);
+}
+/* Zaghrouta Animation Styles (Centered) */
+.zaghrouta-container {
+    position: fixed; top: 50%; left: 50%; transform: translate(-50%, 100%) scale(0.5);
+    z-index: 10000; width: 280px; pointer-events: none; opacity: 0;
+    transition: all 0.6s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+.zaghrouta-container.show { 
+    transform: translate(-50%, -50%) scale(1); 
+    opacity: 1;
+}
+.zaghrouta-img { width: 100%; filter: drop-shadow(0 15px 30px rgba(0,0,0,0.3)); }
+.zaghrouta-bubble {
+    position: absolute; top: 10px; left: -20px; background: #fff;
+    padding: 10px 20px; border-radius: 25px; font-weight: 800; font-size: 18px;
+    box-shadow: 0 8px 25px rgba(0,0,0,0.2); border: 3px solid var(--gd);
+    color: var(--nv); transform: scale(0); transition: transform 0.4s 0.5s;
+    white-space: nowrap;
+}
+[data-theme='dark'] .zaghrouta-bubble { background: var(--nv2); color: #fff; border-color: var(--gd); }
+.zaghrouta-container.show .zaghrouta-bubble { transform: scale(1); }
+@keyframes celebrate-shake {
+    0%, 100% { transform: translateY(0) rotate(0); }
+    25% { transform: translateY(-8px) rotate(-3deg); }
+    75% { transform: translateY(-8px) rotate(3deg); }
+}
+.zaghrouta-container.show .zaghrouta-img { animation: celebrate-shake 0.3s infinite; }
+</style>
+</head>
+<body class="emp-body">
+<!-- ═══ شريط حالة الاتصال ═══ -->
+<div id="offlineBanner" style="display:none;position:fixed;top:0;left:0;right:0;z-index:99999;background:#ef4444;color:#fff;text-align:center;padding:10px 16px;font-size:13px;font-weight:700;box-shadow:0 2px 8px rgba(0,0,0,.3);animation:slideDown .3s ease">
+    📵 لا يوجد اتصال بالإنترنت — بعض الوظائف غير متاحة حالياً
+</div>
+<style>
+@keyframes slideDown{from{transform:translateY(-100%)}to{transform:translateY(0)}}
+</style>
+<script>
+(function(){
+    function checkConn(){
+        var b=document.getElementById('offlineBanner');
+        if(!b) return;
+        if(!navigator.onLine){
+            b.style.display='block';
+            document.body.style.paddingTop='44px';
+        } else {
+            b.style.display='none';
+            document.body.style.paddingTop='';
+        }
+    }
+    window.addEventListener('offline', checkConn);
+    window.addEventListener('online', function(){
+        var b=document.getElementById('offlineBanner');
+        if(b){ b.style.background='#10b981'; b.textContent='✅ عاد الاتصال بالإنترنت'; b.style.display='block'; document.body.style.paddingTop='44px'; }
+        setTimeout(function(){ checkConn(); if(document.body.style.paddingTop) document.body.style.paddingTop=''; },2500);
+    });
+    checkConn();
+})();
+</script>
+<!-- Celebration Character Container -->
+<div id="zaghroutaWrap" class="zaghrouta-container">
+    <div class="zaghrouta-bubble" id="zaghroutaMsg">أخيراً! 🎉</div>
+    <img src="celebration.png" class="zaghrouta-img" alt="Celebration">
+</div>
+
+<iframe id="tgPrintFrame" style="position:fixed;top:-9999px;left:-9999px;width:0;height:0;border:0" title="طباعة"></iframe>
+
+<div class="emp-topbar">
+  <div class="who">👋 أهلاً، <span id="empWhoName">...</span><small id="empWhoRole"></small></div>
+  <div style="display:flex;align-items:center;gap:8px;">
+    <input type="text" id="globalTableFilter" name="tg-global-search-field" class="global-table-filter" placeholder="🔍 تصفية بيانات الجدول..." oninput="if(typeof tgFilterVisibleTables==='function') tgFilterVisibleTables(this.value)" autocomplete="new-password">
+    <div class="emp-header-actions" style="margin-right:auto;display:flex;gap:8px;align-items:center">
+        <button class="bt bt-o" id="themeToggle" onclick="tgToggleTheme()" title="تبديل الوضع الليلي" style="font-size:16px;padding:4px 10px">🌙</button>
+        <button class="bt bt-o" onclick="tgLogout()">🚪 خروج</button>
+    </div>
+  </div>
+</div>
+
+<div class="emp-nav">
+  <div class="emp-tab a" data-pg="proj" onclick="empGo('proj',this)">📁 مشاريعي <span class="tab-badge" id="proj-badge" style="display:none">0</span></div>
+  <div class="emp-tab" data-pg="tasks" onclick="empGo('tasks',this)">🗂 مهامي <span class="tab-badge" id="tasks-badge" style="display:none">0</span></div>
+  <div class="emp-tab" data-pg="wkr" onclick="empGo('wkr',this)">📊 تقاريري الأسبوعية</div>
+  <div class="emp-tab" data-pg="ach" onclick="empGo('ach',this)">🏆 إنجازاتي</div>
+  <div class="emp-tab" data-pg="docs" onclick="empGo('docs',this)">📄 مستنداتي</div>
+  <div class="emp-tab" data-pg="req" onclick="empGo('req',this)">📨 طلباتي</div>
+  <div class="emp-tab" data-pg="forms" onclick="empGo('forms',this)">📝 نماذج مطلوبة مني <span class="tab-badge" id="forms-badge" style="display:none">0</span></div>
+  <div class="emp-tab" id="empTabAtt" data-pg="att" onclick="empGo('att',this)" style="display:none">⏱️ الحضور والانصراف</div>
+  <div class="emp-tab" data-pg="acct" onclick="empGo('acct',this)">👤 حسابي</div>
+</div>
+
+<div class="emp-ct">
+
+  <!-- الحضور والانصراف -->
+  <div class="emp-pg" id="epg-att">
+    <div id="attDisabledMsg" style="display:none;padding:20px;text-align:center;color:var(--no);font-weight:bold;background:var(--w);border-radius:8px;border:1px solid var(--bd2)">⚠️ ميزة تسجيل الحضور والانصراف معطلة حالياً من قبل الإدارة.</div>
+    <div id="attEnabledSec">
+      <div class="set-sec">
+        <div class="set-sec-title">⏱️ تسجيل الحضور والانصراف</div>
+        <div class="set-hint" style="margin-bottom:16px">سجل حضورك وانصرافك يومياً. سيتم حفظ وقت وتاريخ الحضور تلقائياً.</div>
+        <div style="display:flex;gap:16px;flex-wrap:wrap">
+          <button id="btnCheckIn" class="bt bt-p" style="flex:1;padding:16px;font-size:16px" onclick="empCheckIn()">🟢 تسجيل حضور</button>
+          <button id="btnCheckOut" class="bt bt-d" style="flex:1;padding:16px;font-size:16px" onclick="empCheckOut()" disabled>🔴 تسجيل انصراف</button>
+        </div>
+        <div id="attStatusMsg" style="margin-top:12px;font-weight:bold;text-align:center"></div>
+      </div>
+      <div class="set-sec-title" style="margin:16px 0 8px">📋 سجل حضور هذا الشهر</div>
+      <div id="myAttList"><div class="empty-hint">⏳ جارٍ التحميل...</div></div>
+    </div>
+  </div>
+
+  <!-- مشاريعي -->
+  <div class="emp-pg a" id="epg-proj">
+
+    <!-- قائمة المشاريع (تظهر افتراضياً) -->
+    <div id="projListView">
+      <!-- لوحة الإعلانات -->
+      <div id="empAnnouncementsPanel" style="background:linear-gradient(135deg, #1b2a4a, #2a3f6c); border-radius:12px; padding:20px; color:#fff; margin-bottom:20px; display:none; box-shadow:0 6px 16px rgba(27,42,74,.15);">
+        <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px">
+          <span style="font-size:20px">📢</span>
+          <div style="font-size:16px;font-weight:800;color:var(--gd)">إعلانات الإدارة</div>
+        </div>
+        <div id="empAnnouncementsList" style="display:flex;flex-direction:column;gap:12px"></div>
+      </div>
+
+      <div class="set-hint" style="margin-bottom:16px">المشاريع المُسندة إليك من الإدارة — حدّث نسبة تقدّمك وحالتك أولاً بأول ليراها المدير.</div>
+
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px">
+        <div style="display:flex;align-items:center;gap:10px;"><div style="font-size:14px;font-weight:800;color:var(--nv)">📁 مشاريعي الحالية</div>
+        <select class="global-table-filter" style="margin:0;padding:4px;font-size:11px;min-height:auto;" onchange="if(typeof window.parent.tgSortVisibleList==='function') window.parent.tgSortVisibleList(this.value); else if(typeof tgSortVisibleList==='function') tgSortVisibleList(this.value)">
+            <option value="">-- فرز حسب --</option>
+            <option value="date_desc">الأحدث</option>
+            <option value="date_asc">الأقدم</option>
+            <option value="prio_desc">الأولوية</option>
+            <option value="status_desc">الحالة</option>
+            <option value="deadline_asc">تاريخ التسليم</option>
+        </select></div>
+        <div id="projCountLabel" style="font-size:11px;color:var(--tx3);font-weight:600"></div>
+      </div>
+      <div id="myProjectsList"><div class="empty-hint">⏳ جارٍ التحميل...</div></div>
+    </div>
+
+    <!-- صفحة تفاصيل المشروع (مخفية افتراضياً، تظهر عند الضغط على مشروع) -->
+    <div id="projDetailView" style="display:none"></div>
+
+  </div>
+
+  <!-- مهامي -->
+  <div class="emp-pg" id="epg-tasks">
+    <div class="p-stats" id="tasksEmployeeSummary" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap: 12px; margin-bottom: 16px;"></div>
+
+    <div style="display:flex;gap:10px;margin-bottom:16px;flex-wrap:wrap;border-bottom:2px solid var(--bd);padding-bottom:2px" id="empTaskStatusTabs">
+      <button class="tg-task-tab tg-task-tab-active" data-status="" onclick="tgSetEmpTaskTab(this, '')"><span class="tab-label">الكل</span><span class="tab-count" id="emp-tab-count-all">0</span></button>
+      <button class="tg-task-tab" data-status="لم يبدأ" onclick="tgSetEmpTaskTab(this, 'لم يبدأ')"><span class="tab-label">لم يبدأ</span><span class="tab-count" id="emp-tab-count-1">0</span></button>
+      <button class="tg-task-tab" data-status="جاري العمل" onclick="tgSetEmpTaskTab(this, 'جاري العمل')"><span class="tab-label">جاري العمل</span><span class="tab-count" id="emp-tab-count-2">0</span></button>
+      <button class="tg-task-tab" data-status="متوقف" onclick="tgSetEmpTaskTab(this, 'متوقف')"><span class="tab-label">متوقف</span><span class="tab-count" id="emp-tab-count-paused">0</span></button>
+      <button class="tg-task-tab" data-status="مكتمل" onclick="tgSetEmpTaskTab(this, 'مكتمل')"><span class="tab-label">مكتمل</span><span class="tab-count" id="emp-tab-count-3">0</span></button>
+      <button class="tg-task-tab" data-status="overdue" onclick="tgSetEmpTaskTab(this, 'overdue')"><span class="tab-label">متأخرة</span><span class="tab-count" id="emp-tab-count-late">0</span></button>
+    </div>
+    
+    <div class="set-hint" style="margin-bottom:14px">المهام اللي كلّفك بيها الأدمن — حدّث حالتها أولاً بأول عشان يتابع الأدمن تنفيذك لها.</div>
+    <div id="myTasksList"><div class="empty-hint">⏳ جارٍ التحميل...</div></div>
+  </div>
+
+  <!-- تقاريري الأسبوعية -->
+  <div class="emp-pg" id="epg-wkr">
+    <div class="set-sec">
+      <div class="set-sec-title">➕ إضافة تقرير أسبوعي</div>
+      <div class="set-hint">اكتب ملخصاً بالمهام اللي أنجزتها هذا الأسبوع، والتقدم في مشاريعك، وأي معوقات واجهتك.</div>
+      <div class="fr fr2" style="margin-top:8px">
+        <div class="fg"><label>بداية الأسبوع (يوم الأحد)</label><input type="date" id="wkrStart"></div>
+        <div class="fg"></div>
+      </div>
+      <div class="fg fg-full"><label>ملخص الأسبوع</label><textarea id="wkrContent" rows="4" placeholder="المهام المنجزة هذا الأسبوع، نسبة التقدم، أي معوقات أو ملاحظات..."></textarea></div>
+      <button class="bt bt-p" onclick="submitWeeklyReport()">📆 إرسال التقرير</button>
+      <div id="wkrMsg" style="font-size:11px;margin-top:6px"></div>
+    </div>
+    <div class="set-sec-title" style="margin:16px 0 8px">🗂 سجل تقاريري الأسبوعية</div>
+    <div id="myWkrList"><div class="empty-hint">⏳ جارٍ التحميل...</div></div>
+  </div>
+
+  <!-- إنجازاتي -->
+  <div class="emp-pg" id="epg-ach">
+    <div class="set-sec">
+      <div class="set-sec-title">➕ إضافة إنجاز جديد</div>
+      <div class="fr fr2" style="margin-top:8px">
+        <div class="fg"><label>🏆 عنوان الإنجاز</label><input type="text" id="achTitle" placeholder="مثلاً: إتمام نظام المرفقات"></div>
+        <div class="fg"><label>📅 التاريخ</label><input type="date" id="achDate"></div>
+      </div>
+      <div class="fg fg-full" style="margin-top:12px"><label>📝 وصف مختصر (اختياري)</label><textarea id="achDesc" rows="2"></textarea></div>
+      <button class="bt bt-p" style="margin-top:12px" onclick="addAchievement()">➕ إضافة الإنجاز</button>
+      <div id="achMsg" style="font-size:11px;margin-top:4px"></div>
+    </div>
+    <div class="ach-header-row" style="display:flex;justify-content:space-between;align-items:center;margin:16px 0 12px;flex-wrap:wrap;gap:10px">
+      <div class="set-sec-title" style="margin:0">📜 سجل الإنجازات</div>
+      <div class="ach-tabs">
+        <div class="ach-tab active" id="achTabMine" onclick="switchAchFilter('mine')">إنجازاتي</div>
+        <div class="ach-tab" id="achTabTeam" onclick="switchAchFilter('team')">إنجازات الزملاء</div>
+      </div>
+    </div>
+    <div id="myAchList"><div class="empty-hint">⏳ جارٍ التحميل...</div></div>
+  </div>
+
+  <div class="emp-pg" id="epg-docs">
+    <div class="ac-hdr">📄 مستنداتي والملف الرقمي</div>
+    
+    <!-- قسم إرسال للأدمن -->
+    <div class="set-sec" style="margin-bottom:24px; border:1px solid var(--bd2); padding:16px; border-radius:12px; background:rgba(255,255,255,0.02)">
+      <div class="set-sec-title" style="color:var(--gd); font-size:14px">📤 إرسال مستندات للأدمن (Admin)</div>
+      <div class="set-hint" style="margin-bottom:12px">أرسل مسوغات التعيين أو أي أوراق تطلبها منك الإدارة لتظهر لهم فوراً.</div>
+      <div class="form-grid" style="background:rgba(0,0,0,.1);padding:16px;border-radius:10px">
+        <div class="fg"><label>اسم المستند (مثلاً: صورة البطاقة، شهادة الجيش)</label><input type="text" id="empDirectDocTitle"></div>
+        <div class="fg"><label>الملف</label><input type="file" id="empDirectDocFile"></div>
+        <div class="fg" style="display:flex;align-items:flex-end"><button class="bt bt-p" style="width:100%" onclick="empSendDirectToAdmin()">📩 إرسال للأدمن</button></div>
+      </div>
+      <div id="empDirectUploadMsg" style="font-size:12px; margin-top:8px"></div>
+    </div>
+
+    <!-- قسم الملف الرقمي الشخصي -->
+    <div class="set-sec">
+      <div class="set-sec-title">📁 ملفي الرقمي الشخصي</div>
+      <div class="set-hint">المستندات المحفوظة في ملفك (المرفوعة بواسطتك أو بواسطة الإدارة).</div>
+      <div class="form-grid" style="background:rgba(255,255,255,.05);padding:16px;border-radius:10px;margin-bottom:16px">
+        <div class="fg"><label>اسم المستند (للحفظ في ملفك)</label><input type="text" id="empNewDocTitle"></div>
+        <div class="fg"><label>الملف</label><input type="file" id="empNewDocFile"></div>
+        <div class="fg" style="display:flex;align-items:flex-end"><button class="bt bt-o" style="width:100%" onclick="empUploadDoc()">⬆ رفع لملفي</button></div>
+      </div>
+      <div id="empDocUploadMsg" style="font-size:12px;margin-bottom:12px"></div>
+      <div id="empDocsViewList"><div class="empty-hint">⏳ جارٍ التحميل...</div></div>
+    </div>
+  </div>
+
+  <!-- 📨 الطلبات -->
+  <div class="emp-pg" id="epg-req">
+    <div class="set-sec">
+      <div class="set-sec-title">➕ تقديم طلب جديد</div>
+      <div class="fr fr2" style="margin-top:8px">
+        <div class="fg"><label>نوع الطلب</label>
+          <select id="reqType" onchange="var isForm = this.value === 'طلب نموذج'; document.getElementById('reqFormTemplateWrap').style.display = isForm ? 'block' : 'none'; var ext = document.getElementById('reqExtraFields'); if(ext) ext.style.display = isForm ? 'none' : 'block';">
+            <option>إجازة</option><option>إذن حضور / انصراف</option><option>غياب</option><option>طلب نموذج</option><option>أخرى</option>
+          </select>
+        </div>
+        <div class="fg" id="reqFormTemplateWrap" style="display:none;"><label>اسم النموذج المطلوب</label>
+          <select id="reqFormTemplate">
+            <option value="نموذج مخصص (حقول حرة)">✏️ نموذج مخصص (حقول حرة)</option>
+            <option value="ملف بيانات الموظف">ملف بيانات الموظف</option>
+            <option value="نموذج طلب إجازة">نموذج طلب إجازة</option>
+            <option value="إذن حضور / انصراف">إذن حضور / انصراف</option>
+            <option value="التماس تعديل موعد الحضور">التماس تعديل موعد الحضور</option>
+            <option value="نموذج طلب استقالة">نموذج طلب استقالة</option>
+            <option value="نموذج شكاوى ومقترحات">نموذج شكاوى ومقترحات</option>
+            <option value="إخلاء طرف">إخلاء طرف</option>
+            <option value="تقييم أداء ذاتي">تقييم أداء ذاتي</option>
+          </select>
+        </div>
+      </div>
+      <div id="reqExtraFields">
+        <div class="fr fr2">
+          <div class="fg"><label>من تاريخ (اختياري)</label><input type="date" id="reqFrom"></div>
+          <div class="fg"><label>إلى تاريخ (اختياري)</label><input type="date" id="reqTo"></div>
+        </div>
+        <div class="fg fg-full"><label>تفاصيل الطلب</label><textarea id="reqDetails" rows="3"></textarea></div>
+        <!-- رفع مرفق اختياري -->
+        <div style="margin-top:10px;display:flex;align-items:center;gap:10px;flex-wrap:wrap">
+          <label class="file-upload-label">
+            📎 مرفق (اختياري)
+            <input type="file" id="reqFile" accept="image/*,video/*,.pdf,.doc,.docx,.xls,.xlsx,.txt,.zip" style="display:none" onchange="document.getElementById('reqFileName').textContent=this.files[0]?this.files[0].name:''">
+          </label>
+          <span id="reqFileName" style="font-size:11px;color:var(--tx3);max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap"></span>
+        </div>
+      </div>
+      <div id="reqUploadProg" style="display:none" class="file-upload-progress"></div>
+      <button class="bt bt-p" style="margin-top:12px" onclick="submitRequest()">📨 إرسال الطلب</button>
+      <div id="reqMsg" style="font-size:11px;margin-top:6px"></div>
+    </div>
+    <div class="set-sec-title" style="margin:16px 0 8px">📋 سجل طلباتي</div>
+    <div id="myReqList"><div class="empty-hint">⏳ جارٍ التحميل...</div></div>
+  </div>
+
+  <!-- نماذج مطلوبة مني من الأدمن -->
+  <div class="emp-pg" id="epg-forms">
+    <div style="display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:14px;">
+      <div class="set-hint" style="margin:0">نماذج أرسلها لك الأدمن لتعبئتها وإرسالها مرة أخرى.</div>
+      <button class="bt bt-p" style="font-size:11px; padding:6px 12px; white-space:nowrap; margin-right:12px" onclick="var t=document.querySelector('.emp-tab[data-pg=\'req\']'); if(t){t.click(); setTimeout(function(){document.getElementById('reqType').value='طلب نموذج'; document.getElementById('reqFormTemplateWrap').style.display='block'; var ext=document.getElementById('reqExtraFields'); if(ext) ext.style.display='none';}, 100)}">➕ طلب نموذج</button>
+    </div>
+    <div id="myFormsList"><div class="empty-hint">⏳ جارٍ التحميل...</div></div>
+  </div>
+
+  <!-- حسابي -->
+  <div class="emp-pg" id="epg-acct">
+    <div class="set-sec" style="background: linear-gradient(135deg, var(--nv), var(--nv2)); color: #fff; padding: 30px; border-radius: 20px; margin-bottom: 24px; display: flex; align-items: center; gap: 24px; border: none; box-shadow: var(--sh-md);">
+        <div style="width: 90px; height: 90px; background: linear-gradient(135deg, var(--gd), var(--gd2)); color: var(--nv); border-radius: 24px; display: flex; align-items: center; justify-content: center; font-size: 38px; font-weight: 900; box-shadow: 0 8px 20px rgba(0,0,0,0.3); flex-shrink: 0;" id="acctAvatarInitials">..</div>
+        <div style="flex: 1;">
+            <div style="font-size: 24px; font-weight: 800; margin-bottom: 6px; text-shadow: 0 2px 4px rgba(0,0,0,0.2);" id="acctProfileName">...</div>
+            <div style="font-size: 14px; opacity: 0.85; margin-bottom: 12px; font-weight: 500;" id="acctProfileJob">...</div>
+            <button class="bt bt-g" style="padding: 10px 20px; font-size: 12px; box-shadow: 0 4px 15px rgba(201,162,39,0.4);" onclick="tgOpenEmployeeProfile(TG_USER.uid)">👤 عرض ملفي الشخصي الكامل (البروفايل)</button>
+        </div>
+    </div>
+
+    <div class="set-hint" style="margin-bottom:14px">عدّل اسمك الظاهر في النظام، أو غيّر كلمة مرور حسابك.</div>
+    <div class="set-sec">
+      <div class="set-sec-title">🧑 البيانات الشخصية</div>
+      <div class="fg" style="margin-bottom:10px"><label>الاسم الظاهر في النظام</label><input type="text" id="acctName"></div>
+      <div class="fg" style="margin-bottom:10px"><label>البريد الإلكتروني</label><input type="email" id="acctEmail" disabled></div>
+      <div class="fg" style="margin-bottom:10px"><label>المسمى الوظيفي</label><input type="text" id="acctJobTitle" disabled placeholder="لم يحدَّد بعد — يحدّده الأدمن"></div>
+      <button class="bt bt-p" onclick="saveMyName()">💾 حفظ الاسم</button>
+      <div id="acctNameMsg" style="margin-top:8px;font-size:11px"></div>
+    </div>
+    <div class="set-sec">
+      <div class="set-sec-title">🔒 تغيير كلمة المرور</div>
+      <div class="fr fr2" style="margin-top:8px">
+        <div class="fg"><label>كلمة المرور الحالية</label><input type="password" id="acctOldPass"></div>
+        <div class="fg"><label>كلمة المرور الجديدة</label><input type="password" id="acctNewPass" placeholder="6 أحرف على الأقل"></div>
+      </div>
+      <button class="bt bt-p" onclick="saveMyPassword()">🔒 تحديث كلمة المرور</button>
+      <div id="acctPassMsg" style="margin-top:8px;font-size:11px"></div>
+    </div>
+  </div>
+
+</div>
+
+<script>
+window.onAppSettingsUpdate = function(settings) {
+    var enabled = settings.attendanceEnabled !== false;
+    document.getElementById('attDisabledMsg').style.display = enabled ? 'none' : 'block';
+    document.getElementById('attEnabledSec').style.display = enabled ? 'block' : 'none';
+
+    if (settings.globalRemoteMode) {
+        var tab = document.getElementById('empTabAtt');
+        if (tab) tab.style.display = 'flex';
+    } else if (typeof TG_USER !== 'undefined' && TG_USER) {
+        var tab = document.getElementById('empTabAtt');
+        if (tab) tab.style.display = (TG_USER.workMode === 'remote') ? 'flex' : 'none';
+        if (TG_USER.workMode !== 'remote' && window.location.hash === '#att') window.location.hash = '';
+    }
+};
+
+function esc(s){ return (s||'').replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+function badgeReq(s){
+    var cls = s === 'approved' ? 'badge-approved' : (s === 'rejected' ? 'badge-rejected' : 'badge-pending');
+    var lbl = s === 'approved' ? 'موافق عليه' : (s === 'rejected' ? 'مرفوض' : 'قيد المراجعة');
+    return '<span class="badge ' + cls + '">' + lbl + '</span>';
+}
+function empGo(id, el, force) {
+    // تم إزالة فحص النص غير المحفوظ لتجنب الإزعاج
+    document.querySelectorAll('.emp-tab').forEach(function(t){t.classList.remove('a');});
+    document.querySelectorAll('.emp-pg').forEach(function(p){p.classList.remove('a');});
+    if(el)el.classList.add('a');
+    document.getElementById('epg-'+id).classList.add('a');
+    
+    // Reset global table filter
+    var gf = document.getElementById("globalTableFilter");
+    if(gf) { gf.value = ""; if(typeof tgFilterVisibleTables==='function') tgFilterVisibleTables(""); }
+    
+    if(id==='proj' && window._currentProjectIds && TG_USER){
+        var seenProjects = JSON.parse(localStorage.getItem('seen_projects_'+TG_USER.uid) || '[]');
+        window._currentProjectIds.forEach(function(pid){
+            if(seenProjects.indexOf(pid)===-1) seenProjects.push(pid);
+        });
+        localStorage.setItem('seen_projects_'+TG_USER.uid, JSON.stringify(seenProjects));
+        updateProjBadge(0);
+    }
+    if(id==='tasks' && window._currentTaskIds && TG_USER){
+        var seenTasks = JSON.parse(localStorage.getItem('seen_tasks_'+TG_USER.uid) || '[]');
+        window._currentTaskIds.forEach(function(tid){
+            if(seenTasks.indexOf(tid)===-1) seenTasks.push(tid);
+        });
+        localStorage.setItem('seen_tasks_'+TG_USER.uid, JSON.stringify(seenTasks));
+        updateTasksBadge(0);
+    }
+}
+
+function updateProjBadge(n) {
+    var el = document.getElementById('proj-badge');
+    if (!el) return;
+    if (n > 0) {
+        el.style.display = 'inline-block';
+        el.textContent = n;
+    } else {
+        el.style.display = 'none';
+        el.textContent = '0';
+    }
+}
+
+function updateTasksBadge(n) {
+    var el = document.getElementById('tasks-badge');
+    if (!el) return;
+    if (n > 0) {
+        el.style.display = 'inline-block';
+        el.textContent = n;
+    } else {
+        el.style.display = 'none';
+        el.textContent = '0';
+    }
+}
+
+function playTaskProjNotification() {
+    try {
+        var ctx = window._tgAudioCtx || new (window.AudioContext || window.webkitAudioContext)();
+        window._tgAudioCtx = ctx;
+        if (ctx.state === 'suspended') ctx.resume();
+        var now = ctx.currentTime;
+        
+        var toneFn = typeof _tgTone === 'function' ? _tgTone : function(c, freq, start, dur, vol) {
+            var osc = c.createOscillator(), gain = c.createGain();
+            osc.type = 'sine'; osc.frequency.value = freq;
+            gain.gain.setValueAtTime(0.0001, start);
+            gain.gain.linearRampToValueAtTime(vol, start + 0.012);
+            gain.gain.exponentialRampToValueAtTime(0.0001, start + dur);
+            osc.connect(gain); gain.connect(c.destination);
+            osc.start(start); osc.stop(start + dur + 0.03);
+        };
+        
+        // A pleasant double note chime (C5 then G5)
+        toneFn(ctx, 523.25, now, 0.15, 0.15);
+        toneFn(ctx, 783.99, now + 0.12, 0.25, 0.15);
+        
+    } catch(e) {
+        console.error("Audio error:", e);
+    }
+}
+
+var _projectsUnsub = null;
+function loadMyProjects(){
+    if(_projectsUnsub) { 
+        // Already listening — just refresh the box reference in case DOM was re-rendered
+        return; 
+    }
+    var isInitialProjects = true;
+    var box = document.getElementById('myProjectsList');
+    _projectsUnsub = db.collection('projects').where('assignees','array-contains',TG_USER.uid)
+        .onSnapshot(function(snap){
+            if(snap.empty){
+                box.innerHTML='<div class="empty-hint">لا توجد مشاريع مُسندة إليك حالياً.</div>';
+                updateProjBadge(0);
+                window._currentProjectIds = [];
+                isInitialProjects = false;
+                return;
+            }
+            var projects=snap.docs.map(function(d){return Object.assign({id:d.id},d.data());});
+            var proms=projects.map(function(p){
+                return db.collection('projectComments').where('projectId','==',p.id).get().then(function(csnap){
+                    p.comments=csnap.docs.map(function(d){return Object.assign({id:d.id},d.data());})
+                        .sort(function(a,b){
+                            var am=(a.createdAt&&a.createdAt.toMillis)?a.createdAt.toMillis():0;
+                            var bm=(b.createdAt&&b.createdAt.toMillis)?b.createdAt.toMillis():0;
+                            return am-bm;
+                        });
+                    return p;
+                });
+            });
+            Promise.all(proms).then(function(projectsList){
+                renderProjectsHtml(projectsList);
+                
+                var currentIds = projectsList.map(function(p){ return p.id; });
+                window._currentProjectIds = currentIds;
+                
+                var seenProjects = JSON.parse(localStorage.getItem('seen_projects_'+TG_USER.uid) || '[]');
+                var isTabActive = document.getElementById('epg-proj').classList.contains('a');
+                
+                if(isTabActive){
+                    currentIds.forEach(function(id){
+                        if(seenProjects.indexOf(id)===-1) seenProjects.push(id);
+                    });
+                    localStorage.setItem('seen_projects_'+TG_USER.uid, JSON.stringify(seenProjects));
+                }
+                
+                var unseenCount = 0;
+                currentIds.forEach(function(id){
+                    var p = projectsList.find(function(proj){ return proj.id === id; });
+                    if(seenProjects.indexOf(id)===-1 && p.createdByUid!==TG_USER.uid){
+                        unseenCount++;
+                    }
+                });
+                
+                if(!isInitialProjects){
+                    var hasNewProj = false;
+                    snap.docChanges().forEach(function(change){
+                        if(change.type==='added'){
+                            var pData = change.doc.data();
+                            if(pData.createdByUid!==TG_USER.uid){
+                                hasNewProj = true;
+                            }
+                        }
+                    });
+                    if(hasNewProj){
+                        playTaskProjNotification();
+                    }
+                }
+                
+                updateProjBadge(unseenCount);
+                isInitialProjects = false;
+            });
+        }, function(err){
+            box.innerHTML='<div class="empty-hint" style="color:var(--no)">تعذر تحميل المشاريع: '+esc(err.message)+'</div>';
+        });
+}
+
+function renderProjectsHtml(projects){
+    var box = document.getElementById('myProjectsList');
+    var label = document.getElementById('projCountLabel');
+    if(label) label.textContent = projects.length + ' مشروع';
+    if(!projects.length){
+        box.innerHTML='<div class="empty-hint">لا توجد مشاريع مُسندة إليك حالياً.</div>';
+        return;
+    }
+    // Store for detail view
+    window._projectsData = projects;
+    var h = '<div class="emp-proj-grid">';
+    projects.forEach(function(p){
+        var pm = (p.progressMap && p.progressMap[TG_USER.uid]) || {progress:0, status:'لم يبدأ', note:''};
+        var prog = pm.progress || 0;
+        var mine = (p.createdByUid === TG_USER.uid);
+        var isCompleted = (p.status === 'مكتمل') || (pm.status === 'مكتمل');
+        // Stripe color by priority
+        var stripeColor = p.priority === 'عالية' ? 'linear-gradient(90deg,var(--no),#e87272)'
+            : p.priority === 'منخفضة' ? 'linear-gradient(90deg,var(--ok),#40c674)'
+            : 'linear-gradient(90deg,var(--nv),var(--gd))';
+        // تمييز المشاريع ذات الملاحظات/التعليقات
+        var hasComments = (p.comments && p.comments.length > 0);
+        var commentBadge = hasComments
+            ? '<span style="background:var(--no);color:#fff;border-radius:12px;padding:1px 7px;font-size:9px;font-weight:800;margin-right:4px">💬 '+p.comments.length+'</span>'
+            : '';
+        // بطاقة مكتملة بتصميم مختلف
+        var cardStyle = isCompleted ? 'opacity:.7;border:1.5px solid var(--ok)' : '';
+        
+        var pVal = p.priority === 'عالية' ? 3 : (p.priority === 'متوسطة' ? 2 : 1);
+        var sVal = isCompleted ? 3 : (pm.status === 'متوقف' ? 1 : 2);
+        var dVal = (p.createdAt && p.createdAt.toMillis) ? p.createdAt.toMillis() : ((p.createdAt && new Date(p.createdAt).getTime()) || 0);
+        var dlVal = p.deadline ? new Date(p.deadline).getTime() : 9999999999999;
+
+        h += '<div class="emp-proj-card" onclick="openProjectDetail(\''+p.id+'\')" style="'+cardStyle+'" data-prio="'+pVal+'" data-status="'+sVal+'" data-date="'+dVal+'" data-deadline="'+dlVal+'">';
+        h += '<div class="emp-proj-card-stripe" style="background:'+(isCompleted?'linear-gradient(90deg,var(--ok),#40c674)':stripeColor)+'"></div>';
+        h += '<div class="emp-proj-card-top">';
+        h += '<div class="emp-proj-card-title">'+esc(p.title||'بدون عنوان')+(mine?' <span class="badge" style="background:var(--gd);color:#1b2a4a;font-size:8.5px">مشروعي</span>':'')+(isCompleted?' <span style="background:var(--ok);color:#fff;border-radius:12px;padding:1px 7px;font-size:9px;font-weight:800">✅ مكتمل</span>':'')+commentBadge+'</div>';
+        if(p.description) h += '<div class="emp-proj-card-desc">'+esc(p.description)+'</div>';
+        
+        // Progress Section
+        h += '<div style="margin-top:auto">';
+        h += '<div style="display:flex;justify-content:space-between;font-size:11px;font-weight:800;margin-bottom:5px;color:var(--nv)"><span>التقدم</span><span>'+prog+'%</span></div>';
+        h += '<div class="emp-proj-card-bar"><div class="emp-proj-card-bar-in" style="width:'+prog+'%"></div></div>';
+        h += '</div>';
+        h += '</div>'; // end top
+        
+        h += '<div class="emp-proj-card-footer">';
+        h += '<span>'+(p.priority?'<span class="tg-tag tg-tag-prio-'+(p.priority==='عالية'?'high':(p.priority==='منخفضة'?'low':'med'))+'">'+p.priority+'</span>':'')+'</span>';
+        h += '<span>'+(p.deadline ? '📅 ' + p.deadline : 'بلا موعد')+'</span>';
+        h += '</div>';
+        h += '</div>';
+    });
+    h += '</div>';
+    box.innerHTML = h;
+}
+function openProjectDetail(pid){
+    var p = window._projectsData && window._projectsData.find(function(x){ return x.id===pid; });
+    if(!p) return;
+    var pm = (p.progressMap && p.progressMap[TG_USER.uid]) || {progress:0, status:'لم يبدأ', note:''};
+    var prog = pm.progress || 0;
+    var mine = (p.createdByUid === TG_USER.uid);
+
+    document.getElementById('projListView').style.display = 'none';
+    var dv = document.getElementById('projDetailView');
+    dv.style.display = 'block';
+
+    var h = '<div class="emp-proj-detail">';
+    // Back button
+    h += '<button class="emp-proj-back" onclick="closeProjectDetail()">&#x2B05; العودة لقائمة المشاريع</button>';
+    // Header
+    h += '<div class="emp-proj-detail-header">';
+    h += '<div class="emp-proj-detail-title">'+esc(p.title||'بدون عنوان')+(mine?' <span class="badge" style="background:rgba(201,162,39,.25);color:#fde47f;font-size:9px">مشروعي</span>':'')+'</div>';
+    if(p.description) h += '<div class="emp-proj-detail-desc">'+esc(p.description)+'</div>';
+    h += '<div class="emp-proj-detail-tags">'+projectTagsHtml(p)+'</div>';
+    if(p.createdBy) h += '<div style="font-size:11px;color:var(--tx3);margin-top:6px">👤 أُنشئ بواسطة: <strong>'+esc(p.createdBy)+'</strong>'+(p.createdByRole?' ('+esc(p.createdByRole)+')':'')+'</div>';
+    if(p.fileUrl){
+        var fType = p.fileType || '';
+        h += '<div style="margin-top:12px;padding-top:12px;border-top:1px dashed var(--bd)">';
+        if(fType.indexOf('image/')===0){
+            h += '<a href="'+p.fileUrl+'" target="_blank"><img src="'+p.fileUrl+'" style="max-width:100%;max-height:200px;border-radius:6px;display:block"></a>';
+        } else if(fType.indexOf('video/')===0){
+            h += '<video src="'+p.fileUrl+'" controls style="max-width:100%;max-height:200px;border-radius:6px"></video>';
+        } else {
+            h += '<a href="'+p.fileUrl+'" target="_blank" style="color:var(--nv);font-weight:700;text-decoration:underline;display:inline-block">📎 '+esc(p.fileName||'ملف مرفق')+'</a>';
+        }
+        h += '</div>';
+    }
+    if(p.linkUrl){
+        h += '<div style="margin-top:8px"><a href="'+esc(p.linkUrl)+'" target="_blank" style="color:var(--gd);font-weight:700;text-decoration:underline;font-size:13px">🔗 رابط خارجي للمشروع</a></div>';
+    }
+    h += '</div>'; // end header
+
+    // Section 1: Progress
+    h += '<div class="proj-sec">';
+    h += '<div class="proj-sec-title">📊 تقدّمي في المشروع</div>';
+    
+    h += '<div class="prog-ui-container">';
+    h += '<div class="prog-ui-bg-icon">📊</div>';
+    h += '<span class="prog-ui-val" id="dpv_'+p.id+'">'+prog+'%</span>';
+    h += '<span class="prog-ui-lbl">نسبة الإنجاز الحالية</span>';
+    h += '<input type="range" class="modern-slider" min="0" max="100" value="'+prog+'" id="dpr_'+p.id+'" oninput="document.getElementById(\'dpv_'+p.id+'\').textContent=this.value+\'%\';document.getElementById(\'dpbar_fill_'+p.id+'\').style.width=this.value+\'%\'">';
+    h += '<div class="prog-bar-container"><div class="prog-bar-fill" id="dpbar_fill_'+p.id+'" style="width:'+prog+'%"></div></div>';
+    h += '</div>';
+
+    h += '<div class="modern-card">';
+    h += '<div class="fr fr2">';
+    h += '<div class="fg"><label>الحالة الحالية</label><select id="dps_'+p.id+'" style="height:42px;border-radius:10px">'+['لم يبدأ','جاري العمل','مكتمل'].map(function(s){return '<option'+(pm.status===s?' selected':'')+'>'+s+'</option>';}).join('')+'</select></div>';
+    h += '<div class="fg"><label>ملاحظة عن الإنجاز (اختياري)</label><input type="text" id="dpn_'+p.id+'" style="height:42px;border-radius:10px" placeholder="مثال: انتهيت من التصاميم الأولية..." value="'+esc(pm.note||'')+'"></div>';
+    h += '</div>';
+    h += '<button class="bt bt-p" style="margin-top:20px;width:100%;height:48px;font-size:15px;font-weight:800;box-shadow:0 10px 20px rgba(15,23,42,0.15)" onclick="saveProjDetailProgress(\''+p.id+'\')">💾 حفظ تحديث التقدم</button>';
+    h += '<div id="dpmsg_'+p.id+'" style="font-size:12px;margin-top:12px;text-align:center;font-weight:600"></div>';
+    h += '</div>';
+    h += '</div>'; // end proj-sec
+
+    // Section 2: Chat / Discussion
+    h += '<div class="proj-sec">';
+    h += '<div class="proj-sec-title">💬 النقاش والملاحظات</div>';
+    h += projectChatHtml(p.id, 'empChatLog_'+p.id, 'empChatInput_'+p.id);
+    h += '</div>';
+
+    // Section 3: Manage (mine only) - Removed due to Firestore rules (employees cannot edit/delete projects)
+
+    h += '</div>'; // end emp-proj-detail
+    dv.innerHTML = h;
+    renderProjectChat(p.id, p.comments||[], 'empChatLog_'+p.id);
+}
+function closeProjectDetail(){
+    document.getElementById('projDetailView').style.display = 'none';
+    document.getElementById('projDetailView').innerHTML = '';
+    document.getElementById('projListView').style.display = 'block';
+}
+function saveProjDetailProgress(id){
+    var prog = parseInt(document.getElementById('dpr_'+id).value)||0;
+    var status = document.getElementById('dps_'+id).value;
+    var note = document.getElementById('dpn_'+id).value;
+    var msg = document.getElementById('dpmsg_'+id);
+    msg.style.color='var(--tx3)'; msg.textContent='⏳ جارٍ الحفظ...';
+    
+    // Check if late on completion
+    var isLate = false;
+    if(status === 'مكتمل'){
+        var p = window._projectsData && window._projectsData.find(function(x){ return x.id===id; });
+        if(p && p.deadline) {
+            var dl = new Date(p.deadline);
+            dl.setHours(23,59,59,999);
+            if(new Date() > dl) isLate = true;
+        }
+    }
+
+    var upd = {}; upd['progressMap.'+TG_USER.uid] = {progress:prog, status:status, note:note, updatedAt:new Date()};
+    db.collection('projects').doc(id).update(upd)
+        .then(function(){ 
+            msg.style.color='var(--ok)'; msg.textContent='✅ تم حفظ التحديث.'; 
+            if(status === 'مكتمل' && typeof tgCelebrate === 'function') tgCelebrate(isLate);
+            // إشعار الأدمن
+            db.collection('projects').doc(id).get().then(function(doc){
+                var pTitle = doc.exists ? doc.data().title : 'مشروع';
+                tgNotifyAdmins('📈 تحديث إنجاز مشروع', (TG_USER.name||'موظف') + ' حدث تقدمه في: ' + pTitle + ' إلى ' + prog + '%', 'project-progress');
+            }).catch(function(){});
+        })
+        .catch(function(e){ msg.style.color='var(--no)'; msg.textContent='❌ '+e.message; });
+}
+// saveMyProjDetailEdit removed
+
+
+// legacy employee project creation/editing functions removed
+function saveProjectProgress(id){
+    var progress=parseInt(document.getElementById('pr_'+id).value,10)||0;
+    var status=document.getElementById('ps_'+id).value;
+    var note=document.getElementById('pn_'+id).value||'';
+    var msg=document.getElementById('pmsg_'+id);
+    var field={}; field['progressMap.'+TG_USER.uid]={progress:progress,status:status,note:note,updatedAt:new Date()};
+    db.collection('projects').doc(id).update(field).then(function(){
+        msg.style.color='var(--ok)'; msg.textContent='✅ تم الحفظ';
+        if(status === 'مكتمل' && typeof tgCelebrate === 'function') tgCelebrate();
+        setTimeout(function(){msg.textContent='';},2500);
+        // إشعار الأدمن
+        db.collection('projects').doc(id).get().then(function(doc){
+            var pTitle = doc.exists ? doc.data().title : 'مشروع';
+            tgNotifyAdmins('📊 تحديث حالة مشروع', (TG_USER.name||'موظف') + ' حدث حالة ' + pTitle + ' إلى: ' + status, 'project-status');
+        }).catch(function(){});
+    }).catch(function(err){ msg.style.color='var(--no)'; msg.textContent='❌ '+err.message; });
+}
+
+// ── لوحة الإنجازات ────────────────────────────────────────────────────────
+var _achUnsub = null;
+var _achFilter = 'mine';
+
+function loadMyAchievements(){
+    if(_achUnsub) _achUnsub();
+    var box=document.getElementById('myAchList');
+    
+    loadTeammates(function() {
+        var namesMap = {};
+        if(_teammatesCache) _teammatesCache.forEach(function(e){ namesMap[e.id] = e.name; });
+        namesMap[TG_USER.uid] = TG_USER.name;
+
+        _achUnsub = db.collection('achievements').orderBy('date', 'desc').limit(50).onSnapshot(function(snap){
+            window._lastAchSnap = snap;
+            renderAchievements(snap, namesMap);
+        }, function(err){ 
+            if(box) box.innerHTML='<div class="empty-hint" style="color:var(--no)">تعذر التحميل: '+esc(err.message)+'</div>'; 
+        });
+    });
+}
+
+function renderAchievements(snap, namesMap) {
+    var box=document.getElementById('myAchList');
+    if(!box) return;
+    if(!snap || snap.empty){ 
+        box.innerHTML='<div class="empty-hint">لا توجد إنجازات مسجّلة بعد. كن أول من يضيف إنجازاً!</div>'; 
+        return; 
+    }
+
+    var h='<div style="display:flex;flex-direction:column;gap:16px">';
+    var count = 0;
+    
+    snap.forEach(function(doc){
+        var a = doc.data();
+        var isMine = a.uid === TG_USER.uid;
+        
+        // Filter based on selected tab
+        if(_achFilter === 'mine' && !isMine) return;
+        if(_achFilter === 'team' && isMine) return;
+        
+        count++;
+        var reactions = a.reactions || {};
+        var displayName = a.userName || namesMap[a.uid] || 'موظف';
+        var isAnyAdmin = (TG_USER.role === 'admin' || TG_USER.role === 'tech_admin');
+        var canDelete = isAnyAdmin || isMine;
+        
+        h+='<div class="ac-row" style="border-right:4px solid '+(isMine?'var(--ok)':'var(--gd)')+'">'+
+           '<div style="display:flex;justify-content:space-between;align-items:flex-start">'+
+           '<div><div style="font-weight:700;color:var(--gd);font-size:13px;margin-bottom:2px">👤 '+displayName+(isMine?' (أنت)':'')+'</div>'+
+           '<div class="ac-t" style="font-size:15px">🏆 '+esc(a.title)+'</div></div>'+
+           '<div style="display:flex;gap:4px">'+
+             (isMine?'<button class="bt bt-o" style="padding:2px 8px;font-size:10px" onclick="printAchievementDoc(TG_USER,{title:\''+esc(a.title)+'\',description:\''+esc(a.description||'')+'\',date:\''+esc(a.date||'')+'\'})">🖨 طباعة</button>':'')+
+             (canDelete?'<button class="bt bt-o" style="padding:2px 8px;font-size:10px;border-color:var(--no);color:var(--no)" onclick="deleteAchievement(\''+doc.id+'\')">🗑 حذف</button>':'')+
+           '</div>'+
+           '</div>'+
+           (a.description?'<div class="ac-meta">'+esc(a.description)+'</div>':'')+
+           '<div style="display:flex;justify-content:space-between;align-items:center;margin-top:10px">'+
+             '<div style="font-size:10px;color:var(--tx3)">📅 '+esc(a.date||'')+'</div>'+
+             '<div class="ac-reactions" style="display:flex;gap:6px;align-items:center">'+
+               renderReactions(doc.id, reactions, namesMap)+
+               '<div class="reaction-picker" style="position:relative">'+
+                 '<button class="bt-reaction-add" onclick="toggleEmojiPicker(\''+doc.id+'\')">➕</button>'+
+                 '<div id="picker-'+doc.id+'" class="emoji-picker-popup">'+
+                   ['👏','🔥','⭐','🙌','💪','❤️'].map(e => '<span onclick="addReaction(\''+doc.id+'\',\''+e+'\')">'+e+'</span>').join('')+
+                 '</div>'+
+               '</div>'+
+             '</div>'+
+           '</div>'+
+           '</div>';
+    });
+    
+    if(count === 0) {
+        var msg = _achFilter === 'mine' ? 'لم تقم بإضافة أي إنجازات بعد.' : 'لا توجد إنجازات من الزملاء حالياً.';
+        box.innerHTML = '<div class="empty-hint">' + msg + '</div>';
+    } else {
+        h+='</div>';
+        box.innerHTML=h;
+    }
+}
+
+function switchAchFilter(f) {
+    _achFilter = f;
+    var tMine = document.getElementById('achTabMine');
+    var tTeam = document.getElementById('achTabTeam');
+    if(tMine) tMine.classList.toggle('active', f === 'mine');
+    if(tTeam) tTeam.classList.toggle('active', f === 'team');
+    
+    // Use cached snapshot to re-render immediately
+    if(window._lastAchSnap) {
+        var namesMap = {};
+        if(_teammatesCache) _teammatesCache.forEach(function(e){ namesMap[e.id] = e.name; });
+        namesMap[TG_USER.uid] = TG_USER.name;
+        renderAchievements(window._lastAchSnap, namesMap);
+    } else {
+        loadMyAchievements();
+    }
+}
+
+function renderReactions(docId, reactions, namesMap) {
+    var h = '';
+    for (var emoji in reactions) {
+        var uids = reactions[emoji];
+        var count = uids.length;
+        if (count > 0) {
+            var reacted = uids.indexOf(TG_USER.uid) > -1;
+            var hoverNames = uids.map(uid => namesMap[uid] || 'موظف').join('، ');
+            h += '<div class="reaction-chip '+(reacted?'active':'')+'" title="'+esc(hoverNames)+'" onclick="addReaction(\''+docId+'\',\''+emoji+'\')">'+
+                 emoji + ' <span class="count">' + count + '</span>'+
+                 '</div>';
+        }
+    }
+    return h;
+}
+
+function toggleEmojiPicker(id) {
+    var p = document.getElementById('picker-'+id);
+    var all = document.querySelectorAll('.emoji-picker-popup');
+    all.forEach(el => { if(el.id !== 'picker-'+id) el.classList.remove('show'); });
+    p.classList.toggle('show');
+}
+
+function addReaction(docId, emoji) {
+    var docRef = db.collection('achievements').doc(docId);
+    db.runTransaction(function(transaction) {
+        return transaction.get(docRef).then(function(doc) {
+            if (!doc.exists) return;
+            var reactions = doc.data().reactions || {};
+            if (!reactions[emoji]) reactions[emoji] = [];
+            
+            var idx = reactions[emoji].indexOf(TG_USER.uid);
+            if (idx > -1) {
+                reactions[emoji].splice(idx, 1);
+            } else {
+                reactions[emoji].push(TG_USER.uid);
+            }
+            transaction.update(docRef, { reactions: reactions });
+        });
+    }).then(function() {
+        document.querySelectorAll('.emoji-picker-popup').forEach(el => el.classList.remove('show'));
+    }).catch(function(err) { console.error("Reaction failed: ", err); });
+}
+
+function addAchievement(){
+    var title=(document.getElementById('achTitle').value||'').trim();
+    var date=document.getElementById('achDate').value||new Date().toISOString().split('T')[0];
+    var desc=(document.getElementById('achDesc').value||'').trim();
+    var msg=document.getElementById('achMsg');
+    if(!title){ msg.style.color='var(--no)'; msg.textContent='من فضلك اكتب عنوان الإنجاز.'; return; }
+    db.collection('achievements').add({
+        uid:TG_USER.uid, 
+        userName:TG_USER.name,
+        title:title, 
+        description:desc, 
+        date:date,
+        reactions: {},
+        createdAt: new Date()
+    }).then(function(){
+        msg.style.color='var(--ok)'; msg.textContent='✅ تمت الإضافة';
+        document.getElementById('achTitle').value=''; document.getElementById('achDesc').value='';
+        showCelebration();
+        sendAchievementNotification(title);
+        loadMyAchievements();
+    }).catch(function(err){ msg.style.color='var(--no)'; msg.textContent='❌ '+err.message; });
+}
+
+function deleteAchievement(id) {
+    if(!confirm('هل أنت متأكد من حذف هذا الإنجاز؟')) return;
+    db.collection('achievements').doc(id).delete()
+        .catch(function(err){ alert('❌ فشل الحذف: ' + err.message); });
+}
+
+function sendAchievementNotification(achTitle) {
+    loadTeammates(function() {
+        if (!_teammatesCache) return;
+        _teammatesCache.forEach(function(emp) {
+            db.collection('notifications').add({
+                toUid: emp.id,
+                fromUid: TG_USER.uid,
+                fromName: TG_USER.name,
+                title: 'إنجاز جديد! 🏆',
+                body: 'قام ' + TG_USER.name + ' بإضافة إنجاز: ' + achTitle,
+                type: 'achievement',
+                read: false,
+                createdAt: firebase.firestore.FieldValue.serverTimestamp()
+            });
+        });
+        // إشعار للأدمن أيضاً
+        tgNotifyAdmins('🏆 إنجاز جديد لموظف', 'قام الموظف ' + TG_USER.name + ' بإضافة إنجاز جديد: ' + achTitle, 'achievement-new');
+    });
+}
+
+function showCelebration() {
+    const duration = 3000;
+    const end = Date.now() + duration;
+    const colors = ['#c9a227', '#ffffff', '#22c55e', '#3b82f6'];
+
+    (function frame() {
+        confetti({
+            particleCount: 5,
+            angle: 60,
+            spread: 55,
+            origin: { x: 0 },
+            colors: colors
+        });
+        confetti({
+            particleCount: 5,
+            angle: 120,
+            spread: 55,
+            origin: { x: 1 },
+            colors: colors
+        });
+
+        if (Date.now() < end) {
+            requestAnimationFrame(frame);
+        }
+    }());
+}
+
+
+// ── مهامي ───────────────────────────────────────────────────────────
+var _tasksUnsub = null;
+var _teammatesCache = null;
+function loadTeammates(cb){
+    // جلب جميع الموظفين والمديرين لضمان وصول الإشعارات للجميع وربط الأسماء بشكل صحيح
+    db.collection('users').get().then(function(snap){
+        _teammatesCache = [];
+        snap.forEach(function(d){
+            var u = d.data();
+            _teammatesCache.push({id:d.id, name:u.name, role:u.role});
+        });
+        if(cb) cb();
+    }).catch(function(err){ console.error("Error loading teammates:", err); if(cb) cb(); });
+}
+
+function loadMyTasks(){
+    loadTeammates(function(){
+        if(_tasksUnsub) return;
+    var isInitialTasks = true;
+    var box = document.getElementById('myTasksList');
+    _tasksUnsub = db.collection('tasks').where('assignedTo','==',TG_USER.uid)
+        .onSnapshot(function(snap){
+            if(snap.empty){
+                box.innerHTML='<div class="empty-hint">لا توجد مهام مُكلَّفة إليك حالياً.</div>';
+                updateTasksBadge(0);
+                window._currentTaskIds = [];
+                isInitialTasks = false;
+                return;
+            }
+            var rows=[];
+            snap.forEach(function(d){rows.push(Object.assign({id:d.id},d.data()));});
+            rows.sort(function(a,b){
+                var am=(a.createdAt&&a.createdAt.toMillis)?a.createdAt.toMillis():0;
+                var bm=(b.createdAt&&b.createdAt.toMillis)?b.createdAt.toMillis():0;
+                return bm-am;
+            });
+            
+            renderTasksHtml(rows);
+            
+            var currentIds = rows.map(function(t){ return t.id; });
+            window._currentTaskIds = currentIds;
+            
+            var seenTasks = JSON.parse(localStorage.getItem('seen_tasks_'+TG_USER.uid) || '[]');
+            var isTabActive = document.getElementById('epg-tasks').classList.contains('a');
+            
+            if(isTabActive){
+                currentIds.forEach(function(id){
+                    if(seenTasks.indexOf(id)===-1) seenTasks.push(id);
+                });
+                localStorage.setItem('seen_tasks_'+TG_USER.uid, JSON.stringify(seenTasks));
+            }
+            
+            var unseenCount = 0;
+            currentIds.forEach(function(id){
+                if(seenTasks.indexOf(id)===-1) unseenCount++;
+            });
+            
+            if(!isInitialTasks){
+                var hasNewTask = false;
+                snap.docChanges().forEach(function(change){
+                    if(change.type==='added') hasNewTask = true;
+                });
+                if(hasNewTask){
+                    playTaskProjNotification();
+                }
+            }
+            
+            updateTasksBadge(unseenCount);
+            isInitialTasks = false;
+        }, function(err){
+            box.innerHTML='<div class="empty-hint" style="color:var(--no)">تعذر تحميل المهام: '+esc(err.message)+'</div>';
+        });
+    });
+}
+
+function renderTasksHtml(rows){
+    var box=document.getElementById('myTasksList');
+
+    function taskCard(t){
+        var attachHtml = '';
+        if(t.fileUrl && t.fileType){
+            if(t.fileType.indexOf('image/')===0){
+                attachHtml = '<div style="margin-top:6px"><a href="'+t.fileUrl+'" target="_blank"><img src="'+t.fileUrl+'" style="max-width:140px;max-height:100px;border-radius:6px;display:block"></a></div>';
+            } else if(t.fileType.indexOf('video/')===0){
+                attachHtml = '<div style="margin-top:6px"><video src="'+t.fileUrl+'" controls style="max-width:180px;border-radius:6px"></video></div>';
+            } else {
+                attachHtml = '<div style="margin-top:6px"><a href="'+t.fileUrl+'" target="_blank" style="color:var(--nv);font-weight:700;text-decoration:underline">📎 '+esc(t.fileName||'ملف مرفق')+'</a></div>';
+            }
+        }
+        var isDone = t.status === 'مكتمل';
+        var isOverdue = t.deadline && !isDone && new Date(t.deadline) < new Date();
+        var cardStyle = isDone ? 'opacity:.65;border-right-color:var(--ok)' : (isOverdue ? 'border-right-color:var(--no)' : '');
+
+        var createdAtStr = '';
+        if(t.createdAt && typeof t.createdAt.toDate === 'function') {
+            var cd = t.createdAt.toDate();
+            createdAtStr = cd.toLocaleString('en-US', { hour12: true, year: 'numeric', month: 'numeric', day: 'numeric', hour: '2-digit', minute: '2-digit' }).replace('AM', 'ص').replace('PM', 'م');
+        } else if(t.createdAt) {
+            var cd = new Date(t.createdAt);
+            if(!isNaN(cd.getTime())) createdAtStr = cd.toLocaleString('en-US', { hour12: true, year: 'numeric', month: 'numeric', day: 'numeric', hour: '2-digit', minute: '2-digit' }).replace('AM', 'ص').replace('PM', 'م');
+        }
+
+        var historyHtml = '';
+        if(t.history && t.history.length > 0) {
+            historyHtml += '<div style="margin-top:10px;padding:8px;background:rgba(0,0,0,0.03);border-radius:6px;font-size:11px">';
+            historyHtml += '<div style="font-weight:700;color:var(--nv);margin-bottom:6px">📜 مسار المهمة:</div>';
+            t.history.forEach(function(hi){
+                if(hi.action === 'forwarded') {
+                    var dStr = hi.date ? new Date(hi.date).toLocaleString('en-US', { hour12: true, year: 'numeric', month: 'numeric', day: 'numeric', hour: '2-digit', minute: '2-digit' }).replace('AM', 'ص').replace('PM', 'م') : '';
+                    historyHtml += '<div style="margin-bottom:6px;padding-bottom:6px;border-bottom:1px solid var(--bd)">';
+                    historyHtml += '<div><span style="color:var(--gd);font-weight:700">من:</span> '+esc(hi.fromName)+' <span style="color:var(--gd);font-weight:700">إلى:</span> '+esc(hi.toName)+' <span style="color:var(--tx3);font-size:9.5px">('+dStr+')</span></div>';
+                    historyHtml += '<div style="margin-top:2px;color:var(--tx2)">💬 '+esc(hi.note)+'</div>';
+                    historyHtml += '</div>';
+                }
+            });
+            historyHtml += '</div>';
+        }
+
+        var pVal = t.priority === 'عالية' ? 3 : (t.priority === 'متوسطة' ? 2 : 1);
+        var sVal = t.status === 'مكتمل' ? 3 : (t.status === 'جاري العمل' ? 2 : 1);
+        var dVal = (t.createdAt && t.createdAt.toMillis) ? t.createdAt.toMillis() : ((t.createdAt && new Date(t.createdAt).getTime()) || 0);
+        var dlVal = t.deadline ? new Date(t.deadline).getTime() : 9999999999999;
+        var empVal = esc(t.assignedToName || '');
+
+        return '<div class="pj-row" style="'+cardStyle+'" data-prio="'+pVal+'" data-status="'+sVal+'" data-date="'+dVal+'" data-deadline="'+dlVal+'" data-emp="'+empVal+'" data-priority="'+esc(t.priority||'متوسطة')+'" data-taskstatus="'+(isDone?'مكتمل':(t.status||'لم يبدأ'))+'">'+
+            '<div class="pj-t">'+esc(t.title||'بدون عنوان')+
+            ' <span class="badge badge-prio"'+(isDone?' style="background:var(--ok);color:#fff"':'')+(isOverdue?' style="background:var(--no);color:#fff"':'')+'>'+esc(t.priority||'متوسطة')+'</span>'+
+            (isDone?' <span style="background:var(--ok);color:#fff;border-radius:10px;padding:1px 8px;font-size:9px;font-weight:800">✅ مكتملة</span>':'')+(isOverdue?' <span style="background:var(--no);color:#fff;border-radius:10px;padding:1px 8px;font-size:9px;font-weight:800">⏰ متأخرة</span>':'')+
+            '</div>'+
+            (t.description?'<div class="pj-meta">'+esc(t.description)+'</div>':'')+
+            (createdAtStr?'<div class="pj-meta" style="font-size:10.5px;color:var(--tx3);margin-top:2px">🕒 تاريخ الإنشاء: <strong>'+createdAtStr+'</strong></div>':'')+
+            (t.deadline?'<div class="pj-meta"'+(isOverdue?' style="color:var(--no);font-weight:700"':'')+'>📅 تاريخ التسليم: '+esc(t.deadline)+'</div>':'')+
+            (t.createdBy?'<div class="pj-meta" style="font-size:10.5px;color:var(--tx3);margin-top:2px">👤 أنشأها: <strong>'+esc(t.createdBy)+'</strong>'+(t.createdByRole?' <span style="opacity:.75">('+esc(t.createdByRole)+')</span>':'')+'</div>':'')+
+            attachHtml+
+            historyHtml+
+            (isDone?'<div style="font-size:11px;color:var(--ok);font-weight:700;margin-top:8px">✅ تم إنجاز هذه المهمة</div>':
+            '<div class="fg" style="max-width:220px;margin:8px 0"><label>حالة المهمة</label><select id="tks_'+t.id+'" onchange="saveTaskStatus(\''+t.id+'\')">'+
+            ['لم يبدأ','جاري العمل','متوقف','مكتمل'].map(function(s){return '<option'+(s===(t.status||'لم يبدأ')?' selected':'')+'>'+s+'</option>';}).join('')+
+            '</select></div>'+
+            '<button class="bt bt-p" onclick="saveTaskStatus(\''+t.id+'\')">💾 حفظ الحالة</button>'+
+            ' <span id="tkmsg_'+t.id+'" style="font-size:10.5px"></span>'+
+            '<div style="margin-top:12px;padding-top:12px;border-top:1px dashed var(--bd)">'+
+            '<div style="font-size:11px;font-weight:700;color:var(--nv);margin-bottom:6px">🔄 إرسال المهمة لزميل</div>'+
+            '<div class="fg" style="margin-bottom:8px"><label>اختر الزميل</label><select id="tkfwd_'+t.id+'"><option value="">-- اختر الزميل --</option>'+
+            (_teammatesCache||[]).map(function(emp){return '<option value="'+emp.id+'">'+esc(emp.name)+'</option>';}).join('')+
+            '</select></div>'+
+            '<div class="fg" style="margin-bottom:8px"><label>ماذا أنجزت؟ (ملاحظة للأدمن والزميل)</label><textarea id="tkfwd_note_'+t.id+'" rows="2" placeholder="اكتب ما أنجزته أو سبب الإرسال..."></textarea></div>'+
+            '<button class="bt bt-o" onclick="forwardTask(\''+t.id+'\')">📩 إرسال المهمة للزميل</button>'+
+            ' <span id="tkfwd_msg_'+t.id+'" style="font-size:10.5px"></span>'+
+            '</div>')+
+            '</div>';
+    }
+
+    if(!rows.length){
+        box.innerHTML = '<div class="empty-hint">لا توجد مهام مكلّفة إليك حالياً.</div>';
+    } else {
+        var h = '<div class="tasks-grid">';
+        rows.forEach(function(t){ h += taskCard(t); });
+        h += '</div>';
+        box.innerHTML = h;
+    }
+
+    tgUpdateEmpTaskTabCounts(rows);
+    tgApplyEmpTaskFilter();
+}
+
+
+window.updateTasksEmployeeSummary = function() {
+    var cards = document.querySelectorAll('#myTasksList .pj-row');
+    var total = 0, pending = 0, progress = 0, hold = 0, completed = 0, overdue = 0;
+
+    cards.forEach(function(card) {
+        if (card.style.display !== 'none') {
+            total++;
+            var cardStatus = card.getAttribute('data-taskstatus') || 'لم يبدأ';
+            var dlVal = card.getAttribute('data-deadline');
+            var deadlineTime = parseFloat(dlVal);
+            var isOD = deadlineTime && deadlineTime < 9999999999999 && deadlineTime < Date.now() && cardStatus !== 'مكتمل';
+
+            if (isOD) overdue++;
+            if (cardStatus === 'مكتمل') completed++;
+            else if (cardStatus === 'جاري العمل') progress++;
+            else if (cardStatus === 'متوقف') hold++;
+            else pending++;
+        }
+    });
+
+    var summaryBox = document.getElementById('tasksEmployeeSummary');
+    if (summaryBox) {
+        summaryBox.innerHTML =
+            '<div class="p-stat-box"><div class="p-stat-val">'+total+'</div><div class="p-stat-lbl">إجمالي مهامي</div></div>' +
+            '<div class="p-stat-box" style="border-right: 3px solid var(--gd)"><div class="p-stat-val" style="color:var(--gd)">'+pending+'</div><div class="p-stat-lbl">لم تبدأ</div></div>' +
+            '<div class="p-stat-box" style="border-right: 3px solid #3b82f6"><div class="p-stat-val" style="color:#3b82f6">'+progress+'</div><div class="p-stat-lbl">جاري العمل</div></div>' +
+            '<div class="p-stat-box" style="border-right: 3px solid #ef4444"><div class="p-stat-val" style="color:#ef4444">'+hold+'</div><div class="p-stat-lbl">متوقفة</div></div>' +
+            '<div class="p-stat-box" style="border-right: 3px solid var(--ok)"><div class="p-stat-val" style="color:var(--ok)">'+completed+'</div><div class="p-stat-lbl">مكتملة</div></div>' +
+            '<div class="p-stat-box" style="border-right: 3px solid var(--no)"><div class="p-stat-val" style="color:var(--no)">'+overdue+'</div><div class="p-stat-lbl">متأخرة ⏰</div></div>';
+    }
+};
+function saveTaskStatus(id){
+    var status=document.getElementById('tks_'+id).value;
+    var msg=document.getElementById('tkmsg_'+id);
+    msg.style.color='var(--tx3)'; msg.textContent='⏳ جارٍ الحفظ...';
+
+    // Check if late on completion
+    var isLate = false;
+    db.collection('tasks').doc(id).get().then(function(doc){
+        var t = doc.data();
+        if(status === 'مكتمل' && t && t.deadline){
+            var dl = new Date(t.deadline);
+            dl.setHours(23,59,59,999);
+            if(new Date() > dl) isLate = true;
+        }
+        return db.collection('tasks').doc(id).update({status:status, statusUpdatedAt: new Date()});
+    }).then(function(){
+        msg.style.color='var(--ok)'; msg.textContent='✅ تم الحفظ';
+        // إشعار للأدمن
+        db.collection('tasks').doc(id).get().then(function(doc){
+            var tName = doc.exists ? doc.data().title : 'مهمة';
+            tgNotifyAdmins('✅ تحديث حالة مهمة', 'قام ' + (TG_USER.name||'الموظف') + ' بتحديث حالة المهمة (' + tName + ') إلى: ' + status, 'task-status');
+        }).catch(function(){});
+
+        // Push notification عند اكتمال المهمة
+        if(status === 'مكتمل'){
+            if(typeof tgCelebrate === 'function') tgCelebrate(isLate);
+            tgShowNotification('✅ مهمة مكتملة', 'أنهيت مهمة بنجاح! أحسنت 🎉');
+        }
+        setTimeout(function(){if(msg)msg.textContent='';},2500);
+    }).catch(function(err){ msg.style.color='var(--no)'; msg.textContent='❌ '+err.message; });
+}
+
+function tgCelebrate(isLate) {
+    // Standard confetti for all completions
+    if(typeof confetti === 'function') {
+        confetti({ particleCount: 100, spread: 70, origin: { y: 0.6 }, zIndex: 10000 });
+    }
+
+    // Special zaghrouta if late
+    if(isLate) {
+        var wrap = document.getElementById('zaghroutaWrap');
+        var msg = document.getElementById('zaghroutaMsg');
+        if(!wrap) return;
+
+        // Sound effect (Zaghrouta) - using a short audio clip
+        // Note: Browsers may block autoplay if no user interaction occurred, 
+        // but this is triggered by a button click, so it should be fine.
+        var audio = new Audio('https://www.soundjay.com/buttons/sounds/button-3.mp3'); // Fallback placeholder
+        // Trying a more thematic sound if possible or just visual if sound fails
+        audio.volume = 0.3;
+        audio.play().catch(function(){});
+
+        wrap.classList.add('show');
+        setTimeout(function(){
+            wrap.classList.remove('show');
+        }, 3000);
+    }
+}
+
+function forwardTask(id) {
+    var mateId = document.getElementById('tkfwd_'+id).value;
+    var note = document.getElementById('tkfwd_note_'+id).value;
+    var msg = document.getElementById('tkfwd_msg_'+id);
+    if(!mateId) { msg.style.color='var(--no)'; msg.textContent='❌ يرجى اختيار زميل'; return; }
+    if(!note.trim()) { msg.style.color='var(--no)'; msg.textContent='❌ يرجى كتابة ما أنجزته'; return; }
+    
+    msg.style.color='var(--tx3)'; msg.textContent='⏳ جارٍ الإرسال...';
+    
+    var mateName = '';
+    var mate = _teammatesCache.find(function(m){ return m.id === mateId; });
+    if(mate) mateName = mate.name;
+
+    var historyEntry = {
+        action: 'forwarded',
+        fromUid: TG_USER.uid,
+        fromName: document.getElementById('empWhoName').innerText || 'موظف',
+        toUid: mateId,
+        toName: mateName,
+        note: note,
+        date: new Date().toISOString()
+    };
+    
+    db.collection('tasks').doc(id).update({
+        assignedTo: mateId,
+        assignedToName: mateName,
+        status: 'لم يبدأ',
+        history: firebase.firestore.FieldValue.arrayUnion(historyEntry),
+        statusUpdatedAt: new Date()
+    }).then(function(){
+        msg.style.color='var(--ok)'; msg.textContent='✅ تم الإرسال للزميل';
+        tgShowNotification('📩 تم تسليم المهمة', 'تم إرسال المهمة للزميل ' + mateName);
+    }).catch(function(err){
+        msg.style.color='var(--no)'; msg.textContent='❌ '+err.message;
+    });
+}
+
+// ── الطلبات ──────────────────────────────────────────────────────────
+function loadMyRequests(){
+    var box=document.getElementById('myReqList');
+    db.collection('requests').where('uid','==',TG_USER.uid).get().then(function(snap){
+        if(snap.empty){ box.innerHTML='<div class="empty-hint">لا توجد طلبات بعد.</div>'; return; }
+        var rows=[]; snap.forEach(function(d){rows.push(d.data());});
+        rows.sort(function(a,b){
+            var am=(a.createdAt&&a.createdAt.toMillis)?a.createdAt.toMillis():0;
+            var bm=(b.createdAt&&b.createdAt.toMillis)?b.createdAt.toMillis():0;
+            return bm-am;
+        });
+        window._reqCache=rows;
+        var h='';
+        rows.forEach(function(r,i){
+            // عرض المرفق إذا وجد
+            var attachHtml = '';
+            if(r.fileUrl && r.fileType){
+                if(r.fileType.indexOf('image/')===0){
+                    attachHtml = '<div style="margin-top:6px"><a href="'+r.fileUrl+'" target="_blank"><img src="'+r.fileUrl+'" style="max-width:160px;max-height:120px;border-radius:6px;display:block"></a></div>';
+                } else if(r.fileType.indexOf('video/')===0){
+                    attachHtml = '<div style="margin-top:6px"><video src="'+r.fileUrl+'" controls style="max-width:200px;border-radius:6px"></video></div>';
+                } else {
+                    attachHtml = '<div style="margin-top:6px"><a href="'+r.fileUrl+'" target="_blank" style="color:var(--nv);font-weight:700;text-decoration:underline">📎 '+esc(r.fileName||'ملف مرفق')+'</a></div>';
+                }
+            }
+            h+='<div class="rq-row"><div class="rq-t">'+esc(r.type||'طلب')+' '+badgeReq(r.status)+
+               ' <button class="bt bt-o" style="padding:2px 8px;font-size:10px;margin-right:8px" onclick="printRequestDoc(TG_USER,window._reqCache['+i+'])">🖨 طباعة</button></div>'+
+               (r.details?'<div class="pj-meta">'+esc(r.details)+'</div>':'')+
+               (r.fromDate?('<div class="pj-meta">من '+esc(r.fromDate)+(r.toDate?(' إلى '+esc(r.toDate)):'')+'</div>'):'')+
+               attachHtml+
+               '</div>';
+        });
+        box.innerHTML=h;
+    }).catch(function(err){ box.innerHTML='<div class="empty-hint" style="color:var(--no)">تعذر التحميل: '+esc(err.message)+'</div>'; });
+}
+function submitRequest(){
+    var type=document.getElementById('reqType').value;
+    var details=(document.getElementById('reqDetails').value||'').trim();
+    if (type === 'طلب نموذج') {
+        var tmplSel = document.getElementById('reqFormTemplate');
+        if (tmplSel) details = "النموذج المطلوب: " + tmplSel.value + "\n\n" + details;
+    }
+    var from=document.getElementById('reqFrom').value||'';
+    var to=document.getElementById('reqTo').value||'';
+    var fileInput = document.getElementById('reqFile');
+    var file = fileInput && fileInput.files && fileInput.files[0];
+    var msg=document.getElementById('reqMsg');
+    if(!details){ msg.style.color='var(--no)'; msg.textContent='من فضلك اكتب تفاصيل الطلب.'; return; }
+
+    if(file){
+        var MAX_MB = 20;
+        if(file.size > MAX_MB * 1024 * 1024){ msg.style.color='var(--no)'; msg.textContent='الملف كبير جداً (الحد الأقصى '+MAX_MB+' MB).'; return; }
+        var prog = document.getElementById('reqUploadProg');
+        if(prog) { prog.style.display = 'block'; prog.textContent = '⏳ جاري رفع المرفق... 0%'; }
+        var uniqueName = TG_USER.uid + '/' + Date.now() + '_' + file.name;
+        tgUploadFile('requests', uniqueName, file,
+            function(pct){
+                if(prog) prog.textContent = '⏳ جاري رفع المرفق... ' + pct + '%';
+            },
+            function(errMsg){
+                if(prog) prog.style.display='none';
+                msg.style.color='var(--no)'; msg.textContent='❌ تعذر رفع الملف: '+errMsg;
+            },
+            function(publicUrl){
+                db.collection('requests').add({
+                    uid:TG_USER.uid, type:type, details:details, fromDate:from, toDate:to,
+                    status:'pending', fileUrl:publicUrl, fileName:file.name, fileType:file.type,
+                    createdAt:new Date()
+                }).then(function(){
+                    if(prog) { prog.style.display='none'; prog.textContent=''; }
+                    msg.style.color='var(--ok)'; msg.textContent='✅ تم إرسال الطلب مع المرفق';
+                    document.getElementById('reqDetails').value='';
+                    if(fileInput) fileInput.value='';
+                    document.getElementById('reqFileName').textContent='';
+                    loadMyRequests();
+                    // إشعار الأدمن
+                    tgNotifyAdmins('📩 طلب جديد من موظف', (TG_USER.name||'موظف') + ' أرسل طلباً جديداً: ' + type, 'request-new');
+                }).catch(function(err){
+                    if(prog) prog.style.display='none';
+                    msg.style.color='var(--no)'; msg.textContent='❌ '+err.message;
+                });
+            }
+        );
+        return;
+    }
+
+    db.collection('requests').add({
+        uid:TG_USER.uid, type:type, details:details, fromDate:from, toDate:to,
+        status:'pending', createdAt:new Date()
+    }).then(function(){
+        msg.style.color='var(--ok)'; msg.textContent='✅ تم إرسال الطلب';
+        document.getElementById('reqDetails').value='';
+        loadMyRequests();
+    }).catch(function(err){ msg.style.color='var(--no)'; msg.textContent='❌ '+err.message; });
+}
+
+// ── تقاريري الأسبوعية ───────────────────────────────────────────────
+function sundayOf(d){
+    var dt=new Date(d);
+    var day=dt.getDay(); // 0=Sun...6=Sat
+    var diff= -day; // رجّع للأحد
+    dt.setDate(dt.getDate()+diff);
+    return dt.toISOString().split('T')[0];
+}
+function loadMyWeeklyReports(){
+    var box=document.getElementById('myWkrList');
+    db.collection('weeklyReports').where('uid','==',TG_USER.uid).get().then(function(snap){
+        if(snap.empty){ box.innerHTML='<div class="empty-hint">لا توجد تقارير أسبوعية مُرسلة بعد.</div>'; return; }
+        var rows=[]; snap.forEach(function(d){rows.push(Object.assign({id:d.id}, d.data()));});
+        rows.sort(function(a,b){return (a.createdAt>b.createdAt)?-1:1;}); // Sort newest first
+        var uniqueRows = [];
+        var seen = {};
+        rows.forEach(function(r){
+            if(!seen[r.weekStart]){
+                seen[r.weekStart] = true;
+                uniqueRows.push(r);
+            }
+        });
+        uniqueRows.sort(function(a,b){return (a.weekStart<b.weekStart)?1:-1;});
+        window._wkrCache=uniqueRows;
+        var h='';
+        uniqueRows.forEach(function(r,i){
+            var waMsg = encodeURIComponent(
+                'التقرير الأسبوعي - ' + (TG_USER.name||'موظف') + '\n' +
+                'الأسبوع: ' + (r.weekStart||'') + '\n' +
+                '---\n' + (r.content||'')
+            );
+            h+='<div class="ac-row"><div class="ac-t">📆 أسبوع '+esc(r.weekStart||'')+
+               ' <button class="bt bt-o" style="padding:2px 8px;font-size:10px;margin-right:8px" onclick="printWeeklyReportDoc(TG_USER,window._wkrCache['+i+'])">🖨 طباعة</button>'+
+               ' <a href="https://wa.me/?text='+waMsg+'" target="_blank" class="bt bt-g" style="padding:2px 8px;font-size:10px;margin-right:8px;display:inline-flex;align-items:center;gap:4px;text-decoration:none">📲 واتساب</a></div>'+
+               (r.content?'<div class="ac-meta">'+esc(r.content)+'</div>':'')+'</div>';
+        });
+        box.innerHTML=h;
+    }).catch(function(err){ box.innerHTML='<div class="empty-hint" style="color:var(--no)">تعذر التحميل: '+esc(err.message)+'</div>'; });
+}
+function submitWeeklyReport(){
+    var btn = event ? event.currentTarget : null;
+    if(btn) btn.disabled = true;
+    var weekStart=document.getElementById('wkrStart').value||sundayOf(new Date());
+    var content=(document.getElementById('wkrContent').value||'').trim();
+    var msg=document.getElementById('wkrMsg');
+    if(!content){ 
+        msg.style.color='var(--no)'; msg.textContent='من فضلك اكتب ملخص الأسبوع.'; 
+        if(btn) btn.disabled = false;
+        return; 
+    }
+    
+    db.collection('weeklyReports').where('uid','==',TG_USER.uid).where('weekStart','==',weekStart).get().then(function(snap){
+        if(!snap.empty){
+            // Update existing report
+            var docId = snap.docs[0].id;
+            return db.collection('weeklyReports').doc(docId).update({
+                content: content,
+                createdAt: new Date(),
+                reviewedByAdmin: false
+            });
+        } else {
+            // Create new report
+            return db.collection('weeklyReports').add({
+                uid:TG_USER.uid,
+                name: TG_USER.name || '',
+                email: TG_USER.email || '',
+                weekStart:weekStart, content:content,
+                createdAt:new Date()
+            });
+        }
+    }).then(function(){
+        msg.style.color='var(--ok)'; msg.textContent='✅ تم حفظ التقرير بنجاح';
+        document.getElementById('wkrContent').value='';
+        loadMyWeeklyReports();
+        tgNotifyAdmins('📆 تقرير أسبوعي', (TG_USER.name||'موظف') + ' قام بتقديم تقريره الأسبوعي', 'weekly-report-new');
+        if(btn) btn.disabled = false;
+    }).catch(function(err){ 
+        msg.style.color='var(--no)'; msg.textContent='❌ '+err.message; 
+        if(btn) btn.disabled = false;
+    });
+}
+document.getElementById('wkrStart').value=sundayOf(new Date());
+
+// ── حماية الصفحة: لازم تسجيل دخول بصلاحية موظف ──────────────────
+tgRequireAuth('employee', function(u){
+    var isRemote = (u.workMode === 'remote');
+    if (window._appSettingsCache && window._appSettingsCache.globalRemoteMode) {
+        isRemote = true;
+    }
+    if (isRemote) {
+        var tab = document.getElementById('empTabAtt');
+        if (tab) tab.style.display = 'flex';
+    } else {
+        if(window.location.hash === '#att') window.location.hash = '';
+    }
+    loadEmpAttendance();
+    document.getElementById('empWhoName').textContent=u.name;
+    document.getElementById('empWhoRole').textContent=(u.jobTitle?(u.jobTitle+' · '):'')+'بوابة الموظف · '+u.email;
+    document.getElementById('acctName').value=u.name||'';
+    document.getElementById('acctEmail').value=u.email||'';
+    document.getElementById('acctJobTitle').value=u.jobTitle||'';
+
+    // تهيئة الهيدر الجديد للبروفايل في صفحة الحساب
+    if(document.getElementById('acctProfileName')) document.getElementById('acctProfileName').textContent = u.name || u.email;
+    if(document.getElementById('acctProfileJob')) document.getElementById('acctProfileJob').textContent = (u.jobTitle || 'موظف') + ' · ' + u.email;
+    if(document.getElementById('acctAvatarInitials')) {
+        var initials = (u.name || u.email || 'U').split(' ').map(function(n){return n[0];}).join('').toUpperCase().substring(0,2);
+        document.getElementById('acctAvatarInitials').textContent = initials;
+    }
+    
+    // Check App Settings for Attendance
+    db.collection('settings').doc('appSettings').get().then(function(doc){
+        if(doc.exists && doc.data().enableAttendance === false){
+            var el = document.getElementById('empAttendanceSection');
+            if(el) el.style.display = 'none';
+        }
+    });
+
+    loadMyProjects();
+    loadMyTasks();
+    loadMyWeeklyReports();
+    loadMyAchievements();
+    loadMyRequests();
+    tgChatMount();
+    tgChatWatch();
+    if(typeof loadEmpAnnouncements === 'function') loadEmpAnnouncements();
+    // نماذج مطلوبة من الأدمن لملئها وإرسالها
+    if(typeof loadMyFormRequests === 'function') loadMyFormRequests(u.uid);
+    // تفعيل استقبال Push Notifications من Firestore
+    if(typeof tgListenMyNotifications === 'function') tgListenMyNotifications(u.uid);
+    // PWA Service Worker
+    if('serviceWorker' in navigator){
+      navigator.serviceWorker.register('./sw.js').catch(function(){});
+    }
+    loadMyDocs();
+    
+    // Auto-expand textareas
+    document.addEventListener('input', function(e) {
+        if(e.target.tagName.toLowerCase() === 'textarea') {
+            e.target.style.height = 'auto';
+            e.target.style.height = (e.target.scrollHeight) + 'px';
+        }
+    });
+});
+
+// ─── حضور وانصراف الموظف ────────────────────────────────────────────────
+var _todayAttDocId = null;
+function loadEmpAttendance() {
+    var now = new Date();
+    var y = now.getFullYear();
+    var m = ('0'+(now.getMonth()+1)).slice(-2);
+    var d = ('0'+now.getDate()).slice(-2);
+    var todayStr = y+'-'+m+'-'+d;
+    var monthPrefix = y+'-'+m;
+
+    db.collection('attendance_logs').where('uid','==',TG_USER.uid)
+      .where('date', '>=', monthPrefix+'-01')
+      .where('date', '<=', monthPrefix+'-31')
+      .onSnapshot(function(snap){
+          var box = document.getElementById('myAttList');
+          if(snap.empty){
+              box.innerHTML = '<div class="empty-hint">لا توجد سجلات حضور لهذا الشهر.</div>';
+              _todayAttDocId = null;
+              document.getElementById('btnCheckIn').disabled = false;
+              document.getElementById('btnCheckOut').disabled = true;
+              document.getElementById('attStatusMsg').textContent = '';
+              return;
+          }
+          var arr = [];
+          var todayLog = null;
+          var uniqueDates = {};
+          snap.forEach(function(doc){
+              var data = doc.data();
+              // الفلترة تتم الآن على مستوى السيرفر لزيادة الكفاءة
+                  if (!uniqueDates[data.date]) {
+                      uniqueDates[data.date] = data;
+                      uniqueDates[data.date].docId = doc.id;
+                      arr.push(data);
+                  } else {
+                      if (data.checkOut && !uniqueDates[data.date].checkOut) {
+                          Object.assign(uniqueDates[data.date], data);
+                          uniqueDates[data.date].docId = doc.id;
+                      } else if (!uniqueDates[data.date].checkOut && data.checkIn > uniqueDates[data.date].checkIn) {
+                          Object.assign(uniqueDates[data.date], data);
+                          uniqueDates[data.date].docId = doc.id;
+                      }
+                  }
+              });
+          
+          if(uniqueDates[todayStr]) { 
+              todayLog = uniqueDates[todayStr]; 
+              _todayAttDocId = uniqueDates[todayStr].docId; 
+          }
+
+          if(arr.length === 0 && !todayLog) {
+              box.innerHTML = '<div class="empty-hint">لا توجد سجلات حضور لهذا الشهر.</div>';
+              _todayAttDocId = null;
+              document.getElementById('btnCheckIn').disabled = false;
+              document.getElementById('btnCheckOut').disabled = true;
+              document.getElementById('attStatusMsg').textContent = '';
+              return;
+          }
+
+          arr.sort(function(a,b){ return a.date < b.date ? 1 : -1; });
+          
+          if(todayLog) {
+              document.getElementById('btnCheckIn').disabled = true;
+              if(todayLog.checkOut) {
+                  document.getElementById('btnCheckOut').disabled = true;
+                  document.getElementById('attStatusMsg').textContent = 'لقد سجلت حضورك وانصرافك بنجاح اليوم.';
+                  document.getElementById('attStatusMsg').style.color = 'var(--ok)';
+              } else {
+                  document.getElementById('btnCheckOut').disabled = false;
+                  document.getElementById('attStatusMsg').textContent = '✅ مسجل حضور ('+todayLog.checkIn+') — لا تنسَ تسجيل الانصراف.';
+                  document.getElementById('attStatusMsg').style.color = 'var(--nv)';
+              }
+          } else {
+              _todayAttDocId = null;
+              document.getElementById('btnCheckIn').disabled = false;
+              document.getElementById('btnCheckOut').disabled = true;
+              document.getElementById('attStatusMsg').textContent = 'لم تقم بتسجيل الحضور اليوم.';
+              document.getElementById('attStatusMsg').style.color = 'var(--tx3)';
+          }
+
+          var h = '<table class="dt"><tr><th>التاريخ</th><th>الحضور</th><th>الانصراف</th><th>ساعات العمل</th></tr>';
+          arr.forEach(function(a){
+              var cin = a.checkIn || '-';
+              var cout = a.checkOut || '-';
+              var th = '-';
+              if(a.checkIn && a.checkOut){
+                 var dt1 = new Date(a.date+'T'+a.checkIn);
+                 var dt2 = new Date(a.date+'T'+a.checkOut);
+                 var diff = (dt2-dt1)/3600000;
+                 th = (diff>0?diff.toFixed(1):0) + ' ساعة';
+              }
+              h += '<tr><td>'+a.date+'</td><td>'+cin+'</td><td>'+cout+'</td><td>'+th+'</td></tr>';
+          });
+          h += '</table>';
+          box.innerHTML = h;
+      }, function(err) {
+          var box = document.getElementById('myAttList');
+          box.innerHTML = '<div class="empty-hint" style="color:var(--no)">تعذر تحميل السجلات: ' + esc(err.message) + '</div>';
+          document.getElementById('attStatusMsg').textContent = '';
+      });
+}
+
+function empCheckIn() {
+    if (_todayAttDocId) return; // already checked in
+    if(!confirm('هل تريد تسجيل حضورك الآن؟')) return;
+    document.getElementById('btnCheckIn').disabled = true;
+    var now = new Date();
+    var time = ('0'+now.getHours()).slice(-2)+':'+('0'+now.getMinutes()).slice(-2);
+    var date = now.getFullYear()+'-'+('0'+(now.getMonth()+1)).slice(-2)+'-'+('0'+now.getDate()).slice(-2);
+    
+    document.getElementById('attStatusMsg').textContent = '⏳ جارٍ التسجيل...';
+    db.collection('attendance_logs').add({
+        uid: TG_USER.uid,
+        name: TG_USER.name,
+        date: date,
+        checkIn: time,
+        checkOut: null,
+        timestamp: new Date(),
+        serverTimestamp: firebase.firestore.FieldValue.serverTimestamp()
+    }).then(function(){
+        // إشعار الأدمن
+        tgNotifyAdmins('🕒 تسجيل حضور موظف', 'قام الموظف ' + (TG_USER.name||'') + ' بتسجيل الحضور الآن (' + time + ')', 'att-check-in');
+    }).catch(function(err){ 
+        var msg = document.getElementById('attStatusMsg');
+        msg.textContent = 'تعذر التسجيل: ' + err.message;
+        msg.style.color = 'var(--no)';
+    });
+}
+
+function empCheckOut() {
+    if(!_todayAttDocId) return;
+    if(!confirm('هل تريد تسجيل انصرافك؟ لن تتمكن من تعديله.')) return;
+    document.getElementById('btnCheckOut').disabled = true;
+    var now = new Date();
+    var time = ('0'+now.getHours()).slice(-2)+':'+('0'+now.getMinutes()).slice(-2);
+    document.getElementById('attStatusMsg').textContent = '⏳ جارٍ التسجيل...';
+    db.collection('attendance_logs').doc(_todayAttDocId).update({
+        checkOut: time,
+        serverTimestamp: firebase.firestore.FieldValue.serverTimestamp()
+    }).then(function(){
+        // إشعار الأدمن
+        tgNotifyAdmins('🕒 تسجيل انصراف موظف', 'قام الموظف ' + (TG_USER.name||'') + ' بتسجيل الانصراف الآن (' + time + ')', 'att-check-out');
+    }).catch(function(err){ 
+        var msg = document.getElementById('attStatusMsg');
+        msg.textContent = 'تعذر التسجيل: ' + err.message;
+        msg.style.color = 'var(--no)';
+    });
+}
+
+// ── مستنداتي ────────────────────────────────────────────────────────
+function loadMyDocs() {
+    db.collection('employeeDocuments').where('uid','==',TG_USER.uid).onSnapshot(function(snap){
+        var box = document.getElementById('empDocsViewList');
+        if(!box) return;
+        if(snap.empty){
+            box.innerHTML = '<div class="empty-hint">لم يتم رفع أي مستندات بعد.</div>';
+            return;
+        }
+        var docs = [];
+        snap.forEach(function(d){ docs.push(d); });
+        docs.sort(function(a,b){
+            var ta = a.data().createdAt ? a.data().createdAt.toMillis() : 0;
+            var tb = b.data().createdAt ? b.data().createdAt.toMillis() : 0;
+            return tb - ta;
+        });
+
+        var h = '<div style="display:flex;flex-direction:column;gap:8px">';
+        docs.forEach(function(doc){
+            var d = doc.data();
+            var directBadge = d.isDirectToAdmin ? '<span class="badge" style="background:var(--gd);color:var(--nv);font-size:9px;margin-right:6px">📩 مرسل للأدمن مباشرة</span>' : '';
+            h += '<div style="background:rgba(0,0,0,.3);padding:12px;border-radius:8px;display:flex;justify-content:space-between;align-items:center;border-right:3px solid var(--gd)">';
+            h += '<div><div style="font-weight:bold;margin-bottom:4px">'+escH(d.title)+' '+directBadge+'</div>';
+            h += '<div style="font-size:11px;opacity:.6">بواسطة: '+(d.uploadedBy==='admin'?'الإدارة':'أنت')+' · '+(d.createdAt&&d.createdAt.toDate?d.createdAt.toDate().toLocaleString('ar-EG'):'')+'</div></div>';
+            h += '<div style="display:flex;gap:8px"><a href="'+d.fileUrl+'" target="_blank" class="bt bt-p" style="padding:4px 10px;font-size:11px;text-decoration:none">👁 عرض</a>';
+            if(d.uploadedBy === 'employee'){
+                h += '<button class="bt bt-d" style="padding:4px 10px;font-size:11px" onclick="empDeleteDoc(\''+doc.id+'\', \''+d.fileUrl+'\')">🗑 حذف</button>';
+            }
+            h += '</div></div>';
+        });
+        h += '</div>';
+        box.innerHTML = h;
+    }, function(err){
+        var box = document.getElementById('empDocsViewList');
+        if(box) box.innerHTML = '<div class="empty-hint" style="color:var(--no)">خطأ في تحميل المستندات: '+escH(err.message)+'</div>';
+    });
+}
+
+function empUploadDoc() {
+    var titleInp = document.getElementById('empNewDocTitle');
+    var fileInp = document.getElementById('empNewDocFile');
+    var msg = document.getElementById('empDocUploadMsg');
+    var title = (titleInp.value||'').trim();
+    if(!title){ msg.style.color='var(--no)'; msg.textContent='❌ يرجى كتابة اسم المستند.'; return; }
+    if(!fileInp.files || fileInp.files.length===0){ msg.style.color='var(--no)'; msg.textContent='❌ يرجى اختيار ملف.'; return; }
+    
+    var file = fileInp.files[0];
+    msg.style.color = '#fff'; msg.textContent = '⏳ جارٍ الرفع... يرجى الانتظار';
+    tgUploadFile('employeeDocuments/'+TG_USER.uid, file.name, file, null, function(err){
+        msg.style.color = 'var(--no)'; msg.textContent = '❌ تعذر رفع الملف: '+err;
+    }, function(url) {
+        db.collection('employeeDocuments').add({
+            uid: TG_USER.uid,
+            title: title,
+            fileName: file.name,
+            fileType: file.type,
+            fileUrl: url,
+            uploadedBy: 'employee',
+            createdAt: new Date()
+        }).then(function(){
+            // إشعار للأدمن
+            tgNotifyAdmins('📄 مستند جديد في ملف موظف', (TG_USER.name||'موظف') + ' رفع مستنداً جديداً لملفه الشخصي: ' + title, 'emp-doc-personal');
+            titleInp.value = '';
+            fileInp.value = '';
+            msg.style.color = 'var(--ok)'; msg.textContent = '✅ تم رفع المستند بنجاح.';
+            setTimeout(function(){ msg.textContent=''; }, 3000);
+        }).catch(function(err){
+            msg.style.color = 'var(--no)'; msg.textContent = '❌ تعذر حفظ بيانات المستند: '+err.message;
+        });
+    });
+}
+
+function empSendDirectToAdmin() {
+    var titleInp = document.getElementById('empDirectDocTitle');
+    var fileInp = document.getElementById('empDirectDocFile');
+    var msg = document.getElementById('empDirectUploadMsg');
+    var title = (titleInp.value||'').trim();
+    if(!title){ msg.style.color='var(--no)'; msg.textContent='❌ يرجى كتابة اسم المستند.'; return; }
+    if(!fileInp.files || fileInp.files.length===0){ msg.style.color='var(--no)'; msg.textContent='❌ يرجى اختيار ملف.'; return; }
+    
+    var file = fileInp.files[0];
+    msg.style.color = 'var(--gd)'; msg.textContent = '⏳ جارٍ الإرسال للأدمن... يرجى الانتظار';
+    tgUploadFile('employeeDocuments/'+TG_USER.uid, 'direct_'+Date.now()+'_'+file.name, file, null, function(err){
+        msg.style.color = 'var(--no)'; msg.textContent = '❌ تعذر رفع الملف: '+err;
+    }, function(url) {
+        db.collection('employeeDocuments').add({
+            uid: TG_USER.uid,
+            title: title,
+            fileName: file.name,
+            fileType: file.type,
+            fileUrl: url,
+            uploadedBy: 'employee',
+            isDirectToAdmin: true,
+            createdAt: new Date()
+        }).then(function(){
+            titleInp.value = '';
+            fileInp.value = '';
+            msg.style.color = 'var(--ok)'; msg.textContent = '✅ تم إرسال المستند للأدمن بنجاح.';
+            setTimeout(function(){ msg.textContent=''; }, 5000);
+            
+            // إشعار للأدمن
+            tgNotifyAdmins('📄 مستند جديد مرسل للأدمن', (TG_USER.name||'موظف') + ' أرسل مستنداً جديداً مباشرة: ' + title, 'emp-doc-direct');
+        }).catch(function(err){
+            msg.style.color = 'var(--no)'; msg.textContent = '❌ تعذر حفظ بيانات المستند: '+err.message;
+        });
+    });
+}
+
+function empDeleteDoc(docId, fileUrl) {
+    if(!confirm('هل أنت متأكد من حذف هذا المستند؟')) return;
+    db.collection('employeeDocuments').doc(docId).delete().then(function(){
+        if(fileUrl && typeof tgDeleteSupabaseFile === 'function') {
+            tgDeleteSupabaseFile(fileUrl);
+        }
+    }).catch(function(err){
+        alert('❌ خطأ أثناء الحذف: '+err.message);
+    });
+}
+
+// ═══ Tab-based filtering for employee tasks ═══
+window._empActiveTaskTab = '';
+function tgSetEmpTaskTab(btn, status){
+    window._empActiveTaskTab = status;
+    
+    // Update active tab
+    document.querySelectorAll('.tg-task-tab').forEach(function(tab){
+        tab.classList.remove('tg-task-tab-active');
+    });
+    btn.classList.add('tg-task-tab-active');
+    
+    // Apply filter
+    tgApplyEmpTaskFilter();
+}
+
+function tgApplyEmpTaskFilter(){
+    var status = window._empActiveTaskTab || '';
+    var cards = document.querySelectorAll('#myTasksList .pj-row');
+    
+    cards.forEach(function(card){
+        var show = false;
+        var cardStatus = card.getAttribute('data-taskstatus') || 'لم يبدأ';
+        var dlVal = parseFloat(card.getAttribute('data-deadline'));
+        var isOverdue = dlVal && dlVal < 9999999999999 && dlVal < Date.now() && cardStatus !== 'مكتمل';
+        
+        if(status === ''){
+            show = true; // All
+        } else if(status === 'overdue'){
+            show = isOverdue;
+        } else {
+            show = (cardStatus === status);
+        }
+        
+        if (show) {
+            card.style.removeProperty('display');
+        } else {
+            card.style.setProperty('display', 'none', 'important');
+        }
+    });
+}
+
+// Update tab counts after rendering
+function tgUpdateEmpTaskTabCounts(rows){
+    var counts = { all: rows.length, notstarted: 0, inprogress: 0, paused: 0, done: 0, overdue: 0 };
+    var now = Date.now();
+    
+    rows.forEach(function(t){
+        var status = t.status || 'لم يبدأ';
+        if(status === 'لم يبدأ') counts.notstarted++;
+        else if(status === 'جاري العمل') counts.inprogress++;
+        else if(status === 'متوقف') counts.paused++;
+        else if(status === 'مكتمل') counts.done++;
+        
+        var dlTime = t.deadline ? new Date(t.deadline).getTime() : 0;
+        if(dlTime && dlTime < now && status !== 'مكتمل') counts.overdue++;
+    });
+    
+    var map = { 'emp-tab-count-all': counts.all, 'emp-tab-count-1': counts.notstarted, 'emp-tab-count-2': counts.inprogress, 'emp-tab-count-paused': counts.paused, 'emp-tab-count-3': counts.done, 'emp-tab-count-late': counts.overdue };
+    Object.keys(map).forEach(function(id){
+        var el = document.getElementById(id);
+        if(el) el.textContent = map[id];
+    });
+}
+</script>
+<div style="position:fixed;bottom:4px;left:50%;transform:translateX(-50%);font-size:9px;color:rgba(255,255,255,0.2);z-index:9999;pointer-events:none;white-space:nowrap;font-family:inherit">تطوير وتصميم: أبانوب فايز</div>
+<script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+<script src="theme.js?v=391484"></script>
+</body>
+</html>
