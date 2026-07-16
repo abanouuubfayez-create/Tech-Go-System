@@ -3765,6 +3765,7 @@ function loadAnnouncementTargetEmployees() {
     });
 }
 function loadAdminAnnouncements() {
+    window.loadedAnnouncements = {};
     var box = document.getElementById('annList');
     if(!box) return;
     box.innerHTML = '<div class="empty-hint" style="color:var(--tx3)">&#9203; جارٍ التحميل...</div>';
@@ -3773,6 +3774,7 @@ function loadAdminAnnouncements() {
         var h = '';
         snap.forEach(function(d) {
             var a = d.data();
+            window.loadedAnnouncements[d.id] = a;
             var ts = (a.createdAt && a.createdAt.seconds) ? new Date(a.createdAt.seconds*1000).toLocaleDateString('ar-EG') : '';
             var isPrivate = a.audience === 'private';
             h += '<div class="pj-row" style="border-right:4px solid '+(isPrivate?'var(--gd)':'var(--nv)')+'">';
@@ -3789,14 +3791,47 @@ function loadAdminAnnouncements() {
             h += (ts ? '<span>&#128336; نُشر: '+ts+'</span>' : '');
             h += (a.createdBy ? '<span>&#128100; '+escH(a.createdBy)+' ('+escH(a.createdByRole||'أدمن إداري')+')</span>' : '');
             h += '</div>';
+            h += '<div style="display:flex;gap:6px">';
+            h += '<button class="bt bt-o" style="padding:4px 10px;font-size:11px" onclick="republishAnnouncement(\''+d.id+'\')">&#128259; إعادة نشر</button>';
             h += '<button class="bt bt-d" style="padding:4px 10px;font-size:11px" onclick="deleteAnnouncement(\''+d.id+'\')">&#128465; حذف</button>';
-            h += '</div></div>';
+            h += '</div></div></div>';
         });
         box.innerHTML = h;
     }).catch(function(err) {
         box.innerHTML = '<div class="empty-hint" style="color:var(--no)">&#10060; تعذر التحميل: '+err.message+'<br><small style="color:var(--tx3)">تأكد من نشر قواعد Firestore في Firebase Console</small></div>';
     });
 }
+
+function republishAnnouncement(id) {
+    var a = window.loadedAnnouncements[id];
+    if(!a) return;
+    document.getElementById('annTitle').value = a.title || '';
+    document.getElementById('annDate').value = a.date || '';
+    document.getElementById('annContent').value = a.content || '';
+    
+    // Set audience radio
+    var aud = a.audience === 'private' ? 'private' : 'all';
+    var radios = document.getElementsByName('annAudience');
+    for(var i=0; i<radios.length; i++) {
+        if(radios[i].value === aud) radios[i].checked = true;
+    }
+    toggleAnnTargetWrap();
+    
+    // Set target employee if private
+    if(aud === 'private' && a.targetUid) {
+        var sel = document.getElementById('annTargetEmployee');
+        if(sel) sel.value = a.targetUid;
+    }
+    
+    // Scroll to top smooth
+    var panel = document.getElementById('appContent');
+    if (panel) {
+        panel.scrollTo({top: 0, behavior: 'smooth'});
+    } else {
+        window.scrollTo({top: 0, behavior: 'smooth'});
+    }
+}
+
 function deleteAnnouncement(id) {
     if(!confirm('هل أنت متأكد من حذف هذا الإعلان؟')) return;
     db.collection('announcements').doc(id).delete().then(loadAdminAnnouncements).catch(function(err){ alert('تعذر الحذف: '+err.message); });
