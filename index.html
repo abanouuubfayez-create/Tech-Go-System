@@ -375,11 +375,13 @@
 
     if (tag === 'form-submitted') { if (typeof goSendForm === 'function') goSendForm(null); else go('sendform'); }
     else if (tag === 'form-new') go('gen');
-    else if (tag === 'request-reviewed' || tag === 'request-new') go('staff');
-    else if (tag === 'project-new' || tag === 'project-update' || tag === 'project-progress' || tag === 'project-note') go('pmgmt');
+    else if (tag === 'request-reviewed' || tag === 'request-new' || tag === 'att-check-in' || tag === 'att-check-out' || tag === 'name-change' || tag === 'achievement-new') go('staff');
+    else if (tag === 'project-new' || tag === 'project-update' || tag === 'project-status' || tag === 'project-progress' || tag === 'project-note' || tag === 'project-completed') go('pmgmt');
     else if (tag === 'task-new' || tag === 'task-update' || tag === 'task-status') go('tasksmgmt');
     else if (tag === 'weekly-report-new' || tag === 'weekly-report-reminder') go('wkreports');
-    else if (tag === 'achievement-new') go('staff');
+    else if (tag === 'emp-doc-personal' || tag === 'emp-doc-direct') go('empdocs');
+    else if (tag === 'announcement-new') go('announcements');
+    else if (tag === 'chat-new') { if (typeof tgChatToggle === 'function') tgChatToggle(); }
   }
   function tgNotifDelClick(id, ev) {
     if (ev) ev.stopPropagation();
