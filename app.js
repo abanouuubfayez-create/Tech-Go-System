@@ -910,7 +910,7 @@ function renderStaffList(list){
            '<button class="bt bt-d" onclick="event.stopPropagation();openDeleteEmpModal(\''+emp.uid+'\','+idx+')">🗑 حذف الموظف</button>'+
            '</div>'+
            '<div class="emp-inline-edit" id="empNameEdit'+idx+'" style="display:none">'+
-           '<input type="text" id="empNameInput'+idx+'" value="'+escH(emp.name||'')+'">'+
+           '<input type="text" id="empNameInput\'+idx+\'" value="\'+escH(emp.baseName||emp.name||\'\')+\'">'+
            '<button class="bt bt-p" onclick="saveEmpName(\''+emp.uid+'\','+idx+')">💾 حفظ</button>'+
            '<span id="empNameMsg'+idx+'" style="font-size:10.5px"></span>'+
            '</div>'+
@@ -1049,7 +1049,11 @@ function saveEmpName(uid,idx){
     var msg=document.getElementById('empNameMsg'+idx);
     if(!name){ msg.style.color='var(--no)'; msg.textContent='اكتب اسماً صحيحاً.'; return; }
     msg.style.color='var(--tx3)'; msg.textContent='⏳ جارٍ الحفظ...';
-    db.collection('users').doc(uid).update({name:name}).then(function(){
+    db.collection('users').doc(uid).get().then(function(doc){
+        var jt = doc.data().jobTitle || '';
+        var finalName = jt ? name + ' (' + jt + ')' : name;
+        return db.collection('users').doc(uid).update({baseName: name, name: finalName});
+    }).then(function(){
         addEmployeeName(name);
         loadStaffOverview();
     }).catch(function(err){ msg.style.color='var(--no)'; msg.textContent='❌ '+err.message; });
@@ -1065,7 +1069,12 @@ function saveEmpJob(uid,idx){
     var jobTitle=(document.getElementById('empJobInput'+idx).value||'').trim();
     var msg=document.getElementById('empJobMsg'+idx);
     msg.style.color='var(--tx3)'; msg.textContent='⏳ جارٍ الحفظ...';
-    db.collection('users').doc(uid).update({jobTitle:jobTitle}).then(function(){
+    db.collection('users').doc(uid).get().then(function(doc){
+        var baseName = doc.data().baseName || doc.data().name || '';
+        if (baseName.includes(' (')) baseName = baseName.split(' (')[0].trim();
+        var finalName = jobTitle ? baseName + ' (' + jobTitle + ')' : baseName;
+        return db.collection('users').doc(uid).update({jobTitle: jobTitle, baseName: baseName, name: finalName});
+    }).then(function(){
         loadStaffOverview();
     }).catch(function(err){ msg.style.color='var(--no)'; msg.textContent='❌ '+err.message; });
 }
@@ -4119,7 +4128,7 @@ function openAdminEmployeeDetail(idx) {
         h += '  <button class="bt bt-o" style="background:linear-gradient(135deg,#1b2a4a,#2980b9);color:#fff;border:0" onclick="printEmployeeWorkReport(' + idx + ')">🖨 طباعة تقرير الشغل</button>';
         h += '</div>';
         h += '<div class="emp-inline-edit" id="empNameEdit' + idx + '" style="display:none">' +
-             '  <input type="text" id="empNameInput' + idx + '" value="' + escH(emp.name || '') + '">' +
+             '  <input type="text" id="empNameInput\' + idx + \'" value="\' + escH(emp.baseName||emp.name|| \'\') + \'">' +
              '  <button class="bt bt-p" onclick="saveEmpName(\'' + emp.uid + '\',' + idx + ')">💾 حفظ</button>' +
              '  <span id="empNameMsg' + idx + '" style="font-size:10.5px"></span>' +
              '</div>';
@@ -5273,3 +5282,100 @@ function sendWeeklyReportReminder() {
         setTimeout(function(){ if(btn) btn.textContent = '🔔 تذكير الموظفين بالتقرير الأسبوعي'; }, 3000);
     });
 }
+// Migration Script to add jobTitles to names globally
+window.tgMigrateNames = function() {
+    if(!confirm('هل أنت متأكد من تشغيل سكريبت دمج المسميات الوظيفية؟ (يجب أن يتم مرة واحدة فقط)')) return;
+    var msg = document.createElement('div');
+    msg.style.cssText = 'position:fixed;top:20px;left:50%;transform:translateX(-50%);background:#1b2a4a;color:#fff;padding:14px 28px;border-radius:10px;z-index:99999;font-size:14px;font-weight:700;box-shadow:0 8px 24px rgba(0,0,0,.3)';
+    msg.textContent = '⏳ جاري الدمج (تحديث الموظفين)...';
+    document.body.appendChild(msg);
+
+    var usersMap = {};
+
+    // 1. Update all users
+    db.collection('users').get().then(function(snap) {
+        var batch = db.batch();
+        var count = 0;
+        snap.forEach(function(doc) {
+            var data = doc.data();
+            var jobTitle = data.jobTitle || '';
+            var baseName = data.baseName || data.name || '';
+            
+            // Clean up if it already has parenthesis
+            if (baseName.includes(' (')) {
+                baseName = baseName.split(' (')[0].trim();
+            }
+            
+            var finalName = jobTitle ? baseName + ' (' + jobTitle + ')' : baseName;
+            
+            usersMap[doc.id] = finalName;
+            
+            batch.update(doc.ref, {
+                baseName: baseName,
+                name: finalName
+            });
+            count++;
+        });
+        
+        return batch.commit().then(function() {
+            msg.textContent = '⏳ تم تحديث الموظفين (' + count + '). جاري تحديث المهام والمشاريع...';
+            return migrateTasksAndProjects(usersMap);
+        });
+    }).then(function() {
+        if(document.body.contains(msg)) document.body.removeChild(msg);
+        alert('✅ تم الانتهاء من تحديث جميع الأسماء والمهام والمشاريع في النظام بنجاح!');
+        location.reload();
+    }).catch(function(err) {
+        if(document.body.contains(msg)) document.body.removeChild(msg);
+        alert('❌ حدث خطأ: ' + err.message);
+    });
+
+    function migrateTasksAndProjects(uMap) {
+        var promises = [];
+        
+        // Update Tasks
+        var p1 = db.collection('tasks').get().then(function(snap) {
+            var batch = db.batch();
+            snap.forEach(function(doc) {
+                var d = doc.data();
+                var updates = {};
+                var changed = false;
+                if (d.assignedTo && uMap[d.assignedTo] && d.assignedToName !== uMap[d.assignedTo]) {
+                    updates.assignedToName = uMap[d.assignedTo];
+                    changed = true;
+                }
+                if (d.createdByUid && uMap[d.createdByUid] && d.createdBy !== uMap[d.createdByUid]) {
+                    updates.createdBy = uMap[d.createdByUid];
+                    changed = true;
+                }
+                if (changed) batch.update(doc.ref, updates);
+            });
+            return batch.commit();
+        });
+        promises.push(p1);
+
+        // Update Projects
+        var p2 = db.collection('projects').get().then(function(snap) {
+            var batch = db.batch();
+            snap.forEach(function(doc) {
+                var d = doc.data();
+                var updates = {};
+                var changed = false;
+                if (d.assignedTo && uMap[d.assignedTo] && d.assignedToName !== uMap[d.assignedTo]) {
+                    updates.assignedToName = uMap[d.assignedTo];
+                    changed = true;
+                }
+                if (d.createdByUid && uMap[d.createdByUid] && d.createdBy !== uMap[d.createdByUid]) {
+                    updates.createdBy = uMap[d.createdByUid];
+                    changed = true;
+                }
+                if (changed) batch.update(doc.ref, updates);
+            });
+            return batch.commit();
+        });
+        promises.push(p2);
+
+        return Promise.all(promises);
+    }
+};
+

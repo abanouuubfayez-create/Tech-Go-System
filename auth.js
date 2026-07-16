@@ -263,8 +263,10 @@ function tgCreateEmployeeAccount(name, email, password, empId, jobTitle, role, w
     var secAuth = firebase.auth(secondaryApp);
     secAuth.createUserWithEmailAndPassword(email, password).then(function (cred) {
         var uid = cred.user.uid;
+        var finalName = name;
+        if (jobTitle) finalName = name + ' (' + jobTitle + ')';
         return db.collection('users').doc(uid).set({
-            name: name, email: email,
+            baseName: name, name: finalName, email: email,
             role: role || 'employee',
             empId: empId || '', jobTitle: jobTitle || '',
             workMode: workMode || 'office',
