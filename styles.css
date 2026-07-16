@@ -1180,6 +1180,11 @@ input, select, textarea, button { font-family: inherit; }
     html:not(.print-keep-data) .sal-total-fld {
         color: transparent !important;
     }
+    html:not(.print-keep-data) input[type="date"],
+    html:not(.print-keep-data) input.flatpickr-input,
+    html:not(.print-keep-data) input.flatpickr-input + input {
+        color: transparent !important;
+    }
 }
 
 /* ═══════════════════════════════════════════ */

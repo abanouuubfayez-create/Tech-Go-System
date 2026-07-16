@@ -512,10 +512,20 @@
     });
 
     if (PRINT_KEEP_DATA) return; // المستخدم اختار طباعة البيانات المكتوبة كما هي — بدون تفريغ
-    document.querySelectorAll('input[type="date"]').forEach(function (el) {
-      el._pv = el.value;
-      el.type = 'text';
-      el.value = '';
+    // تفريغ حقول التاريخ العادية (نبحث عن الحقول التي تم تخزين قيمتها أو الحقول العادية)
+    document.querySelectorAll('input[type="date"], input[type="text"]').forEach(function (el) {
+      if (el.type === 'date') {
+        el._pv = el.value;
+        el.type = 'text';
+        el.value = '';
+      }
+    });
+    // تفريغ حقول Flatpickr (لأنها readonly ويتم تخطيها في اللوب التالي)
+    document.querySelectorAll('.flatpickr-input').forEach(function (el) {
+      if (el._flatpickr && el._flatpickr.altInput) {
+        el._flatpickr._altPv = el._flatpickr.altInput.value;
+        el._flatpickr.altInput.value = '';
+      }
     });
     // إخفاء النصوص والاختيارات الافتراضية (غير المُدخلة فعلياً من المستخدم) عند الطباعة
     document.querySelectorAll('input.tpl-default, textarea.tpl-default').forEach(function (el) {
@@ -539,10 +549,17 @@
     document.querySelectorAll('.FL-foot-ref').forEach(function (el) { el.textContent = ''; });
     // إزالة الختم بعد الطباعة
     document.querySelectorAll('.print-stamp').forEach(function (el) { el.remove(); });
-    document.querySelectorAll('input[type="date"]').forEach(function (el) {
+    document.querySelectorAll('input[type="text"]').forEach(function (el) {
       if (el._pv !== undefined) {
         el.type = 'date';
         el.value = el._pv;
+        delete el._pv;
+      }
+    });
+    document.querySelectorAll('.flatpickr-input').forEach(function (el) {
+      if (el._flatpickr && el._flatpickr.altInput && el._flatpickr._altPv !== undefined) {
+        el._flatpickr.altInput.value = el._flatpickr._altPv;
+        delete el._flatpickr._altPv;
       }
     });
     document.querySelectorAll('input.tpl-default, textarea.tpl-default').forEach(function (el) {
