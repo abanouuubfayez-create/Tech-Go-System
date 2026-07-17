@@ -3801,7 +3801,8 @@ function loadAdminAnnouncements() {
             h += (a.createdBy ? '<span>&#128100; '+escH(a.createdBy)+' ('+escH(a.createdByRole||'أدمن إداري')+')</span>' : '');
             h += '</div>';
             h += '<div style="display:flex;gap:6px">';
-            h += '<button class="bt bt-o" style="padding:4px 10px;font-size:11px" onclick="republishAnnouncement(\''+d.id+'\')">&#128259; إعادة نشر</button>';
+            var hideBtnText = a.isHidden ? '&#128065; إظهار' : '&#128123; إخفاء مؤقت';
+            h += '<button class="bt bt-o" style="padding:4px 10px;font-size:11px" onclick="toggleAnnouncementVisibility(\''+d.id+'\', '+!!a.isHidden+')">'+hideBtnText+'</button>';
             h += '<button class="bt bt-d" style="padding:4px 10px;font-size:11px" onclick="deleteAnnouncement(\''+d.id+'\')">&#128465; حذف</button>';
             h += '</div></div></div>';
         });
@@ -3839,6 +3840,26 @@ function republishAnnouncement(id) {
     } else {
         window.scrollTo({top: 0, behavior: 'smooth'});
     }
+}
+
+function toggleAnnouncementVisibility(id, currentlyHidden) {
+    db.collection('announcements').doc(id).update({
+        isHidden: !currentlyHidden
+    }).then(function() {
+        loadAdminAnnouncements();
+    }).catch(function(err) {
+        alert('تعذر تغيير حالة الإعلان: ' + err.message);
+    });
+}
+
+function toggleAnnouncementVisibility(id, currentlyHidden) {
+    db.collection('announcements').doc(id).update({
+        isHidden: !currentlyHidden
+    }).then(function() {
+        loadAdminAnnouncements();
+    }).catch(function(err) {
+        alert('تعذر تغيير حالة الإعلان: ' + err.message);
+    });
 }
 
 function deleteAnnouncement(id) {
@@ -4453,6 +4474,7 @@ function loadEmpAnnouncements() {
         var privateOnes = [];
         snap.forEach(function(d) {
             var data = d.data();
+            if(data.isHidden) return;
             if(data.audience === 'private') {
                 if(data.targetUid === myUid) privateOnes.push(data);
             } else {
