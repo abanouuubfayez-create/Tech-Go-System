@@ -243,17 +243,26 @@ function tgLogout() {
 }
 
 // إنشاء حساب دخول لموظف جديد بدون تسجيل خروج المدير الحالي
-function tgCreateEmployeeAccount(name, email, password, empId, jobTitle, role, workMode, onDone, onError) {
+function tgCreateEmployeeAccount(name, email, password, empId, jobTitle, role, workMode, dept, phone, onDone, onError) {
     // للتوافق مع الاستدعاء القديم
-    if (typeof role === 'function') {
+    if (typeof dept === 'function') {
+        onError = phone;
+        onDone = dept;
+        dept = '';
+        phone = '';
+    } else if (typeof role === 'function') {
         onError = onDone;
         onDone = role;
         role = 'employee';
         workMode = 'office';
+        dept = '';
+        phone = '';
     } else if (typeof workMode === 'function') {
         onError = onDone;
         onDone = workMode;
         workMode = 'office';
+        dept = '';
+        phone = '';
     }
     var secondaryApp;
     try {
@@ -269,6 +278,7 @@ function tgCreateEmployeeAccount(name, email, password, empId, jobTitle, role, w
             baseName: name, name: finalName, email: email,
             role: role || 'employee',
             empId: empId || '', jobTitle: jobTitle || '',
+            dept: dept || '', phone: phone || '',
             workMode: workMode || 'office',
             createdAt: new Date()
         }).then(function () { return secAuth.signOut(); }).then(function () { onDone(uid); });

@@ -903,6 +903,7 @@ function renderStaffList(list){
            '<button class="bt bt-g" onclick="event.stopPropagation();tgOpenEmployeeProfile(\''+emp.uid+'\')">👤 عرض البروفايل</button>'+
            '<button class="bt bt-o" onclick="event.stopPropagation();toggleEmpNameEdit('+idx+')">✏️ تعديل الاسم</button>'+
            '<button class="bt bt-o" onclick="event.stopPropagation();toggleEmpJobEdit('+idx+')">🏷 تعديل المسمى الوظيفي</button>'+
+           '<button class="bt bt-o" onclick="event.stopPropagation();toggleEmpDeptPhoneEdit('+idx+')">☎️ الإدارة والهاتف</button>'+
            '<button class="bt '+(emp.chatAccess===false?'bt-p':'bt-o')+'" onclick="event.stopPropagation();tgToggleEmpChatAccess(\''+emp.uid+'\','+(emp.chatAccess!==false)+')">'+
            (emp.chatAccess===false?'💬 السماح بالشات':'💬 منع الشات')+'</button>'+
            '<button class="bt '+(emp.disabled?'bt-p':'bt-o')+'" onclick="event.stopPropagation();toggleEmpDisabled(\''+emp.uid+'\','+(!!emp.disabled)+')">'+
@@ -1079,6 +1080,22 @@ function saveEmpJob(uid,idx){
     }).catch(function(err){ msg.style.color='var(--no)'; msg.textContent='❌ '+err.message; });
 }
 
+// ─── تعديل القسم ورقم الهاتف من "متابعة الموظفين" ─────────────────────────
+function toggleEmpDeptPhoneEdit(idx){
+    var e=document.getElementById('empDeptPhoneEdit'+idx);
+    if(!e)return;
+    e.style.display=(e.style.display==='none'||!e.style.display)?'flex':'none';
+}
+function saveEmpDeptPhone(uid,idx){
+    var dept=(document.getElementById('empDeptInput'+idx).value||'').trim();
+    var phone=(document.getElementById('empPhoneInput'+idx).value||'').trim();
+    var msg=document.getElementById('empDeptPhoneMsg'+idx);
+    msg.style.color='var(--tx3)'; msg.textContent='⏳ جارٍ الحفظ...';
+    db.collection('users').doc(uid).update({dept: dept, phone: phone}).then(function(){
+        loadStaffOverview();
+    }).catch(function(err){ msg.style.color='var(--no)'; msg.textContent='❌ '+err.message; });
+}
+
 // ─── تعديل نظام العمل من "متابعة الموظفين" ─────────────────────────
 function toggleEmpWorkMode(idx){
     var e=document.getElementById('empWorkModeEdit'+idx);
@@ -1174,6 +1191,8 @@ function createStaffAccount(){
     var email=(document.getElementById('newAccEmail').value||'').trim();
     var pass=document.getElementById('newAccPass').value||'';
     var jobTitle=(document.getElementById('newAccJobTitle').value||'').trim();
+    var dept=(document.getElementById('newAccDept') ? document.getElementById('newAccDept').value||'' : '').trim();
+    var phone=(document.getElementById('newAccPhone') ? document.getElementById('newAccPhone').value||'' : '').trim();
     var roleEl=document.getElementById('newAccRole');
     var role=roleEl?roleEl.value:'employee';
     var wmEl=document.getElementById('newAccWorkMode');
@@ -1182,7 +1201,7 @@ function createStaffAccount(){
     if(!name||!email||!pass){ msg.style.color='var(--no)'; msg.textContent='من فضلك املأ الاسم والبريد الإلكتروني وكلمة المرور.'; return; }
     if(pass.length<6){ msg.style.color='var(--no)'; msg.textContent='كلمة المرور يجب أن تكون 6 أحرف على الأقل.'; return; }
     msg.style.color='var(--tx3)'; msg.textContent='⏳ جارٍ إنشاء الحساب...';
-    tgCreateEmployeeAccount(name,email,pass,'',jobTitle,role,workMode,function(){
+    tgCreateEmployeeAccount(name,email,pass,'',jobTitle,role,workMode,dept,phone,function(){
         if(role==='employee') addEmployeeName(name);
         var roleAr = role==='tech_admin' ? 'أدمن تقني' : 'موظف';
         msg.style.color='var(--ok)'; msg.textContent='✅ تم إنشاء حساب '+roleAr+' بنجاح.';
@@ -1190,6 +1209,8 @@ function createStaffAccount(){
         document.getElementById('newAccEmail').value='';
         document.getElementById('newAccPass').value='';
         document.getElementById('newAccJobTitle').value='';
+        if(document.getElementById('newAccDept')) document.getElementById('newAccDept').value='';
+        if(document.getElementById('newAccPhone')) document.getElementById('newAccPhone').value='';
         if(roleEl) roleEl.value='employee';
         loadStaffOverview();
     },function(err){
@@ -3607,6 +3628,10 @@ function load(id,c){
         h+='</div>';
         h+='<div class="fr fr3" style="margin-top:10px">';
         h+='<div class="fg"><label>المسمى الوظيفي (اختياري)</label><input type="text" id="newAccJobTitle" placeholder="مثلاً: مصمم جرافيك"></div>';
+        h+='<div class="fg"><label>القسم / الإدارة (اختياري)</label><input type="text" id="newAccDept" placeholder="مثلاً: قسم تكنولوجيا المعلومات"></div>';
+        h+='<div class="fg"><label>رقم الهاتف (اختياري)</label><input type="text" id="newAccPhone" placeholder="مثلاً: 01012345678"></div>';
+        h+='</div>';
+        h+='<div class="fr fr2" style="margin-top:10px">';
         h+='<div class="fg"><label>نظام العمل</label><select id="newAccWorkMode"><option value="office">من المكتب</option><option value="remote">عن بُعد (ريموتلي)</option></select></div>';
         h+='<div class="fg"><label>دور الحساب</label><select id="newAccRole"><option value="employee">موظف (employee)</option><option value="tech_admin">أدمن تقني (بدون صلاحيات إدارية)</option></select></div>';
         h+='</div>';
