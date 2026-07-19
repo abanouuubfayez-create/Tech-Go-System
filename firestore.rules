@@ -188,5 +188,10 @@ service cloud.firestore {
       );
       allow delete: if isAnyAdmin();
     }
+
+    // أرشيف المستندات المطبوعة
+    match /docArchive/{docId} {
+      allow read, write: if isAnyAdmin();
+    }
   }
 }

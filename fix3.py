@@ -1,135 +1,202 @@
-with open(r'd:\Tech Go System\app.js', encoding='utf-8') as f:
-    content = f.read()
+import codecs
 
-# ── Replace the broken filter bar with a clean tab+search approach ──
+def modify_index():
+    with codecs.open('index.html', 'r', 'utf-8') as f:
+        content = f.read()
 
-OLD_FILTER_BAR = """        h+='<div style="display:flex;justify-content:space-between;align-items:center;margin:18px 0 10px">';
-        h+='<div style="display:flex;align-items:center;gap:10px;"><div class="set-sec-title" style="margin:0">🗂 المهام الحالية</div>';
-        h+='<select class="global-table-filter" style="margin:0;padding:4px;font-size:11px;min-height:auto;" onchange="tgSortVisibleList(this.value)">'+
-           '<option value="">-- فرز حسب --</option><option value="date_desc">الأحدث</option><option value="date_asc">الأقدم</option><option value="prio_desc">الأولوية</option><option value="status_desc">الحالة</option><option value="deadline_asc">تاريخ التسليم</option><option value="emp_asc">الموظف المكلف</option></select>';
-        h+='<select id="tgTasksStatusFilter" class="global-table-filter" style="margin:0;padding:4px;font-size:11px;min-height:auto;" onchange="tgApplyTaskFilters()">'+
-           '<option value="">كل الحالات</option><option value="1">لم يبدأ</option><option value="2">جاري العمل</option><option value="3">مكتمل</option><option value="late">متأخرة عن التسليم</option></select>';
-        h+='<input type="text" id="tgTasksSearch" class="global-table-filter" style="margin:0;padding:4px 10px;font-size:11px;min-height:auto;width:180px" placeholder="ابحث بالعنوان أو التفاصيل أو الموظف..." oninput="tgApplyTaskFilters()">';
-        h+='<select id="tgTasksEmpFilter" class="global-table-filter" style="margin:0;padding:4px;font-size:11px;min-height:auto;" onchange="tgApplyTaskFilters()"><option value="">تصفية بالموظف</option></select>';
-        h+='<span id="tgTasksCount" style="font-size:10.5px;font-weight:700;color:var(--tx3)"></span></div>';
-        h+='<button class="bt bt-d" style="padding:5px 14px;font-size:11px" onclick="tgDeleteAllRecords(\'tasks\', \'المهام\', null, null, loadTasksMgmt)">🗑 حذف الكل</button>';
-        h+='</div>';
-        h+='<div id="tasksMgmtList"><div class="empty-hint">⏳ جارٍ تحميل المهام...</div></div>';"""
+    # 1. Add Sidebar Link
+    sb_target = """<div class="S-i" onclick="go('announcements',this)" style="border-right:2px solid var(--gd)"><span class="ic">📢</span> إدارة الإعلانات <span class="S-b">جديد</span></div>"""
+    sb_replacement = sb_target + """\n            <div class="S-i" onclick="go('archive',this)" style="border-right:2px solid var(--gd)"><span class="ic">🗂</span> أرشيف المستندات <span class="S-b">جديد</span></div>"""
+    if sb_target in content:
+        content = content.replace(sb_target, sb_replacement)
+    else:
+        sb_target = sb_target.replace('\n', '\r\n')
+        sb_replacement = sb_replacement.replace('\n', '\r\n')
+        content = content.replace(sb_target, sb_replacement)
 
-NEW_FILTER_BAR = """        h+='<div style="display:flex;justify-content:space-between;align-items:center;margin:18px 0 10px;flex-wrap:wrap;gap:10px">';
-        h+='<div class="set-sec-title" style="margin:0">🗂 المهام الحالية</div>';
-        h+='<button class="bt bt-d" style="padding:5px 14px;font-size:11px" onclick="tgDeleteAllRecords(\'tasks\', \'المهام\', null, null, loadTasksMgmt)">🗑 حذف الكل</button>';
-        h+='</div>';
-        // شريط البحث والفلترة
-        h+='<div style="background:var(--w);border:1px solid var(--bd2);border-radius:10px;padding:12px 16px;margin-bottom:12px;display:flex;flex-wrap:wrap;gap:10px;align-items:center">';
-        h+='<input type="text" id="tgTasksSearch" style="border:1px solid var(--bd2);border-radius:7px;padding:6px 12px;font-size:12px;font-family:inherit;background:var(--bg);color:var(--tx);flex:1;min-width:200px" placeholder="🔍 ابحث بالعنوان أو الموظف..." oninput="tgFilterTasksMgmt()">';
-        h+='<select id="tgTasksSortBy" style="border:1px solid var(--bd2);border-radius:7px;padding:6px 10px;font-size:11px;font-family:inherit;background:var(--bg);color:var(--tx)" onchange="tgFilterTasksMgmt()">';
-        h+='<option value="">ترتيب: الأحدث</option><option value="prio">الأولوية: الأعلى</option><option value="deadline">تاريخ التسليم: الأقرب</option><option value="emp">الموظف: أبجدياً</option></select>';
-        h+='<div id="tgEmpFilterBtns" style="display:flex;flex-wrap:wrap;gap:6px"></div>';
-        h+='</div>';
-        // تبويبات الحالة
-        h+='<div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:14px" id="tgStatusTabs">';
-        h+='<button class="tg-tab-btn tg-tab-active" data-st="" onclick="tgSetStatusTab(this,\'\')">📋 الكل <span class="tg-tab-cnt" id="tgCntAll"></span></button>';
-        h+='<button class="tg-tab-btn" data-st="1" onclick="tgSetStatusTab(this,\'1\')">⏳ لم يبدأ <span class="tg-tab-cnt" id="tgCntNew"></span></button>';
-        h+='<button class="tg-tab-btn" data-st="2" onclick="tgSetStatusTab(this,\'2\')">🔵 جاري العمل <span class="tg-tab-cnt" id="tgCntProg"></span></button>';
-        h+='<button class="tg-tab-btn" data-st="3" onclick="tgSetStatusTab(this,\'3\')">✅ مكتمل <span class="tg-tab-cnt" id="tgCntDone"></span></button>';
-        h+='<button class="tg-tab-btn" data-st="late" onclick="tgSetStatusTab(this,\'late\')">⏰ متأخرة <span class="tg-tab-cnt" id="tgCntLate"></span></button>';
-        h+='</div>';
-        h+='<div id="tasksMgmtList"><div class="empty-hint">⏳ جارٍ تحميل المهام...</div></div>';"""
+    # 2. Add Autocomplete Dropdown
+    ac_target = """<button class="bt bt-o" onclick="openPrintPreview()">🖨 معاينة وطباعة</button>"""
+    ac_replacement = """<select id="tgAutoCompleteEmp" onchange="tgAutoCompleteForm(this.value)" style="margin-left:8px; padding:4px; font-size:11px; border:1px solid var(--bd); border-radius:4px; background:var(--bg); color:var(--tx)">
+       <option value="">تعبئة بيانات موظف...</option>
+    </select>\n    """ + ac_target
+    if ac_target in content:
+        content = content.replace(ac_target, ac_replacement)
+    else:
+        ac_target = ac_target.replace('\n', '\r\n')
+        ac_replacement = ac_replacement.replace('\n', '\r\n')
+        content = content.replace(ac_target, ac_replacement)
 
-count = content.count(OLD_FILTER_BAR)
-print(f"Filter bar occurrences: {count}")
-content = content.replace(OLD_FILTER_BAR, NEW_FILTER_BAR)
+    # 3. Add Archive Page
+    pg_target = """<div class="pg" id="pg-announcements">"""
+    pg_replacement = """<div class="pg" id="pg-archive">
+    <div class="set-sec">
+        <div class="set-sec-title">🗂 أرشيف المستندات المطبوعة</div>
+        <div class="set-hint" style="margin-bottom:12px">سجل لجميع المستندات التي تم طباعتها أو إرسالها من النظام.</div>
+        <div class="fr fr2" style="margin-bottom:12px">
+            <div class="fg"><label>اسم الموظف</label><input type="text" id="arcEmpFilter" placeholder="ابحث باسم الموظف..." onkeyup="tgRenderArchive()"></div>
+            <div class="fg"><label>الشهر (سنة-شهر)</label><input type="month" id="arcMonthFilter" onchange="tgRenderArchive()"></div>
+        </div>
+        <div id="arcList"></div>
+    </div>
+</div>\n""" + pg_target
 
-# ── Replace the two renderTasksMgmtList functions with one clean version ──
-# First find and replace the employee dropdown rebuild block
+    if pg_target in content:
+        content = content.replace(pg_target, pg_replacement)
+    else:
+        pg_target = pg_target.replace('\n', '\r\n')
+        pg_replacement = pg_replacement.replace('\n', '\r\n')
+        content = content.replace(pg_target, pg_replacement)
 
-OLD_EMP_BLOCK = """    var f = document.getElementById('tgTasksEmpFilter');
-    if(f) {
-        // اقرأ من الـ state دائماً، وأعد تحديث الـ state من قيمة الـ select الحالية إذا وجدت
-        var savedEmp = _tgTaskFilter.emp || (f ? f.value || '' : '');
-        _tgTaskFilter.emp = savedEmp;
-        var opts = '<option value="">الكل (تصفية بالموظف)</option>';
-        Array.from(empSet).sort(function(a,b){return a.localeCompare(b,'ar')}).forEach(function(e) {
-            // استخدام القيمة الخام بدون escH لتسهيل المقارنة
-            opts += '<option value="'+escH(e)+'"'+(e===savedEmp?' selected':'')+'>'+escH(e)+'</option>';
+    with codecs.open('index.html', 'w', 'utf-8') as f:
+        f.write(content)
+
+def modify_app():
+    with codecs.open('app.js', 'r', 'utf-8') as f:
+        content = f.read()
+
+    js_code = """
+// ─── ميزة أرشيف المستندات ─────────────────────────────────────────────
+var tgArchiveCache = [];
+function loadArchive() {
+    var c = document.getElementById('pg-archive');
+    if(!c) return;
+    document.getElementById('pT').innerText = 'أرشيف المستندات';
+    c.classList.add('a');
+    if(!c.dataset.mounted) {
+        c.dataset.mounted = '1';
+        db.collection('docArchive').orderBy('createdAt', 'desc').limit(200).onSnapshot(function(snap){
+            tgArchiveCache = snap.docs.map(function(d){ return Object.assign({id:d.id}, d.data()); });
+            tgRenderArchive();
         });
-        f.innerHTML = opts;
-    }"""
-
-NEW_EMP_BLOCK = """    // بناء أزرار الموظفين
-    var empBtns = document.getElementById('tgEmpFilterBtns');
-    if(empBtns) {
-        var empSet2 = new Set();
-        list.forEach(function(t){ if(t.assignedToName) empSet2.add(t.assignedToName); });
-        var savedEmp = _tgTaskFilter.emp || '';
-        var btnsH = '<button class="tg-emp-btn'+(savedEmp===''?' tg-emp-active':'')+'" onclick="tgSetEmpFilter(this,\'\')">الكل</button>';
-        Array.from(empSet2).sort(function(a,b){return a.localeCompare(b,'ar');}).forEach(function(e){
-            btnsH += '<button class="tg-emp-btn'+(e===savedEmp?' tg-emp-active':'')+'" onclick="tgSetEmpFilter(this,\''+e.replace(/'/g,'\\x27')+'\')">'+escH(e)+'</button>';
-        });
-        empBtns.innerHTML = btnsH;
-    }"""
-
-count2 = content.count(OLD_EMP_BLOCK)
-print(f"Emp block occurrences: {count2}")
-content = content.replace(OLD_EMP_BLOCK, NEW_EMP_BLOCK)
-
-# ── Add CSS for tabs/buttons ──
-# Add before the closing of the styles section or append to styles
-
-with open(r'd:\Tech Go System\app.js', 'w', encoding='utf-8') as f:
-    f.write(content)
-
-print("app.js written.")
-
-# Now patch styles.css
-with open(r'd:\Tech Go System\styles.css', encoding='utf-8') as f:
-    css = f.read()
-
-TAB_CSS = """
-/* ═══════════════════════════════════════════ */
-/*  TASK MANAGEMENT TABS & FILTER BUTTONS      */
-/* ═══════════════════════════════════════════ */
-.tg-tab-btn {
-    display: inline-flex; align-items: center; gap: 6px;
-    padding: 7px 16px; border-radius: 20px; font-size: 12px; font-weight: 700;
-    cursor: pointer; border: 1.5px solid var(--bd2);
-    background: var(--w); color: var(--tx2);
-    transition: all .2s; font-family: inherit;
+    }
 }
-.tg-tab-btn:hover { border-color: var(--nv); color: var(--nv); background: var(--gdl); }
-.tg-tab-active {
-    background: var(--nv) !important; color: #fff !important;
-    border-color: var(--nv) !important;
-    box-shadow: 0 4px 12px rgba(15,23,42,.2);
+
+function tgRenderArchive() {
+    var box = document.getElementById('arcList');
+    if(!box) return;
+    var ef = (document.getElementById('arcEmpFilter').value || '').toLowerCase();
+    var mf = document.getElementById('arcMonthFilter').value; // YYYY-MM
+    var html = '';
+    var count = 0;
+    for(var i=0; i<tgArchiveCache.length; i++){
+        var d = tgArchiveCache[i];
+        if(ef && d.employeeName && d.employeeName.toLowerCase().indexOf(ef)===-1) continue;
+        if(mf) {
+            var dt = d.createdAt && d.createdAt.toDate ? d.createdAt.toDate() : new Date();
+            var mStr = dt.getFullYear() + '-' + ('0'+(dt.getMonth()+1)).slice(-2);
+            if(mStr !== mf) continue;
+        }
+        count++;
+        var ts = d.createdAt && d.createdAt.toDate ? d.createdAt.toDate().toLocaleString('ar-EG') : '';
+        html += '<div class="pj-row" style="display:flex; justify-content:space-between; align-items:center;">';
+        html += '<div><div class="pj-t">'+escH(d.docTitle)+'</div><div class="pj-meta">👤 '+escH(d.employeeName)+' | 🕒 '+ts+'</div></div>';
+        html += '<button class="bt bt-o" style="padding:4px 8px; font-size:11px" onclick="tgViewArchiveDoc(\\''+d.id+'\\')">👁 عرض</button>';
+        html += '</div>';
+    }
+    if(count === 0) html = '<div class="empty-hint">لا توجد مستندات مطابقة في الأرشيف.</div>';
+    box.innerHTML = html;
 }
-.tg-tab-cnt {
-    background: rgba(255,255,255,.25); color: inherit;
-    font-size: 10px; font-weight: 800; padding: 1px 7px;
-    border-radius: 10px; min-width: 18px; text-align: center;
+
+function tgViewArchiveDoc(id) {
+    var d = tgArchiveCache.find(function(x){ return x.id === id; });
+    if(!d) return;
+    var win = window.open('', '_blank');
+    if(win) {
+        win.document.write(d.htmlContent || 'محتوى غير متوفر');
+        win.document.close();
+    } else {
+        alert('يرجى السماح بالنوافذ المنبثقة (Popups) لعرض المستند.');
+    }
 }
-.tg-tab-active .tg-tab-cnt { background: rgba(255,255,255,.3); }
-.tg-emp-btn {
-    padding: 4px 12px; border-radius: 14px; font-size: 11px; font-weight: 700;
-    cursor: pointer; border: 1px solid var(--bd2);
-    background: var(--bg); color: var(--tx2);
-    transition: all .15s; font-family: inherit;
+
+// ─── ميزة التعبئة التلقائية ──────────────────────────────────────────
+var tgAutoEmpList = [];
+function tgLoadAutoCompleteList() {
+    db.collection('users').where('role','in',['employee','tech_admin']).get().then(function(snap){
+        tgAutoEmpList = snap.docs.map(function(d){ return Object.assign({uid:d.id}, d.data()); });
+        tgAutoEmpList.sort(function(a,b){ return (a.name||a.email||'').localeCompare(b.name||b.email||''); });
+        var sel = document.getElementById('tgAutoCompleteEmp');
+        if(sel) {
+            var opts = '<option value="">تعبئة بيانات موظف...</option>';
+            tgAutoEmpList.forEach(function(e){ opts += '<option value="'+e.uid+'">'+escH(e.name||e.email)+'</option>'; });
+            sel.innerHTML = opts;
+        }
+    });
 }
-.tg-emp-btn:hover { border-color: var(--gd); color: var(--nv); }
-.tg-emp-active {
-    background: var(--gd) !important; color: var(--nv) !important;
-    border-color: var(--gd) !important; font-weight: 800;
+setTimeout(tgLoadAutoCompleteList, 3000); // load after 3s
+
+function tgAutoCompleteForm(uid) {
+    if(!uid) return;
+    var emp = tgAutoEmpList.find(function(x){ return x.uid === uid; });
+    if(!emp) return;
+    var activePg = document.querySelector('.pg.a');
+    if(!activePg) return;
+    
+    // map fields to keys in employee data
+    var mappings = [
+        { labels: ['الاسم', 'الموظف'], key: 'name' },
+        { labels: ['الرقم القومي'], key: 'nid' },
+        { labels: ['الجنسية'], key: 'nationality' },
+        { labels: ['الحالة الاجتماعية'], key: 'marital' },
+        { labels: ['رقم الهاتف', 'التواصل'], key: 'phone' },
+        { labels: ['البريد'], key: 'email' },
+        { labels: ['العنوان'], key: 'address' },
+        { labels: ['المسمى الوظيفي'], key: 'jobTitle' },
+        { labels: ['القسم', 'الإدارة'], key: 'dept' },
+        { labels: ['الرقم الوظيفي'], key: 'empId' },
+        { labels: ['المدير'], key: 'manager' }
+    ];
+    
+    // First, try by data-fid (used in formsend forms)
+    var inputs = activePg.querySelectorAll('input, textarea');
+    inputs.forEach(function(el){
+        var fid = el.getAttribute('data-fid');
+        if(fid && emp[fid] !== undefined) {
+            el.value = emp[fid];
+        } else {
+            // Try by previous label text
+            var prev = el.previousElementSibling;
+            if(prev && prev.tagName === 'SPAN' || prev && prev.tagName === 'LABEL') {
+                var txt = prev.textContent;
+                for(var i=0; i<mappings.length; i++) {
+                    var match = mappings[i].labels.some(function(l){ return txt.indexOf(l) > -1; });
+                    if(match && emp[mappings[i].key]) {
+                        el.value = emp[mappings[i].key];
+                        break;
+                    }
+                }
+            }
+        }
+    });
+    
+    // Also try FL-line inputs
+    var flItems = activePg.querySelectorAll('.FL-meta-item');
+    flItems.forEach(function(item){
+        var lbl = item.querySelector('.FL-meta-lbl');
+        var val = item.querySelector('.FL-meta-val');
+        if(lbl && val) {
+            var txt = lbl.textContent;
+            for(var i=0; i<mappings.length; i++) {
+                var match = mappings[i].labels.some(function(l){ return txt.indexOf(l) > -1; });
+                if(match && emp[mappings[i].key]) {
+                    val.value = emp[mappings[i].key];
+                    break;
+                }
+            }
+        }
+    });
+    
+    // Reset selection so it can be triggered again
+    document.getElementById('tgAutoCompleteEmp').value = '';
+    if(typeof tgToast === 'function') tgToast('✅ تم تعبئة البيانات تلقائياً', 'ok');
 }
-[data-theme='dark'] .tg-tab-btn { background: var(--w); color: var(--tx2); border-color: var(--bd2); }
-[data-theme='dark'] .tg-tab-active { background: var(--gd) !important; color: var(--nv) !important; border-color: var(--gd) !important; }
-[data-theme='dark'] .tg-emp-btn { background: var(--bg); color: var(--tx2); border-color: var(--bd2); }
-[data-theme='dark'] .tg-emp-active { background: var(--gd) !important; color: var(--nv) !important; }
 """
 
-if '.tg-tab-btn' not in css:
-    css += TAB_CSS
-    with open(r'd:\Tech Go System\styles.css', 'w', encoding='utf-8') as f:
-        f.write(css)
-    print("styles.css updated with tab CSS")
-else:
-    print("Tab CSS already in styles.css")
+    if "function loadArchive" not in content:
+        content += "\n" + js_code
+        with codecs.open('app.js', 'w', 'utf-8') as f:
+            f.write(content)
+
+modify_index()
+modify_app()
+print("Modifications applied successfully.")

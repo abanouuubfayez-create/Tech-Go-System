@@ -2498,10 +2498,36 @@ function printDoc(bodyHtml, docTitle){
     if(!ifr)return;
     fetch('styles.css?v='+Date.now()).then(function(res){return res.text();}).then(function(css){
         var doc=ifr.contentWindow.document;
-        doc.open();
-        doc.write('<!DOCTYPE html><html lang="ar" dir="rtl"><head><meta charset="UTF-8">'+
+        var fullHtml = '<!DOCTYPE html><html lang="ar" dir="rtl"><head><meta charset="UTF-8">'+
             (docTitle ? '<title>'+docTitle+'</title>' : '') +
-            '<style>'+css+'</style></head><body>'+bodyHtml+'</body></html>');
+            '<style>'+css+'</style></head><body>'+bodyHtml+'</body></html>';
+            
+        if(window.TG_USER && (TG_USER.role === 'admin' || TG_USER.role === 'tech_admin')) {
+            var tmp = document.createElement('div');
+            tmp.innerHTML = bodyHtml;
+            var empName = 'غير محدد';
+            var nFld = tmp.querySelector('input[data-fid="name"]');
+            if(nFld && nFld.value) empName = nFld.value;
+            else {
+                var lineLbls = tmp.querySelectorAll('.FL-line-lbl');
+                for(var i=0; i<lineLbls.length; i++){
+                    if(lineLbls[i].textContent.indexOf('الاسم') > -1 || lineLbls[i].textContent.indexOf('الموظف') > -1) {
+                        var nVal = lineLbls[i].nextElementSibling;
+                        if(nVal && nVal.textContent) { empName = nVal.textContent.trim(); break; }
+                    }
+                }
+            }
+            db.collection('docArchive').add({
+                docTitle: docTitle || 'مستند',
+                employeeName: empName,
+                htmlContent: fullHtml,
+                createdAt: new Date(),
+                savedBy: TG_USER.uid
+            }).catch(function(e){ console.error('Archive err:', e); });
+        }
+
+        doc.open();
+        doc.write(fullHtml);
         doc.close();
         doc.querySelectorAll('.dcn').forEach(function(e){e.innerText=CN;});
         setTimeout(function(){
@@ -5401,3 +5427,140 @@ window.tgMigrateNames = function() {
     }
 };
 
+
+
+// ─── ميزة أرشيف المستندات ─────────────────────────────────────────────
+var tgArchiveCache = [];
+function loadArchive() {
+    var c = document.getElementById('pg-archive');
+    if(!c) return;
+    document.getElementById('pT').innerText = 'أرشيف المستندات';
+    c.classList.add('a');
+    if(!c.dataset.mounted) {
+        c.dataset.mounted = '1';
+        db.collection('docArchive').orderBy('createdAt', 'desc').limit(200).onSnapshot(function(snap){
+            tgArchiveCache = snap.docs.map(function(d){ return Object.assign({id:d.id}, d.data()); });
+            tgRenderArchive();
+        });
+    }
+}
+
+function tgRenderArchive() {
+    var box = document.getElementById('arcList');
+    if(!box) return;
+    var ef = (document.getElementById('arcEmpFilter').value || '').toLowerCase();
+    var mf = document.getElementById('arcMonthFilter').value; // YYYY-MM
+    var html = '';
+    var count = 0;
+    for(var i=0; i<tgArchiveCache.length; i++){
+        var d = tgArchiveCache[i];
+        if(ef && d.employeeName && d.employeeName.toLowerCase().indexOf(ef)===-1) continue;
+        if(mf) {
+            var dt = d.createdAt && d.createdAt.toDate ? d.createdAt.toDate() : new Date();
+            var mStr = dt.getFullYear() + '-' + ('0'+(dt.getMonth()+1)).slice(-2);
+            if(mStr !== mf) continue;
+        }
+        count++;
+        var ts = d.createdAt && d.createdAt.toDate ? d.createdAt.toDate().toLocaleString('ar-EG') : '';
+        html += '<div class="pj-row" style="display:flex; justify-content:space-between; align-items:center;">';
+        html += '<div><div class="pj-t">'+escH(d.docTitle)+'</div><div class="pj-meta">👤 '+escH(d.employeeName)+' | 🕒 '+ts+'</div></div>';
+        html += '<button class="bt bt-o" style="padding:4px 8px; font-size:11px" onclick="tgViewArchiveDoc(\''+d.id+'\')">👁 عرض</button>';
+        html += '</div>';
+    }
+    if(count === 0) html = '<div class="empty-hint">لا توجد مستندات مطابقة في الأرشيف.</div>';
+    box.innerHTML = html;
+}
+
+function tgViewArchiveDoc(id) {
+    var d = tgArchiveCache.find(function(x){ return x.id === id; });
+    if(!d) return;
+    var win = window.open('', '_blank');
+    if(win) {
+        win.document.write(d.htmlContent || 'محتوى غير متوفر');
+        win.document.close();
+    } else {
+        alert('يرجى السماح بالنوافذ المنبثقة (Popups) لعرض المستند.');
+    }
+}
+
+// ─── ميزة التعبئة التلقائية ──────────────────────────────────────────
+var tgAutoEmpList = [];
+function tgLoadAutoCompleteList() {
+    db.collection('users').where('role','in',['employee','tech_admin']).get().then(function(snap){
+        tgAutoEmpList = snap.docs.map(function(d){ return Object.assign({uid:d.id}, d.data()); });
+        tgAutoEmpList.sort(function(a,b){ return (a.name||a.email||'').localeCompare(b.name||b.email||''); });
+        var sel = document.getElementById('tgAutoCompleteEmp');
+        if(sel) {
+            var opts = '<option value="">تعبئة بيانات موظف...</option>';
+            tgAutoEmpList.forEach(function(e){ opts += '<option value="'+e.uid+'">'+escH(e.name||e.email)+'</option>'; });
+            sel.innerHTML = opts;
+        }
+    });
+}
+setTimeout(tgLoadAutoCompleteList, 3000); // load after 3s
+
+function tgAutoCompleteForm(uid) {
+    if(!uid) return;
+    var emp = tgAutoEmpList.find(function(x){ return x.uid === uid; });
+    if(!emp) return;
+    var activePg = document.querySelector('.pg.a');
+    if(!activePg) return;
+    
+    // map fields to keys in employee data
+    var mappings = [
+        { labels: ['الاسم', 'الموظف'], key: 'name' },
+        { labels: ['الرقم القومي'], key: 'nid' },
+        { labels: ['الجنسية'], key: 'nationality' },
+        { labels: ['الحالة الاجتماعية'], key: 'marital' },
+        { labels: ['رقم الهاتف', 'التواصل'], key: 'phone' },
+        { labels: ['البريد'], key: 'email' },
+        { labels: ['العنوان'], key: 'address' },
+        { labels: ['المسمى الوظيفي'], key: 'jobTitle' },
+        { labels: ['القسم', 'الإدارة'], key: 'dept' },
+        { labels: ['الرقم الوظيفي'], key: 'empId' },
+        { labels: ['المدير'], key: 'manager' }
+    ];
+    
+    // First, try by data-fid (used in formsend forms)
+    var inputs = activePg.querySelectorAll('input, textarea');
+    inputs.forEach(function(el){
+        var fid = el.getAttribute('data-fid');
+        if(fid && emp[fid] !== undefined) {
+            el.value = emp[fid];
+        } else {
+            // Try by previous label text
+            var prev = el.previousElementSibling;
+            if(prev && prev.tagName === 'SPAN' || prev && prev.tagName === 'LABEL') {
+                var txt = prev.textContent;
+                for(var i=0; i<mappings.length; i++) {
+                    var match = mappings[i].labels.some(function(l){ return txt.indexOf(l) > -1; });
+                    if(match && emp[mappings[i].key]) {
+                        el.value = emp[mappings[i].key];
+                        break;
+                    }
+                }
+            }
+        }
+    });
+    
+    // Also try FL-line inputs
+    var flItems = activePg.querySelectorAll('.FL-meta-item');
+    flItems.forEach(function(item){
+        var lbl = item.querySelector('.FL-meta-lbl');
+        var val = item.querySelector('.FL-meta-val');
+        if(lbl && val) {
+            var txt = lbl.textContent;
+            for(var i=0; i<mappings.length; i++) {
+                var match = mappings[i].labels.some(function(l){ return txt.indexOf(l) > -1; });
+                if(match && emp[mappings[i].key]) {
+                    val.value = emp[mappings[i].key];
+                    break;
+                }
+            }
+        }
+    });
+    
+    // Reset selection so it can be triggered again
+    document.getElementById('tgAutoCompleteEmp').value = '';
+    if(typeof tgToast === 'function') tgToast('✅ تم تعبئة البيانات تلقائياً', 'ok');
+}

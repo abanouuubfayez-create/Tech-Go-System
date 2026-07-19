@@ -91,6 +91,7 @@
             <div class="S-i" onclick="goLiveTrack(this)" style="border-right:2px solid var(--gd)"><span class="ic">📡</span> متابعة لحظية <span class="S-b" style="background:var(--ok)">مباشر</span></div>
             <div class="S-i" onclick="goSendForm(this)" style="border-right:2px solid var(--gd)"><span class="ic">📝</span> إرسال نموذج لموظف <span class="S-b">جديد</span></div>
             <div class="S-i" onclick="go('announcements',this)" style="border-right:2px solid var(--gd)"><span class="ic">📢</span> إدارة الإعلانات <span class="S-b">جديد</span></div>
+            <div class="S-i" onclick="go('archive',this); loadArchive()" style="border-right:2px solid var(--gd)"><span class="ic">🗂</span> أرشيف المستندات <span class="S-b">جديد</span></div>
             <div class="S-i" onclick="go('account',this)" style="border-right:2px solid var(--gd)"><span class="ic">👤</span> حسابي <span class="S-b">جديد</span></div>
         </div>
     </div>
@@ -202,6 +203,9 @@
     <button class="bt bt-d" onclick="tgMigrateNames()" style="font-size:11px;padding:4px 10px;margin-left:4px;background:#8b0000;color:#fff" title="دمج المسميات الوظيفية">🔄 دمج المسميات الوظيفية</button>
     <button class="bt bt-p" onclick="tgSaveFormDraft(false)" style="font-size:11px;padding:4px 10px;margin-left:4px" title="حفظ التعديلات على نفس النموذج">💾 حفظ</button>
     <button class="bt bt-p" onclick="tgSaveFormDraft(true)" style="font-size:11px;padding:4px 10px;margin-left:8px" title="حفظ نسخة جديدة">💾 حفظ كـ...</button>
+    <select id="tgAutoCompleteEmp" onchange="tgAutoCompleteForm(this.value)" style="margin-left:8px; padding:4px; font-size:11px; border:1px solid var(--bd); border-radius:4px; background:var(--bg); color:var(--tx)">
+       <option value="">تعبئة بيانات موظف...</option>
+    </select>
     <button class="bt bt-o" onclick="openPrintPreview()">🖨 معاينة وطباعة</button>
 </div></div>
 <div id="tgFormDraftsSidebar" class="form-drafts-sidebar np" style="display:none;">
@@ -285,7 +289,18 @@
 <div class="pg" id="pg-exp"></div><div class="pg" id="pg-clr"></div><div class="pg" id="pg-task"></div><div class="pg" id="pg-sal"></div>
 <div class="pg" id="pg-res"></div><div class="pg" id="pg-promo"></div><div class="pg" id="pg-raise"></div><div class="pg" id="pg-contract"></div>
 <div class="pg" id="pg-att_live"></div><div class="pg" id="pg-att"></div><div class="pg" id="pg-cal"></div><div class="pg" id="pg-comp"></div><div class="pg" id="pg-set"></div><div class="pg" id="pg-proj"></div><div class="pg" id="pg-mexp"></div>
-<div class="pg" id="pg-staff"></div><div class="pg" id="pg-pmgmt"></div><div class="pg" id="pg-tasksmgmt"></div><div class="pg" id="pg-account"></div><div class="pg" id="pg-announcements"></div><div class="pg" id="pg-livetrack"></div><div class="pg" id="pg-sendform"></div><div class="pg" id="pg-empdocs"></div><div class="pg" id="pg-wkreports"></div>
+<div class="pg" id="pg-staff"></div><div class="pg" id="pg-pmgmt"></div><div class="pg" id="pg-tasksmgmt"></div><div class="pg" id="pg-account"></div><div class="pg" id="pg-archive">
+    <div class="set-sec">
+        <div class="set-sec-title">🗂 أرشيف المستندات المطبوعة</div>
+        <div class="set-hint" style="margin-bottom:12px">سجل لجميع المستندات التي تم طباعتها أو إرسالها من النظام.</div>
+        <div class="fr fr2" style="margin-bottom:12px">
+            <div class="fg"><label>اسم الموظف</label><input type="text" id="arcEmpFilter" placeholder="ابحث باسم الموظف..." onkeyup="tgRenderArchive()"></div>
+            <div class="fg"><label>الشهر (سنة-شهر)</label><input type="month" id="arcMonthFilter" onchange="tgRenderArchive()"></div>
+        </div>
+        <div id="arcList"></div>
+    </div>
+</div>
+<div class="pg" id="pg-announcements"></div><div class="pg" id="pg-livetrack"></div><div class="pg" id="pg-sendform"></div><div class="pg" id="pg-empdocs"></div><div class="pg" id="pg-wkreports"></div>
 </div>
 </div>
 <datalist id="tgEmpDL"></datalist>
@@ -475,6 +490,48 @@
 
   window.addEventListener('beforeprint', function () {
     var b = document.getElementById('ppBar'); if (b) b.style.display = 'none';
+    
+    // --- Save to Archive ---
+    if(window.TG_USER && (TG_USER.role === 'admin' || TG_USER.role === 'tech_admin') && window.db) {
+      var activePg = document.querySelector('.pg.a');
+      // don't archive pages that don't have FL (like pure settings pages)
+      if(activePg && activePg.querySelector('.FL')) {
+        var clone = activePg.cloneNode(true);
+        var origInputs = activePg.querySelectorAll('input, textarea, select');
+        var cloneInputs = clone.querySelectorAll('input, textarea, select');
+        origInputs.forEach(function(el, i) {
+          if(cloneInputs[i]) {
+            if(el.type==='checkbox'||el.type==='radio') { if(el.checked) cloneInputs[i].setAttribute('checked','checked'); }
+            else cloneInputs[i].setAttribute('value', el.value);
+            if(el.tagName==='TEXTAREA') cloneInputs[i].textContent = el.value;
+          }
+        });
+        var docTitle = 'مستند';
+        var titleEl = clone.querySelector('.FL-doctype');
+        if(titleEl) docTitle = titleEl.textContent.trim();
+        var empName = 'غير محدد';
+        var nameEl = clone.querySelector('input[data-fid="name"], input[placeholder*="اسم"]');
+        if(nameEl && nameEl.value) empName = nameEl.value;
+        else {
+            var lineLbls = clone.querySelectorAll('.FL-line-lbl');
+            for(var j=0; j<lineLbls.length; j++){
+                if(lineLbls[j].textContent.indexOf('الاسم') > -1 || lineLbls[j].textContent.indexOf('الموظف') > -1) {
+                    var nVal = lineLbls[j].nextElementSibling;
+                    if(nVal && nVal.textContent) { empName = nVal.textContent.trim(); break; }
+                }
+            }
+        }
+        var fullHtml = '<!DOCTYPE html><html lang="ar" dir="rtl"><head><meta charset="UTF-8"><link rel="stylesheet" href="styles.css"></head><body style="background:#fff;padding:20px;">' + clone.innerHTML + '</body></html>';
+        db.collection('docArchive').add({
+          docTitle: docTitle,
+          employeeName: empName,
+          htmlContent: fullHtml,
+          createdAt: new Date(),
+          savedBy: TG_USER.uid
+        }).catch(function(e){ console.error('Archive err:', e); });
+      }
+    }
+    // -----------------------
     var now = new Date();
     var stamp = 'طُبع بتاريخ ' + now.toLocaleDateString('ar-EG') + ' — ' + now.toLocaleTimeString('ar-EG', { hour: '2-digit', minute: '2-digit' });
     document.querySelectorAll('.FL-foot-ts').forEach(function (el) { el.textContent = stamp; });
