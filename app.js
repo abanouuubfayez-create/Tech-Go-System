@@ -5911,7 +5911,7 @@ function buildCompanyContextForAi() {
     return ctx;
 }
 
-window.generateCareerPath = function() {
+window.generateCareerPath = async function() {
     var field = document.getElementById('devResEmpField').value.trim();
     var btn = document.getElementById('btnGeneratePath');
     var resultBox = document.getElementById('aiPathResult');
@@ -5934,7 +5934,7 @@ window.generateCareerPath = function() {
 
     var resourcesText = (window._allDevRes || []).map(function(r) { return "- " + r.title + " (نوع: " + (r.type === 'video' ? 'فيديو' : 'كتاب') + ", تخصص: " + (r.tags||'عام') + ")"; }).join('\n');
     
-    var prompt = buildCompanyContextForAi() + "أنت مساعد ذكي ومستشار تطوير مهني خبير. قام الموظف بإدخال النص التالي: [" + field + "].\n" +
+    var prompt = (await buildCompanyContextForAi()) + "أنت مساعد ذكي ومستشار تطوير مهني خبير. قام الموظف بإدخال النص التالي: [" + field + "].\n" +
                  "إذا كان النص عبارة عن تخصص أو مجال (مثل 'مطور ويب' أو 'محاسب')، فاقترح له مساراً تطويرياً قصيراً ومفيداً.\n" +
                  "أما إذا كان النص عبارة عن سؤال فني أو استفسار، فأجب عليه باحترافية وبطريقة تساعده في عمله وتطوير مهاراته.\n" +
                  "في كلتا الحالتين، لدينا في مكتبة الشركة المصادر التالية حصراً:\n" + resourcesText + "\n\n" +
@@ -5953,7 +5953,7 @@ window.empGo = function(id, nav) {
 };
 
 
-window.adminGenerateSuggestions = function() {
+window.adminGenerateSuggestions = async function() {
     var field = document.getElementById('adminAiSuggestField').value.trim();
     var btn = document.getElementById('btnAdminSuggest');
     var resultBox = document.getElementById('adminAiSuggestResult');
@@ -5974,7 +5974,7 @@ window.adminGenerateSuggestions = function() {
     resultBox.style.display = 'block';
     resultBox.innerHTML = '<div style="text-align:center; color:var(--tx2);">🤖 الذكاء الاصطناعي يبحث لك عن أفضل الاقتراحات...</div>';
 
-    var prompt = buildCompanyContextForAi() + "أنت مستشار تطوير مهني خبير. بصفتي مدير موارد بشرية، أريد أن أضيف مصادر تعليمية (كتب، ملفات PDF، وقنوات أو دورات يوتيوب) للموظفين في تخصص: [" + field + "].\n" +
+    var prompt = (await buildCompanyContextForAi()) + "أنت مستشار تطوير مهني خبير. بصفتي مدير موارد بشرية، أريد أن أضيف مصادر تعليمية (كتب، ملفات PDF، وقنوات أو دورات يوتيوب) للموظفين في تخصص: [" + field + "].\n" +
                  "أرجو أن تقترح لي 3 إلى 5 مصادر قوية ومعروفة ومفيدة جداً في هذا المجال (يفضل باللغة العربية إن وجد، أو الإنجليزية). اكتب اسم الكتاب أو موضوع الفيديو بوضوح لكي أستطيع البحث عنه ورفعه للموظفين.\n" +
                  "قدم الاقتراحات بتنسيق Markdown وضعها في نقاط سريعة وواضحة بدون مقدمات طويلة.";
 
