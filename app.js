@@ -5898,7 +5898,7 @@ window.generateCareerPath = function() {
                  "لدينا في مكتبة الشركة المصادر التالية حصراً:\n" + resourcesText + "\n\n" +
                  "يرجى كتابة خطة تطويرية محفزة باللغة العربية، واختر فقط المصادر الأكثر صلة من القائمة أعلاه (اذكر عناوينها لكي يبحث عنها الموظف في المكتبة أدناه). إذا لم تجد مصادر متخصصة، اقترح بعض المصادر العامة المفيدة له. قدم نصيحتك بتنسيق Markdown (استخدم العناوين، القوائم المنقطة، والخط العريض لتسهيل القراءة). لا تتحدث عن نفسك كمستشار، ابدأ مباشرة بالترحيب والتحفيز.";
 
-    callGemini(apiKey, prompt, btn, resultBox, '✨ اصنع مسار تطوري الآن');
+    callGemini(apiKey, prompt, btn, resultBox, '✨ اصنع مسار تطوري الآن', false);
 };
 
 // Hook into empGo to load resources when tab is clicked
@@ -5936,12 +5936,12 @@ window.adminGenerateSuggestions = function() {
                  "أرجو أن تقترح لي 3 إلى 5 مصادر قوية ومعروفة ومفيدة جداً في هذا المجال (يفضل باللغة العربية إن وجد، أو الإنجليزية). اكتب اسم الكتاب أو موضوع الفيديو بوضوح لكي أستطيع البحث عنه ورفعه للموظفين.\n" +
                  "قدم الاقتراحات بتنسيق Markdown وضعها في نقاط سريعة وواضحة بدون مقدمات طويلة.";
 
-    callGemini(apiKey, prompt, btn, resultBox, '✨ اصنع مسار تطوري الآن');
+    callGemini(apiKey, prompt, btn, resultBox, '✨ اصنع مسار تطوري الآن', false);
 };
 
 
 
-function callGemini(apiKey, prompt, btn, resultBox, btnOriginalText) {
+function callGemini(apiKey, prompt, btn, resultBox, btnOriginalText, isAdmin) {
     btn.disabled = true;
     btn.innerHTML = '⏳ جاري المعالجة...';
     resultBox.style.display = 'block';
@@ -5962,7 +5962,6 @@ function callGemini(apiKey, prompt, btn, resultBox, btnOriginalText) {
         
         if (validModels.length === 0) throw new Error("لم يتم العثور على أي نموذج.");
 
-        // Sort by version descending
         validModels.sort(function(a, b) {
             var matchA = a.match(/gemini-(\d+\.\d+)/);
             var matchB = b.match(/gemini-(\d+\.\d+)/);
@@ -5995,6 +5994,7 @@ function callGemini(apiKey, prompt, btn, resultBox, btnOriginalText) {
                 btn.disabled = false;
                 btn.innerHTML = btnOriginalText;
                 var text = data.candidates[0].content.parts[0].text;
+                
                 var resultHTML = '';
                 if(typeof marked !== 'undefined') {
                     resultHTML = marked.parse(text);
@@ -6002,10 +6002,17 @@ function callGemini(apiKey, prompt, btn, resultBox, btnOriginalText) {
                     resultHTML = '<pre style="white-space:pre-wrap; font-family:inherit;">' + escH(text) + '</pre>';
                 }
                 
-                var actionsHTML = '<div style="margin-top:20px; padding-top:15px; border-top:1px solid var(--border); display:flex; gap:10px; justify-content:flex-end;">' +
-                    '<button onclick="shareAIResult()" class="btn-primary" style="padding:8px 15px; font-size:14px; background:var(--primary); color:#fff; border:none; border-radius:5px; cursor:pointer;"><i class="fa fa-share-alt"></i> مشاركة</button>' +
-                    '<button onclick="downloadAIResult()" class="btn-secondary" style="padding:8px 15px; font-size:14px; background:var(--bg3); color:var(--tx1); border:1px solid var(--border); border-radius:5px; cursor:pointer;"><i class="fa fa-download"></i> تحميل مباشر</button>' +
-                    '</div>';
+                var actionsHTML = '<div style="margin-top:20px; padding-top:15px; border-top:1px solid var(--border); display:flex; gap:10px; justify-content:flex-end; flex-wrap:wrap;">';
+                
+                actionsHTML += '<button onclick="shareAIResult()" class="btn-primary" style="padding:8px 15px; font-size:14px; background:var(--primary); color:#fff; border:none; border-radius:5px; cursor:pointer;"><i class="fa fa-share-alt"></i> مشاركة</button>';
+                actionsHTML += '<button onclick="downloadAIResult()" class="btn-secondary" style="padding:8px 15px; font-size:14px; background:var(--bg3); color:var(--tx1); border:1px solid var(--border); border-radius:5px; cursor:pointer;"><i class="fa fa-file-text"></i> حفظ النص</button>';
+                
+                if (isAdmin) {
+                    actionsHTML += '<button onclick="searchAIResultOnGoogle()" class="btn-secondary" style="padding:8px 15px; font-size:14px; background:#4285F4; color:#fff; border:none; border-radius:5px; cursor:pointer;"><i class="fa fa-google"></i> البحث عن الملفات لتحميلها</button>';
+                    actionsHTML += '<button onclick="jumpToUploadResource()" class="btn-secondary" style="padding:8px 15px; font-size:14px; background:#10B981; color:#fff; border:none; border-radius:5px; cursor:pointer;"><i class="fa fa-upload"></i> رفع ملف للمكتبة</button>';
+                }
+                
+                actionsHTML += '</div>';
                 
                 resultBox.innerHTML = resultHTML + actionsHTML;
                 window._lastAiResultText = text;
@@ -6022,34 +6029,6 @@ function callGemini(apiKey, prompt, btn, resultBox, btnOriginalText) {
         btn.innerHTML = btnOriginalText;
         resultBox.innerHTML = '<div style="color:red;">❌ ' + err.message + '</div>';
     });
-}
-
-window.downloadAIResult = function() {
-    if(!window._lastAiResultText) return;
-    var blob = new Blob([window._lastAiResultText], {type: "text/plain;charset=utf-8"});
-    var url = URL.createObjectURL(blob);
-    var a = document.createElement("a");
-    a.href = url;
-    a.download = "اقتراحات_الذكاء_الاصطناعي.txt";
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-    URL.revokeObjectURL(url);
-};
-
-window.shareAIResult = function() {
-    if(!window._lastAiResultText) return;
-    if (navigator.share) {
-        navigator.share({
-            title: 'اقتراحات التطوير المهني',
-            text: window._lastAiResultText
-        }).catch(function(err){
-            console.error(err);
-            copyToClipboardFallback();
-        });
-    } else {
-        copyToClipboardFallback();
-    }
 };
 
 function copyToClipboardFallback() {
@@ -6063,3 +6042,15 @@ function copyToClipboardFallback() {
         alert('المتصفح الخاص بك لا يدعم المشاركة المباشرة.');
     }
 }
+
+
+window.searchAIResultOnGoogle = function() {
+    var field = document.getElementById('adminDevField') ? document.getElementById('adminDevField').value : '';
+    var query = encodeURIComponent("كتب ودورات " + field + " PDF تحميل");
+    window.open("https://www.google.com/search?q=" + query, "_blank");
+};
+
+window.jumpToUploadResource = function() {
+    document.getElementById('adminDevResTitle').focus();
+    alert('قم بالنزول لأسفل واكتب اسم المصدر الذي قمت بتحميله في خانة "عنوان المصدر" لرفعه.');
+};
