@@ -5898,32 +5898,7 @@ window.generateCareerPath = function() {
                  "لدينا في مكتبة الشركة المصادر التالية حصراً:\n" + resourcesText + "\n\n" +
                  "يرجى كتابة خطة تطويرية محفزة باللغة العربية، واختر فقط المصادر الأكثر صلة من القائمة أعلاه (اذكر عناوينها لكي يبحث عنها الموظف في المكتبة أدناه). إذا لم تجد مصادر متخصصة، اقترح بعض المصادر العامة المفيدة له. قدم نصيحتك بتنسيق Markdown (استخدم العناوين، القوائم المنقطة، والخط العريض لتسهيل القراءة). لا تتحدث عن نفسك كمستشار، ابدأ مباشرة بالترحيب والتحفيز.";
 
-    fetch('https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:generateContent?key=' + apiKey, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-            contents: [{ parts: [{ text: prompt }] }]
-        })
-    }).then(function(res) {
-        return res.json();
-    }).then(function(data) {
-        btn.disabled = false;
-        btn.innerHTML = '✨ اقترح مساراً لي';
-        if(data.error) {
-            resultBox.innerHTML = '<div style="color:red;">حدث خطأ في الاتصال بالذكاء الاصطناعي: ' + data.error.message + '</div>';
-            return;
-        }
-        var text = data.candidates[0].content.parts[0].text;
-        if(typeof marked !== 'undefined') {
-            resultBox.innerHTML = marked.parse(text);
-        } else {
-            resultBox.innerHTML = '<pre style="white-space:pre-wrap; font-family:inherit;">' + escH(text) + '</pre>';
-        }
-    }).catch(function(err) {
-        btn.disabled = false;
-        btn.innerHTML = '✨ اقترح مساراً لي';
-        resultBox.innerHTML = '<div style="color:red;">تعذر الاتصال بالذكاء الاصطناعي. تأكد من اتصالك بالإنترنت.</div>';
-    });
+    callGemini(apiKey, prompt, btn, resultBox, '✨ اصنع مسار تطوري الآن');
 };
 
 // Hook into empGo to load resources when tab is clicked
@@ -5961,19 +5936,44 @@ window.adminGenerateSuggestions = function() {
                  "أرجو أن تقترح لي 3 إلى 5 مصادر قوية ومعروفة ومفيدة جداً في هذا المجال (يفضل باللغة العربية إن وجد، أو الإنجليزية). اكتب اسم الكتاب أو موضوع الفيديو بوضوح لكي أستطيع البحث عنه ورفعه للموظفين.\n" +
                  "قدم الاقتراحات بتنسيق Markdown وضعها في نقاط سريعة وواضحة بدون مقدمات طويلة.";
 
-    fetch('https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:generateContent?key=' + apiKey, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-            contents: [{ parts: [{ text: prompt }] }]
-        })
-    }).then(function(res) {
-        return res.json();
-    }).then(function(data) {
+    callGemini(apiKey, prompt, btn, resultBox, '✨ اصنع مسار تطوري الآن');
+};
+
+
+
+function callGemini(apiKey, prompt, btn, resultBox, btnOriginalText) {
+    btn.disabled = true;
+    btn.innerHTML = '⏳ جاري المعالجة...';
+    resultBox.style.display = 'block';
+    resultBox.innerHTML = '<div style="text-align:center; color:var(--tx2);">جاري المعالجة والتحليل الذكي...</div>';
+
+    fetch('https://generativelanguage.googleapis.com/v1beta/models?key=' + apiKey)
+    .then(function(res) { return res.json(); })
+    .then(function(data) {
+        if(data.error) throw new Error(data.error.message);
+        var models = data.models || [];
+        var targetModel = null;
+        for(var i=0; i<models.length; i++) {
+            var m = models[i];
+            if(m.supportedGenerationMethods && m.supportedGenerationMethods.indexOf('generateContent') !== -1) {
+                if(m.name.indexOf('gemini-1.5-flash') !== -1) { targetModel = m.name; break; }
+                if(!targetModel && m.name.indexOf('gemini') !== -1) { targetModel = m.name; }
+            }
+        }
+        if(!targetModel) targetModel = 'models/gemini-1.5-flash';
+        
+        return fetch('https://generativelanguage.googleapis.com/v1beta/' + targetModel + ':generateContent?key=' + apiKey, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }] })
+        });
+    })
+    .then(function(res) { return res.json(); })
+    .then(function(data) {
         btn.disabled = false;
-        btn.innerHTML = '✨ اقترح مصادر لإضافتها';
+        btn.innerHTML = btnOriginalText;
         if(data.error) {
-            resultBox.innerHTML = '<div style="color:red;">حدث خطأ: ' + data.error.message + '</div>';
+            resultBox.innerHTML = '<div style="color:red;">❌ حدث خطأ: ' + data.error.message + '</div>';
             return;
         }
         var text = data.candidates[0].content.parts[0].text;
@@ -5982,9 +5982,10 @@ window.adminGenerateSuggestions = function() {
         } else {
             resultBox.innerHTML = '<pre style="white-space:pre-wrap; font-family:inherit;">' + escH(text) + '</pre>';
         }
-    }).catch(function(err) {
+    })
+    .catch(function(err) {
         btn.disabled = false;
-        btn.innerHTML = '✨ اقترح مصادر لإضافتها';
-        resultBox.innerHTML = '<div style="color:red;">تعذر الاتصال بالذكاء الاصطناعي. تأكد من اتصالك بالإنترنت.</div>';
+        btn.innerHTML = btnOriginalText;
+        resultBox.innerHTML = '<div style="color:red;">❌ حدث خطأ: ' + err.message + '</div>';
     });
-};
+}
