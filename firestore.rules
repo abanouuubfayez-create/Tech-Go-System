@@ -193,5 +193,11 @@ service cloud.firestore {
     match /docArchive/{docId} {
       allow read, write: if isAnyAdmin();
     }
+
+    // مكتبة التطوير المهني
+    match /dev_resources/{resId} {
+      allow read: if isSignedIn();
+      allow write: if isAnyAdmin();
+    }
   }
 }

@@ -33,7 +33,7 @@ var T={
     mexp:"شيت المصروفات الشهري",
     res:"طلب استقالة", promo:"قرار ترقية", contract:"عقد عمل", raise:"زيادة راتب / علاوة",
     staff:"متابعة الموظفين", pmgmt:"إدارة المشاريع", account:"حسابي",
-    tasksmgmt:"توزيع المهام", announcements:"إدارة الإعلانات", empdocs:"ملفات الموظفين", wkreports:"بريد التقارير الأسبوعية"
+    tasksmgmt:"توزيع المهام", announcements:"إدارة الإعلانات", empdocs:"ملفات الموظفين", wkreports:"بريد التقارير الأسبوعية", devres:"مكتبة التطوير المهني"
 };
 
 // ─── DOCUMENT NUMBERING ───────────────────────────────────────────────────
@@ -474,13 +474,16 @@ function saveSt(){
 function saveAppSettings() {
     var enabled = document.getElementById('chkAttEnabled').checked;
     var globalRemote = document.getElementById('chkGlobalRemote').checked;
+    var geminiApi = document.getElementById('txtGeminiApi') ? document.getElementById('txtGeminiApi').value.trim() : (window._appSettingsCache ? window._appSettingsCache.geminiApiKey : '');
     db.collection('system').doc('appSettings').set({
         attendanceEnabled: enabled,
-        globalRemoteMode: globalRemote
+        globalRemoteMode: globalRemote,
+        geminiApiKey: geminiApi
     }, {merge: true}).then(function() {
         window._appSettingsCache = window._appSettingsCache || {};
         window._appSettingsCache.attendanceEnabled = enabled;
         window._appSettingsCache.globalRemoteMode = globalRemote;
+        window._appSettingsCache.geminiApiKey = geminiApi;
         alert('✅ تم حفظ إعدادات النظام بنجاح!');
     }).catch(function(err) {
         alert('❌ تعذر حفظ الإعدادات: ' + err.message);
@@ -2982,6 +2985,10 @@ function load(id,c){
     }
 
     // ── نموذج لفت نظر ──────────────────────────────────────────────────
+    else if(id==="devres"){
+        loadDevResAdmin(c);
+        return;
+    }
     else if(id==="notice"){
         h=H('نموذج لفت نظر','إنذار رسمي وفق اللائحة التنظيمية','OFFICIAL NOTICE','notice');
         h+=SC('١','بيانات الموظف');
@@ -3714,6 +3721,12 @@ function load(id,c){
         h+='<div class="fg" style="margin-bottom:14px"><label>تفعيل الميزة للموظفين</label><div class="chk-grid"><label><input type="checkbox" id="chkAttEnabled" '+(window._appSettingsCache&&window._appSettingsCache.attendanceEnabled!==false?'checked':'')+'> السماح للموظفين بتسجيل الحضور والانصراف عبر البوابة</label></div></div>';
         h+='<div class="fg" style="margin-bottom:14px"><label>وضع "العمل عن بُعد" الشامل</label><div class="chk-grid"><label><input type="checkbox" id="chkGlobalRemote" '+(window._appSettingsCache&&window._appSettingsCache.globalRemoteMode?'checked':'')+'> تفعيل وضع "العمل عن بُعد" (ريموتلي) لجميع الموظفين (يلغي الإعدادات الفردية)</label></div></div>';
         h+='<button class="bt bt-p" style="padding:6px 14px;font-size:12px" onclick="saveAppSettings()">💾 حفظ إعدادات النظام</button>';
+        h+='</div>';
+
+        h+='<div class="set-sec"><div class="set-sec-title">🤖 الذكاء الاصطناعي (Gemini API)</div>';
+        h+='<div class="set-hint" style="margin-bottom:12px">ضع هنا مفتاح Gemini API لتفعيل اقتراحات التطوير المهني للموظفين.</div>';
+        h+='<div class="fr fr2"><div class="fg" style="margin:0"><input type="password" id="txtGeminiApi" placeholder="AIzaSy..." value="'+(window._appSettingsCache&&window._appSettingsCache.geminiApiKey?window._appSettingsCache.geminiApiKey:'')+'"></div></div>';
+        h+='<button class="bt bt-p" style="padding:6px 14px;font-size:12px;margin-top:10px" onclick="saveAppSettings()">💾 حفظ إعدادات النظام</button>';
         h+='</div>';
 
         h+='<div class="set-sec"><div class="set-sec-title">📋 ترقيم المستندات</div>';
@@ -5642,3 +5655,264 @@ function tgAutoCompleteForm(uid, targetEl) {
     document.getElementById('tgAutoCompleteEmp').value = '';
     if(typeof tgToast === 'function') tgToast('✅ تم تعبئة البيانات تلقائياً', 'ok');
 }
+
+
+// ─── مسار التطوير المهني - لوحة الإدارة ────────────────────────────────────
+function loadDevResAdmin(container) {
+    var h = '<div class="set-sec" style="max-width:800px; margin:20px auto;">';
+    h += '<div class="set-sec-title">📚 إضافة مصدر جديد لمكتبة التطوير</div>';
+    h += '<div class="set-hint" style="margin-bottom:16px;">قم برفع كتاب (PDF) أو إضافة رابط فيديو من يوتيوب، ليتمكن الذكاء الاصطناعي من ترشيحه للموظفين بناءً على تخصصاتهم.</div>';
+    
+    h += '<div class="fg" style="margin-bottom:12px;">';
+    h += '<label>عنوان المصدر (كتاب / فيديو)</label>';
+    h += '<input type="text" id="devResTitle" placeholder="مثال: أساسيات التسويق الرقمي">';
+    h += '</div>';
+
+    h += '<div class="fr fr2" style="margin-bottom:12px;">';
+    h += '<div class="fg" style="margin:0;"><label>نوع المصدر</label>';
+    h += '<select id="devResType" onchange="toggleDevResInput(this.value)">';
+    h += '<option value="book">كتاب / ملف (PDF)</option>';
+    h += '<option value="video">فيديو / رابط خارجي</option>';
+    h += '</select></div>';
+    
+    h += '<div class="fg" style="margin:0;"><label>التخصص أو المجال (اختياري)</label>';
+    h += '<input type="text" id="devResTags" placeholder="مثال: تسويق، مبيعات، برمجة (مفصول بفاصلة)">';
+    h += '</div></div>';
+
+    h += '<div class="fg" id="devResFileInputContainer" style="margin-bottom:16px;">';
+    h += '<label>ملف المصدر (أقصى حجم 100 ميجابايت)</label>';
+    h += '<input type="file" id="devResFile" accept=".pdf,.doc,.docx,.ppt,.pptx">';
+    h += '</div>';
+    
+    h += '<div class="fg" id="devResLinkInputContainer" style="margin-bottom:16px; display:none;">';
+    h += '<label>رابط المصدر (URL)</label>';
+    h += '<input type="url" id="devResLink" placeholder="https://youtube.com/...">';
+    h += '</div>';
+
+    h += '<button class="bt bt-p" onclick="addDevRes()" id="btnSaveDevRes">➕ حفظ المصدر في المكتبة</button>';
+    h += '<div id="devResUploadStatus" style="margin-top:10px; font-weight:bold; color:var(--nv); font-size:12px;"></div>';
+    h += '</div>';
+
+    h += '<div class="set-sec" style="max-width:800px; margin:20px auto;">';
+    h += '<div class="set-sec-title">📖 المصادر المضافة حالياً</div>';
+    h += '<div id="devResAdminList">⏳ جارٍ التحميل...</div>';
+    h += '</div>';
+
+    container.innerHTML = h;
+    fetchDevResAdminList();
+}
+
+window.toggleDevResInput = function(type) {
+    if(type === 'video') {
+        document.getElementById('devResFileInputContainer').style.display = 'none';
+        document.getElementById('devResLinkInputContainer').style.display = 'block';
+    } else {
+        document.getElementById('devResFileInputContainer').style.display = 'block';
+        document.getElementById('devResLinkInputContainer').style.display = 'none';
+    }
+};
+
+window.addDevRes = function() {
+    var title = document.getElementById('devResTitle').value.trim();
+    var type = document.getElementById('devResType').value;
+    var tags = document.getElementById('devResTags').value.trim();
+    var fileInput = document.getElementById('devResFile');
+    var linkInput = document.getElementById('devResLink').value.trim();
+    var btn = document.getElementById('btnSaveDevRes');
+    var status = document.getElementById('devResUploadStatus');
+
+    if(!title) { alert('يرجى إدخال عنوان المصدر'); return; }
+
+    var data = {
+        title: title,
+        type: type,
+        tags: tags,
+        createdAt: firebase.firestore.FieldValue.serverTimestamp()
+    };
+
+    if(type === 'book') {
+        var file = fileInput.files[0];
+        if(!file) { alert('يرجى اختيار ملف'); return; }
+        if(file.size > 100*1024*1024) { alert('حجم الملف كبير جداً (يجب أن يكون أقل من 100 ميجا)'); return; }
+        
+        btn.disabled = true;
+        status.innerText = '⏳ جارٍ رفع الملف...';
+        
+        var storageRef = firebase.storage().ref();
+        var fileRef = storageRef.child('dev_resources/' + Date.now() + '_' + file.name);
+        
+        fileRef.put(file).then(function(snapshot) {
+            return snapshot.ref.getDownloadURL();
+        }).then(function(url) {
+            data.url = url;
+            data.fileName = file.name;
+            return db.collection('dev_resources').add(data);
+        }).then(function() {
+            status.innerText = '✅ تم الحفظ بنجاح!';
+            btn.disabled = false;
+            document.getElementById('devResTitle').value = '';
+            fileInput.value = '';
+            fetchDevResAdminList();
+            setTimeout(function(){ status.innerText = ''; }, 3000);
+        }).catch(function(err) {
+            status.innerText = '❌ خطأ: ' + err.message;
+            btn.disabled = false;
+        });
+
+    } else {
+        if(!linkInput) { alert('يرجى إدخال الرابط'); return; }
+        data.url = linkInput;
+        
+        btn.disabled = true;
+        status.innerText = '⏳ جارٍ الحفظ...';
+        
+        db.collection('dev_resources').add(data).then(function() {
+            status.innerText = '✅ تم الحفظ بنجاح!';
+            btn.disabled = false;
+            document.getElementById('devResTitle').value = '';
+            document.getElementById('devResLink').value = '';
+            fetchDevResAdminList();
+            setTimeout(function(){ status.innerText = ''; }, 3000);
+        }).catch(function(err) {
+            status.innerText = '❌ خطأ: ' + err.message;
+            btn.disabled = false;
+        });
+    }
+};
+
+window.fetchDevResAdminList = function() {
+    db.collection('dev_resources').orderBy('createdAt', 'desc').get().then(function(snap) {
+        var list = document.getElementById('devResAdminList');
+        if(!list) return;
+        
+        if(snap.empty) {
+            list.innerHTML = '<div class="empty-hint">لا توجد مصادر مضافة بعد.</div>';
+            return;
+        }
+        
+        var h = '<table class="dt" style="width:100%"><thead><tr><th>العنوان</th><th>النوع</th><th>المجال/التخصص</th><th>الرابط</th><th>إجراء</th></tr></thead><tbody>';
+        snap.forEach(function(doc) {
+            var d = doc.data();
+            var icon = d.type === 'video' ? '▶️ فيديو' : '📕 كتاب';
+            h += '<tr>';
+            h += '<td>' + escH(d.title) + '</td>';
+            h += '<td>' + icon + '</td>';
+            h += '<td>' + escH(d.tags || 'عام') + '</td>';
+            h += '<td><a href="'+d.url+'" target="_blank" style="color:var(--nv);font-weight:bold;text-decoration:none;">فتح الرابط 🔗</a></td>';
+            h += '<td><button class="bt bt-d" style="padding:2px 8px;font-size:10px;" onclick="deleteDevRes(\''+doc.id+'\', \''+(d.type==='book' ? d.url : '')+'\')">🗑 حذف</button></td>';
+            h += '</tr>';
+        });
+        h += '</tbody></table>';
+        list.innerHTML = h;
+    });
+};
+
+window.deleteDevRes = function(id, fileUrl) {
+    if(!confirm('هل أنت متأكد من حذف هذا المصدر؟')) return;
+    
+    if(fileUrl) {
+        var fileRef = firebase.storage().refFromURL(fileUrl);
+        fileRef.delete().catch(function(e){ console.warn("Failed to delete file:", e); });
+    }
+    
+    db.collection('dev_resources').doc(id).delete().then(function() {
+        alert('تم الحذف بنجاح');
+        fetchDevResAdminList();
+    }).catch(function(err) {
+        alert('خطأ: ' + err.message);
+    });
+};
+
+
+// ─── مسار التطوير المهني - لوحة الموظف ────────────────────────────────────
+window.fetchEmpDevRes = function() {
+    db.collection('dev_resources').orderBy('createdAt', 'desc').get().then(function(snap) {
+        var grid = document.getElementById('empDevResGrid');
+        if(!grid) return;
+        
+        window._allDevRes = [];
+        
+        if(snap.empty) {
+            grid.innerHTML = '<div class="empty-hint">لم يتم إضافة أي مصادر للمكتبة بعد.</div>';
+            return;
+        }
+        
+        var h = '';
+        snap.forEach(function(doc) {
+            var d = doc.data();
+            window._allDevRes.push(d);
+            var isVideo = d.type === 'video';
+            h += '<div style="background:var(--w); border:1px solid var(--bd2); border-radius:12px; padding:20px; transition:all 0.3s; box-shadow:0 4px 10px rgba(0,0,0,0.02); display:flex; flex-direction:column;">';
+            h += '<div style="font-size:24px; margin-bottom:12px;">' + (isVideo ? '▶️' : '📕') + '</div>';
+            h += '<div style="font-weight:800; font-size:16px; color:var(--nv); margin-bottom:8px;">' + escH(d.title) + '</div>';
+            h += '<div style="font-size:12px; color:var(--tx3); margin-bottom:16px; flex:1;">المجال: ' + escH(d.tags || 'عام') + '</div>';
+            h += '<a href="' + d.url + '" target="_blank" style="display:block; text-align:center; padding:10px; background:var(--bg2); color:var(--nv); border-radius:8px; text-decoration:none; font-weight:700; transition:all 0.2s;" onmouseover="this.style.background=\'var(--nv)\';this.style.color=\'#fff\';" onmouseout="this.style.background=\'var(--bg2)\';this.style.color=\'var(--nv)\';">' + (isVideo ? 'مشاهدة الفيديو' : 'قراءة الكتاب') + '</a>';
+            h += '</div>';
+        });
+        grid.innerHTML = h;
+    });
+};
+
+window.generateCareerPath = function() {
+    var field = document.getElementById('devResEmpField').value.trim();
+    var btn = document.getElementById('btnGeneratePath');
+    var resultBox = document.getElementById('aiPathResult');
+    
+    if(!field) {
+        alert('يرجى كتابة تخصصك أو مجالك أولاً.');
+        return;
+    }
+
+    var apiKey = window._appSettingsCache && window._appSettingsCache.geminiApiKey;
+    if(!apiKey) {
+        alert('ميزة الذكاء الاصطناعي غير مفعلة حالياً. يرجى التواصل مع الإدارة لإضافة مفتاح API.');
+        return;
+    }
+
+    btn.disabled = true;
+    btn.innerHTML = '⏳ جاري التفكير...';
+    resultBox.style.display = 'block';
+    resultBox.innerHTML = '<div style="text-align:center; color:var(--tx2);">🤖 يقوم الذكاء الاصطناعي الآن بتحليل تخصصك واختيار أفضل المصادر لك...</div>';
+
+    var resourcesText = (window._allDevRes || []).map(function(r) { return "- " + r.title + " (نوع: " + (r.type === 'video' ? 'فيديو' : 'كتاب') + ", تخصص: " + (r.tags||'عام') + ")"; }).join('\n');
+    
+    var prompt = "أنت مستشار تطوير مهني خبير ومحفز. طلب منك موظف يعمل في مجال أو تخصص: [" + field + "] أن تقترح له مساراً تطويرياً قصيراً ومفيداً.\n" +
+                 "لدينا في مكتبة الشركة المصادر التالية حصراً:\n" + resourcesText + "\n\n" +
+                 "يرجى كتابة خطة تطويرية محفزة باللغة العربية، واختر فقط المصادر الأكثر صلة من القائمة أعلاه (اذكر عناوينها لكي يبحث عنها الموظف في المكتبة أدناه). إذا لم تجد مصادر متخصصة، اقترح بعض المصادر العامة المفيدة له. قدم نصيحتك بتنسيق Markdown (استخدم العناوين، القوائم المنقطة، والخط العريض لتسهيل القراءة). لا تتحدث عن نفسك كمستشار، ابدأ مباشرة بالترحيب والتحفيز.";
+
+    fetch('https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=' + apiKey, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+            contents: [{ parts: [{ text: prompt }] }]
+        })
+    }).then(function(res) {
+        return res.json();
+    }).then(function(data) {
+        btn.disabled = false;
+        btn.innerHTML = '✨ اقترح مساراً لي';
+        if(data.error) {
+            resultBox.innerHTML = '<div style="color:red;">حدث خطأ في الاتصال بالذكاء الاصطناعي: ' + data.error.message + '</div>';
+            return;
+        }
+        var text = data.candidates[0].content.parts[0].text;
+        if(typeof marked !== 'undefined') {
+            resultBox.innerHTML = marked.parse(text);
+        } else {
+            resultBox.innerHTML = '<pre style="white-space:pre-wrap; font-family:inherit;">' + escH(text) + '</pre>';
+        }
+    }).catch(function(err) {
+        btn.disabled = false;
+        btn.innerHTML = '✨ اقترح مساراً لي';
+        resultBox.innerHTML = '<div style="color:red;">تعذر الاتصال بالذكاء الاصطناعي. تأكد من اتصالك بالإنترنت.</div>';
+    });
+};
+
+// Hook into empGo to load resources when tab is clicked
+var originalEmpGo = window.empGo;
+window.empGo = function(id, nav) {
+    if(originalEmpGo) originalEmpGo(id, nav);
+    if(id === 'devres') {
+        fetchEmpDevRes();
+    }
+};
