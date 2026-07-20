@@ -5877,7 +5877,7 @@ window.fetchEmpDevRes = function() {
 };
 
 
-function buildCompanyContextForAi() {
+async function buildCompanyContextForAi() {
     var ctx = "معلومات عن الشركة لتكون في السياق عند الإجابة:\n";
     if (window._appSettingsCache && window._appSettingsCache.companyName) {
         ctx += "اسم الشركة: " + window._appSettingsCache.companyName + "\n";
@@ -5885,6 +5885,29 @@ function buildCompanyContextForAi() {
         ctx += "اسم الشركة: الشركة الخاصة بنا\n";
     }
     
+    if (!window._pmgmtProjCache && window.auth && window.auth.currentUser && window.db) {
+        try {
+            var userDoc = await db.collection('users').doc(auth.currentUser.uid).get();
+            var role = userDoc.data() ? userDoc.data().role : 'employee';
+            var snap;
+            if (role === 'admin' || role === 'tech_admin') {
+                snap = await db.collection('projects').get();
+            } else {
+                snap = await db.collection('projects').where('assignees', 'array-contains', auth.currentUser.uid).get();
+            }
+            window._pmgmtProjCache = [];
+            snap.forEach(function(d){ var data = d.data(); data.id = d.id; window._pmgmtProjCache.push(data); });
+        } catch(e) { console.error("Error loading projects for AI context", e); }
+    }
+
+    if (!window._staffEmpCache && window.auth && window.auth.currentUser && window.db) {
+        try {
+            var snap = await db.collection('users').get();
+            window._staffEmpCache = [];
+            snap.forEach(function(d){ var data = d.data(); data.uid = d.id; window._staffEmpCache.push(data); });
+        } catch(e) { console.error("Error loading employees for AI context", e); }
+    }
+
     // Add Projects Context
     if (window._pmgmtProjCache && window._pmgmtProjCache.length > 0) {
         ctx += "\nالمشاريع الحالية في الشركة:\n";
