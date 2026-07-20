@@ -6009,10 +6009,14 @@ function callGemini(apiKey, prompt, btn, resultBox, btnOriginalText, isAdmin) {
                 if(data.error) {
                     var errMsg = data.error.message || "";
                     if (errMsg.toLowerCase().indexOf('quota') !== -1 || errMsg.indexOf('429') !== -1) {
-                        resultBox.innerHTML = '<div style="color:#eab308; font-size:15px; text-align:center; padding:15px; background-color:#fef08a; border-radius:8px;">⏳ <b>تنبيه:</b> لقد وصلت للحد الأقصى من الطلبات المجانية المسموحة في الدقيقة لمفتاح API الخاص بك.<br>يُرجى الانتظار لمدة <b>دقيقة واحدة</b> ثم المحاولة مجدداً.</div>';
+                        if (errMsg.indexOf('limit: 0') !== -1) {
+                            resultBox.innerHTML = '<div style="color:#dc2626; font-size:15px; text-align:center; padding:15px; background-color:#fee2e2; border-radius:8px; border: 1px solid #f87171;">❌ <b>تم إيقاف مفتاح API الخاص بك من قِبل جوجل:</b><br>حسابك لا يملك أي رصيد مجاني (Limit: 0). يحدث هذا إذا كان حسابك في دولة لا تدعم الباقة المجانية (مثل أوروبا)، أو تم استنفاد الحصة بالكامل. <b>يجب إنشاء مفتاح جديد من حساب آخر يدعم الخطة المجانية، أو تفعيل الدفع في حسابك.</b></div>';
+                        } else {
+                            resultBox.innerHTML = '<div style="color:#eab308; font-size:15px; text-align:center; padding:15px; background-color:#fef08a; border-radius:8px; border: 1px solid #facc15;">⏳ <b>تنبيه:</b> لقد وصلت للحد الأقصى من الطلبات المجانية المسموحة في الدقيقة لمفتاح API الخاص بك.<br>يُرجى الانتظار لمدة <b>دقيقة واحدة</b> ثم المحاولة مجدداً.</div>';
+                        }
                         btn.disabled = false;
                         btn.innerHTML = btnOriginalText;
-                        return; // Stop trying other models
+                        return;
                     }
                     lastErrorMsg = targetModel + " Error: " + errMsg;
                     tryModel(index + 1);
