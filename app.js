@@ -5876,6 +5876,41 @@ window.fetchEmpDevRes = function() {
     });
 };
 
+
+function buildCompanyContextForAi() {
+    var ctx = "معلومات عن الشركة لتكون في السياق عند الإجابة:\n";
+    if (window._appSettingsCache && window._appSettingsCache.companyName) {
+        ctx += "اسم الشركة: " + window._appSettingsCache.companyName + "\n";
+    } else {
+        ctx += "اسم الشركة: الشركة الخاصة بنا\n";
+    }
+    
+    // Add Projects Context
+    if (window._pmgmtProjCache && window._pmgmtProjCache.length > 0) {
+        ctx += "\nالمشاريع الحالية في الشركة:\n";
+        var activeProjects = window._pmgmtProjCache.filter(function(p){ return p.status !== 'مكتمل'; });
+        for(var i=0; i<Math.min(activeProjects.length, 15); i++) {
+            var p = activeProjects[i];
+            ctx += "- " + (p.title || 'بدون اسم') + " (الحالة: " + (p.status || 'قيد التنفيذ') + ")\n";
+        }
+    }
+
+    // Add Employees Context
+    if (window._staffEmpCache && window._staffEmpCache.length > 0) {
+        ctx += "\nالموظفون الحاليون (أسماء ومناصب):\n";
+        for(var i=0; i<Math.min(window._staffEmpCache.length, 30); i++) {
+            var e = window._staffEmpCache[i];
+            var roleStr = e.role === 'admin' ? 'مدير نظام' : (e.role === 'manager' ? 'مدير' : 'موظف');
+            var levelStr = e.level || '';
+            var deptStr = e.department || '';
+            ctx += "- " + (e.name || 'غير معروف') + " (" + roleStr + (deptStr ? " قسم " + deptStr : "") + (levelStr ? " مستوى " + levelStr : "") + ")\n";
+        }
+    }
+    
+    ctx += "\nملاحظة: استخدم هذه المعلومات فقط إذا كان سؤال المستخدم يتعلق بها أو إذا كانت ستساعد في تقديم مسار مهني أو نصيحة أفضل داخل سياق شركتنا. لا تقم بسرد هذه المعلومات للمستخدم إلا إذا طلب ذلك.\n\n";
+    return ctx;
+}
+
 window.generateCareerPath = function() {
     var field = document.getElementById('devResEmpField').value.trim();
     var btn = document.getElementById('btnGeneratePath');
@@ -5899,7 +5934,7 @@ window.generateCareerPath = function() {
 
     var resourcesText = (window._allDevRes || []).map(function(r) { return "- " + r.title + " (نوع: " + (r.type === 'video' ? 'فيديو' : 'كتاب') + ", تخصص: " + (r.tags||'عام') + ")"; }).join('\n');
     
-    var prompt = "أنت مساعد ذكي ومستشار تطوير مهني خبير. قام الموظف بإدخال النص التالي: [" + field + "].\n" +
+    var prompt = buildCompanyContextForAi() + "أنت مساعد ذكي ومستشار تطوير مهني خبير. قام الموظف بإدخال النص التالي: [" + field + "].\n" +
                  "إذا كان النص عبارة عن تخصص أو مجال (مثل 'مطور ويب' أو 'محاسب')، فاقترح له مساراً تطويرياً قصيراً ومفيداً.\n" +
                  "أما إذا كان النص عبارة عن سؤال فني أو استفسار، فأجب عليه باحترافية وبطريقة تساعده في عمله وتطوير مهاراته.\n" +
                  "في كلتا الحالتين، لدينا في مكتبة الشركة المصادر التالية حصراً:\n" + resourcesText + "\n\n" +
@@ -5939,7 +5974,7 @@ window.adminGenerateSuggestions = function() {
     resultBox.style.display = 'block';
     resultBox.innerHTML = '<div style="text-align:center; color:var(--tx2);">🤖 الذكاء الاصطناعي يبحث لك عن أفضل الاقتراحات...</div>';
 
-    var prompt = "أنت مستشار تطوير مهني خبير. بصفتي مدير موارد بشرية، أريد أن أضيف مصادر تعليمية (كتب، ملفات PDF، وقنوات أو دورات يوتيوب) للموظفين في تخصص: [" + field + "].\n" +
+    var prompt = buildCompanyContextForAi() + "أنت مستشار تطوير مهني خبير. بصفتي مدير موارد بشرية، أريد أن أضيف مصادر تعليمية (كتب، ملفات PDF، وقنوات أو دورات يوتيوب) للموظفين في تخصص: [" + field + "].\n" +
                  "أرجو أن تقترح لي 3 إلى 5 مصادر قوية ومعروفة ومفيدة جداً في هذا المجال (يفضل باللغة العربية إن وجد، أو الإنجليزية). اكتب اسم الكتاب أو موضوع الفيديو بوضوح لكي أستطيع البحث عنه ورفعه للموظفين.\n" +
                  "قدم الاقتراحات بتنسيق Markdown وضعها في نقاط سريعة وواضحة بدون مقدمات طويلة.";
 
