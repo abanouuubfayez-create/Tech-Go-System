@@ -452,13 +452,14 @@ function empGo(id, el, force) {
     document.querySelectorAll('.emp-tab').forEach(function(t){t.classList.remove('a');});
     document.querySelectorAll('.emp-pg').forEach(function(p){p.classList.remove('a');});
     if(el)el.classList.add('a');
-    document.getElementById('epg-'+id).classList.add('a');
+    var epg = document.getElementById('epg-'+id);
+    if(epg) epg.classList.add('a');
     
     // Reset global table filter
     var gf = document.getElementById("globalTableFilter");
     if(gf) { gf.value = ""; if(typeof tgFilterVisibleTables==='function') tgFilterVisibleTables(""); }
     
-    if(id==='proj' && window._currentProjectIds && TG_USER){
+    if(id==='proj' && window._currentProjectIds && window.TG_USER){
         var seenProjects = JSON.parse(localStorage.getItem('seen_projects_'+TG_USER.uid) || '[]');
         window._currentProjectIds.forEach(function(pid){
             if(seenProjects.indexOf(pid)===-1) seenProjects.push(pid);
@@ -466,13 +467,16 @@ function empGo(id, el, force) {
         localStorage.setItem('seen_projects_'+TG_USER.uid, JSON.stringify(seenProjects));
         updateProjBadge(0);
     }
-    if(id==='tasks' && window._currentTaskIds && TG_USER){
+    if(id==='tasks' && window._currentTaskIds && window.TG_USER){
         var seenTasks = JSON.parse(localStorage.getItem('seen_tasks_'+TG_USER.uid) || '[]');
         window._currentTaskIds.forEach(function(tid){
             if(seenTasks.indexOf(tid)===-1) seenTasks.push(tid);
         });
         localStorage.setItem('seen_tasks_'+TG_USER.uid, JSON.stringify(seenTasks));
         updateTasksBadge(0);
+    }
+    if(id === 'devres' && typeof fetchEmpDevRes === 'function') {
+        fetchEmpDevRes();
     }
 }
 
