@@ -5781,10 +5781,11 @@ window.addDevRes = function() {
 };
 
 window.fetchDevResAdminList = function() {
+    var list = document.getElementById('devResAdminList');
+    if(!list) return;
+    list.innerHTML = '⏳ جارٍ التحميل...';
+    
     db.collection('dev_resources').orderBy('createdAt', 'desc').get().then(function(snap) {
-        var list = document.getElementById('devResAdminList');
-        if(!list) return;
-        
         if(snap.empty) {
             list.innerHTML = '<div class="empty-hint">لا توجد مصادر مضافة بعد.</div>';
             return;
@@ -5804,6 +5805,9 @@ window.fetchDevResAdminList = function() {
         });
         h += '</tbody></table>';
         list.innerHTML = h;
+    }).catch(function(err) {
+        console.error("fetchDevResAdminList error:", err);
+        list.innerHTML = '<div class="empty-hint" style="color:red">❌ تعذر التحميل: ' + err.message + '<br><small>هل قمت بتحديث قواعد Firestore؟</small></div>';
     });
 };
 
@@ -5826,10 +5830,11 @@ window.deleteDevRes = function(id, fileUrl) {
 
 // ─── مسار التطوير المهني - لوحة الموظف ────────────────────────────────────
 window.fetchEmpDevRes = function() {
+    var grid = document.getElementById('empDevResGrid');
+    if(!grid) return;
+    grid.innerHTML = '<div class="empty-hint">⏳ جارٍ تحميل المصادر...</div>';
+    
     db.collection('dev_resources').orderBy('createdAt', 'desc').get().then(function(snap) {
-        var grid = document.getElementById('empDevResGrid');
-        if(!grid) return;
-        
         window._allDevRes = [];
         
         if(snap.empty) {
@@ -5850,6 +5855,9 @@ window.fetchEmpDevRes = function() {
             h += '</div>';
         });
         grid.innerHTML = h;
+    }).catch(function(err){
+        console.error("fetchEmpDevRes error:", err);
+        grid.innerHTML = '<div class="empty-hint" style="color:red">❌ تعذر التحميل: ' + err.message + '</div>';
     });
 };
 
