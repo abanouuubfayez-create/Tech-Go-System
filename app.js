@@ -5952,12 +5952,12 @@ function callGemini(apiKey, prompt, btn, resultBox, btnOriginalText, isAdmin) {
     btn.disabled = true;
     btn.innerHTML = '⏳ جاري المعالجة...';
     resultBox.style.display = 'block';
-    resultBox.innerHTML = '<div style="text-align:center; color:var(--tx2);">جاري البحث عن النموذج المناسب...</div>';
+    resultBox.innerHTML = '<div style="text-align:center; color:var(--tx2);">جاري التحقق من النماذج المتاحة...</div>';
 
     fetch('https://generativelanguage.googleapis.com/v1beta/models?key=' + apiKey)
     .then(function(res) { return res.json(); })
     .then(function(data) {
-        if(data.error) throw new Error(data.error.message);
+        if(data.error) throw new Error("ListModels Error: " + data.error.message);
         var models = data.models || [];
         
         var flashModel = null;
@@ -5985,17 +5985,19 @@ function callGemini(apiKey, prompt, btn, resultBox, btnOriginalText, isAdmin) {
         if (pro10Model) selectedModels.push(pro10Model);
         if (pro15Model) selectedModels.push(pro15Model);
 
-        if (selectedModels.length === 0) throw new Error("لم يتم العثور على أي نموذج مدعوم.");
+        if (selectedModels.length === 0) throw new Error("No supported text generation models found for this API key.");
 
+        var lastErrorMsg = "";
+        
         function tryModel(index) {
             if(index >= selectedModels.length) {
-                resultBox.innerHTML = '<div style="color:red;">❌ عذراً، جميع النماذج المتاحة بحسابك لم تنجح في الرد. تأكد من صلاحيات مفتاح API.</div>';
+                resultBox.innerHTML = '<div style="color:red; font-size:14px; text-align:right;">❌ عذراً، فشل الاتصال بجميع النماذج. تفاصيل الخطأ (برجاء تصوير هذه الرسالة):<br><strong style="font-family:monospace; direction:ltr; display:block; margin-top:5px; padding:10px; background:#fdd; border-radius:5px;">' + escH(lastErrorMsg) + '</strong></div>';
                 btn.disabled = false;
                 btn.innerHTML = btnOriginalText;
                 return;
             }
             var targetModel = selectedModels[index];
-            resultBox.innerHTML = '<div style="text-align:center; color:var(--tx2);">جاري تجربة: ' + targetModel.replace('models/','') + '...</div>';
+            resultBox.innerHTML = '<div style="text-align:center; color:var(--tx2);">جاري تجربة نموذج: ' + targetModel.replace('models/','') + '...</div>';
             
             fetch('https://generativelanguage.googleapis.com/v1beta/' + targetModel + ':generateContent?key=' + apiKey, {
                 method: 'POST',
@@ -6005,6 +6007,12 @@ function callGemini(apiKey, prompt, btn, resultBox, btnOriginalText, isAdmin) {
             .then(function(res) { return res.json(); })
             .then(function(data) {
                 if(data.error) {
+                    lastErrorMsg = targetModel + " Error: " + data.error.message;
+                    tryModel(index + 1);
+                    return;
+                }
+                if(!data.candidates || !data.candidates[0].content) {
+                    lastErrorMsg = targetModel + " returned empty response.";
                     tryModel(index + 1);
                     return;
                 }
@@ -6034,6 +6042,7 @@ function callGemini(apiKey, prompt, btn, resultBox, btnOriginalText, isAdmin) {
                 window._lastAiResultText = text;
             })
             .catch(function(err) {
+                lastErrorMsg = "Fetch error: " + err.message;
                 tryModel(index + 1);
             });
         }
@@ -6043,7 +6052,7 @@ function callGemini(apiKey, prompt, btn, resultBox, btnOriginalText, isAdmin) {
     .catch(function(err) {
         btn.disabled = false;
         btn.innerHTML = btnOriginalText;
-        resultBox.innerHTML = '<div style="color:red;">❌ ' + err.message + '</div>';
+        resultBox.innerHTML = '<div style="color:red; font-size:14px; text-align:right;">❌ خطأ أولي:<br><strong style="font-family:monospace; direction:ltr; display:block; margin-top:5px; padding:10px; background:#fdd; border-radius:5px;">' + escH(err.message) + '</strong></div>';
     });
 };
 
