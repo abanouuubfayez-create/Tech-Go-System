@@ -5997,7 +5997,7 @@ function callGemini(apiKey, prompt, btn, resultBox, btnOriginalText, isAdmin) {
 
     if (isGroq || isOpenRouter) {
         var endpoint = isGroq ? 'https://api.groq.com/openai/v1/chat/completions' : 'https://openrouter.ai/api/v1/chat/completions';
-        var modelName = isGroq ? 'llama-3.1-70b-versatile' : 'meta-llama/llama-3.1-8b-instruct:free';
+        var modelName = isGroq ? 'llama-3.3-70b-versatile' : 'meta-llama/llama-3.1-8b-instruct:free';
         
         fetch(endpoint, {
             method: 'POST',
