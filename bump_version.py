@@ -1,7 +1,7 @@
 import re
 import os
 
-new_version = "?v=333444"
+new_version = "?v=555666"
 
 for filename in ['index.html', 'employee.html', 'login.html']:
     if not os.path.exists(filename):
@@ -9,10 +9,10 @@ for filename in ['index.html', 'employee.html', 'login.html']:
     with open(filename, 'r', encoding='utf-8') as f:
         content = f.read()
     
-    # Replace ?v=xxxxxx with ?v=333444
+    # Replace ?v=xxxxxx with ?v=555666
     content = re.sub(r'\?v=\d+', new_version, content)
     
     with open(filename, 'w', encoding='utf-8') as f:
         f.write(content)
 
-print("Bumped version to 333444")
+print("Bumped version to 555666")
