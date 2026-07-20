@@ -3723,8 +3723,8 @@ function load(id,c){
         h+='<button class="bt bt-p" style="padding:6px 14px;font-size:12px" onclick="saveAppSettings()">💾 حفظ إعدادات النظام</button>';
         h+='</div>';
 
-        h+='<div class="set-sec"><div class="set-sec-title">🤖 الذكاء الاصطناعي (Gemini API)</div>';
-        h+='<div class="set-hint" style="margin-bottom:12px">ضع هنا مفتاح Gemini API لتفعيل اقتراحات التطوير المهني للموظفين.</div>';
+        h+='<div class="set-sec"><div class="set-sec-title">🤖 الذكاء الاصطناعي (Gemini / Groq / OpenRouter)</div>';
+        h+='<div class="set-hint" style="margin-bottom:12px">ضع هنا مفتاح API الخاص بك (Gemini أو Groq أو OpenRouter) لتفعيل اقتراحات التطوير المهني. النظام سيتعرف عليه تلقائياً.</div>';
         h+='<div class="fr fr2"><div class="fg" style="margin:0"><input type="password" id="txtGeminiApi" placeholder="AIzaSy..." value="'+(window._appSettingsCache&&window._appSettingsCache.geminiApiKey?window._appSettingsCache.geminiApiKey:'')+'"></div></div>';
         h+='<button class="bt bt-p" style="padding:6px 14px;font-size:12px;margin-top:10px" onclick="saveAppSettings()">💾 حفظ إعدادات النظام</button>';
         h+='</div>';
@@ -5930,7 +5930,7 @@ window.adminGenerateSuggestions = function() {
 
     var apiKey = window._appSettingsCache && window._appSettingsCache.geminiApiKey;
     if(!apiKey) {
-        alert('مفتاح Gemini API غير موجود في إعدادات النظام. يرجى إضافته أولاً.');
+        alert('مفتاح الذكاء الاصطناعي غير موجود في إعدادات النظام. يرجى إضافة مفتاح (Gemini أو Groq أو OpenRouter) أولاً.');
         return;
     }
 
