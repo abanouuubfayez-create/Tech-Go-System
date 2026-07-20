@@ -5991,13 +5991,13 @@ function callGemini(apiKey, prompt, btn, resultBox, btnOriginalText, isAdmin) {
         
         function tryModel(index) {
             if(index >= selectedModels.length) {
-                resultBox.innerHTML = '<div style="color:red; font-size:14px; text-align:right;">❌ عذراً، فشل الاتصال بجميع النماذج. تفاصيل الخطأ (برجاء تصوير هذه الرسالة):<br><strong style="font-family:monospace; direction:ltr; display:block; margin-top:5px; padding:10px; background:#fdd; border-radius:5px;">' + escH(lastErrorMsg) + '</strong></div>';
+                resultBox.innerHTML = '<div style="color:red; font-size:14px; text-align:right;">❌ عذراً، فشل الاتصال. تفاصيل الخطأ:<br><strong style="font-family:monospace; direction:ltr; display:block; margin-top:5px; padding:10px; background:#fdd; border-radius:5px;">' + escH(lastErrorMsg) + '</strong></div>';
                 btn.disabled = false;
                 btn.innerHTML = btnOriginalText;
                 return;
             }
             var targetModel = selectedModels[index];
-            resultBox.innerHTML = '<div style="text-align:center; color:var(--tx2);">جاري تجربة نموذج: ' + targetModel.replace('models/','') + '...</div>';
+            resultBox.innerHTML = '<div style="text-align:center; color:var(--tx2);">جاري إنشاء الرد... (' + targetModel.replace('models/','') + ')</div>';
             
             fetch('https://generativelanguage.googleapis.com/v1beta/' + targetModel + ':generateContent?key=' + apiKey, {
                 method: 'POST',
@@ -6007,7 +6007,14 @@ function callGemini(apiKey, prompt, btn, resultBox, btnOriginalText, isAdmin) {
             .then(function(res) { return res.json(); })
             .then(function(data) {
                 if(data.error) {
-                    lastErrorMsg = targetModel + " Error: " + data.error.message;
+                    var errMsg = data.error.message || "";
+                    if (errMsg.toLowerCase().indexOf('quota') !== -1 || errMsg.indexOf('429') !== -1) {
+                        resultBox.innerHTML = '<div style="color:#eab308; font-size:15px; text-align:center; padding:15px; background-color:#fef08a; border-radius:8px;">⏳ <b>تنبيه:</b> لقد وصلت للحد الأقصى من الطلبات المجانية المسموحة في الدقيقة لمفتاح API الخاص بك.<br>يُرجى الانتظار لمدة <b>دقيقة واحدة</b> ثم المحاولة مجدداً.</div>';
+                        btn.disabled = false;
+                        btn.innerHTML = btnOriginalText;
+                        return; // Stop trying other models
+                    }
+                    lastErrorMsg = targetModel + " Error: " + errMsg;
                     tryModel(index + 1);
                     return;
                 }
