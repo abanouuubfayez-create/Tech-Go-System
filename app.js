@@ -5864,7 +5864,7 @@ window.fetchEmpDevRes = function() {
             var isVideo = d.type === 'video';
             h += '<div style="background:var(--w); border:1px solid var(--bd2); border-radius:12px; padding:20px; transition:all 0.3s; box-shadow:0 4px 10px rgba(0,0,0,0.02); display:flex; flex-direction:column;">';
             h += '<div style="font-size:24px; margin-bottom:12px;">' + (isVideo ? '▶️' : '📕') + '</div>';
-            h += '<div style="font-weight:800; font-size:16px; color:var(--nv); margin-bottom:8px;">' + escH(d.title) + '</div>';
+            h += '<div style="font-weight:800; font-size:16px; color:var(--nv); margin-bottom:8px; word-wrap: break-word; overflow-wrap: break-word; word-break: break-word;">' + escH(d.title) + '</div>';
             h += '<div style="font-size:12px; color:var(--tx3); margin-bottom:16px; flex:1;">المجال: ' + escH(d.tags || 'عام') + '</div>';
             h += '<a href="' + d.url + '" target="_blank" style="display:block; text-align:center; padding:10px; background:var(--bg2); color:var(--nv); border-radius:8px; text-decoration:none; font-weight:700; transition:all 0.2s;" onmouseover="this.style.background=\'var(--nv)\';this.style.color=\'#fff\';" onmouseout="this.style.background=\'var(--bg2)\';this.style.color=\'var(--nv)\';">' + (isVideo ? 'مشاهدة الفيديو' : 'قراءة الكتاب') + '</a>';
             h += '</div>';
