@@ -5751,22 +5751,31 @@ window.addDevRes = function() {
         var storageRef = firebase.storage().ref();
         var fileRef = storageRef.child('dev_resources/' + Date.now() + '_' + file.name);
         
-        fileRef.put(file).then(function(snapshot) {
-            return snapshot.ref.getDownloadURL();
-        }).then(function(url) {
-            data.url = url;
-            data.fileName = file.name;
-            return db.collection('dev_resources').add(data);
-        }).then(function() {
-            status.innerText = '✅ تم الحفظ بنجاح!';
+        var uploadTask = fileRef.put(file);
+        
+        uploadTask.on('state_changed', function(snapshot) {
+            var progress = (snapshot.bytesTransferred / snapshot.totalBytes) * 100;
+            status.innerText = '⏳ جارٍ رفع الملف... ' + Math.round(progress) + '%';
+        }, function(error) {
+            status.innerText = '❌ خطأ في الرفع: ' + error.message;
             btn.disabled = false;
-            document.getElementById('devResTitle').value = '';
-            fileInput.value = '';
-            fetchDevResAdminList();
-            setTimeout(function(){ status.innerText = ''; }, 3000);
-        }).catch(function(err) {
-            status.innerText = '❌ خطأ: ' + err.message;
-            btn.disabled = false;
+        }, function() {
+            status.innerText = '⏳ جارٍ حفظ البيانات...';
+            uploadTask.snapshot.ref.getDownloadURL().then(function(url) {
+                data.url = url;
+                data.fileName = file.name;
+                return db.collection('dev_resources').add(data);
+            }).then(function() {
+                status.innerText = '✅ تم الحفظ بنجاح!';
+                btn.disabled = false;
+                document.getElementById('devResTitle').value = '';
+                fileInput.value = '';
+                fetchDevResAdminList();
+                setTimeout(function(){ status.innerText = ''; }, 3000);
+            }).catch(function(err) {
+                status.innerText = '❌ خطأ في الحفظ: ' + err.message;
+                btn.disabled = false;
+            });
         });
 
     } else {
