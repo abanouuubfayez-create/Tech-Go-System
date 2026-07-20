@@ -6002,14 +6002,14 @@ function callGemini(apiKey, prompt, btn, resultBox, btnOriginalText, isAdmin) {
                     resultHTML = '<pre style="white-space:pre-wrap; font-family:inherit;">' + escH(text) + '</pre>';
                 }
                 
-                var actionsHTML = '<div style="margin-top:20px; padding-top:15px; border-top:1px solid var(--border); display:flex; gap:10px; justify-content:flex-end; flex-wrap:wrap;">';
+                var actionsHTML = '<div style="margin-top:20px; padding-top:15px; border-top:1px solid #ccc; display:flex; gap:10px; justify-content:flex-end; flex-wrap:wrap;">';
                 
-                actionsHTML += '<button onclick="shareAIResult()" class="btn-primary" style="padding:8px 15px; font-size:14px; background:var(--primary); color:#fff; border:none; border-radius:5px; cursor:pointer;"><i class="fa fa-share-alt"></i> مشاركة</button>';
-                actionsHTML += '<button onclick="downloadAIResult()" class="btn-secondary" style="padding:8px 15px; font-size:14px; background:var(--bg3); color:var(--tx1); border:1px solid var(--border); border-radius:5px; cursor:pointer;"><i class="fa fa-file-text"></i> حفظ النص</button>';
+                actionsHTML += '<button onclick="share_ai_content()" style="padding:8px 15px; font-size:14px; background-color:#2563eb; color:#ffffff; border:none; border-radius:5px; cursor:pointer;"><i class="fa fa-share-alt"></i> مشاركة</button>';
+                actionsHTML += '<button onclick="download_ai_content()" style="padding:8px 15px; font-size:14px; background-color:#f3f4f6; color:#1f2937; border:1px solid #d1d5db; border-radius:5px; cursor:pointer;"><i class="fa fa-file-text"></i> حفظ النص</button>';
                 
                 if (isAdmin) {
-                    actionsHTML += '<button onclick="searchAIResultOnGoogle()" class="btn-secondary" style="padding:8px 15px; font-size:14px; background:#4285F4; color:#fff; border:none; border-radius:5px; cursor:pointer;"><i class="fa fa-google"></i> البحث عن الملفات لتحميلها</button>';
-                    actionsHTML += '<button onclick="jumpToUploadResource()" class="btn-secondary" style="padding:8px 15px; font-size:14px; background:#10B981; color:#fff; border:none; border-radius:5px; cursor:pointer;"><i class="fa fa-upload"></i> رفع ملف للمكتبة</button>';
+                    actionsHTML += '<button onclick="search_ai_content_on_google()" style="padding:8px 15px; font-size:14px; background-color:#4285F4; color:#ffffff; border:none; border-radius:5px; cursor:pointer;"><i class="fa fa-google"></i> البحث في جوجل</button>';
+                    actionsHTML += '<button onclick="jump_to_upload_resource()" style="padding:8px 15px; font-size:14px; background-color:#10B981; color:#ffffff; border:none; border-radius:5px; cursor:pointer;"><i class="fa fa-upload"></i> إضافة للمكتبة</button>';
                 }
                 
                 actionsHTML += '</div>';
@@ -6044,13 +6044,13 @@ function copyToClipboardFallback() {
 }
 
 
-window.searchAIResultOnGoogle = function() {
+window.search_ai_content_on_google = function() {
     var field = document.getElementById('adminDevField') ? document.getElementById('adminDevField').value : '';
     var query = encodeURIComponent("كتب ودورات " + field + " PDF تحميل");
     window.open("https://www.google.com/search?q=" + query, "_blank");
 };
 
-window.jumpToUploadResource = function() {
+window.jump_to_upload_resource = function() {
     document.getElementById('adminDevResTitle').focus();
     alert('قم بالنزول لأسفل واكتب اسم المصدر الذي قمت بتحميله في خانة "عنوان المصدر" لرفعه.');
 };
