@@ -5748,35 +5748,31 @@ window.addDevRes = function() {
         btn.disabled = true;
         status.innerText = '⏳ جارٍ رفع الملف...';
         
-        var storageRef = firebase.storage().ref();
-        var fileRef = storageRef.child('dev_resources/' + Date.now() + '_' + file.name);
-        
-        var uploadTask = fileRef.put(file);
-        
-        uploadTask.on('state_changed', function(snapshot) {
-            var progress = (snapshot.bytesTransferred / snapshot.totalBytes) * 100;
-            status.innerText = '⏳ جارٍ رفع الملف... ' + Math.round(progress) + '%';
-        }, function(error) {
-            status.innerText = '❌ خطأ في الرفع: ' + error.message;
-            btn.disabled = false;
-        }, function() {
-            status.innerText = '⏳ جارٍ حفظ البيانات...';
-            uploadTask.snapshot.ref.getDownloadURL().then(function(url) {
+        tgUploadFile('dev_resources', file.name, file, 
+            function(progress) {
+                status.innerText = '⏳ جارٍ رفع الملف... ' + Math.round(progress) + '%';
+            }, 
+            function(error) {
+                status.innerText = '❌ خطأ في الرفع: ' + error;
+                btn.disabled = false;
+            }, 
+            function(url) {
+                status.innerText = '⏳ جارٍ حفظ البيانات...';
                 data.url = url;
                 data.fileName = file.name;
-                return db.collection('dev_resources').add(data);
-            }).then(function() {
-                status.innerText = '✅ تم الحفظ بنجاح!';
-                btn.disabled = false;
-                document.getElementById('devResTitle').value = '';
-                fileInput.value = '';
-                fetchDevResAdminList();
-                setTimeout(function(){ status.innerText = ''; }, 3000);
-            }).catch(function(err) {
-                status.innerText = '❌ خطأ في الحفظ: ' + err.message;
-                btn.disabled = false;
-            });
-        });
+                db.collection('dev_resources').add(data).then(function() {
+                    status.innerText = '✅ تم الحفظ بنجاح!';
+                    btn.disabled = false;
+                    document.getElementById('devResTitle').value = '';
+                    fileInput.value = '';
+                    fetchDevResAdminList();
+                    setTimeout(function(){ status.innerText = ''; }, 3000);
+                }).catch(function(err) {
+                    status.innerText = '❌ خطأ في الحفظ: ' + err.message;
+                    btn.disabled = false;
+                });
+            }
+        );
 
     } else {
         if(!linkInput) { alert('يرجى إدخال الرابط'); return; }
@@ -6054,14 +6050,18 @@ function copyToClipboardFallback() {
 
 
 window.search_ai_content_on_google = function() {
-    var field = document.getElementById('adminDevField') ? document.getElementById('adminDevField').value : '';
-    var query = encodeURIComponent("كتب ودورات " + field + " PDF تحميل");
+    var field = document.getElementById('adminAiSuggestField') ? document.getElementById('adminAiSuggestField').value : '';
+    var query = encodeURIComponent("كتاب عن " + field + " PDF مجانا");
     window.open("https://www.google.com/search?q=" + query, "_blank");
 };
 
 window.jump_to_upload_resource = function() {
-    document.getElementById('adminDevResTitle').focus();
-    alert('قم بالنزول لأسفل واكتب اسم المصدر الذي قمت بتحميله في خانة "عنوان المصدر" لرفعه.');
+    var titleInput = document.getElementById('devResTitle');
+    if (titleInput) {
+        titleInput.focus();
+        titleInput.scrollIntoView({behavior: "smooth", block: "center"});
+    }
+    alert('قم بنسخ اسم الكتاب الذي أعجبك من الاقتراحات والصقه في عنوان إضافة مصدر لرفعه.');
 };
 
 window.download_ai_content = function() {
