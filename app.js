@@ -5898,7 +5898,7 @@ window.generateCareerPath = function() {
                  "لدينا في مكتبة الشركة المصادر التالية حصراً:\n" + resourcesText + "\n\n" +
                  "يرجى كتابة خطة تطويرية محفزة باللغة العربية، واختر فقط المصادر الأكثر صلة من القائمة أعلاه (اذكر عناوينها لكي يبحث عنها الموظف في المكتبة أدناه). إذا لم تجد مصادر متخصصة، اقترح بعض المصادر العامة المفيدة له. قدم نصيحتك بتنسيق Markdown (استخدم العناوين، القوائم المنقطة، والخط العريض لتسهيل القراءة). لا تتحدث عن نفسك كمستشار، ابدأ مباشرة بالترحيب والتحفيز.";
 
-    fetch('https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=' + apiKey, {
+    fetch('https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash-latest:generateContent?key=' + apiKey, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -5961,7 +5961,7 @@ window.adminGenerateSuggestions = function() {
                  "أرجو أن تقترح لي 3 إلى 5 مصادر قوية ومعروفة ومفيدة جداً في هذا المجال (يفضل باللغة العربية إن وجد، أو الإنجليزية). اكتب اسم الكتاب أو موضوع الفيديو بوضوح لكي أستطيع البحث عنه ورفعه للموظفين.\n" +
                  "قدم الاقتراحات بتنسيق Markdown وضعها في نقاط سريعة وواضحة بدون مقدمات طويلة.";
 
-    fetch('https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=' + apiKey, {
+    fetch('https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash-latest:generateContent?key=' + apiKey, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
