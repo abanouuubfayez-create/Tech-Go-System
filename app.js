@@ -5914,7 +5914,16 @@ async function buildCompanyContextForAi(promptText) {
         var activeProjects = window._pmgmtProjCache.filter(function(p){ return p.status !== 'مكتمل'; });
         for(var i=0; i<Math.min(activeProjects.length, 15); i++) {
             var p = activeProjects[i];
-            ctx += "- " + (p.title || 'بدون اسم') + " (الحالة: " + (p.status || 'قيد التنفيذ') + ")\n";
+            var assigneesStr = "";
+            if (p.assignees && p.assignees.length > 0 && window._staffEmpCache) {
+                var names = [];
+                p.assignees.forEach(function(uid) {
+                    var e = window._staffEmpCache.find(x => x.uid === uid);
+                    if(e) names.push(e.name.split(' ')[0]);
+                });
+                if(names.length > 0) assigneesStr = " | الفريق: " + names.join(', ');
+            }
+            ctx += "- " + (p.title || 'بدون اسم') + " (الحالة: " + (p.status || 'قيد التنفيذ') + ")" + assigneesStr + "\n";
         }
     }
 
@@ -5938,11 +5947,14 @@ async function buildCompanyContextForAi(promptText) {
     if (window._staffEmpCache) {
         for(var i=0; i<window._staffEmpCache.length; i++) {
             var emp = window._staffEmpCache[i];
-            if (emp.name && promptText.indexOf(emp.name) !== -1) {
+            if (emp.name) {
+                var fName = emp.name.split(' ')[0];
+                if (promptText.indexOf(emp.name) !== -1 || (fName.length > 2 && promptText.indexOf(fName) !== -1)) {
                 specificEmployeeUid = emp.uid;
                 specificEmployeeName = emp.name;
                 ctx += "\n\n--- تقرير مفصل عن الموظف المذكور (" + emp.name + ") ---\n";
                 break;
+                }
             }
         }
     }
