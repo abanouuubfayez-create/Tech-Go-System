@@ -6350,7 +6350,7 @@ window.notifyEmployeesMeeting = async function() {
                 title: 'اجتماع مباشر الآن',
                 content: msg,
                 date: new Date().toISOString().split('T')[0],
-                timestamp: firebase.firestore.FieldValue.serverTimestamp()
+                createdAt: firebase.firestore.FieldValue.serverTimestamp()
             });
             alert("تم إرسال الإشعار كإعلان لجميع الموظفين بنجاح.");
         }
