@@ -5893,14 +5893,8 @@ async function buildCompanyContextForAi(promptText) {
     
     if (!window._pmgmtProjCache && window.auth && window.auth.currentUser && window.db) {
         try {
-            var userDoc = await db.collection('users').doc(auth.currentUser.uid).get();
-            var role = userDoc.data() ? userDoc.data().role : 'employee';
-            var snap;
-            if (role === 'admin' || role === 'tech_admin') {
-                snap = await db.collection('projects').get();
-            } else {
-                snap = await db.collection('projects').where('assignees', 'array-contains', auth.currentUser.uid).get();
-            }
+            // According to the new RAG requirements, AI should know ALL projects even if queried by an employee.
+            var snap = await db.collection('projects').get();
             window._pmgmtProjCache = [];
             snap.forEach(function(d){ var data = d.data(); data.id = d.id; window._pmgmtProjCache.push(data); });
         } catch(e) { console.error("Error loading projects for AI context", e); }
@@ -5941,7 +5935,7 @@ async function buildCompanyContextForAi(promptText) {
     // Employee Specific Check
     var specificEmployeeUid = null;
     var specificEmployeeName = "";
-    if (isAdmin && window._staffEmpCache) {
+    if (window._staffEmpCache) {
         for(var i=0; i<window._staffEmpCache.length; i++) {
             var emp = window._staffEmpCache[i];
             if (emp.name && promptText.indexOf(emp.name) !== -1) {
