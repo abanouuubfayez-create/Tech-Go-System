@@ -6296,45 +6296,25 @@ async function getLiveMeetingRoomName() {
 
 window.startAdminLiveMeeting = async function() {
     try {
-        await loadJitsiScript();
         var room = await getLiveMeetingRoomName();
-        var container = document.getElementById('jitsiAdminContainer');
-        container.style.display = 'block';
-        container.innerHTML = '';
+        var meetingUrl = "https://meet.jit.si/" + room + "#userInfo.displayName=" + encodeURIComponent('"إدارة الشركة (Admin)"');
         
-        var options = {
-            roomName: room,
-            parentNode: container,
-            userInfo: {
-                displayName: "إدارة الشركة (Admin)"
-            },
-            configOverwrite: {
-                startWithAudioMuted: false,
-                startWithVideoMuted: true,
-                prejoinPageEnabled: false,
-                disableDeepLinking: true
-            },
-            interfaceConfigOverwrite: {
-                SHOW_JITSI_WATERMARK: false,
-                SHOW_BRAND_WATERMARK: false,
-                TOOLBAR_BUTTONS: [
-                    'microphone', 'camera', 'desktop', 'fullscreen',
-                    'fodeviceselection', 'hangup', 'profile', 'chat',
-                    'settings', 'videoquality', 'filmstrip', 'tileview'
-                ]
-            }
-        };
-        _jitsiAdminApi = new JitsiMeetExternalAPI("meet.ffmuc.net", options);
+        var container = document.getElementById('jitsiAdminContainer');
+        if(container) container.style.display = 'none'; // We don't need the container anymore
         
         // Notify Firebase that meeting is active
         if (window.db) {
             await db.collection('settings').doc('live_meeting').set({
                 isActive: true,
                 roomName: room,
+                meetingUrl: meetingUrl,
                 startedAt: firebase.firestore.FieldValue.serverTimestamp()
             }, {merge: true});
-            alert("تم بدء الاجتماع! الموظفون الآن يمكنهم الانضمام.");
         }
+        
+        // Open meeting in new tab
+        window.open(meetingUrl, "_blank");
+        
     } catch(e) {
         console.error("Error starting meeting:", e);
         alert("حدث خطأ أثناء تحميل منصة الاجتماعات.");
@@ -6342,17 +6322,14 @@ window.startAdminLiveMeeting = async function() {
 };
 
 window.endAdminLiveMeeting = async function() {
-    if (_jitsiAdminApi) {
-        _jitsiAdminApi.dispose();
-        _jitsiAdminApi = null;
-    }
-    document.getElementById('jitsiAdminContainer').style.display = 'none';
+    var container = document.getElementById('jitsiAdminContainer');
+    if(container) container.style.display = 'none';
     if (window.db) {
         await db.collection('settings').doc('live_meeting').set({
             isActive: false,
             endedAt: firebase.firestore.FieldValue.serverTimestamp()
         }, {merge: true});
-        alert("تم إنهاء الاجتماع وإغلاق الغرفة.");
+        alert("تم إنهاء الاجتماع. (يرجى التأكد من إغلاق نافذة الاجتماع يدوياً)");
     }
 };
 
@@ -6386,55 +6363,30 @@ function listenToLiveMeetingStatus() {
             if(bdg) { bdg.textContent = "مغلق"; bdg.style.background = "var(--no)"; }
             if(btn) { btn.style.display = "none"; }
             if(txt) { txt.textContent = "لا يوجد اجتماعات قائمة حالياً."; txt.style.color = "var(--tx2)"; }
-            // If they are in the meeting, kick them out or notify
-            if(_jitsiEmpApi) {
-                _jitsiEmpApi.dispose();
-                _jitsiEmpApi = null;
-                var cnt = document.getElementById('jitsiEmpContainer');
-                if(cnt) cnt.style.display = 'none';
-                alert("تم إنهاء الاجتماع من قبل الإدارة.");
-            }
+            // Notify them it's closed
+            var cnt = document.getElementById('jitsiEmpContainer');
+            if(cnt) cnt.style.display = 'none';
         }
     });
 }
 
 window.joinEmployeeLiveMeeting = async function() {
     try {
-        await loadJitsiScript();
         var doc = await db.collection('settings').doc('live_meeting').get();
         if(!doc.exists || !doc.data().isActive) {
             alert("لا يوجد اجتماع حالياً.");
             return;
         }
         var room = doc.data().roomName;
-        var container = document.getElementById('jitsiEmpContainer');
-        container.style.display = 'block';
-        container.innerHTML = '';
-        
         var empName = window._userDataCache ? window._userDataCache.name : "موظف";
         
-        var options = {
-            roomName: room,
-            parentNode: container,
-            userInfo: {
-                displayName: empName
-            },
-            configOverwrite: {
-                startWithAudioMuted: true,
-                startWithVideoMuted: true,
-                prejoinPageEnabled: false,
-                disableDeepLinking: true
-            },
-            interfaceConfigOverwrite: {
-                SHOW_JITSI_WATERMARK: false,
-                SHOW_BRAND_WATERMARK: false,
-                TOOLBAR_BUTTONS: [
-                    'microphone', 'camera', 'desktop', 'fullscreen',
-                    'hangup', 'chat', 'raisehand', 'tileview'
-                ]
-            }
-        };
-        _jitsiEmpApi = new JitsiMeetExternalAPI("meet.ffmuc.net", options);
+        var meetingUrl = "https://meet.jit.si/" + room + "#userInfo.displayName=" + encodeURIComponent('"' + empName + '"') + "&config.startWithVideoMuted=true&config.startWithAudioMuted=true";
+        
+        var container = document.getElementById('jitsiEmpContainer');
+        if(container) container.style.display = 'none';
+        
+        window.open(meetingUrl, "_blank");
+        
     } catch(e) {
         console.error("Error joining meeting:", e);
         alert("حدث خطأ أثناء محاولة الانضمام للاجتماع.");
