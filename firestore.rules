@@ -42,6 +42,11 @@ service cloud.firestore {
     }
 
     // ملفات المستخدمين
+    match /settings/{docId} {
+      allow read: if isSignedIn();
+      allow write: if isAnyAdmin();
+    }
+
     match /users/{uid} {
       allow read: if isSignedIn();
       // يسمح للأدمن الرئيسي بإنشاء حساب موظف أو أدمن تقني جديد

@@ -6010,6 +6010,9 @@ window.empGo = function(id, nav) {
     if(id === 'devres') {
         fetchEmpDevRes();
     }
+    if(id === 'livemeeting') {
+        if(!window._liveMeetingInit) listenToLiveMeetingStatus();
+    }
 };
 
 
@@ -6364,6 +6367,7 @@ window.notifyEmployeesMeeting = async function() {
 
 // For Employee
 function listenToLiveMeetingStatus() {
+    window._liveMeetingInit = true;
     if(!window.db) return;
     db.collection('settings').doc('live_meeting').onSnapshot(function(doc) {
         var bdg = document.getElementById('meetingBadgeStatus');
