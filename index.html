@@ -308,7 +308,23 @@
         <div id="arcList"></div>
     </div>
 </div>
-<div class="pg" id="pg-announcements"></div><div class="pg" id="pg-livetrack"></div><div class="pg" id="pg-sendform"></div><div class="pg" id="pg-empdocs"></div><div class="pg" id="pg-wkreports"></div>
+<div class="pg" id="pg-announcements"></div><div class="pg" id="pg-livetrack"></div><div class="pg" id="pg-sendform"></div><div class="pg" id="pg-empdocs"></div>
+<div class="pg" id="pg-livemeeting" style="display:none;">
+    <div class="card p-4">
+        <h2 style="margin-bottom:10px; color:var(--tx); border-bottom:1px solid var(--bd); padding-bottom:10px;">غرفة البث المباشر والاجتماعات (Jitsi)</h2>
+        <p style="color:var(--tx2); margin-bottom:15px; font-size:14px;">يمكنك هنا بدء اجتماع مباشر مع الموظفين، مشاركة الشاشة لعرض ملفات PDF أو PowerPoint، والتحدث بالصوت والصورة.</p>
+        
+        <div style="display:flex; gap:10px; margin-bottom:20px; flex-wrap:wrap;">
+            <button class="bt" onclick="startAdminLiveMeeting()" style="background:var(--ok); color:#fff;"><i class="fa fa-video-camera"></i> بدء / فتح غرفة الاجتماع</button>
+            <button class="bt bt-o" onclick="notifyEmployeesMeeting()" style="color:var(--pr); border-color:var(--pr);"><i class="fa fa-bell"></i> إرسال إشعار للموظفين</button>
+            <button class="bt" onclick="endAdminLiveMeeting()" style="background:var(--no); color:#fff;"><i class="fa fa-stop"></i> إنهاء الاجتماع</button>
+        </div>
+
+        <div id="jitsiAdminContainer" style="width:100%; height:600px; background:#000; border-radius:8px; display:none; overflow:hidden;"></div>
+    </div>
+</div>
+
+<div class="pg" id="pg-wkreports"></div>
 </div>
 </div>
 <datalist id="tgEmpDL"></datalist>
