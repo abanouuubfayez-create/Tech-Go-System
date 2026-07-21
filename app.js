@@ -5970,6 +5970,10 @@ async function buildCompanyContextForAi(promptText) {
     }
 
     return ctx;
+    } catch (err) {
+        console.error("AI Context Error:", err);
+        return promptText || "";
+    }
 }
 
 window.generateCareerPath = async function() {
