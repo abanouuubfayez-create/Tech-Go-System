@@ -6278,7 +6278,7 @@ function loadJitsiScript() {
     return new Promise((resolve, reject) => {
         if (window.JitsiMeetExternalAPI) { resolve(); return; }
         var script = document.createElement('script');
-        script.src = 'https://meet.jit.si/external_api.js';
+        script.src = 'https://meet.ffmuc.net/external_api.js';
         script.onload = resolve;
         script.onerror = reject;
         document.head.appendChild(script);
@@ -6324,7 +6324,7 @@ window.startAdminLiveMeeting = async function() {
                 ]
             }
         };
-        _jitsiAdminApi = new JitsiMeetExternalAPI("meet.jit.si", options);
+        _jitsiAdminApi = new JitsiMeetExternalAPI("meet.ffmuc.net", options);
         
         // Notify Firebase that meeting is active
         if (window.db) {
@@ -6434,7 +6434,7 @@ window.joinEmployeeLiveMeeting = async function() {
                 ]
             }
         };
-        _jitsiEmpApi = new JitsiMeetExternalAPI("meet.jit.si", options);
+        _jitsiEmpApi = new JitsiMeetExternalAPI("meet.ffmuc.net", options);
     } catch(e) {
         console.error("Error joining meeting:", e);
         alert("حدث خطأ أثناء محاولة الانضمام للاجتماع.");
