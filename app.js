@@ -6451,3 +6451,40 @@ document.addEventListener('DOMContentLoaded', function() {
 });
 // ====================================================================
 
+
+
+function loadAdminAiChat(container) {
+    var h = '<div class="set-sec" style="max-width:800px; margin:20px auto;">';
+    h += '<div class="set-sec-title">🤖 المساعد الذكي للمدير</div>';
+    h += '<div class="set-hint" style="margin-bottom:16px;">اسأل الذكاء الاصطناعي عن أي موظف، مشروع، أو معلومات عامة عن الشركة. سيتم جلب الإجابة من قاعدة البيانات فوراً.</div>';
+    h += '<div style="display:flex; gap:8px; flex-wrap:wrap;">';
+    h += '<input type="text" id="adminAiChatField" placeholder="مثال: ما هي مشاريع الموظف الفلاني؟ أو من هم الموظفين المتأخرين اليوم؟" style="flex:1;">';
+    h += '<button class="bt bt-d" style="background:var(--nv); color:var(--w); border:none;" onclick="adminChatWithAi()" id="btnAdminChat">✨ إرسال</button>';
+    h += '</div>';
+    h += '<div id="adminAiChatResult" style="display:none; margin-top:16px; padding:16px; background:var(--w); border-radius:8px; border:1px solid var(--bd2); font-size:14px; line-height:1.6; color:var(--tx);"></div>';
+    h += '</div>';
+    container.innerHTML = h;
+}
+
+window.adminChatWithAi = async function() {
+    var field = document.getElementById('adminAiChatField').value.trim();
+    var btn = document.getElementById('btnAdminChat');
+    var resultBox = document.getElementById('adminAiChatResult');
+    if(!field) return;
+    
+    var apiKey = window._appSettingsCache && window._appSettingsCache.geminiApiKey;
+    if(!apiKey) {
+        alert('ميزة الذكاء الاصطناعي غير مفعلة حالياً. يرجى إضافة مفتاح API في الإعدادات.');
+        return;
+    }
+
+    btn.disabled = true;
+    btn.innerHTML = '⏳ جاري التفكير...';
+    resultBox.style.display = 'block';
+    resultBox.innerHTML = '<div style="text-align:center; color:var(--tx2);">🤖 يقوم الذكاء الاصطناعي الآن بالبحث في السجلات...</div>';
+
+    var ctx = await buildCompanyContextForAi();
+    var prompt = ctx + "\n\nبصفتك المساعد الذكي لمدير الشركة، أجب على هذا السؤال من المدير بناءً على البيانات أعلاه فقط وبشكل مباشر واحترافي:\nالسؤال: [" + field + "]";
+
+    callGemini(apiKey, prompt, btn, resultBox, '✨ إرسال', true);
+};
