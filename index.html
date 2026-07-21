@@ -9,7 +9,7 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-title" content="Tech Go">
 <title>لوحة التحكم · تيك جو</title>
-<link rel="stylesheet" href="styles.css?v=181827">
+<link rel="stylesheet" href="styles.css?v=181828">
 <link rel="manifest" href="manifest.json">
 <link rel="icon" type="image/png" sizes="192x192" href="icon-192.png">
 <link rel="apple-touch-icon" href="icon-192.png">
@@ -17,8 +17,8 @@
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-storage-compat.js"></script>
-<script src="firebase-config.js?v=181827"></script>
-<script src="auth.js?v=181827"></script>
+<script src="firebase-config.js?v=181828"></script>
+<script src="auth.js?v=181828"></script>
 <script>
     (function() {
         const theme = localStorage.getItem('tg-theme') || 'light';
@@ -161,6 +161,13 @@
     </div>
 
     <div class="sb-group">
+        <div class="S-s" onclick="tgToggleNavGroup(this)">الذكاء الاصطناعي <span class="arr">▼</span></div>
+        <div class="sb-items">
+            <div class="S-i" onclick="go('adminai',this)" style="border-right:2px solid var(--gd)"><span class="ic">🤖</span> مساعد المدير الذكي <span class="S-b">جديد</span></div>
+        </div>
+    </div>
+
+    <div class="sb-group">
         <div class="S-s" onclick="tgToggleNavGroup(this)">الإعدادات <span class="arr">▼</span></div>
         <div class="sb-items">
             <div class="S-i" onclick="go('set',this)"><span class="ic">⚙️</span> تخصيص النظام</div>
@@ -296,7 +303,7 @@
 <div class="pg" id="pg-notice"></div><div class="pg" id="pg-gen"></div><div class="pg" id="pg-warn"></div><div class="pg" id="pg-inv"></div>
 <div class="pg" id="pg-exp"></div><div class="pg" id="pg-clr"></div><div class="pg" id="pg-task"></div><div class="pg" id="pg-sal"></div>
 <div class="pg" id="pg-res"></div><div class="pg" id="pg-promo"></div><div class="pg" id="pg-raise"></div><div class="pg" id="pg-contract"></div>
-<div class="pg" id="pg-att_live"></div><div class="pg" id="pg-att"></div><div class="pg" id="pg-cal"></div><div class="pg" id="pg-comp"></div><div class="pg" id="pg-set"></div><div class="pg" id="pg-proj"></div><div class="pg" id="pg-mexp"></div><div class="pg" id="pg-devres"></div>
+<div class="pg" id="pg-att_live"></div><div class="pg" id="pg-att"></div><div class="pg" id="pg-cal"></div><div class="pg" id="pg-comp"></div><div class="pg" id="pg-set"></div><div class="pg" id="pg-proj"></div><div class="pg" id="pg-mexp"></div><div class="pg" id="pg-devres"></div><div class="pg" id="pg-adminai"></div>
 <div class="pg" id="pg-staff"></div><div class="pg" id="pg-pmgmt"></div><div class="pg" id="pg-tasksmgmt"></div><div class="pg" id="pg-account"></div><div class="pg" id="pg-archive">
     <div class="set-sec">
         <div class="set-sec-title">🗂 أرشيف المستندات المطبوعة</div>
@@ -328,14 +335,14 @@
 </div>
 </div>
 <datalist id="tgEmpDL"></datalist>
-<script src="auth.js?v=181827"></script>
+<script src="auth.js?v=181828"></script>
 
 <!-- FullCalendar -->
 <script src="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.15/index.global.min.js"></script>
 
-<script src="app.js?v=181827"></script>
-<script src="livetrack.js?v=181827"></script>
-<script src="formsend.js?v=181827"></script>
+<script src="app.js?v=181828"></script>
+<script src="livetrack.js?v=181828"></script>
+<script src="formsend.js?v=181828"></script>
 
 
 <script>
@@ -704,6 +711,6 @@
 </script>
 <div style="position:fixed;bottom:4px;left:50%;transform:translateX(-50%);font-size:9px;color:rgba(255,255,255,0.25);z-index:9999;pointer-events:none;white-space:nowrap;font-family:inherit">تطوير وتصميم: أبانوب فايز</div>
 <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
-<script src="theme.js?v=181827"></script>
+<script src="theme.js?v=181828"></script>
 </body>
 </html>
