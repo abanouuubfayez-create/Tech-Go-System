@@ -6486,3 +6486,15 @@ window.adminChatWithAi = async function() {
 
     callGemini(apiKey, prompt, btn, resultBox, '✨ إرسال', true);
 };
+
+// Auto-start Admin Live Meeting Listener
+function startAdminMeetingListenerWhenReady() {
+    if(typeof initAdminLiveStatusListener === 'function') {
+        if(window.db) {
+            initAdminLiveStatusListener();
+        } else {
+            setTimeout(startAdminMeetingListenerWhenReady, 1000);
+        }
+    }
+}
+setTimeout(startAdminMeetingListenerWhenReady, 1000);
