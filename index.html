@@ -9,7 +9,7 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-title" content="Tech Go">
 <title>لوحة التحكم · تيك جو</title>
-<link rel="stylesheet" href="styles.css?v=181836">
+<link rel="stylesheet" href="styles.css?v=181837">
 <link rel="manifest" href="manifest.json">
 <link rel="icon" type="image/png" sizes="192x192" href="icon-192.png">
 <link rel="apple-touch-icon" href="icon-192.png">
@@ -17,8 +17,8 @@
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-storage-compat.js"></script>
-<script src="firebase-config.js?v=181836"></script>
-<script src="auth.js?v=181836"></script>
+<script src="firebase-config.js?v=181837"></script>
+<script src="auth.js?v=181837"></script>
 <script>
     (function() {
         const theme = localStorage.getItem('tg-theme') || 'light';
@@ -80,97 +80,82 @@
     <div class="sb-no-results" id="sbNoResults">لا توجد نتائج</div>
 
     <div class="sb-group open">
-        <div class="S-s" onclick="tgToggleNavGroup(this)">الرئيسية والمتابعة <span class="arr">▼</span></div>
+        <div class="S-s" onclick="tgToggleNavGroup(this)">الرئيسية والإدارة <span class="arr">▼</span></div>
         <div class="sb-items">
             <div class="S-i a" onclick="go('dash',this)"><span class="ic">🏠</span> لوحة التحكم</div>
+            <div class="S-i" onclick="go('set',this)"><span class="ic">⚙️</span> تخصيص النظام</div>
+            <div class="S-i" onclick="go('account',this)" style="border-right:2px solid var(--gd)"><span class="ic">👤</span> حسابي <span class="S-b">جديد</span></div>
+            <div class="S-i" onclick="go('adminai',this)" style="border-right:2px solid var(--gd)"><span class="ic">🤖</span> مساعد المدير الذكي <span class="S-b">جديد</span></div>
+        </div>
+    </div>
+
+    <div class="sb-group">
+        <div class="S-s" onclick="tgToggleNavGroup(this)">المهام والمشاريع <span class="arr">▼</span></div>
+        <div class="sb-items">
             <div class="S-i" onclick="go('pmgmt',this)" style="border-right:2px solid var(--gd)"><span class="ic">📁</span> إدارة المشاريع <span class="S-b">جديد</span></div>
             <div class="S-i" onclick="go('tasksmgmt',this)" style="border-right:2px solid var(--gd)"><span class="ic">🗂</span> توزيع المهام <span class="S-b">جديد</span></div>
-            <div class="S-i" onclick="go('staff',this);clearAdminBadge('notif-req-badge','notif-req-badge-sb')" style="border-right:2px solid var(--gd)"><span class="ic">👥</span> متابعة الموظفين <span class="S-b">جديد</span> <span id="notif-req-badge-sb" style="display:none;background:var(--no);color:#fff;border-radius:50%;min-width:18px;height:18px;font-size:10px;font-weight:800;align-items:center;justify-content:center;padding:0 3px;margin-right:4px">0</span></div>
-            <div class="S-i" onclick="go('wkreports',this);clearAdminBadge('notif-wkr-badge','notif-wkr-badge-sb')" style="border-right:2px solid var(--gd)"><span class="ic">📥</span> بريد التقارير الأسبوعية <span id="notif-wkr-badge-sb" style="display:none;background:var(--no);color:#fff;border-radius:50%;min-width:18px;height:18px;font-size:10px;font-weight:800;align-items:center;justify-content:center;padding:0 3px;margin-right:4px">0</span></div>
-            <div class="S-i" onclick="go('empdocs',this)" style="border-right:2px solid var(--gd)"><span class="ic">📂</span> ملفات الموظفين <span class="S-b">جديد</span></div>
             <div class="S-i" onclick="goLiveTrack(this)" style="border-right:2px solid var(--gd)"><span class="ic">📡</span> متابعة لحظية <span class="S-b" style="background:var(--ok)">مباشر</span></div>
-            <div class="S-i" onclick="goSendForm(this)" style="border-right:2px solid var(--gd)"><span class="ic">📝</span> إرسال نموذج لموظف <span class="S-b">جديد</span></div>
-            <div class="S-i" onclick="go('announcements',this)" style="border-right:2px solid var(--gd)"><span class="ic">📢</span> إدارة الإعلانات <span class="S-b">جديد</span></div>
-            <div class="S-i" onclick="go('livemeeting',this)" style="border-right:2px solid var(--gd)"><span class="ic">🎥</span> البث المباشر والاجتماعات <span class="S-b" style="background:var(--ok)">جديد</span></div>
-            <div class="S-i" onclick="go('archive',this); loadArchive()" style="border-right:2px solid var(--gd)"><span class="ic">🗂</span> أرشيف المستندات <span class="S-b">جديد</span></div>
-            <div class="S-i" onclick="go('account',this)" style="border-right:2px solid var(--gd)"><span class="ic">👤</span> حسابي <span class="S-b">جديد</span></div>
         </div>
     </div>
 
     <div class="sb-group">
-        <div class="S-s" onclick="tgToggleNavGroup(this)">نماذج الموظفين <span class="arr">▼</span></div>
+        <div class="S-s" onclick="tgToggleNavGroup(this)">شؤون الموظفين <span class="arr">▼</span></div>
         <div class="sb-items">
-            <div class="S-i" onclick="go('emp',this)"><span class="ic">👤</span> ملف بيانات الموظف</div>
-            <div class="S-i" onclick="go('leave',this)"><span class="ic">🏖</span> طلب إجازة</div>
-            <div class="S-i" onclick="go('perm',this)"><span class="ic">🕐</span> إذن حضور / انصراف</div>
-            <div class="S-i" onclick="go('delay',this)"><span class="ic">⏰</span> التماس تعديل الحضور <span class="S-b">جديد</span></div>
+            <div class="S-i" onclick="go('staff',this);clearAdminBadge('notif-req-badge','notif-req-badge-sb')" style="border-right:2px solid var(--gd)"><span class="ic">👥</span> متابعة الموظفين <span id="notif-req-badge-sb" style="display:none;background:var(--no);color:#fff;border-radius:50%;min-width:18px;height:18px;font-size:10px;font-weight:800;align-items:center;justify-content:center;padding:0 3px;margin-right:4px">0</span></div>
+            <div class="S-i" onclick="go('wkreports',this);clearAdminBadge('notif-wkr-badge','notif-wkr-badge-sb')" style="border-right:2px solid var(--gd)"><span class="ic">📥</span> بريد التقارير الأسبوعية <span id="notif-wkr-badge-sb" style="display:none;background:var(--no);color:#fff;border-radius:50%;min-width:18px;height:18px;font-size:10px;font-weight:800;align-items:center;justify-content:center;padding:0 3px;margin-right:4px">0</span></div>
+            <div class="S-i" onclick="go('empdocs',this)" style="border-right:2px solid var(--gd)"><span class="ic">📂</span> ملفات الموظفين</div>
+            <div class="S-i" onclick="go('att_live',this)"><span class="ic">📡</span> الحضور الحي (مباشر)</div>
+            <div class="S-i" onclick="go('att',this)"><span class="ic">⏱</span> تحليل الحضور والانصراف</div>
+            <div class="S-i" onclick="go('cal',this)"><span class="ic">📅</span> التقويم العام</div>
         </div>
     </div>
 
     <div class="sb-group">
-        <div class="S-s" onclick="tgToggleNavGroup(this)">السجلات <span class="arr">▼</span></div>
+        <div class="S-s" onclick="tgToggleNavGroup(this)">النماذج والسجلات <span class="arr">▼</span></div>
         <div class="sb-items">
             <div class="S-i" onclick="go('la',this)"><span class="ic">📅</span> سجل الإجازة السنوية</div>
             <div class="S-i" onclick="go('lb',this)"><span class="ic">⚡</span> سجل الإجازة العارضة</div>
             <div class="S-i" onclick="go('lc',this)"><span class="ic">🎉</span> سجل الأعياد</div>
             <div class="S-i" onclick="go('ld',this)"><span class="ic">❌</span> سجل الغياب بالخصم</div>
-        </div>
-    </div>
+            
+            <div class="S-i" onclick="go('emp',this)"><span class="ic">👤</span> ملف بيانات الموظف</div>
+            <div class="S-i" onclick="go('leave',this)"><span class="ic">🏖</span> طلب إجازة</div>
+            <div class="S-i" onclick="go('perm',this)"><span class="ic">🕐</span> إذن حضور / انصراف</div>
+            <div class="S-i" onclick="go('delay',this)"><span class="ic">⏰</span> التماس تعديل الحضور</div>
 
-    <div class="sb-group">
-        <div class="S-s" onclick="tgToggleNavGroup(this)">نماذج إدارية <span class="arr">▼</span></div>
-        <div class="sb-items">
-            <div class="S-i" onclick="go('gen',this)" style="border-right:2px solid var(--gd)"><span class="ic">✉️</span> خطاب إداري عام <span class="S-b">جديد</span></div>
-            <div class="S-i" onclick="go('notice',this)"><span class="ic">👁</span> نموذج لفت نظر <span class="S-b">جديد</span></div>
+            <div class="S-i" onclick="go('gen',this)" style="border-right:2px solid var(--gd)"><span class="ic">✉️</span> خطاب إداري عام</div>
+            <div class="S-i" onclick="go('notice',this)"><span class="ic">👁</span> نموذج لفت نظر</div>
             <div class="S-i" onclick="go('warn',this)"><span class="ic">⚠️</span> خطاب إنذار</div>
             <div class="S-i" onclick="go('inv',this)"><span class="ic">🔍</span> محضر تحقيق</div>
             <div class="S-i" onclick="go('exp',this)"><span class="ic">📜</span> شهادة خبرة</div>
             <div class="S-i" onclick="go('clr',this)"><span class="ic">✅</span> إخلاء طرف</div>
-            <div class="S-i" onclick="go('res',this)"><span class="ic">🚪</span> طلب استقالة <span class="S-b">جديد</span></div>
-            <div class="S-i" onclick="go('promo',this)"><span class="ic">📈</span> قرار ترقية <span class="S-b">جديد</span></div>
-            <div class="S-i" onclick="go('raise',this)"><span class="ic">💹</span> زيادة راتب / علاوة <span class="S-b">جديد</span></div>
-            <div class="S-i" onclick="go('contract',this)"><span class="ic">📄</span> عقد عمل <span class="S-b">جديد</span></div>
+            <div class="S-i" onclick="go('res',this)"><span class="ic">🚪</span> طلب استقالة</div>
+            <div class="S-i" onclick="go('promo',this)"><span class="ic">📈</span> قرار ترقية</div>
+            <div class="S-i" onclick="go('raise',this)"><span class="ic">💹</span> زيادة راتب / علاوة</div>
+            <div class="S-i" onclick="go('contract',this)"><span class="ic">📄</span> عقد عمل</div>
             <div class="S-i" onclick="go('task',this)"><span class="ic">📋</span> تكليف بمهمة</div>
-            <div class="S-i" onclick="go('proj',this)"><span class="ic">📁</span> إدارة المشروع <span class="S-b">جديد</span></div>
+            <div class="S-i" onclick="go('proj',this)"><span class="ic">📁</span> نموذج إدارة مشروع</div>
             <div class="S-i" onclick="go('sal',this)"><span class="ic">💰</span> شهادة راتب</div>
+            
+            <div class="S-i" onclick="goSendForm(this)" style="border-right:2px solid var(--gd)"><span class="ic">📝</span> إرسال نموذج لموظف</div>
+            <div class="S-i" onclick="go('archive',this); loadArchive()" style="border-right:2px solid var(--gd)"><span class="ic">🗂</span> أرشيف المستندات</div>
+        </div>
+    </div>
+
+    <div class="sb-group">
+        <div class="S-s" onclick="tgToggleNavGroup(this)">التواصل والتطوير <span class="arr">▼</span></div>
+        <div class="sb-items">
+            <div class="S-i" onclick="go('livemeeting',this)" style="border-right:2px solid var(--gd)"><span class="ic">🎥</span> البث المباشر والاجتماعات <span class="S-b" style="background:var(--ok)">جديد</span></div>
+            <div class="S-i" onclick="go('announcements',this)" style="border-right:2px solid var(--gd)"><span class="ic">📢</span> إدارة الإعلانات</div>
+            <div class="S-i" onclick="go('devres',this)" style="border-right:2px solid var(--gd)"><span class="ic">📚</span> مكتبة التطوير</div>
+            <div class="S-i" onclick="go('comp',this)"><span class="ic">📝</span> الشكاوى والمقترحات</div>
         </div>
     </div>
 
     <div class="sb-group">
         <div class="S-s" onclick="tgToggleNavGroup(this)">المالية <span class="arr">▼</span></div>
         <div class="sb-items">
-            <div class="S-i" onclick="go('mexp',this)"><span class="ic">💵</span> شيت المصروفات الشهري <span class="S-b">جديد</span></div>
-        </div>
-    </div>
-
-    <div class="sb-group">
-        <div class="S-s" onclick="tgToggleNavGroup(this)">الأنظمة <span class="arr">▼</span></div>
-        <div class="sb-items">
-            <div class="S-i" onclick="go('att_live',this)"><span class="ic">📡</span> الحضور الحي (مباشر) <span class="S-b">جديد</span></div>
-            <div class="S-i" onclick="go('att',this)"><span class="ic">⏱</span> تحليل الحضور والانصراف</div>
-            <div class="S-i" onclick="go('cal',this)"><span class="ic">📅</span> التقويم العام <span class="S-b">جديد</span></div>
-            <div class="S-i" onclick="go('comp',this)"><span class="ic">📝</span> الشكاوى والمقترحات</div>
-        </div>
-    </div>
-
-    <div class="sb-group">
-        <div class="S-s" onclick="tgToggleNavGroup(this)">التطوير المهني <span class="arr">▼</span></div>
-        <div class="sb-items">
-            <div class="S-i" onclick="go('devres',this)" style="border-right:2px solid var(--gd)"><span class="ic">📚</span> مكتبة التطوير <span class="S-b">جديد</span></div>
-        </div>
-    </div>
-
-    <div class="sb-group">
-        <div class="S-s" onclick="tgToggleNavGroup(this)">الذكاء الاصطناعي <span class="arr">▼</span></div>
-        <div class="sb-items">
-            <div class="S-i" onclick="go('adminai',this)" style="border-right:2px solid var(--gd)"><span class="ic">🤖</span> مساعد المدير الذكي <span class="S-b">جديد</span></div>
-        </div>
-    </div>
-
-    <div class="sb-group">
-        <div class="S-s" onclick="tgToggleNavGroup(this)">الإعدادات <span class="arr">▼</span></div>
-        <div class="sb-items">
-            <div class="S-i" onclick="go('set',this)"><span class="ic">⚙️</span> تخصيص النظام</div>
+            <div class="S-i" onclick="go('mexp',this)"><span class="ic">💵</span> شيت المصروفات الشهري</div>
         </div>
     </div>
 </nav>
@@ -236,6 +221,17 @@
 <div class="CT">
 <div class="pg a" id="pg-dash">
 <div class="DG" id="dashSummary" style="margin-bottom:16px"></div>
+
+<div class="dash-group" style="background:var(--bg2); padding:15px; border-radius:12px; margin-bottom:20px; border:1px solid var(--bd);">
+    <div class="dash-sec-title" style="margin-bottom:10px;"><div class="di">⚡</div> وصول سريع (Quick Links)</div>
+    <div class="DG" style="grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap:10px;">
+        <button class="bt" onclick="go('livemeeting')" style="width:100%; justify-content:center; padding:12px;"><span style="font-size:1.2rem; margin-left:8px;">🎥</span> بدء اجتماع</button>
+        <button class="bt" onclick="go('announcements')" style="width:100%; justify-content:center; padding:12px;"><span style="font-size:1.2rem; margin-left:8px;">📢</span> إرسال إعلان</button>
+        <button class="bt" onclick="go('tasksmgmt')" style="width:100%; justify-content:center; padding:12px;"><span style="font-size:1.2rem; margin-left:8px;">🗂</span> إضافة مهمة</button>
+        <button class="bt" onclick="go('staff')" style="width:100%; justify-content:center; padding:12px;"><span style="font-size:1.2rem; margin-left:8px;">👥</span> الموظفين</button>
+    </div>
+</div>
+
 <div class="dash-wrap">
 
   <div class="dash-group">
@@ -339,14 +335,14 @@
 </div>
 </div>
 <datalist id="tgEmpDL"></datalist>
-<script src="auth.js?v=181836"></script>
+<script src="auth.js?v=181837"></script>
 
 <!-- FullCalendar -->
 <script src="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.15/index.global.min.js"></script>
 
-<script src="app.js?v=181836"></script>
-<script src="livetrack.js?v=181836"></script>
-<script src="formsend.js?v=181836"></script>
+<script src="app.js?v=181837"></script>
+<script src="livetrack.js?v=181837"></script>
+<script src="formsend.js?v=181837"></script>
 
 
 <script>
@@ -715,6 +711,6 @@
 </script>
 <div style="position:fixed;bottom:4px;left:50%;transform:translateX(-50%);font-size:9px;color:rgba(255,255,255,0.25);z-index:9999;pointer-events:none;white-space:nowrap;font-family:inherit">تطوير وتصميم: أبانوب فايز</div>
 <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
-<script src="theme.js?v=181836"></script>
+<script src="theme.js?v=181837"></script>
 </body>
 </html>
