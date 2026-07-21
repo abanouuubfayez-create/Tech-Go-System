@@ -6295,14 +6295,14 @@ async function getLiveMeetingRoomName() {
 }
 
 window.startAdminLiveMeeting = async function() {
+    var newWin = window.open("about:blank", "_blank");
     try {
         var room = await getLiveMeetingRoomName();
         var meetingUrl = "https://meet.jit.si/" + room + "#userInfo.displayName=" + encodeURIComponent('"إدارة الشركة (Admin)"');
         
         var container = document.getElementById('jitsiAdminContainer');
-        if(container) container.style.display = 'none'; // We don't need the container anymore
+        if(container) container.style.display = 'none';
         
-        // Notify Firebase that meeting is active
         if (window.db) {
             await db.collection('settings').doc('live_meeting').set({
                 isActive: true,
@@ -6312,11 +6312,15 @@ window.startAdminLiveMeeting = async function() {
             }, {merge: true});
         }
         
-        // Open meeting in new tab
-        window.open(meetingUrl, "_blank");
+        if(newWin) {
+            newWin.location.href = meetingUrl;
+        } else {
+            window.location.href = meetingUrl;
+        }
         
     } catch(e) {
         console.error("Error starting meeting:", e);
+        if(newWin) newWin.close();
         alert("حدث خطأ أثناء تحميل منصة الاجتماعات.");
     }
 };
@@ -6371,9 +6375,11 @@ function listenToLiveMeetingStatus() {
 }
 
 window.joinEmployeeLiveMeeting = async function() {
+    var newWin = window.open("about:blank", "_blank");
     try {
         var doc = await db.collection('settings').doc('live_meeting').get();
         if(!doc.exists || !doc.data().isActive) {
+            if(newWin) newWin.close();
             alert("لا يوجد اجتماع حالياً.");
             return;
         }
@@ -6385,10 +6391,15 @@ window.joinEmployeeLiveMeeting = async function() {
         var container = document.getElementById('jitsiEmpContainer');
         if(container) container.style.display = 'none';
         
-        window.open(meetingUrl, "_blank");
+        if(newWin) {
+            newWin.location.href = meetingUrl;
+        } else {
+            window.location.href = meetingUrl;
+        }
         
     } catch(e) {
         console.error("Error joining meeting:", e);
+        if(newWin) newWin.close();
         alert("حدث خطأ أثناء محاولة الانضمام للاجتماع.");
     }
 };
