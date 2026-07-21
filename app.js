@@ -5726,6 +5726,21 @@ window.toggleDevResInput = function(type) {
     }
 };
 
+function notifyNewDevRes(title) {
+    var msg = 'تم إضافة مصدر جديد في التطوير المهني: ' + title;
+    if(window.db) {
+        db.collection('announcements').add({
+            title: '📚 تحديث مكتبة الشركة',
+            content: msg,
+            date: new Date().toISOString().split('T')[0],
+            createdAt: firebase.firestore.FieldValue.serverTimestamp()
+        }).catch(function(e){console.error(e)});
+    }
+    if(typeof tgBroadcastPush === 'function') {
+        tgBroadcastPush('📚 مصدر تطوير جديد', msg, 'devres', '');
+    }
+}
+
 window.addDevRes = function() {
     var title = document.getElementById('devResTitle').value.trim();
     var type = document.getElementById('devResType').value;
@@ -5770,6 +5785,7 @@ window.addDevRes = function() {
                     document.getElementById('devResTitle').value = '';
                     fileInput.value = '';
                     fetchDevResAdminList();
+                    notifyNewDevRes(data.title);
                     setTimeout(function(){ status.innerText = ''; }, 3000);
                 }).catch(function(err) {
                     status.innerText = '❌ خطأ في الحفظ: ' + err.message;
@@ -5791,6 +5807,7 @@ window.addDevRes = function() {
             document.getElementById('devResTitle').value = '';
             document.getElementById('devResLink').value = '';
             fetchDevResAdminList();
+            notifyNewDevRes(data.title);
             setTimeout(function(){ status.innerText = ''; }, 3000);
         }).catch(function(err) {
             status.innerText = '❌ خطأ: ' + err.message;
