@@ -9,7 +9,7 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-title" content="Tech Go">
 <title>لوحة التحكم · تيك جو</title>
-<link rel="stylesheet" href="styles.css?v=181832">
+<link rel="stylesheet" href="styles.css?v=181833">
 <link rel="manifest" href="manifest.json">
 <link rel="icon" type="image/png" sizes="192x192" href="icon-192.png">
 <link rel="apple-touch-icon" href="icon-192.png">
@@ -17,8 +17,8 @@
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-storage-compat.js"></script>
-<script src="firebase-config.js?v=181832"></script>
-<script src="auth.js?v=181832"></script>
+<script src="firebase-config.js?v=181833"></script>
+<script src="auth.js?v=181833"></script>
 <script>
     (function() {
         const theme = localStorage.getItem('tg-theme') || 'light';
@@ -320,6 +320,10 @@
     <div class="card p-4">
         <h2 style="margin-bottom:10px; color:var(--tx); border-bottom:1px solid var(--bd); padding-bottom:10px;">غرفة البث المباشر والاجتماعات (Jitsi)</h2>
         <p style="color:var(--tx2); margin-bottom:15px; font-size:14px;">يمكنك هنا بدء اجتماع مباشر مع الموظفين، مشاركة الشاشة لعرض ملفات PDF أو PowerPoint، والتحدث بالصوت والصورة.</p>
+        <div id="adminMeetingStatusIndicator" style="display:none; background:var(--bg2); border:1px solid var(--ok); color:var(--tx); padding:10px 15px; border-radius:8px; margin-bottom:20px; font-weight:bold; align-items:center; gap:10px;">
+            <div style="width:12px; height:12px; border-radius:50%; background:var(--ok); animation: pulse 1.5s infinite;"></div>
+            يوجد اجتماع مباشر قائم الآن! لا تنسَ إغلاقه عند الانتهاء.
+        </div>
         
         <div style="display:flex; gap:10px; margin-bottom:20px; flex-wrap:wrap;">
             <button class="bt" onclick="startAdminLiveMeeting()" style="background:var(--ok); color:#fff;"><i class="fa fa-video-camera"></i> بدء / فتح غرفة الاجتماع</button>
@@ -335,14 +339,14 @@
 </div>
 </div>
 <datalist id="tgEmpDL"></datalist>
-<script src="auth.js?v=181832"></script>
+<script src="auth.js?v=181833"></script>
 
 <!-- FullCalendar -->
 <script src="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.15/index.global.min.js"></script>
 
-<script src="app.js?v=181832"></script>
-<script src="livetrack.js?v=181832"></script>
-<script src="formsend.js?v=181832"></script>
+<script src="app.js?v=181833"></script>
+<script src="livetrack.js?v=181833"></script>
+<script src="formsend.js?v=181833"></script>
 
 
 <script>
@@ -711,6 +715,6 @@
 </script>
 <div style="position:fixed;bottom:4px;left:50%;transform:translateX(-50%);font-size:9px;color:rgba(255,255,255,0.25);z-index:9999;pointer-events:none;white-space:nowrap;font-family:inherit">تطوير وتصميم: أبانوب فايز</div>
 <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
-<script src="theme.js?v=181832"></script>
+<script src="theme.js?v=181833"></script>
 </body>
 </html>

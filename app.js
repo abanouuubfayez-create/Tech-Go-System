@@ -6304,6 +6304,23 @@ async function getLiveMeetingRoomName() {
     return "TechGo_Meeting_" + compId.replace(/[^a-zA-Z0-9]/g, '');
 }
 
+// Admin Meeting Status Listener
+var _adminLiveListenerInit = false;
+function initAdminLiveStatusListener() {
+    if(_adminLiveListenerInit || !window.db) return;
+    _adminLiveListenerInit = true;
+    db.collection('settings').doc('live_meeting').onSnapshot(function(doc) {
+        var ind = document.getElementById('adminMeetingStatusIndicator');
+        if(ind) {
+            if(doc.exists && doc.data().isActive) {
+                ind.style.display = 'flex';
+            } else {
+                ind.style.display = 'none';
+            }
+        }
+    });
+}
+
 window.startAdminLiveMeeting = async function() {
     var newWin = window.open("about:blank", "_blank");
     try {
@@ -6358,7 +6375,10 @@ window.notifyEmployeesMeeting = async function() {
                 date: new Date().toISOString().split('T')[0],
                 createdAt: firebase.firestore.FieldValue.serverTimestamp()
             });
-            alert("تم إرسال الإشعار كإعلان لجميع الموظفين بنجاح.");
+            if(typeof tgBroadcastPush === 'function') {
+                tgBroadcastPush('🎥 دعوة لاجتماع مباشر', msg, 'livemeeting', '');
+            }
+            alert("تم إرسال الإشعار وتنبيهات الدفع (Push Notifications) بنجاح.");
         }
     } catch(e) {
         console.error("Error sending meeting notification:", e);
