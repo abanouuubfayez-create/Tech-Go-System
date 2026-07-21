@@ -5878,6 +5878,7 @@ window.fetchEmpDevRes = function() {
 
 
 async function buildCompanyContextForAi(promptText) {
+    try {
     promptText = promptText || "";
     var ctx = "معلومات عن الشركة لتكون في السياق عند الإجابة:\n";
     if (window._appSettingsCache && window._appSettingsCache.companyName) {
