@@ -5877,7 +5877,8 @@ window.fetchEmpDevRes = function() {
 };
 
 
-async function buildCompanyContextForAi() {
+async function buildCompanyContextForAi(promptText) {
+    promptText = promptText || "";
     var ctx = "معلومات عن الشركة لتكون في السياق عند الإجابة:\n";
     if (window._appSettingsCache && window._appSettingsCache.companyName) {
         ctx += "اسم الشركة: " + window._appSettingsCache.companyName + "\n";
@@ -5931,6 +5932,42 @@ async function buildCompanyContextForAi() {
     }
     
     ctx += "\nملاحظة: استخدم هذه المعلومات فقط إذا كان سؤال المستخدم يتعلق بها أو إذا كانت ستساعد في تقديم مسار مهني أو نصيحة أفضل داخل سياق شركتنا. لا تقم بسرد هذه المعلومات للمستخدم إلا إذا طلب ذلك.\n\n";
+    
+    // Employee Specific Check
+    var specificEmployeeUid = null;
+    var specificEmployeeName = "";
+    if (isAdmin && window._staffEmpCache) {
+        for(var i=0; i<window._staffEmpCache.length; i++) {
+            var emp = window._staffEmpCache[i];
+            if (emp.name && promptText.indexOf(emp.name) !== -1) {
+                specificEmployeeUid = emp.uid;
+                specificEmployeeName = emp.name;
+                ctx += "\n\n--- تقرير مفصل عن الموظف المذكور (" + emp.name + ") ---\n";
+                break;
+            }
+        }
+    }
+    
+    if (specificEmployeeUid) {
+        try {
+            var snapP = await db.collection('projects').where('assignees', 'array-contains', specificEmployeeUid).get();
+            ctx += "\nمشاريع الموظف:\n";
+            snapP.forEach(function(d){ var p = d.data(); ctx += "- " + (p.title || 'بدون اسم') + " (" + (p.status || 'قيد التنفيذ') + ")\n"; });
+            
+            var snapT = await db.collection('tasks').where('assignedTo', '==', specificEmployeeUid).get();
+            ctx += "\nمهام الموظف:\n";
+            snapT.forEach(function(d){ var t = d.data(); ctx += "- " + (t.title || 'بدون اسم') + " (" + (t.status || 'معلقة') + ")\n"; });
+            
+            var snapAtt = await db.collection('attendance').where('uid', '==', specificEmployeeUid).orderBy('date', 'desc').limit(7).get();
+            ctx += "\nسجل الحضور الأخير:\n";
+            snapAtt.forEach(function(d){ var a = d.data(); ctx += "- " + a.date + " (حضور: " + (a.timeIn || 'لا يوجد') + ", انصراف: " + (a.timeOut || 'لا يوجد') + ")\n"; });
+            
+            var snapWkr = await db.collection('weekly_reports').where('uid', '==', specificEmployeeUid).orderBy('timestamp', 'desc').limit(2).get();
+            ctx += "\nأحدث التقارير الأسبوعية:\n";
+            snapWkr.forEach(function(d){ var r = d.data(); ctx += "- من " + r.startDate + " إلى " + r.endDate + ": المنجز (" + (r.completedTasks||'') + ")\n"; });
+        } catch(e) { console.error("Error fetching specific emp data", e); }
+    }
+
     return ctx;
 }
 
@@ -5957,7 +5994,7 @@ window.generateCareerPath = async function() {
 
     var resourcesText = (window._allDevRes || []).map(function(r) { return "- " + r.title + " (نوع: " + (r.type === 'video' ? 'فيديو' : 'كتاب') + ", تخصص: " + (r.tags||'عام') + ")"; }).join('\n');
     
-    var prompt = (await buildCompanyContextForAi()) + "أنت مساعد ذكي ومستشار تطوير مهني خبير. هام جداً: إذا كان الموظف يسأل عن معلومات تخص الشركة أو الموظفين أو المشاريع، أجب عليه فوراً وبشكل مباشر من السياق المتاح لك كأنك متحدث باسم الشركة ولا تقترح مسارات مهنية. قام الموظف بإدخال النص التالي: [" + field + "].\n" +
+    var prompt = (await buildCompanyContextForAi(field)) + "أنت مساعد ذكي ومستشار تطوير مهني خبير. هام جداً: إذا كان الموظف يسأل عن معلومات تخص الشركة أو الموظفين أو المشاريع، أجب عليه فوراً وبشكل مباشر من السياق المتاح لك كأنك متحدث باسم الشركة ولا تقترح مسارات مهنية. قام الموظف بإدخال النص التالي: [" + field + "].\n" +
                  "إذا كان النص عبارة عن تخصص أو مجال (مثل 'مطور ويب' أو 'محاسب')، فاقترح له مساراً تطويرياً قصيراً ومفيداً.\n" +
                  "أما إذا كان النص عبارة عن سؤال فني أو استفسار عام، فأجب عليه باحترافية وبطريقة تساعده في عمله وتطوير مهاراته.\n" +
                  "في حالة اقتراح مسارات مهنية أو إجابة أسئلة فنية، لدينا في مكتبة الشركة المصادر التالية حصراً:\n" + resourcesText + "\n\n" +
@@ -5997,7 +6034,7 @@ window.adminGenerateSuggestions = async function() {
     resultBox.style.display = 'block';
     resultBox.innerHTML = '<div style="text-align:center; color:var(--tx2);">🤖 الذكاء الاصطناعي يبحث لك عن أفضل الاقتراحات...</div>';
 
-    var prompt = (await buildCompanyContextForAi()) + "أنت مستشار تطوير مهني خبير. هام جداً: إذا كان المستخدم يسأل عن معلومات تخص الشركة أو الموظفين أو المشاريع، أجب عليه فوراً وبشكل مباشر من السياق المتاح لك كأنك متحدث باسم الشركة ولا تقترح مسارات أو مصادر. بصفتي مدير موارد بشرية، أريد أن أضيف مصادر تعليمية (كتب، ملفات PDF، وقنوات أو دورات يوتيوب) للموظفين في تخصص: [" + field + "].\n" +
+    var prompt = (await buildCompanyContextForAi(field)) + "أنت مستشار تطوير مهني خبير. هام جداً: إذا كان المستخدم يسأل عن معلومات تخص الشركة أو الموظفين أو المشاريع، أجب عليه فوراً وبشكل مباشر من السياق المتاح لك كأنك متحدث باسم الشركة ولا تقترح مسارات أو مصادر. بصفتي مدير موارد بشرية، أريد أن أضيف مصادر تعليمية (كتب، ملفات PDF، وقنوات أو دورات يوتيوب) للموظفين في تخصص: [" + field + "].\n" +
                  "أرجو أن تقترح لي 3 إلى 5 مصادر قوية ومعروفة ومفيدة جداً في هذا المجال (يفضل باللغة العربية إن وجد، أو الإنجليزية). اكتب اسم الكتاب أو موضوع الفيديو بوضوح لكي أستطيع البحث عنه ورفعه للموظفين.\n" +
                  "قدم الاقتراحات بتنسيق Markdown وضعها في نقاط سريعة وواضحة بدون مقدمات طويلة.";
 
@@ -6225,3 +6262,183 @@ window.share_ai_content = function() {
         copyToClipboardFallback();
     }
 };
+
+
+
+// ==================== LIVE MEETING LOGIC (JITSI) ====================
+function loadJitsiScript() {
+    return new Promise((resolve, reject) => {
+        if (window.JitsiMeetExternalAPI) { resolve(); return; }
+        var script = document.createElement('script');
+        script.src = 'https://meet.jit.si/external_api.js';
+        script.onload = resolve;
+        script.onerror = reject;
+        document.head.appendChild(script);
+    });
+}
+
+var _jitsiAdminApi = null;
+var _jitsiEmpApi = null;
+var meetingRoomName = ""; // Will be fetched from settings or generated
+
+async function getLiveMeetingRoomName() {
+    var compId = window._appSettingsCache && window._appSettingsCache.companyId ? window._appSettingsCache.companyId : 'TechGoBase';
+    return "TechGo_Meeting_" + compId.replace(/[^a-zA-Z0-9]/g, '');
+}
+
+window.startAdminLiveMeeting = async function() {
+    try {
+        await loadJitsiScript();
+        var room = await getLiveMeetingRoomName();
+        var container = document.getElementById('jitsiAdminContainer');
+        container.style.display = 'block';
+        container.innerHTML = '';
+        
+        var options = {
+            roomName: room,
+            parentNode: container,
+            userInfo: {
+                displayName: "إدارة الشركة (Admin)"
+            },
+            configOverwrite: {
+                startWithAudioMuted: false,
+                startWithVideoMuted: true,
+                prejoinPageEnabled: false,
+                disableDeepLinking: true
+            },
+            interfaceConfigOverwrite: {
+                SHOW_JITSI_WATERMARK: false,
+                SHOW_BRAND_WATERMARK: false,
+                TOOLBAR_BUTTONS: [
+                    'microphone', 'camera', 'desktop', 'fullscreen',
+                    'fodeviceselection', 'hangup', 'profile', 'chat',
+                    'settings', 'videoquality', 'filmstrip', 'tileview'
+                ]
+            }
+        };
+        _jitsiAdminApi = new JitsiMeetExternalAPI("meet.jit.si", options);
+        
+        // Notify Firebase that meeting is active
+        if (window.db) {
+            await db.collection('settings').doc('live_meeting').set({
+                isActive: true,
+                roomName: room,
+                startedAt: firebase.firestore.FieldValue.serverTimestamp()
+            }, {merge: true});
+            alert("تم بدء الاجتماع! الموظفون الآن يمكنهم الانضمام.");
+        }
+    } catch(e) {
+        console.error("Error starting meeting:", e);
+        alert("حدث خطأ أثناء تحميل منصة الاجتماعات.");
+    }
+};
+
+window.endAdminLiveMeeting = async function() {
+    if (_jitsiAdminApi) {
+        _jitsiAdminApi.dispose();
+        _jitsiAdminApi = null;
+    }
+    document.getElementById('jitsiAdminContainer').style.display = 'none';
+    if (window.db) {
+        await db.collection('settings').doc('live_meeting').set({
+            isActive: false,
+            endedAt: firebase.firestore.FieldValue.serverTimestamp()
+        }, {merge: true});
+        alert("تم إنهاء الاجتماع وإغلاق الغرفة.");
+    }
+};
+
+window.notifyEmployeesMeeting = async function() {
+    alert("سيتم إرسال إشعار عام لجميع الموظفين ببدء الاجتماع.");
+    if (window.db) {
+        var msg = "الرجاء الانضمام لغرفة الاجتماعات المباشرة فوراً.";
+        await db.collection('announcements').add({
+            title: 'اجتماع مباشر الآن',
+            content: msg,
+            date: new Date().toISOString().split('T')[0],
+            timestamp: firebase.firestore.FieldValue.serverTimestamp()
+        });
+        alert("تم الإرسال.");
+    }
+};
+
+// For Employee
+function listenToLiveMeetingStatus() {
+    if(!window.db) return;
+    db.collection('settings').doc('live_meeting').onSnapshot(function(doc) {
+        var bdg = document.getElementById('meetingBadgeStatus');
+        var btn = document.getElementById('joinMeetingBtn');
+        var txt = document.getElementById('meetingStatusText');
+        if(doc.exists && doc.data().isActive) {
+            if(bdg) { bdg.textContent = "مباشر الآن"; bdg.style.background = "var(--ok)"; }
+            if(btn) { btn.style.display = "inline-block"; }
+            if(txt) { txt.textContent = "يوجد اجتماع مباشر قائم الآن! يرجى الانضمام."; txt.style.color = "var(--ok)"; }
+        } else {
+            if(bdg) { bdg.textContent = "مغلق"; bdg.style.background = "var(--no)"; }
+            if(btn) { btn.style.display = "none"; }
+            if(txt) { txt.textContent = "لا يوجد اجتماعات قائمة حالياً."; txt.style.color = "var(--tx2)"; }
+            // If they are in the meeting, kick them out or notify
+            if(_jitsiEmpApi) {
+                _jitsiEmpApi.dispose();
+                _jitsiEmpApi = null;
+                var cnt = document.getElementById('jitsiEmpContainer');
+                if(cnt) cnt.style.display = 'none';
+                alert("تم إنهاء الاجتماع من قبل الإدارة.");
+            }
+        }
+    });
+}
+
+window.joinEmployeeLiveMeeting = async function() {
+    try {
+        await loadJitsiScript();
+        var doc = await db.collection('settings').doc('live_meeting').get();
+        if(!doc.exists || !doc.data().isActive) {
+            alert("لا يوجد اجتماع حالياً.");
+            return;
+        }
+        var room = doc.data().roomName;
+        var container = document.getElementById('jitsiEmpContainer');
+        container.style.display = 'block';
+        container.innerHTML = '';
+        
+        var empName = window._userDataCache ? window._userDataCache.name : "موظف";
+        
+        var options = {
+            roomName: room,
+            parentNode: container,
+            userInfo: {
+                displayName: empName
+            },
+            configOverwrite: {
+                startWithAudioMuted: true,
+                startWithVideoMuted: true,
+                prejoinPageEnabled: false,
+                disableDeepLinking: true
+            },
+            interfaceConfigOverwrite: {
+                SHOW_JITSI_WATERMARK: false,
+                SHOW_BRAND_WATERMARK: false,
+                TOOLBAR_BUTTONS: [
+                    'microphone', 'camera', 'desktop', 'fullscreen',
+                    'hangup', 'chat', 'raisehand', 'tileview'
+                ]
+            }
+        };
+        _jitsiEmpApi = new JitsiMeetExternalAPI("meet.jit.si", options);
+    } catch(e) {
+        console.error("Error joining meeting:", e);
+        alert("حدث خطأ أثناء محاولة الانضمام للاجتماع.");
+    }
+};
+
+// Initialize listener if we are in employee panel
+document.addEventListener('DOMContentLoaded', function() {
+    setTimeout(function() {
+        if(window.location.href.indexOf('employee.html') !== -1) {
+            listenToLiveMeetingStatus();
+        }
+    }, 3000); // give Firebase time to init
+});
+// ====================================================================
+
