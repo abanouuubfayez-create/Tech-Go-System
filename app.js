@@ -2989,6 +2989,10 @@ function load(id,c){
         loadDevResAdmin(c);
         return;
     }
+    else if(id==="adminai"){
+        loadAdminAiChat(c);
+        return;
+    }
     else if(id==="notice"){
         h=H('نموذج لفت نظر','إنذار رسمي وفق اللائحة التنظيمية','OFFICIAL NOTICE','notice');
         h+=SC('١','بيانات الموظف');
@@ -6338,16 +6342,21 @@ window.endAdminLiveMeeting = async function() {
 };
 
 window.notifyEmployeesMeeting = async function() {
-    alert("سيتم إرسال إشعار عام لجميع الموظفين ببدء الاجتماع.");
-    if (window.db) {
-        var msg = "الرجاء الانضمام لغرفة الاجتماعات المباشرة فوراً.";
-        await db.collection('announcements').add({
-            title: 'اجتماع مباشر الآن',
-            content: msg,
-            date: new Date().toISOString().split('T')[0],
-            timestamp: firebase.firestore.FieldValue.serverTimestamp()
-        });
-        alert("تم الإرسال.");
+    try {
+        var msg = prompt("اكتب الرسالة التي تود إرسالها للموظفين بخصوص الاجتماع:", "الرجاء الانضمام لغرفة الاجتماعات المباشرة فوراً.");
+        if(!msg) return;
+        if (window.db) {
+            await db.collection('announcements').add({
+                title: 'اجتماع مباشر الآن',
+                content: msg,
+                date: new Date().toISOString().split('T')[0],
+                timestamp: firebase.firestore.FieldValue.serverTimestamp()
+            });
+            alert("تم إرسال الإشعار كإعلان لجميع الموظفين بنجاح.");
+        }
+    } catch(e) {
+        console.error("Error sending meeting notification:", e);
+        alert("حدث خطأ أثناء الإرسال: " + e.message);
     }
 };
 
