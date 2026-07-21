@@ -9,7 +9,7 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-title" content="Tech Go">
 <title>لوحة التحكم · تيك جو</title>
-<link rel="stylesheet" href="styles.css?v=181837">
+<link rel="stylesheet" href="styles.css?v=181838">
 <link rel="manifest" href="manifest.json">
 <link rel="icon" type="image/png" sizes="192x192" href="icon-192.png">
 <link rel="apple-touch-icon" href="icon-192.png">
@@ -17,8 +17,8 @@
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-storage-compat.js"></script>
-<script src="firebase-config.js?v=181837"></script>
-<script src="auth.js?v=181837"></script>
+<script src="firebase-config.js?v=181838"></script>
+<script src="auth.js?v=181838"></script>
 <script>
     (function() {
         const theme = localStorage.getItem('tg-theme') || 'light';
@@ -181,32 +181,41 @@
     <button id="tgBackBtn" class="bt bt-o np" style="display:none;padding:5px 12px;font-size:12px;box-shadow:none;border-color:var(--bd)" onclick="tgGoBack()" title="رجوع">🔙 رجوع</button>
     <div class="t" id="pT">لوحة التحكم</div>
   </div>
-  <div class="ac np">
-    <input type="text" id="globalTableFilter" name="tg-global-search-field-admin" class="global-table-filter" placeholder="🔍 تصفية بيانات الجدول..." oninput="if(typeof tgFilterVisibleTables==='function') tgFilterVisibleTables(this.value)" autocomplete="new-password" style="margin-left:8px;">
-    <button class="bt bt-o" onclick="tgClearForm()" style="font-size:11px;padding:4px 10px;margin-left:4px">🧹 مسح النموذج</button>
-    <button class="bt bt-o" onclick="tgLoadFormDrafts()" style="font-size:11px;padding:4px 10px;margin-left:4px">📂 النماذج المحفوظة</button>
-    <div class="notif-wrap np" id="notifWrap">
-      <button class="bt bt-o notif-bell-btn" id="notifBellBtn" onclick="tgToggleNotifPanel(event)" title="الإشعارات" style="font-size:16px;padding:4px 10px;margin-left:4px;position:relative">
-        🔔<span class="notif-badge" id="notifBadge" style="display:none">0</span>
-      </button>
-      <div class="notif-panel" id="notifPanel" style="display:none">
-        <div class="notif-panel-hd">
-          <span>الإشعارات</span>
-          <span class="notif-mark-all" id="notifMarkAll" onclick="tgMarkAllNotifsRead(TG_USER && TG_USER.uid)">تحديد الكل كمقروء</span>
-        </div>
-        <div class="notif-list" id="notifList">
-          <div class="notif-empty">لا توجد إشعارات بعد</div>
-        </div>
-      </div>
+  <div class="ac np" style="display:flex; align-items:center; gap:6px; flex-wrap:wrap;">
+    
+    <div id="tgTableTools" style="display:none; align-items:center;">
+        <input type="text" id="globalTableFilter" name="tg-global-search-field-admin" class="global-table-filter" placeholder="🔍 تصفية بيانات الجدول..." oninput="if(typeof tgFilterVisibleTables==='function') tgFilterVisibleTables(this.value)" autocomplete="new-password">
     </div>
-    <button class="bt bt-o" id="themeToggle" onclick="tgToggleTheme()" title="تبديل الوضع الليلي" style="font-size:16px;padding:4px 10px;margin-left:4px">🌙</button>
-    <button class="bt bt-d" onclick="tgMigrateNames()" style="font-size:11px;padding:4px 10px;margin-left:4px;background:#8b0000;color:#fff" title="دمج المسميات الوظيفية">🔄 دمج المسميات الوظيفية</button>
-    <button class="bt bt-p" onclick="tgSaveFormDraft(false)" style="font-size:11px;padding:4px 10px;margin-left:4px" title="حفظ التعديلات على نفس النموذج">💾 حفظ</button>
-    <button class="bt bt-p" onclick="tgSaveFormDraft(true)" style="font-size:11px;padding:4px 10px;margin-left:8px" title="حفظ نسخة جديدة">💾 حفظ كـ...</button>
-    <select id="tgAutoCompleteEmp" onchange="tgAutoCompleteForm(this.value)" style="margin-left:8px; padding:4px; font-size:11px; border:1px solid var(--bd); border-radius:4px; background:var(--bg); color:var(--tx)">
-       <option value="">تعبئة بيانات موظف...</option>
-    </select>
-    <button class="bt bt-o" onclick="openPrintPreview()">🖨 معاينة وطباعة</button>
+
+    <div id="tgFormTools" style="display:none; align-items:center; gap:6px;">
+        <button class="bt bt-o" onclick="tgClearForm()" style="font-size:11px;padding:4px 10px;">🧹 مسح النموذج</button>
+        <button class="bt bt-o" onclick="tgLoadFormDrafts()" style="font-size:11px;padding:4px 10px;">📂 النماذج المحفوظة</button>
+        <button class="bt bt-p" onclick="tgSaveFormDraft(false)" style="font-size:11px;padding:4px 10px;" title="حفظ التعديلات على نفس النموذج">💾 حفظ</button>
+        <button class="bt bt-p" onclick="tgSaveFormDraft(true)" style="font-size:11px;padding:4px 10px;" title="حفظ نسخة جديدة">💾 حفظ كـ...</button>
+        <select id="tgAutoCompleteEmp" onchange="tgAutoCompleteForm(this.value)" style="padding:4px; font-size:11px; border:1px solid var(--bd); border-radius:4px; background:var(--bg); color:var(--tx)">
+           <option value="">تعبئة بيانات موظف...</option>
+        </select>
+        <button class="bt bt-o" onclick="openPrintPreview()" style="font-size:11px;padding:4px 10px;">🖨 طباعة</button>
+    </div>
+
+    <div style="display:flex; align-items:center; gap:6px;">
+        <button class="bt bt-o" id="themeToggle" onclick="tgToggleTheme()" title="تبديل الوضع الليلي" style="font-size:16px;padding:4px 10px;">🌙</button>
+        <div class="notif-wrap np" id="notifWrap">
+          <button class="bt bt-o notif-bell-btn" id="notifBellBtn" onclick="tgToggleNotifPanel(event)" title="الإشعارات" style="font-size:16px;padding:4px 10px;position:relative">
+            🔔<span class="notif-badge" id="notifBadge" style="display:none">0</span>
+          </button>
+          <div class="notif-panel" id="notifPanel" style="display:none">
+            <div class="notif-panel-hd">
+              <span>الإشعارات</span>
+              <span class="notif-mark-all" id="notifMarkAll" onclick="tgMarkAllNotifsRead(TG_USER && TG_USER.uid)">تحديد الكل كمقروء</span>
+            </div>
+            <div class="notif-list" id="notifList">
+              <div class="notif-empty">لا توجد إشعارات بعد</div>
+            </div>
+          </div>
+        </div>
+    </div>
+
 </div></div>
 <div id="tgFormDraftsSidebar" class="form-drafts-sidebar np" style="display:none;">
   <div class="fds-header">
@@ -335,14 +344,14 @@
 </div>
 </div>
 <datalist id="tgEmpDL"></datalist>
-<script src="auth.js?v=181837"></script>
+<script src="auth.js?v=181838"></script>
 
 <!-- FullCalendar -->
 <script src="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.15/index.global.min.js"></script>
 
-<script src="app.js?v=181837"></script>
-<script src="livetrack.js?v=181837"></script>
-<script src="formsend.js?v=181837"></script>
+<script src="app.js?v=181838"></script>
+<script src="livetrack.js?v=181838"></script>
+<script src="formsend.js?v=181838"></script>
 
 
 <script>
@@ -711,6 +720,6 @@
 </script>
 <div style="position:fixed;bottom:4px;left:50%;transform:translateX(-50%);font-size:9px;color:rgba(255,255,255,0.25);z-index:9999;pointer-events:none;white-space:nowrap;font-family:inherit">تطوير وتصميم: أبانوب فايز</div>
 <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
-<script src="theme.js?v=181837"></script>
+<script src="theme.js?v=181838"></script>
 </body>
 </html>

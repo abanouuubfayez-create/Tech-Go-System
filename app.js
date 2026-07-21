@@ -195,6 +195,16 @@ function go(id, nav, force){
     // Reset global table filter
     var gf = document.getElementById("globalTableFilter");
     if(gf) { gf.value = ""; tgFilterVisibleTables(""); }
+        // Show/Hide top bar tools
+    var formIds = ['gen','notice','warn','inv','exp','clr','res','promo','raise','contract','task','proj','sal','emp','leave','perm','delay','sendform'];
+    var tableIds = ['la','lb','lc','ld','pmgmt','tasksmgmt','staff','wkreports','empdocs','att_live','att','archive','announcements','mexp','devres'];
+
+    var tgTableTools = document.getElementById('tgTableTools');
+    var tgFormTools = document.getElementById('tgFormTools');
+
+    if(tgTableTools) tgTableTools.style.display = tableIds.indexOf(id) !== -1 ? 'flex' : 'none';
+    if(tgFormTools) tgFormTools.style.display = formIds.indexOf(id) !== -1 ? 'flex' : 'none';
+    
     if(typeof onPageChange === "function") onPageChange(id);
 }
 
