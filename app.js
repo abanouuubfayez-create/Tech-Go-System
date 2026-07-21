@@ -5728,14 +5728,6 @@ window.toggleDevResInput = function(type) {
 
 function notifyNewDevRes(title) {
     var msg = 'تم إضافة مصدر جديد في التطوير المهني: ' + title;
-    if(window.db) {
-        db.collection('announcements').add({
-            title: '📚 تحديث مكتبة الشركة',
-            content: msg,
-            date: new Date().toISOString().split('T')[0],
-            createdAt: firebase.firestore.FieldValue.serverTimestamp()
-        }).catch(function(e){console.error(e)});
-    }
     if(typeof tgBroadcastPush === 'function') {
         tgBroadcastPush('📚 مصدر تطوير جديد', msg, 'devres', '');
     }
@@ -6386,16 +6378,10 @@ window.notifyEmployeesMeeting = async function() {
         var msg = prompt("اكتب الرسالة التي تود إرسالها للموظفين بخصوص الاجتماع:", "الرجاء الانضمام لغرفة الاجتماعات المباشرة فوراً.");
         if(!msg) return;
         if (window.db) {
-            await db.collection('announcements').add({
-                title: 'اجتماع مباشر الآن',
-                content: msg,
-                date: new Date().toISOString().split('T')[0],
-                createdAt: firebase.firestore.FieldValue.serverTimestamp()
-            });
             if(typeof tgBroadcastPush === 'function') {
                 tgBroadcastPush('🎥 دعوة لاجتماع مباشر', msg, 'livemeeting', '');
             }
-            alert("تم إرسال الإشعار وتنبيهات الدفع (Push Notifications) بنجاح.");
+            alert("تم إرسال إشعار الدفع (Push Notification) بنجاح.");
         }
     } catch(e) {
         console.error("Error sending meeting notification:", e);
