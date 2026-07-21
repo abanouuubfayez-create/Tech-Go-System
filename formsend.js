@@ -711,6 +711,7 @@
     var pendingCount = fsMyCache.filter(function (r) { return r.status === 'pending'; }).length;
     var badge = document.getElementById('forms-badge');
     if (badge) { badge.style.display = pendingCount ? 'inline-block' : 'none'; badge.textContent = pendingCount; }
+    if (typeof updateSmartTabTitle === 'function') updateSmartTabTitle();
 
     if (!fsMyCache.length) { box.innerHTML = '<div class="empty-hint">لا توجد نماذج مُرسلة لك حالياً.</div>'; return; }
     var sorted = fsMyCache.slice().sort(function (a, b) { return a.status === 'pending' ? -1 : 1; });

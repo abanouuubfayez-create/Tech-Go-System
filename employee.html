@@ -166,7 +166,7 @@
   <div class="emp-tab" data-pg="req" onclick="empGo('req',this)">📨 طلباتي</div>
   <div class="emp-tab" data-pg="forms" onclick="empGo('forms',this)">📝 نماذج مطلوبة مني <span class="tab-badge" id="forms-badge" style="display:none">0</span></div>
   <div class="emp-tab" id="empTabAtt" data-pg="att" onclick="empGo('att',this)" style="display:none">⏱️ الحضور والانصراف</div>
-  <div class="emp-tab" data-pg="devres" onclick="empGo('devres',this)">🚀 التطوير المهني</div>
+  <div class="emp-tab" data-pg="devres" onclick="empGo('devres',this)">🚀 التطوير المهني <span class="tab-badge" id="devres-badge" style="display:none">0</span></div>
   <div class="emp-tab" data-pg="livemeeting" onclick="empGo('livemeeting',this)">🎥 غرفة الاجتماعات <span class="tab-badge" id="meetingBadgeStatus" style="display:none; background:var(--ok)">مباشر</span></div>
   <div class="emp-tab" data-pg="acct" onclick="empGo('acct',this)">👤 حسابي</div>
 </div>
@@ -491,6 +491,14 @@ function empGo(id, el, force) {
         updateTasksBadge(0);
     }
     if(id === 'devres' && typeof fetchEmpDevRes === 'function') {
+        if(typeof updateDevResBadge === 'function') updateDevResBadge(0);
+        if(window._allDevRes && window.TG_USER) {
+            var seenDevres = JSON.parse(localStorage.getItem('seen_devres_'+TG_USER.uid) || '[]');
+            window._allDevRes.forEach(function(d){
+                if(seenDevres.indexOf(d.id)===-1) seenDevres.push(d.id);
+            });
+            localStorage.setItem('seen_devres_'+TG_USER.uid, JSON.stringify(seenDevres));
+        }
         fetchEmpDevRes();
     }
 }
@@ -505,6 +513,7 @@ function updateProjBadge(n) {
         el.style.display = 'none';
         el.textContent = '0';
     }
+    if (typeof updateSmartTabTitle === 'function') updateSmartTabTitle();
 }
 
 function updateTasksBadge(n) {
@@ -516,6 +525,37 @@ function updateTasksBadge(n) {
     } else {
         el.style.display = 'none';
         el.textContent = '0';
+    }
+    if (typeof updateSmartTabTitle === 'function') updateSmartTabTitle();
+}
+
+function updateDevResBadge(n) {
+    var el = document.getElementById('devres-badge');
+    if (!el) return;
+    if (n > 0) {
+        el.style.display = 'inline-block';
+        el.textContent = n;
+    } else {
+        el.style.display = 'none';
+        el.textContent = '0';
+    }
+    if (typeof updateSmartTabTitle === 'function') updateSmartTabTitle();
+}
+
+function updateSmartTabTitle() {
+    var pb = parseInt(document.getElementById('proj-badge') ? document.getElementById('proj-badge').textContent : 0) || 0;
+    var tb = parseInt(document.getElementById('tasks-badge') ? document.getElementById('tasks-badge').textContent : 0) || 0;
+    var fb = parseInt(document.getElementById('forms-badge') ? document.getElementById('forms-badge').textContent : 0) || 0;
+    var db = parseInt(document.getElementById('devres-badge') ? document.getElementById('devres-badge').textContent : 0) || 0;
+    var mb = document.getElementById('meetingBadgeStatus');
+    var isMeeting = (mb && mb.style.display !== 'none' && mb.textContent.indexOf('مباشر') !== -1) ? 1 : 0;
+    
+    var total = pb + tb + fb + db + isMeeting;
+    var baseTitle = 'بوابة الموظف · تيك جو';
+    if(total > 0) {
+        document.title = '(' + total + ') ' + baseTitle;
+    } else {
+        document.title = baseTitle;
     }
 }
 

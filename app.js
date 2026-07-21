@@ -5877,12 +5877,16 @@ window.fetchEmpDevRes = function() {
         
         if(snap.empty) {
             grid.innerHTML = '<div class="empty-hint">لم يتم إضافة أي مصادر للمكتبة بعد.</div>';
+            if(typeof updateDevResBadge === 'function') updateDevResBadge(0);
             return;
         }
         
         var h = '';
+        var currentIds = [];
         snap.forEach(function(doc) {
             var d = doc.data();
+            d.id = doc.id;
+            currentIds.push(d.id);
             window._allDevRes.push(d);
             var isVideo = d.type === 'video';
             h += '<div style="background:var(--w); border:1px solid var(--bd2); border-radius:12px; padding:20px; transition:all 0.3s; box-shadow:0 4px 10px rgba(0,0,0,0.02); display:flex; flex-direction:column;">';
@@ -5893,6 +5897,21 @@ window.fetchEmpDevRes = function() {
             h += '</div>';
         });
         grid.innerHTML = h;
+
+        var isTabActive = document.getElementById('epg-devres') && document.getElementById('epg-devres').classList.contains('a');
+        var seenDevres = JSON.parse(localStorage.getItem('seen_devres_'+(window.TG_USER ? window.TG_USER.uid : '')) || '[]');
+        if (isTabActive) {
+            currentIds.forEach(function(id){
+                if(seenDevres.indexOf(id)===-1) seenDevres.push(id);
+            });
+            localStorage.setItem('seen_devres_'+(window.TG_USER ? window.TG_USER.uid : ''), JSON.stringify(seenDevres));
+        }
+        var unseenCount = 0;
+        currentIds.forEach(function(id){
+            if(seenDevres.indexOf(id)===-1) unseenCount++;
+        });
+        if (typeof updateDevResBadge === 'function') updateDevResBadge(unseenCount);
+
     }, function(err){
         console.error("fetchEmpDevRes error:", err);
         grid.innerHTML = '<div class="empty-hint" style="color:red">❌ تعذر التحميل: ' + err.message + '</div>';
@@ -6408,13 +6427,15 @@ function listenToLiveMeetingStatus() {
         var btn = document.getElementById('joinMeetingBtn');
         var txt = document.getElementById('meetingStatusText');
         if(doc.exists && doc.data().isActive) {
-            if(bdg) { bdg.textContent = "مباشر الآن"; bdg.style.background = "var(--ok)"; }
+            if(bdg) { bdg.textContent = "مباشر الآن"; bdg.style.background = "var(--ok)"; bdg.style.display = "inline-block"; }
             if(btn) { btn.style.display = "inline-block"; }
             if(txt) { txt.textContent = "يوجد اجتماع مباشر قائم الآن! يرجى الانضمام."; txt.style.color = "var(--ok)"; }
+            if(typeof updateSmartTabTitle === 'function') updateSmartTabTitle();
         } else {
-            if(bdg) { bdg.textContent = "مغلق"; bdg.style.background = "var(--no)"; }
+            if(bdg) { bdg.textContent = "مغلق"; bdg.style.background = "var(--no)"; bdg.style.display = "none"; }
             if(btn) { btn.style.display = "none"; }
             if(txt) { txt.textContent = "لا يوجد اجتماعات قائمة حالياً."; txt.style.color = "var(--tx2)"; }
+            if(typeof updateSmartTabTitle === 'function') updateSmartTabTitle();
             // Notify them it's closed
             var cnt = document.getElementById('jitsiEmpContainer');
             if(cnt) cnt.style.display = 'none';
