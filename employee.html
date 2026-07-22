@@ -251,6 +251,22 @@
     <input type="text" id="globalTableFilter" name="tg-global-search-field" class="global-table-filter" placeholder="🔍 تصفية بيانات الجدول..." oninput="if(typeof tgFilterVisibleTables==='function') tgFilterVisibleTables(this.value)" autocomplete="new-password">
     <div class="emp-header-actions" style="margin-right:auto;display:flex;gap:8px;align-items:center">
         <button class="bt bt-o" id="themeToggle" onclick="tgToggleTheme()" title="تبديل الوضع الليلي" style="font-size:16px;padding:4px 10px">🌙</button>
+        
+        <div class="notif-wrap np" id="notifWrap">
+          <button class="bt bt-o notif-bell-btn" id="notifBellBtn" onclick="tgToggleNotifPanel(event)" title="الإشعارات" style="font-size:16px;padding:4px 10px;position:relative">
+            🔔<span class="notif-badge" id="notifBadge" style="display:none">0</span>
+          </button>
+          <div class="notif-panel" id="notifPanel" style="display:none; text-align:right;">
+            <div class="notif-panel-hd">
+              <span>الإشعارات</span>
+              <span class="notif-mark-all" id="notifMarkAll" onclick="tgMarkAllNotifsRead(TG_USER && TG_USER.uid)">تحديد الكل كمقروء</span>
+            </div>
+            <div class="notif-list" id="notifList">
+              <div class="notif-empty">لا توجد إشعارات بعد</div>
+            </div>
+          </div>
+        </div>
+
         <button class="bt bt-o" onclick="tgLogout()">🚪 خروج</button>
     </div>
   </div>
@@ -909,6 +925,15 @@ function saveProjDetailProgress(id){
             db.collection('projects').doc(id).get().then(function(doc){
                 var pTitle = doc.exists ? doc.data().title : 'مشروع';
                 tgNotifyAdmins('📈 تحديث إنجاز مشروع', (TG_USER.name||'موظف') + ' حدث تقدمه في: ' + pTitle + ' إلى ' + prog + '%', 'project-progress');
+                if(status === 'مكتمل') {
+                    db.collection('achievements').add({
+                        uid: TG_USER.uid, userName: TG_USER.name,
+                        title: 'إتمام مشروع: ' + pTitle,
+                        description: 'إنجاز تلقائي (مشروع)',
+                        date: new Date().toISOString().split('T')[0],
+                        reactions: {}, createdAt: new Date()
+                    }).catch(function(){});
+                }
             }).catch(function(){});
         })
         .catch(function(e){ msg.style.color='var(--no)'; msg.textContent='❌ '+e.message; });
@@ -931,6 +956,15 @@ function saveProjectProgress(id){
         db.collection('projects').doc(id).get().then(function(doc){
             var pTitle = doc.exists ? doc.data().title : 'مشروع';
             tgNotifyAdmins('📊 تحديث حالة مشروع', (TG_USER.name||'موظف') + ' حدث حالة ' + pTitle + ' إلى: ' + status, 'project-status');
+            if(status === 'مكتمل') {
+                db.collection('achievements').add({
+                    uid: TG_USER.uid, userName: TG_USER.name,
+                    title: 'إتمام مشروع: ' + pTitle,
+                    description: 'إنجاز تلقائي (مشروع)',
+                    date: new Date().toISOString().split('T')[0],
+                    reactions: {}, createdAt: new Date()
+                }).catch(function(){});
+            }
         }).catch(function(){});
     }).catch(function(err){ msg.style.color='var(--no)'; msg.textContent='❌ '+err.message; });
 }
@@ -1385,6 +1419,15 @@ function saveTaskStatus(id){
         db.collection('tasks').doc(id).get().then(function(doc){
             var tName = doc.exists ? doc.data().title : 'مهمة';
             tgNotifyAdmins('✅ تحديث حالة مهمة', 'قام ' + (TG_USER.name||'الموظف') + ' بتحديث حالة المهمة (' + tName + ') إلى: ' + status, 'task-status');
+            if(status === 'مكتمل') {
+                db.collection('achievements').add({
+                    uid: TG_USER.uid, userName: TG_USER.name,
+                    title: 'إتمام مهمة: ' + tName,
+                    description: 'إنجاز تلقائي (مهمة)',
+                    date: new Date().toISOString().split('T')[0],
+                    reactions: {}, createdAt: new Date()
+                }).catch(function(){});
+            }
         }).catch(function(){});
 
         // Push notification عند اكتمال المهمة
@@ -1797,6 +1840,8 @@ tgRequireAuth('employee', function(u){
     if(typeof loadMyFormRequests === 'function') loadMyFormRequests(u.uid);
     // تفعيل استقبال Push Notifications من Firestore
     if(typeof tgListenMyNotifications === 'function') tgListenMyNotifications(u.uid);
+    // تفعيل مركز الإشعارات للموظف
+    if(typeof tgListenNotifCenter === 'function') tgListenNotifCenter(u.uid, tgRenderNotifPanel);
     // PWA Service Worker
     if('serviceWorker' in navigator){
       navigator.serviceWorker.register('./sw.js').catch(function(){});
@@ -2141,6 +2186,93 @@ function tgUpdateEmpTaskTabCounts(rows){
         var el = document.getElementById(id);
         if(el) el.textContent = map[id];
     });
+}
+
+// ── مركز الإشعارات للموظف ──────────────────────────────────────
+function tgToggleNotifPanel(ev) {
+    if (ev) ev.stopPropagation();
+    var panel = document.getElementById('notifPanel');
+    if (!panel) return;
+    var willOpen = panel.style.display === 'none' || !panel.style.display;
+    panel.style.display = willOpen ? 'block' : 'none';
+}
+document.addEventListener('click', function (ev) {
+    var wrap = document.getElementById('notifWrap');
+    var panel = document.getElementById('notifPanel');
+    if (!wrap || !panel || panel.style.display === 'none') return;
+    if (!wrap.contains(ev.target)) panel.style.display = 'none';
+});
+function tgTimeAgo(d) {
+    if (!d) return 'الآن';
+    var ms = (d && d.toMillis) ? d.toMillis() : new Date(d).getTime();
+    if (!ms || isNaN(ms)) return 'توقيت غير معروف';
+    var now = Date.now();
+    var s = Math.floor(Math.abs(now - ms) / 1000);
+    if (s < 2) return 'الآن';
+    if (s < 60) return 'منذ ' + s + ' ثانية';
+    var m = Math.floor(s / 60);
+    if (m < 60) return (m === 1 ? 'منذ دقيقة' : m === 2 ? 'منذ دقيقتين' : m <= 10 ? 'منذ ' + m + ' دقائق' : 'منذ ' + m + ' دقيقة');
+    var h = Math.floor(m / 60);
+    if (h < 24) return (h === 1 ? 'منذ ساعة' : h === 2 ? 'منذ ساعتين' : h <= 10 ? 'منذ ' + h + ' ساعات' : 'منذ ' + h + ' ساعة');
+    var days = Math.floor(h / 24);
+    if (days < 30) return (days === 1 ? 'منذ يوم' : days === 2 ? 'منذ يومين' : days <= 10 ? 'منذ ' + days + ' أيام' : 'منذ ' + days + ' يوم');
+    return new Date(ms).toLocaleDateString('ar-EG');
+}
+function tgRenderNotifPanel(list, unreadCount) {
+    var badge = document.getElementById('notifBadge');
+    if (badge) {
+        if (unreadCount > 0) {
+            badge.style.display = 'flex';
+            badge.textContent = unreadCount > 99 ? '99+' : unreadCount;
+        } else {
+            badge.style.display = 'none';
+        }
+    }
+    var bellBtn = document.getElementById('notifBellBtn');
+    if (bellBtn) bellBtn.classList.toggle('has-unread', unreadCount > 0);
+
+    var listEl = document.getElementById('notifList');
+    if (!listEl) return;
+    if (!list || !list.length) {
+        listEl.innerHTML = '<div class="notif-empty">لا توجد إشعارات بعد</div>';
+        return;
+    }
+    var h = '';
+    list.forEach(function (n) {
+        var unread = !n.read;
+        h += '<div class="notif-item' + (unread ? ' unread' : '') + '" onclick="tgNotifItemClick(\'' + n.id + '\', event, \'' + (n.tag || '') + '\')">';
+        h += '<div class="notif-item-dot"></div>';
+        h += '<div class="notif-item-body">';
+        h += '<div class="notif-item-title">' + (typeof escH === 'function' ? escH(n.title || 'إشعار') : (n.title || 'إشعار')) + '</div>';
+        if (n.body) h += '<div class="notif-item-text">' + (typeof escH === 'function' ? escH(n.body) : n.body) + '</div>';
+        h += '<div class="notif-item-time">' + tgTimeAgo(n.createdAt) + '</div>';
+        h += '</div>';
+        h += '<div class="notif-item-del" title="حذف" onclick="tgNotifDelClick(\'' + n.id + '\', event)">✕</div>';
+        h += '</div>';
+    });
+    listEl.innerHTML = h;
+}
+function tgNotifItemClick(id, ev, tag) {
+    if (ev) ev.stopPropagation();
+    if (typeof tgMarkNotifRead === 'function') tgMarkNotifRead(id);
+    var panel = document.getElementById('notifPanel');
+    if (panel) panel.style.display = 'none';
+
+    var clickTab = function(t){ var el = document.querySelector('[data-pg="'+t+'"]'); if(el) empGo(t, el); };
+
+    if (tag === 'form-submitted' || tag === 'form-new') clickTab('forms');
+    else if (tag === 'request-reviewed' || tag === 'request-new') clickTab('req');
+    else if (tag === 'att-check-in' || tag === 'att-check-out') clickTab('att');
+    else if (tag === 'name-change' || tag === 'achievement-new') clickTab('ach');
+    else if (tag === 'project-new' || tag === 'project-update' || tag === 'project-status' || tag === 'project-progress' || tag === 'project-note' || tag === 'project-completed') clickTab('proj');
+    else if (tag === 'task-new' || tag === 'task-update' || tag === 'task-status') clickTab('tasks');
+    else if (tag === 'weekly-report-new' || tag === 'weekly-report-reminder') clickTab('wkr');
+    else if (tag === 'emp-doc-personal' || tag === 'emp-doc-direct') clickTab('docs');
+    else if (tag === 'chat-new') { if (typeof tgChatToggle === 'function') tgChatToggle(); }
+}
+function tgNotifDelClick(id, ev) {
+    if (ev) ev.stopPropagation();
+    if (typeof tgDeleteNotif === 'function') tgDeleteNotif(id);
 }
 </script>
 <div style="position:fixed;bottom:4px;left:50%;transform:translateX(-50%);font-size:9px;color:rgba(255,255,255,0.2);z-index:9999;pointer-events:none;white-space:nowrap;font-family:inherit">تطوير وتصميم: أبانوب فايز</div>
