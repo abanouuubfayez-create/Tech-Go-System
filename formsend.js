@@ -789,4 +789,7 @@
       msg.style.color = 'var(--no)'; msg.textContent = '❌ ' + err.message;
     });
   };
+  
+  window.FS_TEMPLATES = FS_TEMPLATES;
+  window.FS_OFFICIAL = FS_OFFICIAL;
 })();

@@ -416,26 +416,18 @@
     <div class="set-sec">
       <div class="set-sec-title">➕ تقديم طلب جديد</div>
       <div class="fr fr2" style="margin-top:8px">
-        <div class="fg"><label>نوع الطلب</label>
-          <select id="reqType" onchange="var isForm = this.value === 'طلب نموذج'; document.getElementById('reqFormTemplateWrap').style.display = isForm ? 'block' : 'none'; var ext = document.getElementById('reqExtraFields'); if(ext) ext.style.display = isForm ? 'none' : 'block';">
-            <option>إجازة</option><option>إذن حضور / انصراف</option><option>غياب</option><option>طلب نموذج</option><option>أخرى</option>
-          </select>
-        </div>
-        <div class="fg" id="reqFormTemplateWrap" style="display:none;"><label>اسم النموذج المطلوب</label>
-          <select id="reqFormTemplate">
-            <option value="نموذج مخصص (حقول حرة)">✏️ نموذج مخصص (حقول حرة)</option>
-            <option value="ملف بيانات الموظف">ملف بيانات الموظف</option>
-            <option value="نموذج طلب إجازة">نموذج طلب إجازة</option>
-            <option value="إذن حضور / انصراف">إذن حضور / انصراف</option>
-            <option value="التماس تعديل موعد الحضور">التماس تعديل موعد الحضور</option>
-            <option value="نموذج طلب استقالة">نموذج طلب استقالة</option>
-            <option value="نموذج شكاوى ومقترحات">نموذج شكاوى ومقترحات</option>
-            <option value="إخلاء طرف">إخلاء طرف</option>
-            <option value="تقييم أداء ذاتي">تقييم أداء ذاتي</option>
+        <div class="fg"><label>نوع النموذج / الطلب</label>
+          <select id="reqType" onchange="tgOnReqTypeChange(this.value)">
+            <option value="">⏳ جارٍ التحميل...</option>
           </select>
         </div>
       </div>
-      <div id="reqExtraFields">
+      
+      <!-- منطقة النموذج الديناميكي (تظهر عند اختيار نموذج) -->
+      <div id="reqDynamicFormWrap" class="form-grid" style="display:none;margin-top:10px;padding:15px;background:rgba(0,0,0,0.03);border-radius:8px;"></div>
+      
+      <!-- الطلب العادي (يظهر عند اختيار 'أخرى' أو قبل توفر النماذج) -->
+      <div id="reqExtraFields" style="display:none;">
         <div class="fr fr2">
           <div class="fg"><label>من تاريخ (اختياري)</label><input type="date" id="reqFrom"></div>
           <div class="fg"><label>إلى تاريخ (اختياري)</label><input type="date" id="reqTo"></div>
@@ -1363,14 +1355,24 @@ window.updateTasksEmployeeSummary = function() {
     }
 };
 function saveTaskStatus(id){
-    var status=document.getElementById('tks_'+id).value;
-    var msg=document.getElementById('tkmsg_'+id);
+    var selectObj = document.getElementById('tks_'+id);
+    var status = selectObj.value;
+    var msg = document.getElementById('tkmsg_'+id);
+    
+    // Prevent double submissions
+    if (selectObj.disabled) return;
+    
     msg.style.color='var(--tx3)'; msg.textContent='⏳ جارٍ الحفظ...';
+    selectObj.disabled = true;
 
     // Check if late on completion
     var isLate = false;
     db.collection('tasks').doc(id).get().then(function(doc){
         var t = doc.data();
+        if (t && t.status === status) {
+            // No change in status
+            return Promise.reject('NO_CHANGE');
+        }
         if(status === 'مكتمل' && t && t.deadline){
             var dl = new Date(t.deadline);
             dl.setHours(23,59,59,999);
@@ -1379,6 +1381,7 @@ function saveTaskStatus(id){
         return db.collection('tasks').doc(id).update({status:status, statusUpdatedAt: new Date()});
     }).then(function(){
         msg.style.color='var(--ok)'; msg.textContent='✅ تم الحفظ';
+        selectObj.disabled = false;
         // إشعار للأدمن
         db.collection('tasks').doc(id).get().then(function(doc){
             var tName = doc.exists ? doc.data().title : 'مهمة';
@@ -1391,7 +1394,15 @@ function saveTaskStatus(id){
             tgShowNotification('✅ مهمة مكتملة', 'أنهيت مهمة بنجاح! أحسنت 🎉');
         }
         setTimeout(function(){if(msg)msg.textContent='';},2500);
-    }).catch(function(err){ msg.style.color='var(--no)'; msg.textContent='❌ '+err.message; });
+    }).catch(function(err){ 
+        selectObj.disabled = false;
+        if(err === 'NO_CHANGE') {
+            msg.style.color='var(--tx3)'; msg.textContent='✅ تم الحفظ (بدون تغيير)';
+            setTimeout(function(){if(msg)msg.textContent='';},2500);
+        } else {
+            msg.style.color='var(--no)'; msg.textContent='❌ '+err.message; 
+        }
+    });
 }
 
 function tgCelebrate(isLate) {
@@ -1493,65 +1504,148 @@ function loadMyRequests(){
         box.innerHTML=h;
     }).catch(function(err){ box.innerHTML='<div class="empty-hint" style="color:var(--no)">تعذر التحميل: '+esc(err.message)+'</div>'; });
 }
-function submitRequest(){
-    var type=document.getElementById('reqType').value;
-    var details=(document.getElementById('reqDetails').value||'').trim();
-    if (type === 'طلب نموذج') {
-        var tmplSel = document.getElementById('reqFormTemplate');
-        if (tmplSel) details = "النموذج المطلوب: " + tmplSel.value + "\n\n" + details;
+function initEmployeeReqForm() {
+    if (!window.FS_TEMPLATES) {
+        setTimeout(initEmployeeReqForm, 300);
+        return;
     }
-    var from=document.getElementById('reqFrom').value||'';
-    var to=document.getElementById('reqTo').value||'';
+    var sel = document.getElementById('reqType');
+    if(!sel) return;
+    var html = '<option value="">-- اختر نوع النموذج أو الطلب --</option>';
+    for (var k in window.FS_TEMPLATES) {
+        html += '<option value="' + k + '">📝 ' + window.FS_TEMPLATES[k].title + '</option>';
+    }
+    html += '<option value="other">💬 طلب عادي / أخرى</option>';
+    sel.innerHTML = html;
+}
+setTimeout(initEmployeeReqForm, 500);
+
+function tgOnReqTypeChange(val) {
+    var dynWrap = document.getElementById('reqDynamicFormWrap');
+    var extWrap = document.getElementById('reqExtraFields');
+    if (!val || val === 'other') {
+        dynWrap.style.display = 'none';
+        dynWrap.innerHTML = '';
+        extWrap.style.display = 'block';
+        return;
+    }
+    extWrap.style.display = 'none';
+    dynWrap.style.display = 'block';
+    
+    var tpl = window.FS_TEMPLATES[val];
+    var off = window.FS_OFFICIAL ? window.FS_OFFICIAL[val] : null;
+    var h = '';
+    
+    if (off && typeof off.fill === 'function') {
+        h = off.fill();
+    } else if (tpl && tpl.fields) {
+        h += '<div class="set-sec-title" style="margin-top:0">' + escH(tpl.title) + '</div>';
+        tpl.fields.forEach(function(f) {
+            h += '<div class="fg"><label>' + escH(f.label) + '</label>';
+            if (f.type === 'textarea') {
+                h += '<textarea data-fid="' + f.id + '" rows="2"></textarea>';
+            } else if (f.type === 'select') {
+                h += '<select data-fid="' + f.id + '">';
+                (f.options||[]).forEach(function(opt) { h += '<option value="'+escH(opt)+'">'+escH(opt)+'</option>'; });
+                h += '</select>';
+            } else {
+                h += '<input type="' + (f.type||'text') + '" data-fid="' + f.id + '">';
+            }
+            h += '</div>';
+        });
+    }
+    dynWrap.innerHTML = h;
+}
+
+function submitRequest(){
+    var type = document.getElementById('reqType').value;
+    var dynWrap = document.getElementById('reqDynamicFormWrap');
+    var msg = document.getElementById('reqMsg');
+    
+    if(!type){ msg.style.color='var(--no)'; msg.textContent='الرجاء اختيار نوع الطلب أولاً.'; return; }
+    
+    var reqData = {
+        uid: TG_USER.uid,
+        status: 'pending',
+        createdAt: new Date()
+    };
+    
     var fileInput = document.getElementById('reqFile');
     var file = fileInput && fileInput.files && fileInput.files[0];
-    var msg=document.getElementById('reqMsg');
-    if(!details){ msg.style.color='var(--no)'; msg.textContent='من فضلك اكتب تفاصيل الطلب.'; return; }
+    
+    if (type !== 'other') {
+        var tpl = window.FS_TEMPLATES[type];
+        reqData.type = 'نموذج: ' + (tpl ? tpl.title : type);
+        reqData.formTemplateId = type;
+        reqData.dynamicData = {};
+        
+        var missing = false;
+        var radioFids = {};
+        dynWrap.querySelectorAll('[data-fid]').forEach(function (el) {
+            var fid = el.getAttribute('data-fid');
+            if (el.type === 'radio') {
+                radioFids[fid] = true;
+                if (el.checked) reqData.dynamicData[fid] = el.value;
+                return;
+            }
+            var v = (el.value || '').trim();
+            if (el.type !== 'checkbox' && !v) missing = true;
+            reqData.dynamicData[fid] = el.type === 'checkbox' ? el.checked : v;
+        });
+        Object.keys(radioFids).forEach(function (fid) { if (!reqData.dynamicData[fid]) missing = true; });
+        
+        if (missing) { msg.style.color = 'var(--no)'; msg.textContent = 'من فضلك املأ كل حقول النموذج.'; return; }
+    } else {
+        var details = (document.getElementById('reqDetails').value||'').trim();
+        var from = document.getElementById('reqFrom').value||'';
+        var to = document.getElementById('reqTo').value||'';
+        if(!details){ msg.style.color='var(--no)'; msg.textContent='من فضلك اكتب تفاصيل الطلب.'; return; }
+        reqData.type = 'أخرى';
+        reqData.details = details;
+        reqData.fromDate = from;
+        reqData.toDate = to;
+    }
 
-    if(file){
+    var doSave = function(finalData) {
+        msg.style.color='var(--tx3)'; msg.textContent='⏳ جارٍ الإرسال...';
+        db.collection('requests').add(finalData).then(function(){
+            msg.style.color='var(--ok)'; msg.textContent='✅ تم إرسال الطلب بنجاح';
+            document.getElementById('reqType').value = '';
+            tgOnReqTypeChange('');
+            document.getElementById('reqDetails').value='';
+            if(fileInput) fileInput.value='';
+            document.getElementById('reqFileName').textContent='';
+            loadMyRequests();
+            tgNotifyAdmins('📩 طلب جديد من موظف', (TG_USER.name||'موظف') + ' أرسل طلباً جديداً: ' + finalData.type, 'request-new');
+            setTimeout(function(){ msg.textContent=''; }, 3000);
+        }).catch(function(err){ 
+            msg.style.color='var(--no)'; msg.textContent='❌ '+err.message; 
+        });
+    };
+
+    if(file && type === 'other'){
         var MAX_MB = 20;
         if(file.size > MAX_MB * 1024 * 1024){ msg.style.color='var(--no)'; msg.textContent='الملف كبير جداً (الحد الأقصى '+MAX_MB+' MB).'; return; }
         var prog = document.getElementById('reqUploadProg');
         if(prog) { prog.style.display = 'block'; prog.textContent = '⏳ جاري رفع المرفق... 0%'; }
         var uniqueName = TG_USER.uid + '/' + Date.now() + '_' + file.name;
         tgUploadFile('requests', uniqueName, file,
-            function(pct){
-                if(prog) prog.textContent = '⏳ جاري رفع المرفق... ' + pct + '%';
-            },
+            function(pct){ if(prog) prog.textContent = '⏳ جاري رفع المرفق... ' + pct + '%'; },
             function(errMsg){
                 if(prog) prog.style.display='none';
                 msg.style.color='var(--no)'; msg.textContent='❌ تعذر رفع الملف: '+errMsg;
             },
             function(publicUrl){
-                db.collection('requests').add({
-                    uid:TG_USER.uid, type:type, details:details, fromDate:from, toDate:to,
-                    status:'pending', fileUrl:publicUrl, fileName:file.name, fileType:file.type,
-                    createdAt:new Date()
-                }).then(function(){
-                    if(prog) { prog.style.display='none'; prog.textContent=''; }
-                    msg.style.color='var(--ok)'; msg.textContent='✅ تم إرسال الطلب مع المرفق';
-                    document.getElementById('reqDetails').value='';
-                    if(fileInput) fileInput.value='';
-                    document.getElementById('reqFileName').textContent='';
-                    loadMyRequests();
-                    // إشعار الأدمن
-                    tgNotifyAdmins('📩 طلب جديد من موظف', (TG_USER.name||'موظف') + ' أرسل طلباً جديداً: ' + type, 'request-new');
-                }).catch(function(err){
-                    if(prog) prog.style.display='none';
-                    msg.style.color='var(--no)'; msg.textContent='❌ '+err.message;
-                });
+                if(prog) { prog.style.display='none'; prog.textContent=''; }
+                reqData.fileUrl = publicUrl;
+                reqData.fileName = file.name;
+                reqData.fileType = file.type;
+                doSave(reqData);
             }
         );
-        return;
+    } else {
+        doSave(reqData);
     }
-
-    db.collection('requests').add({
-        uid:TG_USER.uid, type:type, details:details, fromDate:from, toDate:to,
-        status:'pending', createdAt:new Date()
-    }).then(function(){
-        msg.style.color='var(--ok)'; msg.textContent='✅ تم إرسال الطلب';
-        document.getElementById('reqDetails').value='';
-        loadMyRequests();
-    }).catch(function(err){ msg.style.color='var(--no)'; msg.textContent='❌ '+err.message; });
 }
 
 // ── تقاريري الأسبوعية ───────────────────────────────────────────────

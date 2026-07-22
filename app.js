@@ -1005,6 +1005,26 @@ function renderStaffList(list){
                        (r.details?'<div class="pj-meta">'+tgMakeExpandable(r.details, 120)+'</div>':'')+
                        (r.fromDate?('<div class="pj-meta">من '+escH(r.fromDate)+(r.toDate?(' إلى '+escH(r.toDate)):'')+'</div>'):'')+
                        (r.reviewedBy?('<div class="pj-meta">تمت المراجعة بواسطة: '+escH(r.reviewedBy)+'</div>'):'')+
+                       (function(){
+                           if(!r.dynamicData) return '';
+                           var dh = '<div style="margin-top:10px;padding:10px;background:rgba(0,0,0,0.03);border-radius:6px;font-size:12px;">';
+                           var tpl = window.FS_TEMPLATES && r.formTemplateId ? window.FS_TEMPLATES[r.formTemplateId] : null;
+                           var fieldLabels = {};
+                           if(tpl && tpl.fields) { tpl.fields.forEach(function(f){ fieldLabels[f.id] = f.label; }); }
+                           for(var k in r.dynamicData){
+                               var v = r.dynamicData[k];
+                               if(v === true) v = 'نعم / تم';
+                               if(v === false) v = 'لا';
+                               var lbl = fieldLabels[k] || k;
+                               if(lbl === 'chk1') lbl = 'تسليم العهدة المالية';
+                               if(lbl === 'chk2') lbl = 'تسليم العهدة العينية';
+                               if(lbl === 'chk3') lbl = 'تسليم المستندات والملفات';
+                               if(lbl === 'chk4') lbl = 'إنهاء المهام المعلقة';
+                               dh += '<div style="margin-bottom:4px;display:flex;"><span style="color:var(--tx3);min-width:120px;padding-left:10px;">' + escH(lbl) + ':</span> <b style="white-space:pre-wrap;">' + escH(v) + '</b></div>';
+                           }
+                           dh += '</div>';
+                           return dh;
+                       })()+
                        attachHtml+
                        (r.status==='pending'?('<div class="rq-actions" style="margin-top:8px">'+
                            (r.type==='طلب نموذج'?'<button class="bt bt-o" style="border-color:var(--pr);color:var(--pr);margin-left:8px" onclick="goSendForm(document.querySelector(\'[onclick*=\\\'goSendForm\\\']\'), \''+emp.uid+'\', window._staffReqCache['+idx+']['+qi+'].details)">📨 إرسال نموذج للموظف</button>':'')+
@@ -2720,6 +2740,14 @@ function printAchievementDoc(u,a){
     printDoc(h, docTitle);
 }
 function printRequestDoc(u,r){
+    if (r.dynamicData && r.formTemplateId && window.FS_OFFICIAL && window.FS_OFFICIAL[r.formTemplateId] && typeof window.FS_OFFICIAL[r.formTemplateId].print === 'function') {
+        var dh = H('نموذج موظف', window.FS_TEMPLATES[r.formTemplateId].title, 'EMPLOYEE FORM', 'req');
+        dh += window.FS_OFFICIAL[r.formTemplateId].print(r.dynamicData);
+        var dTitle = (window.FS_TEMPLATES[r.formTemplateId].title) + (u.name ? ' - ' + u.name : '');
+        printDoc(dh, dTitle);
+        return;
+    }
+
     var h=H('طلب موظف','طلب مُقدَّم من الموظف','EMPLOYEE REQUEST','req');
     h+=SC('١','بيانات الطلب');
     h+=tgLine('اسم الموظف',u.name);
@@ -2728,8 +2756,27 @@ function printRequestDoc(u,r){
     if(r.fromDate) h+=tgLine('من تاريخ',r.fromDate);
     if(r.toDate) h+=tgLine('إلى تاريخ',r.toDate);
     if(r.reviewedBy) h+=tgLine('تمت المراجعة بواسطة',r.reviewedBy);
+    
     h+=SC('٢','تفاصيل الطلب');
-    h+=tgBlock(r.details);
+    if (r.dynamicData) {
+        var tpl = window.FS_TEMPLATES && r.formTemplateId ? window.FS_TEMPLATES[r.formTemplateId] : null;
+        var fieldLabels = {};
+        if(tpl && tpl.fields) { tpl.fields.forEach(function(f){ fieldLabels[f.id] = f.label; }); }
+        for(var k in r.dynamicData){
+            var v = r.dynamicData[k];
+            if(v === true) v = 'نعم / تم';
+            if(v === false) v = 'لا';
+            var lbl = fieldLabels[k] || k;
+            if(lbl === 'chk1') lbl = 'تسليم العهدة المالية';
+            if(lbl === 'chk2') lbl = 'تسليم العهدة العينية';
+            if(lbl === 'chk3') lbl = 'تسليم المستندات والملفات';
+            if(lbl === 'chk4') lbl = 'إنهاء المهام المعلقة';
+            h+=tgLine(lbl, v);
+        }
+    } else {
+        h+=tgBlock(r.details);
+    }
+    
     h+=FT(['نسخة للموظف','نسخة للإدارة']);
     var docTitle = 'طلب موظف' + (u.name ? ' - ' + u.name : '');
     printDoc(h, docTitle);
@@ -4266,6 +4313,26 @@ function openAdminEmployeeDetail(idx) {
                     h += '<div class="rq-row" style="background:var(--bg);padding:12px;border-radius:10px;margin-bottom:8px;">' +
                          '  <div class="rq-t" style="font-weight:700;">' + escH(r.type || 'طلب') + ' <span class="badge ' + badgeClassForReq(r.status) + '">' + reqStatusLabel(r.status) + '</span></div>' +
                          (r.details ? ('  <div class="pj-meta" style="margin-top:4px;">' + escH(r.details) + '</div>') : '') +
+                         (function(){
+                             if(!r.dynamicData) return '';
+                             var dh = '<div style="margin-top:8px;padding:8px;background:rgba(0,0,0,0.04);border-radius:6px;font-size:11px;">';
+                             var tpl = window.FS_TEMPLATES && r.formTemplateId ? window.FS_TEMPLATES[r.formTemplateId] : null;
+                             var fieldLabels = {};
+                             if(tpl && tpl.fields) { tpl.fields.forEach(function(f){ fieldLabels[f.id] = f.label; }); }
+                             for(var k in r.dynamicData){
+                                 var v = r.dynamicData[k];
+                                 if(v === true) v = 'نعم / تم';
+                                 if(v === false) v = 'لا';
+                                 var lbl = fieldLabels[k] || k;
+                                 if(lbl === 'chk1') lbl = 'تسليم العهدة المالية';
+                                 if(lbl === 'chk2') lbl = 'تسليم العهدة العينية';
+                                 if(lbl === 'chk3') lbl = 'تسليم المستندات والملفات';
+                                 if(lbl === 'chk4') lbl = 'إنهاء المهام المعلقة';
+                                 dh += '<div style="margin-bottom:3px;"><span style="color:var(--tx3);display:inline-block;width:100px;">' + escH(lbl) + ':</span> <b style="white-space:pre-wrap;">' + escH(v) + '</b></div>';
+                             }
+                             dh += '</div>';
+                             return dh;
+                         })() +
                          (r.status === 'pending' ? ('  <div class="rq-actions" style="margin-top:8px"><button class="bt bt-p" onclick="reviewRequest(\'' + r.id + '\',\'approved\')">✔ موافقة</button><button class="bt bt-d" onclick="reviewRequest(\'' + r.id + '\',\'rejected\')">✕ رفض</button></div>') : '') +
                          '</div>';
                 });
@@ -5301,6 +5368,26 @@ function renderEmployeeProfileModal(emp) {
                     (emp.requests.length ? emp.requests.map(function(r){
                         return '<div class="p-card"><div class="p-card-h">📨 ' + escH(r.type) + '</div>' +
                                '<div style="font-size:11px;margin-bottom:8px">' + escH(r.details || '') + '</div>' +
+                               (function(){
+                                   if(!r.dynamicData) return '';
+                                   var dh = '<div style="margin-bottom:8px;padding:8px;background:rgba(0,0,0,0.04);border-radius:6px;font-size:11px;">';
+                                   var tpl = window.FS_TEMPLATES && r.formTemplateId ? window.FS_TEMPLATES[r.formTemplateId] : null;
+                                   var fieldLabels = {};
+                                   if(tpl && tpl.fields) { tpl.fields.forEach(function(f){ fieldLabels[f.id] = f.label; }); }
+                                   for(var k in r.dynamicData){
+                                       var v = r.dynamicData[k];
+                                       if(v === true) v = 'نعم / تم';
+                                       if(v === false) v = 'لا';
+                                       var lbl = fieldLabels[k] || k;
+                                       if(lbl === 'chk1') lbl = 'تسليم العهدة المالية';
+                                       if(lbl === 'chk2') lbl = 'تسليم العهدة العينية';
+                                       if(lbl === 'chk3') lbl = 'تسليم المستندات والملفات';
+                                       if(lbl === 'chk4') lbl = 'إنهاء المهام المعلقة';
+                                       dh += '<div style="margin-bottom:3px;"><span style="color:var(--tx3);display:inline-block;width:100px;">' + escH(lbl) + ':</span> <b style="white-space:pre-wrap;">' + escH(v) + '</b></div>';
+                                   }
+                                   dh += '</div>';
+                                   return dh;
+                               })() +
                                '<div><span class="badge '+badgeClassForReq(r.status)+'">'+reqStatusLabel(r.status)+'</span></div>' +
                                '</div>';
                     }).join('') : '<div class="empty-hint">لا توجد طلبات سابقة.</div>') +
