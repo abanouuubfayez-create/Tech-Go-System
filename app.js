@@ -6469,7 +6469,7 @@ window.joinEmployeeLiveMeeting = async function() {
             return;
         }
         var room = doc.data().roomName;
-        var empName = window._userDataCache ? window._userDataCache.name : "موظف";
+        var empName = window.TG_USER ? (window.TG_USER.name || window.TG_USER.email) : (window._userDataCache ? window._userDataCache.name : "موظف");
         
         var meetingUrl = "https://meet.jit.si/" + room + "#userInfo.displayName=" + encodeURIComponent('"' + empName + '"') + "&config.startWithVideoMuted=true&config.startWithAudioMuted=true";
         

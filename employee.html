@@ -164,6 +164,10 @@
         </button>
     </div>
     
+    <audio id="meetingRingtoneAudio" loop preload="auto">
+        <!-- A standard phone ring mp3 -->
+        <source src="https://assets.mixkit.co/active_storage/sfx/2873/2873-preview.mp3" type="audio/mpeg">
+    </audio>
     <style>
         @keyframes pulseRinging {
             0% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(201,162,39, 0.7); }
@@ -172,56 +176,44 @@
         }
     </style>
     <script>
-        window._ringToneInterval = null;
+        window._nativeCallNotif = null;
+        
+        // Request notification permission
+        if ("Notification" in window && Notification.permission === "default") {
+            Notification.requestPermission();
+        }
+
         function playMeetingRinging() {
-            if(window._ringToneInterval) return; 
-            window._ringToneInterval = setInterval(function(){
-                try {
-                    var ctx = window._tgAudioCtx || new (window.AudioContext || window.webkitAudioContext)();
-                    window._tgAudioCtx = ctx;
-                    if (ctx.state === 'suspended') ctx.resume();
-                    var now = ctx.currentTime;
-                    var toneFn = function(c, freq, start, dur, vol) {
-                        var osc = c.createOscillator(), gain = c.createGain();
-                        osc.type = 'square'; osc.frequency.value = freq;
-                        gain.gain.setValueAtTime(0.0001, start);
-                        gain.gain.linearRampToValueAtTime(vol, start + 0.05);
-                        gain.gain.exponentialRampToValueAtTime(0.0001, start + dur);
-                        osc.connect(gain); gain.connect(c.destination);
-                        osc.start(start); osc.stop(start + dur + 0.1);
-                    };
-                    toneFn(ctx, 400, now, 0.4, 0.1);
-                    toneFn(ctx, 450, now, 0.4, 0.1);
-                    toneFn(ctx, 400, now + 0.6, 0.4, 0.1);
-                    toneFn(ctx, 450, now + 0.6, 0.4, 0.1);
-                } catch(e) {}
-            }, 2500);
+            var audio = document.getElementById('meetingRingtoneAudio');
+            if(audio) {
+                audio.currentTime = 0;
+                audio.play().catch(function(e){console.warn('Audio auto-play prevented', e)});
+            }
             
-            // Play immediately once too
-            try {
-                var ctx = window._tgAudioCtx || new (window.AudioContext || window.webkitAudioContext)();
-                if (ctx.state === 'suspended') ctx.resume();
-                var now = ctx.currentTime;
-                var toneFn = function(c, freq, start, dur, vol) {
-                    var osc = c.createOscillator(), gain = c.createGain();
-                    osc.type = 'square'; osc.frequency.value = freq;
-                    gain.gain.setValueAtTime(0.0001, start);
-                    gain.gain.linearRampToValueAtTime(vol, start + 0.05);
-                    gain.gain.exponentialRampToValueAtTime(0.0001, start + dur);
-                    osc.connect(gain); gain.connect(c.destination);
-                    osc.start(start); osc.stop(start + dur + 0.1);
-                };
-                toneFn(ctx, 400, now, 0.4, 0.1);
-                toneFn(ctx, 450, now, 0.4, 0.1);
-                toneFn(ctx, 400, now + 0.6, 0.4, 0.1);
-                toneFn(ctx, 450, now + 0.6, 0.4, 0.1);
-            } catch(e){}
+            if ("Notification" in window && Notification.permission === "granted") {
+                if(!window._nativeCallNotif) {
+                    window._nativeCallNotif = new Notification("الإدارة تدعوك لاجتماع مباشر", {
+                        body: "يرجى الانضمام الآن...",
+                        icon: "icon-192.png",
+                        requireInteraction: true // keeps it on screen until closed/clicked
+                    });
+                    window._nativeCallNotif.onclick = function() {
+                        window.focus();
+                        this.close();
+                    };
+                }
+            }
         }
 
         function stopMeetingRinging() {
-            if(window._ringToneInterval) {
-                clearInterval(window._ringToneInterval);
-                window._ringToneInterval = null;
+            var audio = document.getElementById('meetingRingtoneAudio');
+            if(audio) {
+                audio.pause();
+                audio.currentTime = 0;
+            }
+            if(window._nativeCallNotif) {
+                window._nativeCallNotif.close();
+                window._nativeCallNotif = null;
             }
         }
 
@@ -241,6 +233,7 @@
                 setTimeout(joinEmployeeLiveMeeting, 500);
             }
         }
+        
         function declineMeetingCall() {
             var modal = document.getElementById('incomingMeetingModal');
             if(modal) modal.style.display = 'none';
