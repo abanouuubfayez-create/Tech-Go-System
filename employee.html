@@ -146,6 +146,112 @@
 
 <iframe id="tgPrintFrame" style="position:fixed;top:-9999px;left:-9999px;width:0;height:0;border:0" title="طباعة"></iframe>
 
+<!-- Incoming Meeting Call Modal -->
+<div id="incomingMeetingModal" style="display:none; position:fixed; top:0; left:0; right:0; bottom:0; background:rgba(27,42,74,0.9); z-index:999999; flex-direction:column; justify-content:center; align-items:center; backdrop-filter:blur(8px);">
+    <div style="text-align:center; animation:pulseRinging 1.5s infinite; margin-bottom:40px;">
+        <div style="width:120px; height:120px; background:var(--gd); border-radius:50%; display:flex; justify-content:center; align-items:center; margin:0 auto 20px; box-shadow:0 0 30px var(--gd);">
+            <span style="font-size:50px;">🎥</span>
+        </div>
+        <h2 style="color:#fff; margin-bottom:10px; font-size:28px;">الإدارة تدعوك لاجتماع مباشر</h2>
+        <p style="color:var(--gd); margin-bottom:10px; font-size:18px; font-weight:bold;">مكالمة واردة...</p>
+    </div>
+    <div style="display:flex; gap:30px;">
+        <button onclick="acceptMeetingCall()" style="background:var(--ok); color:#fff; border:none; border-radius:50px; padding:15px 40px; font-size:20px; font-weight:bold; cursor:pointer; box-shadow:0 10px 20px rgba(16,185,129,0.4); display:flex; align-items:center; gap:10px; transition:transform 0.2s;">
+            <span>📞</span> انضمام الآن
+        </button>
+        <button onclick="declineMeetingCall()" style="background:var(--no); color:#fff; border:none; border-radius:50px; padding:15px 40px; font-size:20px; font-weight:bold; cursor:pointer; box-shadow:0 10px 20px rgba(239,68,68,0.4); display:flex; align-items:center; gap:10px; transition:transform 0.2s;">
+            <span>✖</span> رفض
+        </button>
+    </div>
+    
+    <style>
+        @keyframes pulseRinging {
+            0% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(201,162,39, 0.7); }
+            70% { transform: scale(1.05); box-shadow: 0 0 0 20px rgba(201,162,39, 0); }
+            100% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(201,162,39, 0); }
+        }
+    </style>
+    <script>
+        window._ringToneInterval = null;
+        function playMeetingRinging() {
+            if(window._ringToneInterval) return; 
+            window._ringToneInterval = setInterval(function(){
+                try {
+                    var ctx = window._tgAudioCtx || new (window.AudioContext || window.webkitAudioContext)();
+                    window._tgAudioCtx = ctx;
+                    if (ctx.state === 'suspended') ctx.resume();
+                    var now = ctx.currentTime;
+                    var toneFn = function(c, freq, start, dur, vol) {
+                        var osc = c.createOscillator(), gain = c.createGain();
+                        osc.type = 'square'; osc.frequency.value = freq;
+                        gain.gain.setValueAtTime(0.0001, start);
+                        gain.gain.linearRampToValueAtTime(vol, start + 0.05);
+                        gain.gain.exponentialRampToValueAtTime(0.0001, start + dur);
+                        osc.connect(gain); gain.connect(c.destination);
+                        osc.start(start); osc.stop(start + dur + 0.1);
+                    };
+                    toneFn(ctx, 400, now, 0.4, 0.1);
+                    toneFn(ctx, 450, now, 0.4, 0.1);
+                    toneFn(ctx, 400, now + 0.6, 0.4, 0.1);
+                    toneFn(ctx, 450, now + 0.6, 0.4, 0.1);
+                } catch(e) {}
+            }, 2500);
+            
+            // Play immediately once too
+            try {
+                var ctx = window._tgAudioCtx || new (window.AudioContext || window.webkitAudioContext)();
+                if (ctx.state === 'suspended') ctx.resume();
+                var now = ctx.currentTime;
+                var toneFn = function(c, freq, start, dur, vol) {
+                    var osc = c.createOscillator(), gain = c.createGain();
+                    osc.type = 'square'; osc.frequency.value = freq;
+                    gain.gain.setValueAtTime(0.0001, start);
+                    gain.gain.linearRampToValueAtTime(vol, start + 0.05);
+                    gain.gain.exponentialRampToValueAtTime(0.0001, start + dur);
+                    osc.connect(gain); gain.connect(c.destination);
+                    osc.start(start); osc.stop(start + dur + 0.1);
+                };
+                toneFn(ctx, 400, now, 0.4, 0.1);
+                toneFn(ctx, 450, now, 0.4, 0.1);
+                toneFn(ctx, 400, now + 0.6, 0.4, 0.1);
+                toneFn(ctx, 450, now + 0.6, 0.4, 0.1);
+            } catch(e){}
+        }
+
+        function stopMeetingRinging() {
+            if(window._ringToneInterval) {
+                clearInterval(window._ringToneInterval);
+                window._ringToneInterval = null;
+            }
+        }
+
+        function acceptMeetingCall() {
+            var modal = document.getElementById('incomingMeetingModal');
+            if(modal) modal.style.display = 'none';
+            stopMeetingRinging();
+            
+            // Go to meeting tab
+            var tab = document.querySelector('.emp-tab[data-pg="livemeeting"]');
+            if(tab) {
+                if(typeof empGo === 'function') empGo('livemeeting', tab);
+            }
+            
+            // Trigger join
+            if(typeof joinEmployeeLiveMeeting === 'function') {
+                setTimeout(joinEmployeeLiveMeeting, 500);
+            }
+        }
+        function declineMeetingCall() {
+            var modal = document.getElementById('incomingMeetingModal');
+            if(modal) modal.style.display = 'none';
+            stopMeetingRinging();
+            
+            // Store that we declined this session so it doesn't pop up again unless it restarts
+            window._declinedMeeting = true;
+        }
+    </script>
+</div>
+
 <div class="emp-topbar">
   <div class="who">👋 أهلاً، <span id="empWhoName">...</span><small id="empWhoRole"></small></div>
   <div style="display:flex;align-items:center;gap:8px;">

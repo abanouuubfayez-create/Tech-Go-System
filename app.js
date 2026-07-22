@@ -6431,6 +6431,15 @@ function listenToLiveMeetingStatus() {
             if(btn) { btn.style.display = "inline-block"; }
             if(txt) { txt.textContent = "يوجد اجتماع مباشر قائم الآن! يرجى الانضمام."; txt.style.color = "var(--ok)"; }
             if(typeof updateSmartTabTitle === 'function') updateSmartTabTitle();
+            
+            // Show call modal if not already declined or handled
+            if(typeof playMeetingRinging === 'function' && !window._declinedMeeting && !window._meetingJoined) {
+                var modal = document.getElementById('incomingMeetingModal');
+                if(modal && modal.style.display !== 'flex') {
+                    modal.style.display = 'flex';
+                    playMeetingRinging();
+                }
+            }
         } else {
             if(bdg) { bdg.textContent = "مغلق"; bdg.style.background = "var(--no)"; bdg.style.display = "none"; }
             if(btn) { btn.style.display = "none"; }
@@ -6439,6 +6448,13 @@ function listenToLiveMeetingStatus() {
             // Notify them it's closed
             var cnt = document.getElementById('jitsiEmpContainer');
             if(cnt) cnt.style.display = 'none';
+            
+            // Hide modal and stop ringing if meeting ends
+            if(typeof stopMeetingRinging === 'function') stopMeetingRinging();
+            var modal = document.getElementById('incomingMeetingModal');
+            if(modal) modal.style.display = 'none';
+            window._declinedMeeting = false; // Reset for next meeting
+            window._meetingJoined = false;
         }
     });
 }
@@ -6459,6 +6475,8 @@ window.joinEmployeeLiveMeeting = async function() {
         
         var container = document.getElementById('jitsiEmpContainer');
         if(container) container.style.display = 'none';
+        
+        window._meetingJoined = true;
         
         if(newWin) {
             newWin.location.href = meetingUrl;
