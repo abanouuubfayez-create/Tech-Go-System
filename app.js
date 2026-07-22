@@ -1053,6 +1053,70 @@ function filterStaffCards(){
     var countEl=document.getElementById('staffCount');
     if(countEl)countEl.textContent=visible+' موظف'+(q?(' من '+(window._staffEmpCache?window._staffEmpCache.length:0)):'');
 }
+function openPendingRequestsModal() {
+    var modal = document.getElementById('tgProfileModal');
+    if(!modal) return;
+    modal.innerHTML = '<div class="profile-modal-in" style="max-width:800px"><div class="profile-hdr"><div style="font-size:18px;font-weight:bold;margin-bottom:10px">📨 الطلبات قيد الانتظار</div><button class="bt" onclick="tgCloseProfile()" style="background:var(--bg);color:var(--tx)">✕ إغلاق</button></div><div id="pendingReqsBody" style="padding:20px"><div class="empty-hint">⏳ جارٍ التحميل...</div></div></div>';
+    modal.classList.add('open');
+    document.body.style.overflow = 'hidden';
+    
+    db.collection('requests').where('status','==','pending').get().then(function(snap){
+        if(snap.empty){
+            document.getElementById('pendingReqsBody').innerHTML = '<div class="empty-hint">لا توجد طلبات معلقة حالياً.</div>';
+            return;
+        }
+        var h = '<div class="profile-grid" style="grid-template-columns:1fr">';
+        snap.forEach(function(doc){
+            var r = Object.assign({id:doc.id}, doc.data());
+            var empName = window._staffEmpCache ? (window._staffEmpCache.find(function(e) { return e.uid === r.uid; }) || {}).name || r.uid : r.uid;
+            
+            var dh = '';
+            if(r.dynamicData) {
+                 var tpl = window.FS_TEMPLATES && r.formTemplateId ? window.FS_TEMPLATES[r.formTemplateId] : null;
+                 var fieldLabels = {};
+                 if(tpl && tpl.fields) { tpl.fields.forEach(function(f){ fieldLabels[f.id] = f.label; }); }
+                 dh = '<div style="margin-top:8px;padding:8px;background:rgba(0,0,0,0.04);border-radius:6px;font-size:11px;">';
+                 for(var k in r.dynamicData){
+                     var v = r.dynamicData[k];
+                     if(v === true) v = 'نعم / تم';
+                     if(v === false) v = 'لا';
+                     var lbl = fieldLabels[k] || k;
+                     if(lbl === 'chk1') lbl = 'تسليم العهدة المالية';
+                     if(lbl === 'chk2') lbl = 'تسليم العهدة العينية';
+                     if(lbl === 'chk3') lbl = 'تسليم المستندات والملفات';
+                     if(lbl === 'chk4') lbl = 'إنهاء المهام المعلقة';
+                     dh += '<div style="margin-bottom:3px;"><span style="color:var(--tx3);display:inline-block;width:100px;">' + escH(lbl) + ':</span> <b style="white-space:pre-wrap;">' + escH(v) + '</b></div>';
+                 }
+                 dh += '</div>';
+            }
+            
+            var attachHtml = '';
+            if(r.fileUrl && r.fileType){
+                if(r.fileType.indexOf('image/')===0){ attachHtml = '<div style="margin-top:6px"><a href="'+r.fileUrl+'" target="_blank"><img src="'+r.fileUrl+'" style="max-width:140px;max-height:100px;border-radius:6px;display:block"></a></div>'; }
+                else if(r.fileType.indexOf('video/')===0){ attachHtml = '<div style="margin-top:6px"><video src="'+r.fileUrl+'" controls style="max-width:180px;border-radius:6px"></video></div>'; }
+                else { attachHtml = '<div style="margin-top:6px"><a href="'+r.fileUrl+'" target="_blank" style="color:var(--tx);font-weight:700;text-decoration:underline">📎 '+escH(r.fileName||'ملف مرفق')+'</a></div>'; }
+            }
+
+            h += '<div class="rq-row" style="background:var(--bg);padding:12px;border-radius:10px;margin-bottom:8px;">' +
+                 '  <div class="rq-t" style="font-weight:700;display:flex;justify-content:space-between;">' + 
+                 '    <span>' + escH(r.type || 'طلب') + '</span>' +
+                 '    <span style="font-size:12px;color:var(--tx3)">👤 ' + escH(empName) + '</span>' +
+                 '  </div>' +
+                 (r.details ? ('  <div class="pj-meta" style="margin-top:4px;">' + escH(r.details) + '</div>') : '') +
+                 (r.fromDate?('<div class="pj-meta" style="margin-top:4px;">من '+escH(r.fromDate)+(r.toDate?(' إلى '+escH(r.toDate)):'')+'</div>'):'')+
+                 dh + attachHtml +
+                 '  <div class="rq-actions" style="margin-top:8px">' +
+                 '    <button class="bt bt-p" onclick="reviewRequest(\'' + r.id + '\',\'approved\'); tgCloseProfile(); setTimeout(openPendingRequestsModal, 500);">✔ موافقة</button>' +
+                 '    <button class="bt bt-d" onclick="reviewRequest(\'' + r.id + '\',\'rejected\'); tgCloseProfile(); setTimeout(openPendingRequestsModal, 500);">✕ رفض</button>' +
+                 '  </div>' +
+                 '</div>';
+        });
+        h += '</div>';
+        var bodyEl = document.getElementById('pendingReqsBody');
+        if(bodyEl) bodyEl.innerHTML = h;
+    });
+}
+
 function reviewRequest(reqId,newStatus){
     db.collection('requests').doc(reqId).get().then(function(snap){
         var req = snap.exists ? snap.data() : {};

@@ -1498,6 +1498,26 @@ function loadMyRequests(){
                ' <button class="bt bt-o" style="padding:2px 8px;font-size:10px;margin-right:8px" onclick="printRequestDoc(TG_USER,window._reqCache['+i+'])">🖨 طباعة</button></div>'+
                (r.details?'<div class="pj-meta">'+esc(r.details)+'</div>':'')+
                (r.fromDate?('<div class="pj-meta">من '+esc(r.fromDate)+(r.toDate?(' إلى '+esc(r.toDate)):'')+'</div>'):'')+
+               (function(){
+                   if(!r.dynamicData) return '';
+                   var dh = '<div style="margin-top:10px;padding:10px;background:rgba(0,0,0,0.03);border-radius:6px;font-size:12px;">';
+                   var tpl = window.FS_TEMPLATES && r.formTemplateId ? window.FS_TEMPLATES[r.formTemplateId] : null;
+                   var fieldLabels = {};
+                   if(tpl && tpl.fields) { tpl.fields.forEach(function(f){ fieldLabels[f.id] = f.label; }); }
+                   for(var k in r.dynamicData){
+                       var v = r.dynamicData[k];
+                       if(v === true) v = 'نعم / تم';
+                       if(v === false) v = 'لا';
+                       var lbl = fieldLabels[k] || k;
+                       if(lbl === 'chk1') lbl = 'تسليم العهدة المالية';
+                       if(lbl === 'chk2') lbl = 'تسليم العهدة العينية';
+                       if(lbl === 'chk3') lbl = 'تسليم المستندات والملفات';
+                       if(lbl === 'chk4') lbl = 'إنهاء المهام المعلقة';
+                       dh += '<div style="margin-bottom:4px;display:flex;"><span style="color:var(--tx3);min-width:120px;padding-left:10px;">' + esc(lbl) + ':</span> <b style="white-space:pre-wrap;">' + esc(v) + '</b></div>';
+                   }
+                   dh += '</div>';
+                   return dh;
+               })()+
                attachHtml+
                '</div>';
         });
