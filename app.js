@@ -6655,39 +6655,140 @@ document.addEventListener('DOMContentLoaded', function() {
 
 
 function loadAdminAiChat(container) {
-    var h = '<div class="set-sec" style="max-width:800px; margin:20px auto;">';
-    h += '<div class="set-sec-title">🤖 المساعد الذكي للمدير</div>';
-    h += '<div class="set-hint" style="margin-bottom:16px;">اسأل الذكاء الاصطناعي عن أي موظف، مشروع، أو معلومات عامة عن الشركة. سيتم جلب الإجابة من قاعدة البيانات فوراً.</div>';
-    h += '<div style="display:flex; gap:8px; flex-wrap:wrap;">';
-    h += '<input type="text" id="adminAiChatField" placeholder="مثال: ما هي مشاريع الموظف الفلاني؟ أو من هم الموظفين المتأخرين اليوم؟" style="flex:1;">';
-    h += '<button class="bt bt-d" style="background:var(--nv); color:var(--w); border:none;" onclick="adminChatWithAi()" id="btnAdminChat">✨ إرسال</button>';
+    var h = '<div class="set-sec" style="max-width:900px; margin:20px auto;">';
+    h += '<div class="set-sec-title">📊 تقرير المدير الشهري (MMR)</div>';
+    h += '<div class="set-hint" style="margin-bottom:16px;">قم باختيار الشهر ونوع الحضور، وسيقوم الذكاء الاصطناعي بتوليد تقرير إداري شامل حول أداء الشركة خلال هذا الشهر.</div>';
+    
+    h += '<div style="display:flex; gap:16px; margin-bottom:16px; flex-wrap:wrap; align-items:flex-end;">';
+    h += '<div class="fg" style="flex:1; min-width:200px; margin:0;">';
+    h += '<label>اختر الشهر</label>';
+    h += '<input type="month" id="mmrMonthSelect" style="width:100%;">';
     h += '</div>';
-    h += '<div id="adminAiChatResult" style="display:none; margin-top:16px; padding:16px; background:var(--w); border-radius:8px; border:1px solid var(--bd2); font-size:14px; line-height:1.6; color:var(--tx);"></div>';
+    
+    h += '<div class="fg" style="flex:1; min-width:250px; margin:0; padding:10px; border:1px solid var(--bd2); border-radius:8px;">';
+    h += '<label style="margin-bottom:8px; display:block; font-weight:bold;">مصدر بيانات الحضور والانصراف:</label>';
+    h += '<label style="margin-right:12px; cursor:pointer;"><input type="radio" name="mmrAttType" value="remote" checked onchange="toggleMmrFileInput()"> 🌐 ريموت (سحب تلقائي)</label>';
+    h += '<label style="cursor:pointer;"><input type="radio" name="mmrAttType" value="office" onchange="toggleMmrFileInput()"> 🏢 مكتب (ملف بصمة)</label>';
+    h += '</div>';
+    h += '</div>';
+    
+    h += '<div class="fg" id="mmrFileWrap" style="display:none;">';
+    h += '<label>رفع تقرير البصمة (ملف HTML من جهاز البصمة)</label>';
+    h += '<input type="file" id="mmrHtmlFile" accept=".html,.htm" style="width:100%; padding:8px; border:1px dashed var(--gd); background:var(--bg2);">';
+    h += '</div>';
+    
+    h += '<button class="bt bt-d" style="background:var(--nv); color:var(--w); border:none; width:100%; padding:14px; font-size:16px; font-weight:bold; box-shadow:0 4px 12px rgba(0,0,0,0.1);" onclick="generateMmrReport()" id="btnGenerateMmr">✨ إعداد التقرير بالذكاء الاصطناعي</button>';
+    
+    h += '<div id="mmrReportResultWrap" style="display:none; margin-top:24px;">';
+    h += '<h3 style="margin-bottom:12px; color:var(--nv);">التقرير النهائي (قابل للتعديل):</h3>';
+    h += '<div id="mmrReportResult" contenteditable="true" style="padding:24px; background:var(--w); border-radius:8px; border:2px solid var(--bd2); font-size:15px; line-height:1.8; color:var(--tx); min-height:300px; outline:none; box-shadow:inner 0 2px 10px rgba(0,0,0,0.02);"></div>';
+    h += '<div style="text-align:left; margin-top:16px;">';
+    h += '<button class="bt bt-o" onclick="printMmrReport()" style="font-size:15px; padding:10px 20px;">🖨️ طباعة / تصدير PDF</button>';
+    h += '</div>';
+    h += '</div>';
+    
     h += '</div>';
     container.innerHTML = h;
+    
+    // Set default month to current
+    var today = new Date();
+    var m = (today.getMonth() + 1).toString().padStart(2, '0');
+    document.getElementById('mmrMonthSelect').value = today.getFullYear() + '-' + m;
 }
 
-window.adminChatWithAi = async function() {
-    var field = document.getElementById('adminAiChatField').value.trim();
-    var btn = document.getElementById('btnAdminChat');
-    var resultBox = document.getElementById('adminAiChatResult');
-    if(!field) return;
+window.toggleMmrFileInput = function() {
+    var type = document.querySelector('input[name="mmrAttType"]:checked').value;
+    document.getElementById('mmrFileWrap').style.display = type === 'office' ? 'block' : 'none';
+};
+
+window.printMmrReport = function() {
+    var prtContent = document.getElementById("mmrReportResult");
+    var WinPrint = window.open('', '', 'left=0,top=0,width=800,height=900,toolbar=0,scrollbars=0,status=0');
+    WinPrint.document.write('<html><head><title>تقرير المدير الشهري (MMR)</title>');
+    WinPrint.document.write('<style>body{font-family: Arial, sans-serif; direction:rtl; text-align:right; padding:40px; line-height:1.8;} h1,h2,h3{color:#1b2a4a;} p{margin-bottom:10px;} ul{margin-right:20px; padding-right:20px;}</style>');
+    WinPrint.document.write('</head><body>');
+    WinPrint.document.write('<h1 style="text-align:center; border-bottom:2px solid #eee; padding-bottom:15px; margin-bottom:30px;">تقرير المدير الشهري (MMR)</h1>');
+    WinPrint.document.write(prtContent.innerHTML);
+    WinPrint.document.write('</body></html>');
+    WinPrint.document.close();
+    WinPrint.focus();
+    WinPrint.print();
+};
+
+window.generateMmrReport = async function() {
+    var monthVal = document.getElementById('mmrMonthSelect').value;
+    if(!monthVal) { alert("يرجى اختيار الشهر."); return; }
+    
+    var attType = document.querySelector('input[name="mmrAttType"]:checked').value;
+    var fileInput = document.getElementById('mmrHtmlFile');
+    var htmlContent = "";
+    
+    if(attType === 'office') {
+        if(!fileInput.files || !fileInput.files[0]) {
+            alert("يرجى اختيار ملف تقرير البصمة (HTML) المرفوع من جهاز البصمة أولاً.");
+            return;
+        }
+        try {
+            htmlContent = await new Promise(function(resolve, reject) {
+                var reader = new FileReader();
+                reader.onload = function(e) { resolve(e.target.result); };
+                reader.onerror = reject;
+                reader.readAsText(fileInput.files[0]);
+            });
+            var tempDiv = document.createElement('div');
+            tempDiv.innerHTML = htmlContent;
+            htmlContent = tempDiv.textContent || tempDiv.innerText || "";
+            htmlContent = htmlContent.replace(/\s+/g, ' ').trim();
+        } catch(e) {
+            alert("حدث خطأ أثناء قراءة ملف البصمة.");
+            return;
+        }
+    }
+    
+    var btn = document.getElementById('btnGenerateMmr');
+    var resultWrap = document.getElementById('mmrReportResultWrap');
+    var resultBox = document.getElementById('mmrReportResult');
     
     var apiKey = window._appSettingsCache && window._appSettingsCache.geminiApiKey;
     if(!apiKey) {
         alert('ميزة الذكاء الاصطناعي غير مفعلة حالياً. يرجى إضافة مفتاح API في الإعدادات.');
         return;
     }
-
+    
     btn.disabled = true;
-    btn.innerHTML = '⏳ جاري التفكير...';
-    resultBox.style.display = 'block';
-    resultBox.innerHTML = '<div style="text-align:center; color:var(--tx2);">🤖 يقوم الذكاء الاصطناعي الآن بالبحث في السجلات...</div>';
+    btn.innerHTML = '⏳ جاري استخراج البيانات وتحليلها... يرجى الانتظار';
+    resultWrap.style.display = 'block';
+    resultBox.innerHTML = '<div style="text-align:center; color:var(--tx2); padding:40px;">🤖 يقوم الذكاء الاصطناعي بجمع البيانات وتلخيص الأداء لشهر ' + monthVal + '...<br><br><span style="font-size:12px; opacity:0.7;">(قد يستغرق هذا بضع ثوانٍ حسب حجم البيانات)</span></div>';
 
-    var ctx = await buildCompanyContextForAi();
-    var prompt = ctx + "\n\nبصفتك المساعد الذكي لمدير الشركة، أجب على هذا السؤال من المدير بناءً على البيانات أعلاه فقط وبشكل مباشر واحترافي:\nالسؤال: [" + field + "]";
+    try {
+        var baseCtx = await buildCompanyContextForAi();
+        var prompt = baseCtx + "\n\n";
+        
+        if(attType === 'office' && htmlContent) {
+            prompt += "--- بيانات حضور وانصراف الموظفين من جهاز البصمة المكتبي ---\n";
+            prompt += htmlContent.substring(0, 30000) + "\n\n";
+        }
+        
+        prompt += "المطلوب: بصفتك المساعد الذكي والمستشار الإداري لمدير الشركة، قم بإعداد 'تقرير المدير الشهري (MMR)' لشهر: " + monthVal + ".\n";
+        prompt += "يجب أن يعتمد التقرير على البيانات الواردة أعلاه فقط. صُغ التقرير بشكل احترافي وشامل بحيث يحتوي على:\n";
+        prompt += "1. ملخص تنفيذي لأهم الأحداث.\n";
+        prompt += "2. تحليل أداء المهام والمشاريع المكتملة.\n";
+        prompt += "3. إحصائيات الحضور والانصراف والانضباط العام للموظفين.\n";
+        prompt += "4. تقييم عام وتوصيات للإدارة لتحسين الأداء.\n\n";
+        
+        prompt += "⚠️ تحذير صارم جداً للغة: التقرير يجب أن يكون باللغة العربية الفصحى الاحترافية 100%. يُمنع منعاً باتاً استخدام أي حروف، رموز، أو كلمات صينية (مثل 然而 وغيرها) أو أي لغة أخرى. يجب أن يكون الكلام مفهوماً وواضحاً وبدون أخطاء غريبة.\n";
+        prompt += "⚠️ تعليمات التنسيق: قم بالرد بصيغة Markdown نظيفة ومناسبة للتحويل إلى HTML (استخدم ## للعناوين و - للقوائم). لا تضع الرد داخل ```markdown، اكتب النص مباشرة.";
 
-    callGemini(apiKey, prompt, btn, resultBox, '✨ إرسال', true);
+        // Hide wrapper briefly to let callGemini show its own loading, then we show it after callGemini modifies resultBox
+        // callGemini modifies the passed resultBox directly.
+        await callGemini(apiKey, prompt, btn, resultBox, '✨ إعادة إعداد التقرير', true);
+        
+    } catch(e) {
+        console.error(e);
+        resultBox.innerHTML = '<div style="color:red; padding:20px;">❌ حدث خطأ: ' + e.message + '</div>';
+        btn.disabled = false;
+        btn.innerHTML = '✨ إعداد التقرير بالذكاء الاصطناعي';
+    }
 };
 
 // Auto-start Admin Live Meeting Listener
