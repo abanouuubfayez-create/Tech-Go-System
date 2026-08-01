@@ -1,18 +1,18 @@
 import re
 import os
+import time
 
-new_version = "?v=181818"
+new_version = f"?v={int(time.time())}"
 
-for filename in ['index.html', 'employee.html', 'login.html']:
+for filename in ['index.html', 'employee.html', 'login.html', 'attendance.html', 'setup.html']:
     if not os.path.exists(filename):
         continue
     with open(filename, 'r', encoding='utf-8') as f:
         content = f.read()
     
-    # Replace ?v=xxxxxx with ?v=181818
     content = re.sub(r'\?v=\d+', new_version, content)
     
     with open(filename, 'w', encoding='utf-8') as f:
         f.write(content)
 
-print("Bumped version to 181818")
+print(f"Bumped version to {new_version}")

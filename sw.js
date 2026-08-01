@@ -1,5 +1,5 @@
 // ─── Service Worker for Tech Go PWA ─────────────────────────────────────────
-const CACHE_NAME = 'techgo-v2000-force-purge-all';
+const CACHE_NAME = 'techgo-v1785581200-force-purge';
 const STATIC_ASSETS = [
     './login.html',
     './styles.css',
