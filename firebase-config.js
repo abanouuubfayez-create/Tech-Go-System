@@ -78,7 +78,11 @@ function tgDeleteSupabaseFile(publicUrl, onDone, onError) {
  */
 function tgUploadFile(folder, fileName, file, onProgress, onError, onDone) {
     try {
-        var safeFileName = fileName.replace(/[^a-zA-Z0-9.\-_\/]/g, '_').replace(/_+/g, '_');
+        var ext = (fileName.lastIndexOf('.') !== -1) ? fileName.substring(fileName.lastIndexOf('.')) : '';
+        var base = (fileName.lastIndexOf('.') !== -1) ? fileName.substring(0, fileName.lastIndexOf('.')) : fileName;
+        var safeBase = base.replace(/[^a-zA-Z0-9]/g, '_').replace(/_+/g, '_');
+        if (!safeBase || safeBase === '_') safeBase = 'doc_' + Math.random().toString(36).substring(2, 8);
+        var safeFileName = safeBase + ext;
         var path = folder + '/' + Date.now() + '_' + safeFileName;
         
         var xhr = new XMLHttpRequest();

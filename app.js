@@ -7103,7 +7103,7 @@ function aiAdvisorCallAPI(apiKey, contextText, historyArr) {
             var modelName = '';
             if (isCerebras) {
                 endpoint = 'https://api.cerebras.ai/v1/chat/completions';
-                modelName = 'llama-3.3-70b';
+                modelName = 'llama-4-scout-17b-16e-instruct';
             } else if (isTogether) {
                 endpoint = 'https://api.together.xyz/v1/chat/completions';
                 modelName = 'meta-llama/Llama-3.3-70B-Instruct-Turbo';
@@ -7282,6 +7282,9 @@ async function tgExtractFileText(file) {
     if (isPdf) {
         return await tgExtractPdfText(file);
     }
+    if (/\.(xlsx|xls)$/i.test(file.name)) {
+        throw new Error('ملفات Excel (.xlsx/.xls) ملفات ثنائية غير نصية. يرجى تصدير التقرير بصيغة CSV أو TXT أو PDF لكي يقرأها المستشار بدقة.');
+    }
     // قراءة الملفات النصية المباشرة (TXT, MD, CSV, JSON, LOG, إلخ)
     try {
         if (file.text) {
@@ -7328,7 +7331,7 @@ window.aiKbUpload = async function() {
             btn.disabled = false;
             return;
         }
-        var capped = text.length > 220000 ? (text.slice(0, 220000) + '\n[...تم اقتصاص الباقي...]') : text;
+        var capped = text.length > 110000 ? (text.slice(0, 110000) + '\n[...تم اقتصاص الباقي لتفادي حظر الحجم...]') : text;
 
         function saveKbDoc(fileUrl) {
             db.collection('aiKnowledgeDocs').add({
@@ -7567,7 +7570,7 @@ function callGemini(apiKey, prompt, btn, resultBox, btnOriginalText, isAdmin) {
         var modelName = '';
         if (isCerebras) {
             endpoint = 'https://api.cerebras.ai/v1/chat/completions';
-            modelName = 'llama-3.3-70b';
+            modelName = 'llama-4-scout-17b-16e-instruct';
         } else if (isTogether) {
             endpoint = 'https://api.together.xyz/v1/chat/completions';
             modelName = 'meta-llama/Llama-3.3-70B-Instruct-Turbo';
