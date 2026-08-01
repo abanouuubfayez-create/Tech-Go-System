@@ -5,19 +5,25 @@
 <script>
 // ─── AUTOMATIC FORCE CACHE PURGER ─────────────────────────────────────────────
 (function() {
-    var CURRENT_VER = 'v2000_txt_force_purge';
+    var CURRENT_VER = 'v2001_txt_force_reload';
     var savedVer = localStorage.getItem('tg_app_cache_version');
     if (savedVer !== CURRENT_VER) {
         localStorage.setItem('tg_app_cache_version', CURRENT_VER);
+        var didClear = false;
         if ('caches' in window) {
             caches.keys().then(function(names) {
                 for (let name of names) caches.delete(name);
             });
+            didClear = true;
         }
         if ('serviceWorker' in navigator) {
             navigator.serviceWorker.getRegistrations().then(function(registrations) {
                 for (let reg of registrations) reg.unregister();
+                // إعادة تحميل الصفحة بعد إلغاء تسجيل الـ Service Worker
+                setTimeout(function(){ location.reload(true); }, 400);
             });
+        } else if (didClear) {
+            setTimeout(function(){ location.reload(true); }, 400);
         }
     }
 })();
