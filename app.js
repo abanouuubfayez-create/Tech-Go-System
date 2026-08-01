@@ -4309,9 +4309,9 @@ function load(id,c){
         h+='<button class="bt bt-p" style="padding:6px 14px;font-size:12px" onclick="saveAppSettings()">💾 حفظ إعدادات النظام</button>';
         h+='</div>';
 
-        h+='<div class="set-sec"><div class="set-sec-title">🤖 الذكاء الاصطناعي (Gemini / Groq / OpenRouter)</div>';
-        h+='<div class="set-hint" style="margin-bottom:12px">ضع هنا مفتاح API الخاص بك (Gemini أو Groq أو OpenRouter) لتفعيل اقتراحات التطوير المهني. النظام سيتعرف عليه تلقائياً.</div>';
-        h+='<div class="fr fr2"><div class="fg" style="margin:0"><input type="password" id="txtGeminiApi" placeholder="AIzaSy..." value="'+(window._appSettingsCache&&window._appSettingsCache.geminiApiKey?window._appSettingsCache.geminiApiKey:'')+'"></div></div>';
+        h+='<div class="set-sec"><div class="set-sec-title">🤖 الذكاء الاصطناعي (Cerebras / Together / Gemini / Groq / OpenRouter)</div>';
+        h+='<div class="set-hint" style="margin-bottom:12px">ضع هنا مفتاح API الخاص بك (Cerebras أو Together AI أو Gemini أو Groq أو OpenRouter). يتعرف النظام على مزود الخدمة تلقائياً عبر صيغة المفتاح (ينصح بـ Cerebras أو Together للملفات والتقارير الكبيرة).</div>';
+        h+='<div class="fr fr2"><div class="fg" style="margin:0"><input type="password" id="txtGeminiApi" placeholder="csk-... (Cerebras) | tgp_... (Together) | gsk_... (Groq) | AIzaSy... (Gemini)" value="'+(window._appSettingsCache&&window._appSettingsCache.geminiApiKey?window._appSettingsCache.geminiApiKey:'')+'"></div></div>';
         h+='<button class="bt bt-p" style="padding:6px 14px;font-size:12px;margin-top:10px" onclick="saveAppSettings()">💾 حفظ إعدادات النظام</button>';
         h+='</div>';
 
@@ -7095,10 +7095,25 @@ function aiAdvisorCallAPI(apiKey, contextText, historyArr) {
         if (!apiKey) { reject(new Error('مفتاح API غير موجود.')); return; }
         var isGroq = apiKey.indexOf('gsk_') === 0;
         var isOpenRouter = apiKey.indexOf('sk-or-') === 0;
+        var isCerebras = apiKey.indexOf('csk-') === 0 || apiKey.indexOf('csk_') === 0 || apiKey.toLowerCase().indexOf('cerebras') !== -1;
+        var isTogether = apiKey.indexOf('tgp_') === 0 || apiKey.indexOf('together_') === 0 || apiKey.indexOf('together-') === 0 || apiKey.indexOf('tg-') === 0 || apiKey.toLowerCase().indexOf('together') !== -1;
 
-        if (isGroq || isOpenRouter) {
-            var endpoint = isGroq ? 'https://api.groq.com/openai/v1/chat/completions' : 'https://openrouter.ai/api/v1/chat/completions';
-            var modelName = isGroq ? 'llama-3.3-70b-versatile' : 'meta-llama/llama-3.1-8b-instruct:free';
+        if (isGroq || isOpenRouter || isCerebras || isTogether) {
+            var endpoint = '';
+            var modelName = '';
+            if (isCerebras) {
+                endpoint = 'https://api.cerebras.ai/v1/chat/completions';
+                modelName = 'llama-3.3-70b';
+            } else if (isTogether) {
+                endpoint = 'https://api.together.xyz/v1/chat/completions';
+                modelName = 'meta-llama/Llama-3.3-70B-Instruct-Turbo';
+            } else if (isGroq) {
+                endpoint = 'https://api.groq.com/openai/v1/chat/completions';
+                modelName = 'llama-3.3-70b-versatile';
+            } else {
+                endpoint = 'https://openrouter.ai/api/v1/chat/completions';
+                modelName = 'meta-llama/llama-3.1-8b-instruct:free';
+            }
             var messages = [{ role: 'system', content: contextText }];
             historyArr.forEach(function(m) { messages.push({ role: m.role === 'user' ? 'user' : 'assistant', content: m.content }); });
 
@@ -7143,7 +7158,7 @@ function aiAdvisorCallAPI(apiKey, contextText, historyArr) {
                 if (data.error) {
                     var errMsg = data.error.message || 'خطأ من Gemini';
                     if (errMsg.toLowerCase().indexOf('quota') !== -1 && errMsg.indexOf('limit: 0') !== -1) {
-                        reject(new Error('حساب Google المرتبط بمفتاح الـ API ده مالوش أي رصيد مجاني حالياً (Limit: 0) — ده غالباً بيحصل لو حساب Google في دولة مش مدعومة بالباقة المجانية، أو محتاج تفعيل الفوترة. الحل الأسرع: جيب مفتاح Groq المجاني من console.groq.com وحطه بدل مفتاح Gemini في إعدادات النظام (نفس الخانة، بيتعرف تلقائي).'));
+                        reject(new Error('حساب Google المرتبط بمفتاح الـ API ده مالوش أي رصيد مجاني حالياً (Limit: 0) — ده غالباً بيحصل لو حساب Google في دولة مش مدعومة بالباقة المجانية، أو محتاج تفعيل الفوترة. الحل الأسرع: جيب مفتاح مجاني بسعة ضخمة من Cerebras أو Together AI أو Groq وحطه بدل مفتاح Gemini في إعدادات النظام (بيتعرف تلقائي).'));
                         return;
                     }
                     if (errMsg.toLowerCase().indexOf('quota') !== -1 || errMsg.indexOf('429') !== -1) {
@@ -7205,7 +7220,7 @@ function loadAiAdvisor(c) {
         h += '<div style="padding:24px 16px; background:#faf5ff; border:1px solid #e9d5ff; border-radius:10px; text-align:center;">';
         h += '<div style="font-size:34px; margin-bottom:8px;">🔑</div>';
         h += '<div style="font-weight:800; color:var(--nv); margin-bottom:6px;">لسه محتاج تفعّل الميزة دي</div>';
-        h += '<div style="color:var(--tx3); font-size:13px; margin-bottom:14px; max-width:420px; margin-inline:auto;">أضف مفتاح Gemini (أو Groq / OpenRouter) — مجاني بالكامل — من إعدادات النظام عشان المستشار الذكي يبدأ يشتغل.</div>';
+        h += '<div style="color:var(--tx3); font-size:13px; margin-bottom:14px; max-width:420px; margin-inline:auto;">أضف مفتاح Cerebras أو Together AI أو Gemini أو Groq — مجاني بالكامل — من إعدادات النظام عشان المستشار الذكي يبدأ يشتغل.</div>';
         h += '<button class="bt bt-p" onclick="go(\'set\')">⚙️ روح لإعدادات النظام</button>';
         h += '</div></div>';
         c.innerHTML = h;
@@ -7480,7 +7495,7 @@ window.adminGenerateSuggestions = async function() {
 
     var apiKey = window._appSettingsCache && window._appSettingsCache.geminiApiKey;
     if(!apiKey) {
-        alert('مفتاح الذكاء الاصطناعي غير موجود في إعدادات النظام. يرجى إضافة مفتاح (Gemini أو Groq أو OpenRouter) أولاً.');
+        alert('مفتاح الذكاء الاصطناعي غير موجود في إعدادات النظام. يرجى إضافة مفتاح (Cerebras أو Together أو Gemini أو Groq أو OpenRouter) أولاً.');
         return;
     }
 
@@ -7504,15 +7519,17 @@ function callGemini(apiKey, prompt, btn, resultBox, btnOriginalText, isAdmin) {
         return;
     }
     
-    var isGroq = apiKey.startsWith('gsk_');
-    var isOpenRouter = apiKey.startsWith('sk-or-');
-    var isGemini = !isGroq && !isOpenRouter;
+    var isGroq = apiKey.indexOf('gsk_') === 0;
+    var isOpenRouter = apiKey.indexOf('sk-or-') === 0;
+    var isCerebras = apiKey.indexOf('csk-') === 0 || apiKey.indexOf('csk_') === 0 || apiKey.toLowerCase().indexOf('cerebras') !== -1;
+    var isTogether = apiKey.indexOf('tgp_') === 0 || apiKey.indexOf('together_') === 0 || apiKey.indexOf('together-') === 0 || apiKey.indexOf('tg-') === 0 || apiKey.toLowerCase().indexOf('together') !== -1;
+    var isGemini = !isGroq && !isOpenRouter && !isCerebras && !isTogether;
 
     btn.disabled = true;
     btn.innerHTML = '⏳ جاري المعالجة...';
     resultBox.style.display = 'block';
     
-    var providerName = isGroq ? 'Groq' : (isOpenRouter ? 'OpenRouter' : 'Gemini');
+    var providerName = isCerebras ? 'Cerebras' : (isTogether ? 'Together AI' : (isGroq ? 'Groq' : (isOpenRouter ? 'OpenRouter' : 'Gemini')));
     resultBox.innerHTML = '<div style="text-align:center; color:var(--tx2);">جاري إنشاء الرد عبر ' + providerName + '...</div>';
 
     function renderResult(text) {
@@ -7545,9 +7562,22 @@ function callGemini(apiKey, prompt, btn, resultBox, btnOriginalText, isAdmin) {
         resultBox.innerHTML = errHtml;
     }
 
-    if (isGroq || isOpenRouter) {
-        var endpoint = isGroq ? 'https://api.groq.com/openai/v1/chat/completions' : 'https://openrouter.ai/api/v1/chat/completions';
-        var modelName = isGroq ? 'llama-3.3-70b-versatile' : 'meta-llama/llama-3.1-8b-instruct:free';
+    if (isGroq || isOpenRouter || isCerebras || isTogether) {
+        var endpoint = '';
+        var modelName = '';
+        if (isCerebras) {
+            endpoint = 'https://api.cerebras.ai/v1/chat/completions';
+            modelName = 'llama-3.3-70b';
+        } else if (isTogether) {
+            endpoint = 'https://api.together.xyz/v1/chat/completions';
+            modelName = 'meta-llama/Llama-3.3-70B-Instruct-Turbo';
+        } else if (isGroq) {
+            endpoint = 'https://api.groq.com/openai/v1/chat/completions';
+            modelName = 'llama-3.3-70b-versatile';
+        } else {
+            endpoint = 'https://openrouter.ai/api/v1/chat/completions';
+            modelName = 'meta-llama/llama-3.1-8b-instruct:free';
+        }
         
         fetch(endpoint, {
             method: 'POST',
