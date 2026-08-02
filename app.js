@@ -12361,3 +12361,34 @@ window.tgInitAdminReportNotificationsListener = function() {
 setTimeout(function(){
     if (typeof tgInitAdminReportNotificationsListener === 'function') tgInitAdminReportNotificationsListener();
 }, 2000);
+
+// ─── Dynamic Sidebar Menu Injector (Guarantees Requests Center appears even on cached HTML) ───
+function tgEnsureRequestsCenterInSidebar() {
+    var sidebar = document.getElementById('sidebarNav');
+    if (!sidebar) return;
+    if (sidebar.querySelector('[onclick*="allrequests"]')) return;
+
+    var groups = sidebar.querySelectorAll('.sb-group');
+    groups.forEach(function(grp) {
+        var title = grp.querySelector('.S-s');
+        if (title && title.textContent.indexOf('شؤون الموظفين') !== -1) {
+            var items = grp.querySelector('.sb-items');
+            if (items) {
+                var newEl = document.createElement('div');
+                newEl.className = 'S-i';
+                newEl.setAttribute('onclick', "go('allrequests',this)");
+                newEl.style.borderRight = '2px solid var(--gd)';
+                newEl.innerHTML = '<span class="ic">📥</span> مركز طلبات الموظفين <span class="S-b" style="background:var(--no)">جديد</span>';
+                items.insertBefore(newEl, items.firstChild);
+            }
+        }
+    });
+}
+if (document.readyState === 'complete' || document.readyState === 'interactive') {
+    tgEnsureRequestsCenterInSidebar();
+} else {
+    document.addEventListener('DOMContentLoaded', tgEnsureRequestsCenterInSidebar);
+}
+setTimeout(tgEnsureRequestsCenterInSidebar, 100);
+setTimeout(tgEnsureRequestsCenterInSidebar, 500);
+setTimeout(tgEnsureRequestsCenterInSidebar, 1500);
