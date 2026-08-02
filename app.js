@@ -7524,11 +7524,13 @@ async function buildAdvisorLiveContext(questionText) {
         }
     } catch(e) { console.error("Advisor ctx (knowledge docs) error", e); }
 
-    ctx += "\n\nتعليمات هامة جداً للمستشار:\n" +
-           "1. أنت 'المستشار الذكي الشامل' الخاص بنظام Tech Go لإدارة الشركة والموظفين.\n" +
-           "2. بين يديك الآن البيانات الكاملة والتفصيلية المحدثة للشركة: قائمة الموظفين والمناصب، المهام والمشاريع، الحضور والانصراف، الطلبات المعلقة، التقارير الأسبوعية والشهرية، الإنجازات، والخطط الشهرية التفصيلية كاملة بأهدافها ومهامها ونسب إنجازها، بالإضافة لكافة المستندات المرفوعة في قاعدة المعرفة.\n" +
-           "3. عندما يسألك المستخدم عن خطط أي شهر (مثل شهر 8 أو شهر أغسطس أو غيره)، اعرض تفاصيل خطط الموظفين المتاحة وأهدافهم ومهامهم ونسب إنجازهم بوضوح واستفاضة من البيانات أعلاه، ولا تقل أبداً إن 'المعلومات التفصيلية غير موجودة'.\n" +
-           "4. أجب بدقة ووضوح وبطريقة احترافية ومفيدة باللهجة المصرية، وساعد المدير دائماً برؤية تحليليّة وإدارية حكيمة.\n";
+    ctx += "\n\n✨ تعليمات توجيهية وإخراجية هامة جداً للمستشار الذكي (استخدم أقصى درجات التفصيل والجمال التنسيقي):\n" +
+           "1. أنت 'المستشار الذكي الشامل ورئيس الاستشارات الإدارية والتقنية' لنظام Tech Go لإدارة الشركات والعمليات.\n" +
+           "2. بين يديك الآن كافة البيانات التفصيلية المحدثة للشركة: قائمة الموظفين والمناصب، المهام والمشاريع، الحضور والانصراف، الطلبات المعلقة، التقارير الأسبوعية والشهرية، الإنجازات، والخطط الشهرية التفصيلية كاملة بأهدافها ومهامها ونسب إنجازها، بالإضافة لكافة المستندات المرفوعة في قاعدة المعرفة.\n" +
+           "3. يجب أن تكون إجاباتك مفصلة، غنية بالمعلومات، مريحة للعين، ومنسقة بأجمل شكل ممكن (استخدم تنسيق Markdown احترافي، عناوين رئيسية ###، نقاط إيموجي 📊 🎯 📌 👤 📅 ⚡، وجداول توضيحية عند الحاجة).\n" +
+           "4. حلل البيانات المتاحة بأسلوب استشاري راقٍ وعميق باللغة العربية / اللهجة المصرية الإدارية المحترمة، وقدم تحليلات رقمية ونسب إنجاز وملاحظات قيادية تُساعد المدير والتنفيذيين في اتخاذ القرارات بوضوح.\n" +
+           "5. إذا سألك المستخدم عن أي خطط أو تقارير أو مستندات، استعرض التفاصيل الكاملة والأسماء والبنود والمستهدفات بكل استفاضة ودقة ولا تكتفِ بالإجابات المختصرة السطحية.\n" +
+           "6. قدم مقترحات عملية وخطوات قادمة موصى بها في نهاية كل إجابة لتعزيز الكفاءة والانتاجية.\n";
     return ctx;
 }
 
@@ -7611,20 +7613,20 @@ function aiAdvisorCallAPI(apiKey, contextText, historyArr) {
 
             if (isCerebras) {
                 endpoint = 'https://api.cerebras.ai/v1/chat/completions';
-                primaryModel = 'llama3.1-8b';
-                fallbacks = ['llama-3.3-70b', 'llama3.3-70b'];
+                primaryModel = 'llama-3.3-70b';
+                fallbacks = ['llama3.3-70b', 'llama3.1-8b'];
             } else if (isTogether) {
                 endpoint = 'https://api.together.xyz/v1/chat/completions';
-                primaryModel = 'meta-llama/llama-3.1-8b-instruct';
-                fallbacks = ['meta-llama/Meta-Llama-3.1-8B-Instruct-Turbo', 'meta-llama/Llama-3.3-70B-Instruct-Turbo'];
+                primaryModel = 'meta-llama/Llama-3.3-70B-Instruct-Turbo';
+                fallbacks = ['meta-llama/llama-3.3-70b-instruct', 'meta-llama/llama-3.1-8b-instruct', 'meta-llama/Meta-Llama-3.1-8B-Instruct-Turbo'];
             } else if (isGroq) {
                 endpoint = 'https://api.groq.com/openai/v1/chat/completions';
                 primaryModel = 'llama-3.3-70b-versatile';
                 fallbacks = ['llama-3.1-8b-instant', 'mixtral-8x7b-32768'];
             } else {
                 endpoint = 'https://openrouter.ai/api/v1/chat/completions';
-                primaryModel = 'meta-llama/llama-3.1-8b-instruct';
-                fallbacks = ['google/gemini-2.0-flash-exp:free', 'qwen/qwen-2.5-72b-instruct:free', 'deepseek/deepseek-r1:free'];
+                primaryModel = 'google/gemini-2.0-flash-exp:free';
+                fallbacks = ['meta-llama/llama-3.3-70b-instruct:free', 'meta-llama/llama-3.1-8b-instruct', 'qwen/qwen-2.5-72b-instruct:free', 'deepseek/deepseek-r1:free'];
             }
 
             var messages = [{ role: 'system', content: contextText }];
@@ -8067,20 +8069,20 @@ function callGemini(apiKey, prompt, btn, resultBox, btnOriginalText, isAdmin) {
 
         if (isCerebras) {
             endpoint = 'https://api.cerebras.ai/v1/chat/completions';
-            primaryModel = 'llama3.1-8b';
-            fallbacks = ['llama-3.3-70b', 'llama3.3-70b'];
+            primaryModel = 'llama-3.3-70b';
+            fallbacks = ['llama3.3-70b', 'llama3.1-8b'];
         } else if (isTogether) {
             endpoint = 'https://api.together.xyz/v1/chat/completions';
-            primaryModel = 'meta-llama/llama-3.1-8b-instruct';
-            fallbacks = ['meta-llama/Meta-Llama-3.1-8B-Instruct-Turbo', 'meta-llama/Llama-3.3-70B-Instruct-Turbo'];
+            primaryModel = 'meta-llama/Llama-3.3-70B-Instruct-Turbo';
+            fallbacks = ['meta-llama/llama-3.3-70b-instruct', 'meta-llama/llama-3.1-8b-instruct', 'meta-llama/Meta-Llama-3.1-8B-Instruct-Turbo'];
         } else if (isGroq) {
             endpoint = 'https://api.groq.com/openai/v1/chat/completions';
             primaryModel = 'llama-3.3-70b-versatile';
             fallbacks = ['llama-3.1-8b-instant', 'mixtral-8x7b-32768'];
         } else {
             endpoint = 'https://openrouter.ai/api/v1/chat/completions';
-            primaryModel = 'meta-llama/llama-3.1-8b-instruct';
-            fallbacks = ['google/gemini-2.0-flash-exp:free', 'qwen/qwen-2.5-72b-instruct:free', 'deepseek/deepseek-r1:free'];
+            primaryModel = 'google/gemini-2.0-flash-exp:free';
+            fallbacks = ['meta-llama/llama-3.3-70b-instruct:free', 'meta-llama/llama-3.1-8b-instruct', 'qwen/qwen-2.5-72b-instruct:free', 'deepseek/deepseek-r1:free'];
         }
         
         var messages = [{ role: 'user', content: prompt }];
