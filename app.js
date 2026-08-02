@@ -7532,6 +7532,70 @@ async function buildAdvisorLiveContext(questionText) {
     return ctx;
 }
 
+window.tgFetchOpenAIChatCompletions = function(endpoint, apiKey, primaryModel, messages, temperature, fallbacks) {
+    return new Promise(function(resolve, reject) {
+        var modelsToTry = [primaryModel].concat(fallbacks || []);
+        
+        function tryNextModel(index) {
+            if (index >= modelsToTry.length) {
+                reject(new Error('جميع نماذج الخدمات المتاحة تعذر الوصول إليها.'));
+                return;
+            }
+            
+            var currentModel = modelsToTry[index];
+            
+            fetch(endpoint, {
+                method: 'POST',
+                headers: {
+                    'Authorization': 'Bearer ' + apiKey,
+                    'Content-Type': 'application/json',
+                    'HTTP-Referer': window.location.href,
+                    'X-Title': 'Tech Go System'
+                },
+                body: JSON.stringify({ model: currentModel, messages: messages, temperature: temperature || 0.6 })
+            })
+            .then(function(res) { return res.json(); })
+            .then(function(data) {
+                if (data.error) {
+                    var msg = typeof data.error === 'string' ? data.error : (data.error.message || JSON.stringify(data.error));
+                    
+                    var matchSlug = msg.match(/use this slug instead:\s*([a-zA-Z0-9_\-\.\/:]+)/i);
+                    if (matchSlug && matchSlug[1]) {
+                        var suggestedSlug = matchSlug[1].trim();
+                        modelsToTry.splice(index + 1, 0, suggestedSlug);
+                    }
+                    
+                    if (index + 1 < modelsToTry.length) {
+                        tryNextModel(index + 1);
+                    } else {
+                        reject(new Error(msg));
+                    }
+                    return;
+                }
+                
+                if (data.choices && data.choices.length > 0) {
+                    resolve(data.choices[0].message.content);
+                } else {
+                    if (index + 1 < modelsToTry.length) {
+                        tryNextModel(index + 1);
+                    } else {
+                        reject(new Error('رد فارغ من الخادم.'));
+                    }
+                }
+            })
+            .catch(function(err) {
+                if (index + 1 < modelsToTry.length) {
+                    tryNextModel(index + 1);
+                } else {
+                    reject(err);
+                }
+            });
+        }
+        
+        tryNextModel(0);
+    });
+};
+
 function aiAdvisorCallAPI(apiKey, contextText, historyArr) {
     return new Promise(function(resolve, reject) {
         if (!apiKey) { reject(new Error('مفتاح API غير موجود.')); return; }
@@ -7542,44 +7606,33 @@ function aiAdvisorCallAPI(apiKey, contextText, historyArr) {
 
         if (isGroq || isOpenRouter || isCerebras || isTogether) {
             var endpoint = '';
-            var modelName = '';
+            var primaryModel = '';
+            var fallbacks = [];
+
             if (isCerebras) {
                 endpoint = 'https://api.cerebras.ai/v1/chat/completions';
-                modelName = 'llama-4-scout-17b-16e-instruct';
+                primaryModel = 'llama3.1-8b';
+                fallbacks = ['llama-3.3-70b', 'llama3.3-70b'];
             } else if (isTogether) {
                 endpoint = 'https://api.together.xyz/v1/chat/completions';
-                modelName = 'meta-llama/Llama-3.3-70B-Instruct-Turbo';
+                primaryModel = 'meta-llama/llama-3.1-8b-instruct';
+                fallbacks = ['meta-llama/Meta-Llama-3.1-8B-Instruct-Turbo', 'meta-llama/Llama-3.3-70B-Instruct-Turbo'];
             } else if (isGroq) {
                 endpoint = 'https://api.groq.com/openai/v1/chat/completions';
-                modelName = 'llama-3.3-70b-versatile';
+                primaryModel = 'llama-3.3-70b-versatile';
+                fallbacks = ['llama-3.1-8b-instant', 'mixtral-8x7b-32768'];
             } else {
                 endpoint = 'https://openrouter.ai/api/v1/chat/completions';
-                modelName = 'meta-llama/llama-3.1-8b-instruct:free';
+                primaryModel = 'meta-llama/llama-3.1-8b-instruct';
+                fallbacks = ['google/gemini-2.0-flash-exp:free', 'qwen/qwen-2.5-72b-instruct:free', 'deepseek/deepseek-r1:free'];
             }
+
             var messages = [{ role: 'system', content: contextText }];
             historyArr.forEach(function(m) { messages.push({ role: m.role === 'user' ? 'user' : 'assistant', content: m.content }); });
 
-            fetch(endpoint, {
-                method: 'POST',
-                headers: {
-                    'Authorization': 'Bearer ' + apiKey,
-                    'Content-Type': 'application/json',
-                    'HTTP-Referer': window.location.href,
-                    'X-Title': 'Tech Go System - AI Advisor'
-                },
-                body: JSON.stringify({ model: modelName, messages: messages, temperature: 0.6 })
-            })
-            .then(function(res) { return res.json(); })
-            .then(function(data) {
-                if (data.error) {
-                    var msg = typeof data.error === 'string' ? data.error : (data.error.message || JSON.stringify(data.error));
-                    reject(new Error(msg));
-                    return;
-                }
-                if (data.choices && data.choices.length > 0) resolve(data.choices[0].message.content);
-                else reject(new Error('رد فارغ من الخادم.'));
-            })
-            .catch(reject);
+            tgFetchOpenAIChatCompletions(endpoint, apiKey, primaryModel, messages, 0.6, fallbacks)
+                .then(resolve)
+                .catch(reject);
             return;
         }
 
@@ -8009,51 +8062,33 @@ function callGemini(apiKey, prompt, btn, resultBox, btnOriginalText, isAdmin) {
 
     if (isGroq || isOpenRouter || isCerebras || isTogether) {
         var endpoint = '';
-        var modelName = '';
+        var primaryModel = '';
+        var fallbacks = [];
+
         if (isCerebras) {
             endpoint = 'https://api.cerebras.ai/v1/chat/completions';
-            modelName = 'llama-4-scout-17b-16e-instruct';
+            primaryModel = 'llama3.1-8b';
+            fallbacks = ['llama-3.3-70b', 'llama3.3-70b'];
         } else if (isTogether) {
             endpoint = 'https://api.together.xyz/v1/chat/completions';
-            modelName = 'meta-llama/Llama-3.3-70B-Instruct-Turbo';
+            primaryModel = 'meta-llama/llama-3.1-8b-instruct';
+            fallbacks = ['meta-llama/Meta-Llama-3.1-8B-Instruct-Turbo', 'meta-llama/Llama-3.3-70B-Instruct-Turbo'];
         } else if (isGroq) {
             endpoint = 'https://api.groq.com/openai/v1/chat/completions';
-            modelName = 'llama-3.3-70b-versatile';
+            primaryModel = 'llama-3.3-70b-versatile';
+            fallbacks = ['llama-3.1-8b-instant', 'mixtral-8x7b-32768'];
         } else {
             endpoint = 'https://openrouter.ai/api/v1/chat/completions';
-            modelName = 'meta-llama/llama-3.1-8b-instruct:free';
+            primaryModel = 'meta-llama/llama-3.1-8b-instruct';
+            fallbacks = ['google/gemini-2.0-flash-exp:free', 'qwen/qwen-2.5-72b-instruct:free', 'deepseek/deepseek-r1:free'];
         }
         
-        fetch(endpoint, {
-            method: 'POST',
-            headers: {
-                'Authorization': 'Bearer ' + apiKey,
-                'Content-Type': 'application/json',
-                'HTTP-Referer': window.location.href,
-                'X-Title': 'Tech Go System'
-            },
-            body: JSON.stringify({
-                model: modelName,
-                messages: [{role: "user", content: prompt}],
-                temperature: 0.7
-            })
-        })
-        .then(function(res) { return res.json(); })
-        .then(function(data) {
-            if(data.error) {
-                var msg = typeof data.error === 'string' ? data.error : (data.error.message || JSON.stringify(data.error));
-                renderError('<div style="color:red; font-size:14px; text-align:right;">❌ خطأ من ' + providerName + ':<br><strong style="font-family:monospace; direction:ltr; display:block; margin-top:5px; padding:10px; background:#fdd; border-radius:5px;">' + escH(msg) + '</strong></div>');
-                return;
-            }
-            if(data.choices && data.choices.length > 0) {
-                renderResult(data.choices[0].message.content);
-            } else {
-                renderError('<div style="color:red; font-size:14px; text-align:right;">❌ ' + providerName + ' returned empty response.</div>');
-            }
-        })
-        .catch(function(err) {
-            renderError('<div style="color:red; font-size:14px; text-align:right;">❌ فشل الاتصال بخادم ' + providerName + ':<br><strong style="font-family:monospace; direction:ltr; display:block; margin-top:5px; padding:10px; background:#fdd; border-radius:5px;">' + escH(err.message) + '</strong></div>');
-        });
+        var messages = [{ role: 'user', content: prompt }];
+        tgFetchOpenAIChatCompletions(endpoint, apiKey, primaryModel, messages, 0.7, fallbacks)
+            .then(renderResult)
+            .catch(function(err) {
+                renderError('<div style="color:red; font-size:14px; text-align:right;">❌ فشل الاتصال بخادم ' + providerName + ':<br><strong style="font-family:monospace; direction:ltr; display:block; margin-top:5px; padding:10px; background:#fdd; border-radius:5px;">' + escH(err.message) + '</strong></div>');
+            });
         return;
     }
 
