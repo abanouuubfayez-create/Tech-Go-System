@@ -12704,6 +12704,119 @@ window.tgNotifyAdminsReportSubmitted = function(typeTitle, empName, detailsText,
     }
 };
 
+window.tgGetRealEmpName = function(nameOrUid, uid) {
+    if (!nameOrUid && !uid) return 'موظف';
+    var raw = String(nameOrUid || '').trim();
+    var id = String(uid || raw).trim();
+
+    if (raw && raw.length < 25 && raw.indexOf('Txeg') === -1 && !/^[A-Za-z0-9]{20,}$/.test(raw)) {
+        return raw;
+    }
+
+    if (window._staffEmpCache && Array.isArray(window._staffEmpCache)) {
+        var match = window._staffEmpCache.find(function(e) {
+            return e.uid === id || e.uid === raw || (e.id && e.id === id);
+        });
+        if (match && match.name && match.name.length < 30) return match.name;
+    }
+
+    var u = window.TG_USER || {};
+    if (u.uid === id && u.name) return u.name;
+
+    return 'موظف';
+};
+
+window.tgOpenSystemGuideModal = function(initialQuery) {
+    var modalId = 'tgSystemGuideModalOverlay';
+    if (document.getElementById(modalId)) document.getElementById(modalId).remove();
+
+    var html = `
+    <div id="${modalId}" style="position:fixed; top:0; left:0; right:0; bottom:0; background:rgba(15,23,42,0.88); z-index:999999; display:flex; justify-content:center; align-items:center; padding:16px; backdrop-filter:blur(12px); font-family:sans-serif; direction:rtl; text-align:right;">
+        <div style="background:var(--bg2); border:2px solid #3b82f6; border-radius:24px; width:100%; max-width:720px; max-height:90vh; overflow-y:auto; box-shadow:0 25px 60px rgba(0,0,0,0.5); display:flex; flex-direction:column; color:var(--tx);">
+            
+            <div style="padding:20px 24px; border-bottom:1.5px solid var(--bd); background:linear-gradient(135deg, rgba(59,130,246,0.12), rgba(16,185,129,0.06)); display:flex; justify-content:space-between; align-items:center; border-radius:22px 22px 0 0;">
+                <div style="display:flex; align-items:center; gap:12px;">
+                    <div style="font-size:32px;">💡</div>
+                    <div>
+                        <h3 style="margin:0; font-size:20px; font-weight:900; color:var(--tx);">دليل الإرشادات والتعليمات السريعة للنظام</h3>
+                        <p style="margin:4px 0 0; color:var(--tx2); font-size:13px; font-weight:600;">اختر عما تريد تنفيذه وسيرشدك النظام بالخطوات والملاحة الفورية.</p>
+                    </div>
+                </div>
+                <button type="button" onclick="document.getElementById('${modalId}').remove()" style="background:none; border:none; color:var(--tx2); font-size:22px; cursor:pointer; font-weight:bold;">✕</button>
+            </div>
+
+            <div style="padding:22px; display:flex; flex-direction:column; gap:16px;">
+                <div style="display:flex; flex-direction:column; gap:12px;">
+                    <div style="background:var(--w); border:1.5px solid var(--bd); border-radius:16px; padding:16px; box-shadow:0 3px 12px rgba(0,0,0,0.03);">
+                        <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:8px;">
+                            <strong style="font-size:15px; font-weight:900; color:#0284c7; display:flex; align-items:center; gap:8px;">
+                                <span>📥</span> كيف أراجع وأوافق على طلبات الموظفين؟
+                            </strong>
+                            <button type="button" onclick="document.getElementById('${modalId}').remove(); if(typeof go==='function') go('allrequests');" class="bt" style="background:linear-gradient(135deg, #0284c7, #0369a1); color:#fff; font-size:12px; padding:6px 14px; border-radius:20px; font-weight:800; border:none; cursor:pointer;">الذهاب لـ مركز الطلبات 🚀</button>
+                        </div>
+                        <div style="font-size:13px; line-height:1.7; color:var(--tx2); font-weight:700; margin-top:10px; border-top:1px dashed var(--bd); padding-top:8px;">
+                            1. اذهب إلى <b>مركز طلبات الموظفين</b> من القائمة الجانبية.<br>
+                            2. ستظهر لك كافة الطلبات المعلقة (إجازات، أذونات، استقالات).<br>
+                            3. اضغط على <b>"✔ موافقة على الطلب"</b> أو <b>"✕ رفض الطلب"</b> بنقرة واحدة وسيتم إرسال إشعار فوري للموظف.
+                        </div>
+                    </div>
+
+                    <div style="background:var(--w); border:1.5px solid var(--bd); border-radius:16px; padding:16px; box-shadow:0 3px 12px rgba(0,0,0,0.03);">
+                        <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:8px;">
+                            <strong style="font-size:15px; font-weight:900; color:#10b981; display:flex; align-items:center; gap:8px;">
+                                <span>🎯</span> كيف أعد خطة شهرية مخصصة أو تجميعية (MP)؟
+                            </strong>
+                            <button type="button" onclick="document.getElementById('${modalId}').remove(); if(typeof go==='function') go('monthlyplans');" class="bt" style="background:linear-gradient(135deg, #10b981, #059669); color:#fff; font-size:12px; padding:6px 14px; border-radius:20px; font-weight:800; border:none; cursor:pointer;">الذهاب لـ الخطط الشهرية 🚀</button>
+                        </div>
+                        <div style="font-size:13px; line-height:1.7; color:var(--tx2); font-weight:700; margin-top:10px; border-top:1px dashed var(--bd); padding-top:8px;">
+                            1. افتح صفحة <b>الخطط الشهرية (MP)</b>.<br>
+                            2. اضغط على <b>"➕ إنشاء خطة شهرية مخصصة"</b> وكتابة الأهداف وبنود ومؤشرات الـ KPI.<br>
+                            3. تابع أشرطة الإنجاز الملونة التي تتحدث تلقائياً حسب إنجاز الموظف للبنود.
+                        </div>
+                    </div>
+
+                    <div style="background:var(--w); border:1.5px solid var(--bd); border-radius:16px; padding:16px; box-shadow:0 3px 12px rgba(0,0,0,0.03);">
+                        <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:8px;">
+                            <strong style="font-size:15px; font-weight:900; color:#f59e0b; display:flex; align-items:center; gap:8px;">
+                                <span>📢</span> كيف أنشر إعلاناً أو تكليفاً مع الإشارة للموظفين (@)؟
+                            </strong>
+                            <button type="button" onclick="document.getElementById('${modalId}').remove(); if(typeof go==='function') go('announcements');" class="bt" style="background:linear-gradient(135deg, #f59e0b, #d97706); color:#fff; font-size:12px; padding:6px 14px; border-radius:20px; font-weight:800; border:none; cursor:pointer;">الذهاب لـ إدارة الإعلانات 🚀</button>
+                        </div>
+                        <div style="font-size:13px; line-height:1.7; color:var(--tx2); font-weight:700; margin-top:10px; border-top:1px dashed var(--bd); padding-top:8px;">
+                            1. اذهب لـ <b>إدارة الإعلانات والتكليفات</b>.<br>
+                            2. استخدم شريط الأدوات بالضغط على <b>"🎯 موضوع (@)"</b> أو <b>"• نقطة"</b>.<br>
+                            3. اختر اسم الموظف من القائمة المنسدلة لإدراج <b>@اسم الموظف</b> فتصل له كبادج وتنبيه فوري.
+                        </div>
+                    </div>
+
+                    <div style="background:var(--w); border:1.5px solid var(--bd); border-radius:16px; padding:16px; box-shadow:0 3px 12px rgba(0,0,0,0.03);">
+                        <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:8px;">
+                            <strong style="font-size:15px; font-weight:900; color:#6366f1; display:flex; align-items:center; gap:8px;">
+                                <span>📊</span> كيف أتابـع التقارير الأسبوعية والشهرية للموظفين؟
+                            </strong>
+                            <button type="button" onclick="document.getElementById('${modalId}').remove(); if(typeof go==='function') go('wkr');" class="bt" style="background:linear-gradient(135deg, #6366f1, #4f46e5); color:#fff; font-size:12px; padding:6px 14px; border-radius:20px; font-weight:800; border:none; cursor:pointer;">الذهاب لـ التقارير 🚀</button>
+                        </div>
+                        <div style="font-size:13px; line-height:1.7; color:var(--tx2); font-weight:700; margin-top:10px; border-top:1px dashed var(--bd); padding-top:8px;">
+                            1. افتح صفحة <b>إدارة التقارير المدمجة (WR & MR)</b>.<br>
+                            2. استعرض التقارير المقدمة واضغط على <b>"عرض التفاصيل والبنود"</b>.<br>
+                            3. اضغط على <b>"اعتماد التقرير"</b> أو <b>"إرجاع للتعديل"</b> أو اضغط <b>"🔔 تذكير الموظفين بالتقرير الأسبوعي"</b>.
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div style="padding:16px 24px; background:var(--bg); border-top:1.5px solid var(--bd); display:flex; justify-content:flex-end; border-radius:0 0 22px 22px;">
+                <button type="button" onclick="document.getElementById('${modalId}').remove()" class="bt" style="background:#334155; color:#fff; padding:10px 24px; border-radius:30px; font-weight:bold; cursor:pointer;">فهمت، إغلاق النافذة</button>
+            </div>
+        </div>
+    </div>
+    `;
+
+    var div = document.createElement('div');
+    div.innerHTML = html;
+    document.body.appendChild(div.firstElementChild);
+};
+
 window.tgInitAdminReportNotificationsListener = function() {
     var targetDb = window.db || (typeof db !== 'undefined' ? db : (window.firebase ? firebase.firestore() : null));
     if (!targetDb) {

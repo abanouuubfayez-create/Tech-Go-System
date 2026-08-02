@@ -818,7 +818,7 @@
           '<div>' +
             '<div style="font-size:17px; font-weight:900; color:var(--tx); margin-bottom:4px;">' + escH(r.type || 'طلب نموذج') + '</div>' +
             '<div style="font-size:13px; color:var(--tx2); font-weight:700;">' +
-              '👤 <b>' + escH(r.userName || r.name || r.targetName || 'موظف') + '</b>' + (r.dept ? ' | ' + escH(r.dept) : '') + (dateStr ? ' | 📅 ' + dateStr : '') +
+              '<span style="background:rgba(2,132,199,0.12); color:#0284c7; padding:3px 10px; border-radius:12px; font-weight:800;">👤 ' + escH(typeof tgGetRealEmpName === 'function' ? tgGetRealEmpName(r.userName || r.name || r.targetName, r.uid || r.targetUid) : (r.userName || r.name || r.targetName || 'موظف')) + '</span>' + (r.dept ? ' | 🏢 ' + escH(r.dept) : '') + (dateStr ? ' | 📅 ' + dateStr : '') +
             '</div>' +
           '</div>' +
           '<span class="badge" style="background:' + badgeBg + '; color:#ffffff; font-size:12.5px; font-weight:900; padding:5px 14px; border-radius:30px;">' + badgeText + '</span>' +
@@ -919,7 +919,7 @@
         '</div>' +
 
         '<div style="background:#f8fafc; border:1px solid #cbd5e1; border-radius:12px; padding:16px; margin-bottom:20px; font-size:14px; line-height:1.8;">' +
-          '<div style="margin-bottom:8px;"><strong>👤 اسم الموظف:</strong> ' + escH(item.userName || item.name || item.targetName || '—') + '</div>' +
+          '<div style="margin-bottom:8px;"><strong>👤 اسم الموظف:</strong> ' + escH(typeof tgGetRealEmpName === 'function' ? tgGetRealEmpName(item.userName || item.name || item.targetName, item.uid || item.targetUid) : (item.userName || item.name || item.targetName || '—')) + '</div>' +
           (item.dept ? '<div style="margin-bottom:8px;"><strong>🏢 القسم / الإدارة:</strong> ' + escH(item.dept) + '</div>' : '') +
           (item.fromDate ? '<div style="margin-bottom:8px;"><strong>📅 الفترة:</strong> من ' + item.fromDate + ' إلى ' + (item.toDate || '—') + ' (' + (item.days || 1) + ' أيام)</div>' : '') +
           (item.details ? '<div style="margin-bottom:8px; white-space:pre-line;"><strong>📌 تفاصيل الطلب:</strong><br>' + escH(item.details) + '</div>' : '') +
