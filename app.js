@@ -4051,14 +4051,17 @@ function load(id,c){
         h='<div style="background:var(--w);border:1px solid var(--bd);border-radius:6px;padding:20px">';
         h+='<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px;flex-wrap:wrap;gap:10px">';
         h+='<div><h2 style="margin:0;color:var(--nv);font-size:18px">📡 سجل الحضور الحي (مباشر)</h2><p style="margin:4px 0 0;color:var(--tx3);font-size:13px">يعرض حركات تسجيل الدخول والخروج من حسابات الموظفين مباشرة</p></div>';
-        h+='<div style="display:flex;gap:10px;align-items:center"><input type="date" id="liveAttDate" value="'+todayDate+'" onchange="fetchLiveAttendance()" style="padding:8px 12px;border-radius:6px;border:1px solid var(--bd);outline:none;font-family:inherit"><button class="bt bt-o" onclick="fetchLiveAttendance()">🔄 تحديث</button></div>';
+        h+='<div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap"><button id="tgToggleAttFeatureBtn" onclick="tgQuickToggleAttendanceSystem()" class="bt" style="padding:8px 14px; border-radius:8px; font-weight:800; font-size:12px; cursor:pointer; display:flex; align-items:center; gap:6px;">⏳ جارٍ التحديث...</button><input type="date" id="liveAttDate" value="'+todayDate+'" onchange="fetchLiveAttendance()" style="padding:8px 12px;border-radius:6px;border:1px solid var(--bd);outline:none;font-family:inherit"><button class="bt bt-o" onclick="fetchLiveAttendance()">🔄 تحديث</button></div>';
         h+='</div>';
         h+='<div style="overflow-x:auto"><table class="dt" style="width:100%;text-align:center" id="liveAttTable">';
         h+='<thead><tr><th style="text-align:center">اسم الموظف</th><th style="text-align:center">تاريخ اليوم</th><th style="text-align:center">وقت الدخول</th><th style="text-align:center">وقت الخروج</th><th style="text-align:center">ساعات العمل</th></tr></thead>';
         h+='<tbody id="liveAttBody"><tr><td colspan="5" style="padding:20px;color:var(--tx3)">جارٍ جلب البيانات...</td></tr></tbody>';
         h+='</table></div>';
         h+='</div>';
-        setTimeout(function(){ if(typeof window.fetchLiveAttendance === 'function') window.fetchLiveAttendance(); }, 100);
+        setTimeout(function(){ 
+            if(typeof window.fetchLiveAttendance === 'function') window.fetchLiveAttendance(); 
+            if(typeof window.tgSyncAttendanceToggleBtnUI === 'function') window.tgSyncAttendanceToggleBtnUI();
+        }, 100);
     }
 
     // ── الشكاوى والمقترحات ─────────────────────────────────────────────
@@ -6225,6 +6228,52 @@ window.fetchLiveAttendance = async function() {
         console.error("fetchLiveAttendance error:", e);
         tbody.innerHTML = '<tr><td colspan="5" style="padding:20px;color:red">حدث خطأ أثناء جلب البيانات</td></tr>';
     }
+};
+
+window.tgSyncAttendanceToggleBtnUI = function() {
+    var btn = document.getElementById('tgToggleAttFeatureBtn');
+    if (!btn) return;
+    var isEnabled = (window._appSettingsCache && window._appSettingsCache.attendanceEnabled !== false);
+    if (isEnabled) {
+        btn.style.background = 'rgba(16,185,129,0.12)';
+        btn.style.color = '#059669';
+        btn.style.border = '1.5px solid #10b981';
+        btn.innerHTML = '🟢 ميزة الحضور مفعّلة للموظفين (انقر للتعطيل)';
+    } else {
+        btn.style.background = 'rgba(239,68,68,0.12)';
+        btn.style.color = '#dc2626';
+        btn.style.border = '1.5px solid #ef4444';
+        btn.innerHTML = '🔴 ميزة الحضور معطّلة للموظفين (انقر للتفعيل)';
+    }
+};
+
+window.tgQuickToggleAttendanceSystem = function() {
+    var current = !(window._appSettingsCache && window._appSettingsCache.attendanceEnabled === false);
+    var nextState = !current;
+    
+    if (!window._appSettingsCache) window._appSettingsCache = {};
+    window._appSettingsCache.attendanceEnabled = nextState;
+    
+    tgSyncAttendanceToggleBtnUI();
+    
+    db.collection('system').doc('appSettings').set({
+        attendanceEnabled: nextState
+    }, { merge: true }).then(function() {
+        if (typeof tgToast === 'function') {
+            if (nextState) tgToast('🟢 تم تفعيل خدمة الحضور والانصراف للموظفين بنجاح', 'ok');
+            else tgToast('🔴 تم إيقاف خدمة الحضور والانصراف للموظفين', 'warn');
+        }
+    }).catch(function(err) {
+        window._appSettingsCache.attendanceEnabled = current;
+        tgSyncAttendanceToggleBtnUI();
+        if (typeof tgToast === 'function') tgToast('تعذر التحديث: ' + err.message, 'err');
+    });
+};
+
+var prevOnAppSettingsUpdate = window.onAppSettingsUpdate;
+window.onAppSettingsUpdate = function(settings) {
+    if (typeof prevOnAppSettingsUpdate === 'function') prevOnAppSettingsUpdate(settings);
+    if (typeof tgSyncAttendanceToggleBtnUI === 'function') tgSyncAttendanceToggleBtnUI();
 };
 
 // ─── بروفايل الموظف المنظم ──────────────────────────────────────────
