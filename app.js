@@ -12789,7 +12789,7 @@ window.tgOpenSystemGuideModal = function(initialQuery) {
     if (document.getElementById(modalId)) document.getElementById(modalId).remove();
 
     var html = `
-    <div id="${modalId}" style="position:fixed; top:0; left:0; right:0; bottom:0; background:rgba(15,23,42,0.88); z-index:999999; display:flex; justify-content:center; align-items:center; padding:16px; backdrop-filter:blur(12px); font-family:sans-serif; direction:rtl; text-align:right;">
+    <div id="${modalId}" onclick="if(event.target===this) this.remove();" style="position:fixed; top:0; left:0; right:0; bottom:0; background:rgba(15,23,42,0.88); z-index:999999; display:flex; justify-content:center; align-items:center; padding:16px; backdrop-filter:blur(12px); font-family:sans-serif; direction:rtl; text-align:right;">
         <div style="background:var(--bg2); border:2px solid #3b82f6; border-radius:24px; width:100%; max-width:720px; max-height:90vh; overflow-y:auto; box-shadow:0 25px 60px rgba(0,0,0,0.5); display:flex; flex-direction:column; color:var(--tx);">
             
             <div style="padding:20px 24px; border-bottom:1.5px solid var(--bd); background:linear-gradient(135deg, rgba(59,130,246,0.12), rgba(16,185,129,0.06)); display:flex; justify-content:space-between; align-items:center; border-radius:22px 22px 0 0;">
@@ -12938,3 +12938,23 @@ if (document.readyState === 'complete' || document.readyState === 'interactive')
 setTimeout(tgEnsureRequestsCenterInSidebar, 100);
 setTimeout(tgEnsureRequestsCenterInSidebar, 500);
 setTimeout(tgEnsureRequestsCenterInSidebar, 1500);
+
+// ── Global Overlay & Modal Safety (Dismiss on Backdrop Click & ESC Key) ──
+document.addEventListener('click', function(e) {
+    if (e.target && e.target.id && (e.target.id.indexOf('ModalOverlay') !== -1 || e.target.id.indexOf('Overlay') !== -1)) {
+        if (typeof e.target.remove === 'function') e.target.remove();
+        else e.target.style.display = 'none';
+    }
+});
+
+document.addEventListener('keydown', function(e) {
+    if (e.key === 'Escape') {
+        var overlays = document.querySelectorAll('[id*="Overlay"], [id*="modal-overlay"]');
+        overlays.forEach(function(el) {
+            if (el.style.display !== 'none') {
+                if (typeof el.remove === 'function') el.remove();
+                else el.style.display = 'none';
+            }
+        });
+    }
+});
