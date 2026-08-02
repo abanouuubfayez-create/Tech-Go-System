@@ -6150,6 +6150,34 @@ function initAdminCalendar() {
     calendar.render();
 }
 
+window.tgFormatWorkHours = function(checkIn, checkOut, dateStr) {
+    if (!checkIn || !checkOut || checkIn === '-' || checkOut === '—') return '—';
+    try {
+        var baseDate = dateStr || '2026-01-01';
+        var d1 = new Date(baseDate + 'T' + checkIn);
+        var d2 = new Date(baseDate + 'T' + checkOut);
+        if (d2 < d1) d2.setDate(d2.getDate() + 1);
+        
+        var diffMs = d2 - d1;
+        if (isNaN(diffMs) || diffMs <= 0) return '0 دقيقة';
+        
+        var totalMinutes = Math.floor(diffMs / 60000);
+        var hours = Math.floor(totalMinutes / 60);
+        var minutes = totalMinutes % 60;
+        
+        if (hours > 0 && minutes > 0) {
+            var hLabel = (hours === 1) ? 'ساعة' : (hours === 2 ? 'ساعتان' : (hours >= 3 && hours <= 10 ? hours + ' ساعات' : hours + ' ساعة'));
+            return hLabel + ' و ' + minutes + ' دقيقة';
+        } else if (hours > 0) {
+            return (hours === 1) ? 'ساعة واحدة' : (hours === 2 ? 'ساعتان' : (hours >= 3 && hours <= 10 ? hours + ' ساعات' : hours + ' ساعة'));
+        } else {
+            return minutes + ' دقيقة';
+        }
+    } catch(e) {
+        return '—';
+    }
+};
+
 window.fetchLiveAttendance = async function() {
     var tbody = document.getElementById('liveAttBody');
     var dateInput = document.getElementById('liveAttDate');
@@ -6180,22 +6208,14 @@ window.fetchLiveAttendance = async function() {
         logs.forEach(function(log) {
             var checkIn = log.checkIn || '—';
             var checkOut = log.checkOut || '—';
-            var hours = '—';
-            
-            if(log.checkIn && log.checkOut) {
-                var t1 = new Date("2000-01-01T" + log.checkIn + ":00");
-                var t2 = new Date("2000-01-01T" + log.checkOut + ":00");
-                var diff = (t2 - t1) / 3600000;
-                if(diff < 0) diff += 24;
-                hours = diff > 0 ? diff.toFixed(1) + ' ساعة' : '—';
-            }
+            var hours = tgFormatWorkHours(log.checkIn, log.checkOut, log.date);
             
             html += '<tr>' +
                 '<td style="font-weight:bold;color:var(--nv)">' + (log.name || 'مجهول') + '</td>' +
                 '<td>' + log.date + '</td>' +
                 '<td style="color:#059669;font-weight:bold">' + checkIn + '</td>' +
                 '<td style="color:#dc2626;font-weight:bold">' + checkOut + '</td>' +
-                '<td style="font-weight:bold">' + hours + '</td>' +
+                '<td style="font-weight:bold;color:#0284c7">' + hours + '</td>' +
                 '</tr>';
         });
         
