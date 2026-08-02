@@ -9177,6 +9177,230 @@ window.loadMonthlyPlansAdmin = function(container) {
     `;
 
     tgRenderMonthlyPlansAdmin();
+};
+
+window._mpAdminDataCache = [];
+window._mpAdminUnsub = null;
+
+window.tgRenderMonthlyPlansAdmin = function() {
+    var listEl = document.getElementById('mpAdminList');
+    if (!listEl || !window.db) return;
+
+    if (window._mpAdminUnsub) {
+        try { window._mpAdminUnsub(); } catch(e){}
+    }
+
+    listEl.innerHTML = '<div style="text-align:center; padding:35px; color:var(--tx2); font-weight:bold;">⏳ جاري تحميل الخطط الشهرية...</div>';
+
+    window._mpAdminUnsub = db.collection('monthly_plans').onSnapshot(function(snap) {
+        var plans = [];
+        snap.forEach(function(doc) {
+            var data = doc.data();
+            data.id = doc.id;
+            plans.push(data);
+        });
+
+        plans.sort(function(a, b) {
+            if (a.type === 'executive_master') return -1;
+            if (b.type === 'executive_master') return 1;
+            var tA = a.createdAt && a.createdAt.seconds ? a.createdAt.seconds : 0;
+            var tB = b.createdAt && b.createdAt.seconds ? b.createdAt.seconds : 0;
+            return tB - tA;
+        });
+
+        window._mpAdminDataCache = plans;
+        renderMonthlyPlansAdminListHTML();
+    }, function(err) {
+        listEl.innerHTML = '<div style="color:var(--no); text-align:center; padding:30px;">❌ تعذر تحميل الخطط: ' + err.message + '</div>';
+    });
+};
+
+window.renderMonthlyPlansAdminListHTML = function() {
+    var listEl = document.getElementById('mpAdminList');
+    if (!listEl) return;
+
+    var plans = window._mpAdminDataCache || [];
+
+    var searchVal = (document.getElementById('mpAdminSearch') ? document.getElementById('mpAdminSearch').value : '').toLowerCase().trim();
+    var deptVal = document.getElementById('mpAdminDeptFilter') ? document.getElementById('mpAdminDeptFilter').value : 'all';
+
+    var filtered = plans.filter(function(p) {
+        if (deptVal !== 'all') {
+            var d = (p.department || p.userRole || '').toLowerCase();
+            if (deptVal === 'sales' && d.indexOf('مبيعات') === -1 && d.indexOf('سلز') === -1) return false;
+            if (deptVal === 'prog' && d.indexOf('برمجة') === -1 && d.indexOf('تطبيق') === -1 && d.indexOf('تطوير') === -1 && d.indexOf('باك') === -1 && d.indexOf('فرونت') === -1) return false;
+            if (deptVal === 'hr' && d.indexOf('موارد') === -1 && d.indexOf('hr') === -1) return false;
+            if (deptVal === 'mkt' && d.indexOf('تسويق') === -1 && d.indexOf('ماركتنج') === -1) return false;
+        }
+
+        if (searchVal) {
+            var tStr = (p.title || '').toLowerCase();
+            var cStr = (p.creatorName || p.userName || '').toLowerCase();
+            var dStr = (p.department || '').toLowerCase();
+            var mStr = (p.monthYear || '').toLowerCase();
+            if (tStr.indexOf(searchVal) === -1 && cStr.indexOf(searchVal) === -1 && dStr.indexOf(searchVal) === -1 && mStr.indexOf(searchVal) === -1) {
+                return false;
+            }
+        }
+        return true;
+    });
+
+    var totalCount = plans.length;
+    var masterCount = plans.filter(function(p){ return p.type === 'executive_master'; }).length;
+    var completedCount = plans.filter(function(p){ return (p.progress || 0) >= 100; }).length;
+    var activeCount = totalCount - completedCount;
+
+    var html = `
+        <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(180px, 1fr)); gap:14px; margin-bottom:20px;">
+            <div style="background:var(--w); border:1.5px solid var(--bd); padding:16px; border-radius:16px; box-shadow:0 4px 15px rgba(0,0,0,0.03); display:flex; align-items:center; justify-content:space-between;">
+                <div>
+                    <div style="font-size:12px; font-weight:700; color:var(--tx2);">📋 عدد الخطط المتاحة</div>
+                    <div style="font-size:24px; font-weight:900; color:var(--tx); margin-top:2px;">${totalCount}</div>
+                </div>
+                <div style="font-size:32px;">🎯</div>
+            </div>
+            <div style="background:rgba(245,158,11,0.08); border:1.5px solid rgba(245,158,11,0.3); padding:16px; border-radius:16px; display:flex; align-items:center; justify-content:space-between;">
+                <div>
+                    <div style="font-size:12px; font-weight:700; color:#d97706;">⭐ خطط استراتيجية تجميعية</div>
+                    <div style="font-size:24px; font-weight:900; color:#d97706; margin-top:2px;">${masterCount}</div>
+                </div>
+                <div style="font-size:32px;">✨</div>
+            </div>
+            <div style="background:rgba(16,185,129,0.08); border:1.5px solid rgba(16,185,129,0.3); padding:16px; border-radius:16px; display:flex; align-items:center; justify-content:space-between;">
+                <div>
+                    <div style="font-size:12px; font-weight:700; color:#10b981;">✅ خطط مكتملة (100%)</div>
+                    <div style="font-size:24px; font-weight:900; color:#10b981; margin-top:2px;">${completedCount}</div>
+                </div>
+                <div style="font-size:32px;">🏆</div>
+            </div>
+            <div style="background:rgba(59,130,246,0.08); border:1.5px solid rgba(59,130,246,0.3); padding:16px; border-radius:16px; display:flex; align-items:center; justify-content:space-between;">
+                <div>
+                    <div style="font-size:12px; font-weight:700; color:#3b82f6;">⚡ خطط قيد التنفيذ</div>
+                    <div style="font-size:24px; font-weight:900; color:#3b82f6; margin-top:2px;">${activeCount}</div>
+                </div>
+                <div style="font-size:32px;">🚀</div>
+            </div>
+        </div>
+
+        <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:12px; margin-bottom:20px; background:var(--bg2); padding:14px 18px; border-radius:16px; border:1.5px solid var(--bd);">
+            <div style="display:flex; gap:10px; flex-wrap:wrap; flex:1; max-width:600px;">
+                <input type="text" id="mpAdminSearch" value="${searchVal}" oninput="renderMonthlyPlansAdminListHTML()" placeholder="🔍 ابحث باسم الخطة، الموظف، أو القسم..." style="flex:1; min-width:200px; padding:10px 14px; border-radius:10px; border:1.5px solid var(--bd); background:var(--bg); color:var(--tx); font-weight:700; outline:none; font-size:13px;">
+                <select id="mpAdminDeptFilter" onchange="renderMonthlyPlansAdminListHTML()" style="width:180px; padding:10px; border-radius:10px; border:1.5px solid var(--bd); background:var(--bg); color:var(--tx); font-weight:700; outline:none; font-size:13px;">
+                    <option value="all" ${deptVal==='all'?'selected':''}>كل الأقسام</option>
+                    <option value="sales" ${deptVal==='sales'?'selected':''}>المبيعات والـ Sales</option>
+                    <option value="prog" ${deptVal==='prog'?'selected':''}>البرمجة والتطوير</option>
+                    <option value="hr" ${deptVal==='hr'?'selected':''}>الموارد البشرية HR</option>
+                    <option value="mkt" ${deptVal==='mkt'?'selected':''}>التسويق والإعلام</option>
+                </select>
+            </div>
+            <div style="display:flex; gap:10px;">
+                <button type="button" onclick="tgExpandAllCards('mpAdminList')" class="bt bt-o" style="font-size:12.5px; padding:8px 16px; border-radius:20px; font-weight:800; cursor:pointer;">📂 فتح جميع الكروت</button>
+                <button type="button" onclick="tgCollapseAllCards('mpAdminList')" class="bt bt-o" style="font-size:12.5px; padding:8px 16px; border-radius:20px; font-weight:800; cursor:pointer;">📁 طي جميع الكروت</button>
+            </div>
+        </div>
+    `;
+
+    if (filtered.length === 0) {
+        html += `
+            <div style="background:var(--bg2); border:1.5px dashed var(--bd); padding:40px; text-align:center; border-radius:16px; color:var(--tx2); font-weight:bold; font-size:14.5px;">
+                📭 لا توجد خطط شهرية تطابق عناصر التصفية والبحث المحددة.
+            </div>
+        `;
+        listEl.innerHTML = html;
+        return;
+    }
+
+    filtered.forEach(function(p, pIdx) {
+        var isExecMaster = (p.type === 'executive_master');
+        var tasks = p.tasks || [];
+        var completedTasks = tasks.filter(function(t){ return t.done; }).length;
+        var progress = tasks.length > 0 ? Math.round((completedTasks / tasks.length) * 100) : (p.progress || 0);
+
+        var progressColor = progress >= 80 ? '#10b981' : (progress >= 40 ? '#3b82f6' : '#f59e0b');
+
+        var cardBorder = isExecMaster ? '2px solid #f59e0b' : '1.5px solid var(--bd)';
+        var cardBg = isExecMaster ? 'linear-gradient(135deg, rgba(245,158,11,0.04), var(--w))' : 'var(--w)';
+
+        html += `
+            <div class="card p-3 mb-3" style="background:${cardBg}; border:${cardBorder}; border-radius:20px; box-shadow:0 6px 22px rgba(0,0,0,0.04); padding:22px; margin-bottom:20px; transition:transform 0.2s, box-shadow 0.2s;">
+                <div style="display:flex; justify-content:space-between; align-items:flex-start; flex-wrap:wrap; gap:14px;">
+                    <div>
+                        <div style="display:flex; align-items:center; gap:10px; flex-wrap:wrap; margin-bottom:8px;">
+                            <h3 style="font-size:19px; font-weight:900; color:var(--tx); margin:0;">📌 ${p.title || 'خطة شهرية'}</h3>
+                            ${isExecMaster ? '<span style="background:linear-gradient(135deg, #f59e0b, #d97706); color:#fff; font-size:12px; font-weight:900; padding:4px 14px; border-radius:20px; box-shadow:0 3px 10px rgba(245,158,11,0.3);">✨ خطة استراتيجية تجميعية</span>' : ''}
+                        </div>
+                        <div style="display:flex; gap:10px; flex-wrap:wrap; font-size:13px; font-weight:800; color:var(--tx2); margin-top:6px;">
+                            <span style="color:#0284c7; background:rgba(2,132,199,0.1); padding:4px 12px; border-radius:8px; border:1px solid rgba(2,132,199,0.25);">👤 الموظف (الراسل): <b>${p.creatorName || p.userName || 'غير مخصص'}</b></span>
+                            <span style="color:#10b981; background:rgba(16,185,129,0.1); padding:4px 12px; border-radius:8px; border:1px solid rgba(16,185,129,0.25);">🏢 القسم: <b>${p.department || p.userRole || 'قسم عام'}</b></span>
+                            <span style="color:#f59e0b; background:rgba(245,158,11,0.1); padding:4px 12px; border-radius:8px; border:1px solid rgba(245,158,11,0.25);">📅 الشهر: <b>${p.monthYear || ''}</b></span>
+                        </div>
+                    </div>
+
+                    <div style="display:flex; align-items:center; gap:12px;">
+                        <span class="badge" style="background:${progressColor}; color:#fff; font-size:13px; font-weight:900; padding:6px 18px; border-radius:30px; box-shadow:0 4px 12px ${progressColor}44;">إنجاز ${progress}%</span>
+                        <button type="button" onclick="tgToggleCardDetails('mp-admin-body-${p.id}', this)" class="tg-toggle-btn bt bt-o" style="font-size:13px; padding:7px 18px; border-radius:20px; font-weight:800; cursor:pointer;">
+                            ${pIdx === 0 ? '🔼 إخفاء التفاصيل' : '🔽 عرض التفاصيل والبنود'}
+                        </button>
+                    </div>
+                </div>
+
+                <div id="mp-admin-body-${p.id}" class="tg-card-body" style="display:${pIdx === 0 ? 'block' : 'none'}; margin-top:18px; border-top:1.5px dashed var(--bd); padding-top:18px;">
+                    <div style="background:var(--bg2); border:1.5px solid var(--bd); height:14px; border-radius:10px; overflow:hidden; margin-bottom:16px;">
+                        <div style="background:linear-gradient(90deg, ${progressColor}, #34d399); height:100%; width:${progress}%; transition:width 0.5s ease-in-out;"></div>
+                    </div>
+
+                    <div style="background:rgba(59,130,246,0.06); border:1.5px solid rgba(59,130,246,0.2); border-radius:14px; padding:16px; margin-bottom:16px;">
+                        <strong style="color:#3b82f6; font-size:14.5px; font-weight:900; display:block; margin-bottom:6px;">📌 الملخص والاستراتيجية المطلوبة:</strong>
+                        <div style="white-space:pre-line; line-height:1.7; color:var(--tx); font-weight:700; font-size:13.5px;">${p.objectives || p.execSummary || 'لا يوجد سياق أو ملخص مسجل'}</div>
+                    </div>
+
+                    ${tasks.length > 0 ? `
+                        <div style="background:var(--bg2); padding:16px; border-radius:14px; border:1.5px solid var(--bd); margin-bottom:16px;">
+                            <strong style="color:var(--tx); font-size:14px; font-weight:900; display:block; margin-bottom:12px;">✅ قائمة البنود والمستهدفات التفصيلية (${completedTasks} من ${tasks.length}):</strong>
+                            <div style="display:flex; flex-direction:column; gap:8px;">
+                                ${tasks.map(function(t, tIdx) {
+                                    return `
+                                        <div style="font-size:13.5px; padding:10px 14px; background:var(--w); border:1.5px solid var(--bd); border-radius:10px; color:${t.done ? '#10b981' : 'var(--tx)'}; font-weight:${t.done ? '800' : '600'}; display:flex; justify-content:space-between; align-items:center;">
+                                            <div style="display:flex; align-items:center; gap:10px;">
+                                                <span style="font-size:16px;">${t.done ? '✅' : '⏳'}</span>
+                                                <span style="${t.done ? 'text-decoration:line-through; opacity:0.8;' : ''}">${t.title}</span>
+                                            </div>
+                                            <div style="display:flex; gap:8px; align-items:center;">
+                                                ${t.kpi ? '<span style="font-size:11px; background:rgba(16,185,129,0.15); color:#10b981; padding:3px 10px; border-radius:6px; font-weight:800; border:1px solid rgba(16,185,129,0.3);">KPI: ' + t.kpi + '</span>' : ''}
+                                                <span style="font-size:11px; background:rgba(59,130,246,0.15); color:#3b82f6; padding:3px 10px; border-radius:6px; font-weight:800; border:1px solid rgba(59,130,246,0.3);">${t.week || 'أسبوع'}</span>
+                                            </div>
+                                        </div>
+                                    `;
+                                }).join('')}
+                            </div>
+                        </div>
+                    ` : ''}
+
+                    <div style="display:flex; justify-content:flex-end; gap:10px; border-top:1px solid var(--bd); padding-top:14px; flex-wrap:wrap;">
+                        <button type="button" onclick="tgOpenEditMonthlyPlanModal('${p.id}')" class="bt" style="background:linear-gradient(135deg, #3b82f6, #1d4ed8); color:#fff; font-size:13px; padding:9px 22px; font-weight:900; border:none; border-radius:30px; box-shadow:0 4px 14px rgba(59,130,246,0.35); cursor:pointer;">✏️ تعديل الخطة و KPIs</button>
+                        <button type="button" onclick="tgPrintMonthlyPlan('${p.id}')" class="bt bt-o" style="font-size:13px; padding:9px 22px; font-weight:800; border-radius:30px; cursor:pointer;">🖨 طباعة الخطة MP</button>
+                        <button type="button" onclick="tgDeleteMonthlyPlan('${p.id}')" class="bt bt-o" style="border-color:#ef4444; color:#ef4444; font-size:13px; padding:9px 20px; font-weight:800; border-radius:30px; cursor:pointer;">🗑 حذف الخطة</button>
+                    </div>
+                </div>
+            </div>
+        `;
+    });
+
+    listEl.innerHTML = html;
+};
+
+window.tgDeleteMonthlyPlan = function(planId) {
+    if (!planId || !window.db) return;
+    if (!confirm('⚠️ هل أنت محقق من محاولة حذف هذه الخطة الشهرية نهائياً؟')) return;
+
+    db.collection('monthly_plans').doc(planId).delete().then(function() {
+        if (typeof tgToast === 'function') tgToast('🗑 تم حذف الخطة الشهرية بنجاح', 'ok');
+        else alert('🗑 تم حذف الخطة الشهرية بنجاح');
+        tgRenderMonthlyPlansAdmin();
+    }).catch(function(err) {
+        alert('❌ فشل حذف الخطة: ' + err.message);
+    });
+};
 
 
 window.tgRenderMonthlyPlansEmp = function() {
@@ -9676,33 +9900,6 @@ window.tgSaveEditedMonthlyPlan = function(event, planId) {
         if (typeof loadMonthlyPlansEmp === 'function') loadMonthlyPlansEmp();
     }).catch(function(err) {
         alert('❌ خطأ أثناء حفظ التعديلات: ' + err.message);
-    });
-};
-
-    var completedCount = tasks.filter(function(t){ return t.done; }).length;
-    var progress = tasks.length > 0 ? Math.round((completedCount / tasks.length) * 100) : 0;
-
-    var updateData = {
-        title: title,
-        monthYear: monthYear,
-        department: department,
-        objectives: objectives,
-        tasks: tasks,
-        progress: progress,
-        updatedAt: firebase.firestore.FieldValue.serverTimestamp()
-    };
-
-    db.collection('monthly_plans').doc(planId).update(updateData).then(function() {
-        if (typeof tgToast === 'function') tgToast('✅ تم حفظ تعديلات الخطة الشهرية بنجاح', 'ok');
-        else alert('✅ تم حفظ التعديلات بنجاح');
-
-        var overlay = document.getElementById('editMpModalOverlay');
-        if (overlay) overlay.remove();
-
-        if (typeof tgRenderMonthlyPlansAdmin === 'function') tgRenderMonthlyPlansAdmin();
-        if (typeof tgRenderMonthlyPlansEmp === 'function') tgRenderMonthlyPlansEmp();
-    }).catch(function(err) {
-        alert('❌ فشل حفظ التعديلات: ' + err.message);
     });
 };
 
