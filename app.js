@@ -4628,17 +4628,34 @@ function renderAllRequestsListHub() {
              (r.details ? ('<div style="margin-top:8px;font-size:13px;line-height:1.6;color:var(--tx);background:var(--bg2);padding:10px;border-radius:8px">' + escH(r.details) + '</div>') : '') +
              dh + attachHtml +
              (r.reviewedBy ? ('<div style="margin-top:8px;font-size:11px;color:var(--tx3)">تمت المراجعة بواسطة: ' + escH(r.reviewedBy) + '</div>') : '') +
-             (st === 'pending' ? (
-                 '  <div style="margin-top:12px;display:flex;gap:8px;border-top:1px dashed var(--bd);padding-top:12px">' +
-                 '    <button class="bt bt-p" style="padding:7px 18px;font-size:12px;font-weight:700" onclick="reviewRequestHub(\'' + r.id + '\',\'approved\')">✔ موافقة على الطلب</button>' +
-                 '    <button class="bt bt-d" style="padding:7px 18px;font-size:12px;font-weight:700" onclick="reviewRequestHub(\'' + r.id + '\',\'rejected\')">✕ رفض الطلب</button>' +
-                 '  </div>'
-             ) : '') +
+             '  <div style="margin-top:12px;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px;border-top:1px dashed var(--bd);padding-top:12px">' +
+             '    <div style="display:flex;gap:8px">' +
+                    (st === 'pending' ? (
+                        '<button class="bt bt-p" style="padding:7px 18px;font-size:12px;font-weight:700" onclick="reviewRequestHub(\'' + r.id + '\',\'approved\')">✔ موافقة على الطلب</button>' +
+                        '<button class="bt bt-d" style="padding:7px 18px;font-size:12px;font-weight:700" onclick="reviewRequestHub(\'' + r.id + '\',\'rejected\')">✕ رفض الطلب</button>'
+                    ) : '') +
+             '    </div>' +
+             '    <div>' +
+             '      <button class="bt bt-o" style="padding:6px 14px;font-size:12px;font-weight:800;border-radius:20px;" onclick="tgPrintRequestFromHub(\'' + r.id + '\')">🖨 طباعة الطلب الرسمية</button>' +
+             '    </div>' +
+             '  </div>' +
              '</div>';
     });
     h += '</div>';
     container.innerHTML = h;
 }
+
+window.tgPrintRequestFromHub = function(reqId) {
+    if (!reqId) return;
+    var r = (window._reqHubDataCache || []).find(function(x) { return x.id === reqId; });
+    if (!r) return;
+    var empMatch = (window._staffEmpCache || []).find(function(e) { return e.uid === r.uid; }) || { name: r.userName || 'موظف' };
+    if (typeof printRequestDoc === 'function') {
+        printRequestDoc(empMatch, r);
+    } else {
+        window.print();
+    }
+};
 
 function reviewRequestHub(reqId, newStatus) {
     if(!reqId) return;
