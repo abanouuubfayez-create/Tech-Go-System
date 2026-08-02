@@ -64,7 +64,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Alexandria:wght@300;400;500;600;700;800;900&family=Cairo:wght@400;600;700;800;900&family=Tajawal:wght@400;500;700;800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="styles.css?v=1785676275">
+<link rel="stylesheet" href="styles.css?v=1785680082">
 <link rel="manifest" href="manifest.json">
 <link rel="icon" type="image/png" sizes="192x192" href="icon-192.png">
 <link rel="apple-touch-icon" href="icon-192.png">
@@ -72,10 +72,10 @@
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-storage-compat.js"></script>
-<script src="firebase-config.js?v=1785676275"></script>
-<script src="auth.js?v=1785676275"></script>
-<script src="app.js?v=1785676275"></script>
-<script src="formsend.js?v=1785676275"></script>
+<script src="firebase-config.js?v=1785680082"></script>
+<script src="auth.js?v=1785680082"></script>
+<script src="app.js?v=1785680082"></script>
+<script src="formsend.js?v=1785680082"></script>
 <script>
     (function() {
         const theme = localStorage.getItem('tg-theme') || 'light';
@@ -2089,6 +2089,35 @@ tgRequireAuth('employee', function(u){
 
 // ─── حضور وانصراف الموظف ────────────────────────────────────────────────
 var _todayAttDocId = null;
+
+window.tgFormatWorkHours = function(checkIn, checkOut, dateStr) {
+    if (!checkIn || !checkOut || checkIn === '-' || checkOut === '-') return '-';
+    try {
+        var baseDate = dateStr || '2026-01-01';
+        var d1 = new Date(baseDate + 'T' + checkIn);
+        var d2 = new Date(baseDate + 'T' + checkOut);
+        if (d2 < d1) d2.setDate(d2.getDate() + 1);
+        
+        var diffMs = d2 - d1;
+        if (isNaN(diffMs) || diffMs <= 0) return '0 دقيقة';
+        
+        var totalMinutes = Math.floor(diffMs / 60000);
+        var hours = Math.floor(totalMinutes / 60);
+        var minutes = totalMinutes % 60;
+        
+        if (hours > 0 && minutes > 0) {
+            var hLabel = (hours === 1) ? 'ساعة' : (hours === 2 ? 'ساعتان' : (hours >= 3 && hours <= 10 ? hours + ' ساعات' : hours + ' ساعة'));
+            return hLabel + ' و ' + minutes + ' دقيقة';
+        } else if (hours > 0) {
+            return (hours === 1) ? 'ساعة واحدة' : (hours === 2 ? 'ساعتان' : (hours >= 3 && hours <= 10 ? hours + ' ساعات' : hours + ' ساعة'));
+        } else {
+            return minutes + ' دقيقة';
+        }
+    } catch(e) {
+        return '-';
+    }
+};
+
 function loadEmpAttendance() {
     var now = new Date();
     var y = now.getFullYear();
@@ -2101,11 +2130,11 @@ function loadEmpAttendance() {
       .onSnapshot(function(snap){
           var box = document.getElementById('myAttList');
           if(snap.empty){
-              box.innerHTML = '<div class="empty-hint">لا توجد سجلات حضور لهذا الشهر.</div>';
+              if (box) box.innerHTML = '<div class="empty-hint">لا توجد سجلات حضور لهذا الشهر.</div>';
               _todayAttDocId = null;
-              document.getElementById('btnCheckIn').disabled = false;
-              document.getElementById('btnCheckOut').disabled = true;
-              document.getElementById('attStatusMsg').textContent = '';
+              var bIn = document.getElementById('btnCheckIn'); if (bIn) bIn.disabled = false;
+              var bOut = document.getElementById('btnCheckOut'); if (bOut) bOut.disabled = true;
+              var stMsg = document.getElementById('attStatusMsg'); if (stMsg) stMsg.textContent = '';
               return;
           }
           var arr = [];
@@ -2136,108 +2165,107 @@ function loadEmpAttendance() {
           }
 
           if(arr.length === 0 && !todayLog) {
-              box.innerHTML = '<div class="empty-hint">لا توجد سجلات حضور لهذا الشهر.</div>';
+              if (box) box.innerHTML = '<div class="empty-hint">لا توجد سجلات حضور لهذا الشهر.</div>';
               _todayAttDocId = null;
-              document.getElementById('btnCheckIn').disabled = false;
-              document.getElementById('btnCheckOut').disabled = true;
-              document.getElementById('attStatusMsg').textContent = '';
+              var bIn = document.getElementById('btnCheckIn'); if (bIn) bIn.disabled = false;
+              var bOut = document.getElementById('btnCheckOut'); if (bOut) bOut.disabled = true;
+              var stMsg = document.getElementById('attStatusMsg'); if (stMsg) stMsg.textContent = '';
               return;
           }
 
           arr.sort(function(a,b){ return a.date < b.date ? 1 : -1; });
           
+          var btnIn = document.getElementById('btnCheckIn');
+          var btnOut = document.getElementById('btnCheckOut');
+          var statusMsg = document.getElementById('attStatusMsg');
+
           if(todayLog) {
-              document.getElementById('btnCheckIn').disabled = true;
+              if (btnIn) btnIn.disabled = true;
               if(todayLog.checkOut) {
-                  document.getElementById('btnCheckOut').disabled = true;
-                  document.getElementById('attStatusMsg').textContent = 'لقد سجلت حضورك وانصرافك بنجاح اليوم.';
-                  document.getElementById('attStatusMsg').style.color = 'var(--ok)';
+                  if (btnOut) btnOut.disabled = true;
+                  if (statusMsg) {
+                      statusMsg.textContent = '🎉 لقد سجلت حضورك ('+todayLog.checkIn+') وانصرافك ('+todayLog.checkOut+') بنجاح اليوم.';
+                      statusMsg.style.color = 'var(--ok)';
+                  }
               } else {
-                  document.getElementById('btnCheckOut').disabled = false;
-                  document.getElementById('attStatusMsg').textContent = '✅ مسجل حضور ('+todayLog.checkIn+') — لا تنسَ تسجيل الانصراف.';
-                  document.getElementById('attStatusMsg').style.color = 'var(--nv)';
+                  if (btnOut) btnOut.disabled = false;
+                  if (statusMsg) {
+                      statusMsg.textContent = '✅ مسجل حضور ('+todayLog.checkIn+') — يمكنك تسجيل الانصراف الآن.';
+                      statusMsg.style.color = 'var(--nv)';
+                  }
               }
           } else {
               _todayAttDocId = null;
-              document.getElementById('btnCheckIn').disabled = false;
-              document.getElementById('btnCheckOut').disabled = true;
-              document.getElementById('attStatusMsg').textContent = 'لم تقم بتسجيل الحضور اليوم.';
-              document.getElementById('attStatusMsg').style.color = 'var(--tx3)';
+              if (btnIn) btnIn.disabled = false;
+              if (btnOut) btnOut.disabled = true;
+              if (statusMsg) {
+                  statusMsg.textContent = 'لم تقم بتسجيل الحضور اليوم.';
+                  statusMsg.style.color = 'var(--tx3)';
+              }
           }
 
-window.tgFormatWorkHours = function(checkIn, checkOut, dateStr) {
-    if (!checkIn || !checkOut || checkIn === '-' || checkOut === '-') return '-';
-    try {
-        var baseDate = dateStr || '2026-01-01';
-        var d1 = new Date(baseDate + 'T' + checkIn);
-        var d2 = new Date(baseDate + 'T' + checkOut);
-        if (d2 < d1) d2.setDate(d2.getDate() + 1);
-        
-        var diffMs = d2 - d1;
-        if (isNaN(diffMs) || diffMs <= 0) return '0 دقيقة';
-        
-        var totalMinutes = Math.floor(diffMs / 60000);
-        var hours = Math.floor(totalMinutes / 60);
-        var minutes = totalMinutes % 60;
-        
-        if (hours > 0 && minutes > 0) {
-            var hLabel = (hours === 1) ? 'ساعة' : (hours === 2 ? 'ساعتان' : (hours >= 3 && hours <= 10 ? hours + ' ساعات' : hours + ' ساعة'));
-            return hLabel + ' و ' + minutes + ' دقيقة';
-        } else if (hours > 0) {
-            return (hours === 1) ? 'ساعة واحدة' : (hours === 2 ? 'ساعتان' : (hours >= 3 && hours <= 10 ? hours + ' ساعات' : hours + ' ساعة'));
-        } else {
-            return minutes + ' دقيقة';
-        }
-    } catch(e) {
-        return '-';
-    }
-};
-
-          var h = '<table class="dt"><tr><th>التاريخ</th><th>الحضور</th><th>الانصراف</th><th>ساعات العمل</th></tr>';
-          arr.forEach(function(a){
-              var cin = a.checkIn || '-';
-              var cout = a.checkOut || '-';
-              var th = tgFormatWorkHours(a.checkIn, a.checkOut, a.date);
-              h += '<tr><td>'+a.date+'</td><td><b>'+cin+'</b></td><td><b>'+cout+'</b></td><td><span style="color:#0284c7;font-weight:800">'+th+'</span></td></tr>';
-          });
-          h += '</table>';
-          box.innerHTML = h;
+          if (box) {
+              var h = '<table class="dt"><tr><th>التاريخ</th><th>الحضور</th><th>الانصراف</th><th>ساعات العمل</th></tr>';
+              arr.forEach(function(a){
+                  var cin = a.checkIn || '-';
+                  var cout = a.checkOut || '-';
+                  var th = tgFormatWorkHours(a.checkIn, a.checkOut, a.date);
+                  h += '<tr><td>'+a.date+'</td><td><b>'+cin+'</b></td><td><b>'+cout+'</b></td><td><span style="color:#0284c7;font-weight:800">'+th+'</span></td></tr>';
+              });
+              h += '</table>';
+              box.innerHTML = h;
+          }
       }, function(err) {
           var box = document.getElementById('myAttList');
-          box.innerHTML = '<div class="empty-hint" style="color:var(--no)">تعذر تحميل السجلات: ' + esc(err.message) + '</div>';
-          document.getElementById('attStatusMsg').textContent = '';
+          if (box) box.innerHTML = '<div class="empty-hint" style="color:var(--no)">تعذر تحميل السجلات: ' + esc(err.message) + '</div>';
+          var statusMsg = document.getElementById('attStatusMsg');
+          if (statusMsg) statusMsg.textContent = '';
       });
 }
 
 function empCheckIn() {
-    if (_todayAttDocId) return; // already checked in
-    if(!confirm('هل تريد تسجيل حضورك الآن؟')) return;
-    document.getElementById('btnCheckIn').disabled = true;
+    if (_todayAttDocId) {
+        if(typeof tgToast === 'function') tgToast('أنت مسجل حضور بالفعل اليوم', 'warn');
+        return;
+    }
+    
+    var btn = document.getElementById('btnCheckIn');
+    if(btn) btn.disabled = true;
+    
     var now = new Date();
     var time = ('0'+now.getHours()).slice(-2)+':'+('0'+now.getMinutes()).slice(-2);
-    var date = now.getFullYear()+'-'+('0'+(now.getMonth()+1)).slice(-2)+'-'+('0'+now.getDate()).slice(-2);
+    var dateStr = now.getFullYear()+'-'+('0'+(now.getMonth()+1)).slice(-2)+'-'+('0'+now.getDate()).slice(-2);
     
-    document.getElementById('attStatusMsg').textContent = '⏳ جارٍ التسجيل...';
+    var msg = document.getElementById('attStatusMsg');
+    if(msg) {
+        msg.textContent = '⏳ جارٍ تسجيل الحضور...';
+        msg.style.color = 'var(--nv)';
+    }
+
     db.collection('attendance_logs').add({
         uid: TG_USER.uid,
-        name: TG_USER.name,
-        date: date,
+        name: TG_USER.name || 'موظف',
+        date: dateStr,
         checkIn: time,
         checkOut: null,
         timestamp: new Date(),
         serverTimestamp: firebase.firestore.FieldValue.serverTimestamp()
-    }).then(function(){
-        tgNotifyAdmins('🕒 تسجيل حضور موظف', 'قام الموظف ' + (TG_USER.name||'') + ' بتسجيل الحضور الآن (' + time + ')', 'att-check-in');
+    }).then(function(docRef){
+        _todayAttDocId = docRef.id;
+        if(typeof tgToast === 'function') tgToast('✅ تم تسجيل الحضور بنجاح ('+time+')', 'ok');
+        if(typeof tgNotifyAdmins === 'function') {
+            tgNotifyAdmins('🕒 تسجيل حضور موظف', 'قام الموظف ' + (TG_USER.name||'') + ' بتسجيل الحضور الآن (' + time + ')', 'att-check-in');
+        }
     }).catch(function(err){ 
-        var msg = document.getElementById('attStatusMsg');
-        msg.textContent = 'تعذر التسجيل: ' + err.message;
-        msg.style.color = 'var(--no)';
+        if(btn) btn.disabled = false;
+        if(msg) {
+            msg.textContent = 'تعذر التسجيل: ' + err.message;
+            msg.style.color = 'var(--no)';
+        }
     });
 }
 
 function empCheckOut() {
-    if(!confirm('هل تريد تسجيل انصرافك؟ لن تتمكن من تعديله.')) return;
-    
     var btn = document.getElementById('btnCheckOut');
     if(btn) btn.disabled = true;
     
@@ -2245,20 +2273,28 @@ function empCheckOut() {
     var time = ('0'+now.getHours()).slice(-2)+':'+('0'+now.getMinutes()).slice(-2);
     var dateStr = now.getFullYear()+'-'+('0'+(now.getMonth()+1)).slice(-2)+'-'+('0'+now.getDate()).slice(-2);
     
-    document.getElementById('attStatusMsg').textContent = '⏳ جارٍ تسجيل الانصراف...';
+    var msg = document.getElementById('attStatusMsg');
+    if(msg) {
+        msg.textContent = '⏳ جارٍ تسجيل الانصراف...';
+        msg.style.color = 'var(--nv)';
+    }
 
     var doUpdate = function(docId) {
         db.collection('attendance_logs').doc(docId).update({
             checkOut: time,
             serverTimestamp: firebase.firestore.FieldValue.serverTimestamp()
         }).then(function(){
+            _todayAttDocId = docId;
             if(typeof tgToast === 'function') tgToast('✅ تم تسجيل الانصراف بنجاح ('+time+')', 'ok');
+            if(msg) {
+                msg.textContent = '🎉 تم تسجيل الانصراف بنجاح (' + time + ')';
+                msg.style.color = 'var(--ok)';
+            }
             if(typeof tgNotifyAdmins === 'function') {
                 tgNotifyAdmins('🕒 تسجيل انصراف موظف', 'قام الموظف ' + (TG_USER.name||'') + ' بتسجيل الانصراف الآن (' + time + ')', 'att-check-out');
             }
         }).catch(function(err){ 
             if(btn) btn.disabled = false;
-            var msg = document.getElementById('attStatusMsg');
             if(msg) {
                 msg.textContent = 'تعذر التسجيل: ' + err.message;
                 msg.style.color = 'var(--no)';
@@ -2279,15 +2315,20 @@ function empCheckOut() {
                     if (data.date === dateStr) foundId = d.id;
                 });
                 if (foundId) {
-                    _todayAttDocId = foundId;
                     doUpdate(foundId);
                 } else {
                     if(btn) btn.disabled = false;
-                    alert('لم يتم العثور على سجل حضور لليوم. يرجى تسجيل الحضور أولاً.');
+                    if(msg) {
+                        msg.textContent = '❌ لم يتم العثور على سجل حضور لليوم. يرجى تسجيل الحضور أولاً.';
+                        msg.style.color = 'var(--no)';
+                    }
                 }
             }).catch(function(err) {
                 if(btn) btn.disabled = false;
-                alert('تعذر الوصول لسجل الحضور: ' + err.message);
+                if(msg) {
+                    msg.textContent = 'تعذر الوصول لسجل الحضور: ' + err.message;
+                    msg.style.color = 'var(--no)';
+                }
             });
     }
 }
@@ -2565,7 +2606,7 @@ function tgNotifDelClick(id, ev) {
 <div style="position:fixed;bottom:4px;left:50%;transform:translateX(-50%);font-size:9px;color:rgba(255,255,255,0.2);z-index:9999;pointer-events:none;white-space:nowrap;font-family:inherit">تطوير وتصميم: أبانوب فايز</div>
 <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
-<script src="theme.js?v=1785676275"></script>
+<script src="theme.js?v=1785680082"></script>
 
 
 <!-- Incoming Meeting Call Modal -->
