@@ -1,5 +1,5 @@
 // ─── Service Worker for Tech Go PWA ─────────────────────────────────────────
-const CACHE_NAME = 'techgo-v1785667323-force-purge';
+const CACHE_NAME = 'techgo-v1785667563-force-purge';
 const STATIC_ASSETS = [
     './login.html',
     './styles.css',
@@ -16,7 +16,7 @@ self.addEventListener('install', function(event) {
     );
 });
 
-// Activate: purge ALL old caches immediately
+// Activate: purge ALL old caches immediately and notify clients
 self.addEventListener('activate', function(event) {
     event.waitUntil(
         caches.keys().then(function(keys) {
@@ -27,8 +27,20 @@ self.addEventListener('activate', function(event) {
             );
         }).then(function() {
             return self.clients.claim();
+        }).then(function() {
+            return self.clients.matchAll({ type: 'window' }).then(function(cls) {
+                cls.forEach(function(client) {
+                    client.postMessage({ action: 'RELOAD_PAGE_NEW_VERSION' });
+                });
+            });
         })
     );
+});
+
+self.addEventListener('message', function(event) {
+    if (event.data === 'skipWaiting' || (event.data && event.data.action === 'skipWaiting')) {
+        self.skipWaiting();
+    }
 });
 
 // Fetch: Always Network First for HTML and JS files
