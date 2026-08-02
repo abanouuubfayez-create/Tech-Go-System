@@ -4782,17 +4782,49 @@ function loadAnnouncementTargetEmployees() {
         console.error(err);
     });
 }
+window.tgDeleteMeetingAnnouncements = function(silent) {
+    if (!window.db) return;
+    db.collection('announcements').get().then(function(snap) {
+        var batch = db.batch();
+        var deletedCount = 0;
+        snap.forEach(function(doc) {
+            var data = doc.data();
+            var t = (data.title || '').toLowerCase();
+            var c = (data.content || '').toLowerCase();
+            if (t.indexOf('اجتماع') !== -1 || c.indexOf('اجتماع') !== -1 || t.indexOf('مكالمة') !== -1 || c.indexOf('مكالمة') !== -1 || t.indexOf('livemeeting') !== -1) {
+                batch.delete(doc.ref);
+                deletedCount++;
+            }
+        });
+        if (deletedCount > 0) {
+            return batch.commit().then(function() {
+                if (!silent && typeof tgToast === 'function') tgToast('🗑 تم حذف ' + deletedCount + ' إشعار اجتماع سابق بنجاح', 'ok');
+            });
+        } else {
+            if (!silent && typeof tgToast === 'function') tgToast('لا توجد إشعارات اجتماعات لحذفها', 'ok');
+        }
+    }).catch(function(err) {
+        console.warn("Meeting announcements purge skipped:", err);
+    });
+};
+
 function loadAdminAnnouncements() {
     window.loadedAnnouncements = {};
     var box = document.getElementById('annList');
     if(!box) return;
     box.innerHTML = '<div class="empty-hint" style="color:var(--tx3)">⌛ جارٍ التحميل...</div>';
+
+    if (typeof tgDeleteMeetingAnnouncements === 'function') tgDeleteMeetingAnnouncements(true);
+
     db.collection('announcements').limit(50).get().then(function(snap) {
         if(snap.empty) { box.innerHTML = '<div class="empty-hint">لا توجد إعلانات سابقة.</div>'; return; }
         
         var list = [];
         snap.forEach(function(d) {
             var a = d.data();
+            var t = (a.title || '').toLowerCase();
+            var c = (a.content || '').toLowerCase();
+            if (t.indexOf('اجتماع') !== -1 || c.indexOf('اجتماع') !== -1 || t.indexOf('مكالمة') !== -1 || c.indexOf('مكالمة') !== -1) return;
             a._id = d.id;
             window.loadedAnnouncements[d.id] = a;
             list.push(a);
@@ -5535,6 +5567,9 @@ function loadEmpAnnouncements() {
         snap.forEach(function(d) {
             var data = d.data();
             if(data.isHidden) return;
+            var t = (data.title || '').toLowerCase();
+            var c = (data.content || '').toLowerCase();
+            if (t.indexOf('اجتماع') !== -1 || c.indexOf('اجتماع') !== -1 || t.indexOf('مكالمة') !== -1 || c.indexOf('مكالمة') !== -1) return;
             allList.push(data);
         });
 
