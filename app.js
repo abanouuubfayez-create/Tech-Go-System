@@ -4386,30 +4386,43 @@ function load(id,c){
     // ── إدارة الإعلانات ──────────────────────────────────────────────────────
     else if(id==="announcements"){
         h='<div class="SP">';
-        h+='<h3>&#128226; إدارة الإعلانات</h3>';
+        h+='<h3>📢 إدارة الإعلانات والتكليفات</h3>';
+        h+='<div class="set-hint">قم بنشر وتصميم الإعلانات والتكليفات الإدارية مقسمة لمواضيع وبنود مع إمكانية الإشارة والإشاراة للموظفين (@) لتفعيل التنبيهات.</div>';
         h+='<div class="fg fg-full" style="margin-bottom:12px">';
         h+='<label>نوع الإعلان</label>';
         h+='<div style="display:flex;gap:16px;margin-top:6px">';
-        h+='<label style="display:flex;align-items:center;gap:6px;font-weight:400;cursor:pointer"><input type="radio" name="annAudience" value="all" checked onchange="toggleAnnTargetWrap()"> &#128226; عام لكل الموظفين</label>';
-        h+='<label style="display:flex;align-items:center;gap:6px;font-weight:400;cursor:pointer"><input type="radio" name="annAudience" value="private" onchange="toggleAnnTargetWrap()"> &#128100; خاص لموظف معين</label>';
+        h+='<label style="display:flex;align-items:center;gap:6px;font-weight:400;cursor:pointer"><input type="radio" name="annAudience" value="all" checked onchange="toggleAnnTargetWrap()"> 📢 عام لكل الموظفين</label>';
+        h+='<label style="display:flex;align-items:center;gap:6px;font-weight:400;cursor:pointer"><input type="radio" name="annAudience" value="private" onchange="toggleAnnTargetWrap()"> 👤 خاص لموظف معين</label>';
         h+='</div></div>';
         h+='<div class="fg fg-full" id="annTargetWrap" style="display:none;margin-bottom:12px">';
         h+='<label>الموظف المرسل إليه</label>';
         h+='<select id="annTargetEmployee"><option value="">جارٍ تحميل الموظفين...</option></select>';
         h+='</div>';
         h+='<div class="fr fr2" style="margin-bottom:12px">';
-        h+='<div class="fg"><label>عنوان الإعلان</label><input type="text" id="annTitle"></div>';
+        h+='<div class="fg"><label>عنوان الإعلان / الموضوع الرئيسية</label><input type="text" id="annTitle" placeholder="مثال: الأولويات والمهام المستهدفة"></div>';
         h+='<div class="fg"><label>التاريخ (اختياري)</label><input type="text" id="annDate" placeholder="مثال: 1 أكتوبر 2026"></div>';
         h+='</div>';
-        h+='<div class="fg fg-full" style="margin-bottom:12px"><label>محتوى الإعلان</label><textarea id="annContent" rows="4"></textarea></div>';
-        h+='<button class="bt bt-p" onclick="addAnnouncement()">&#128226; نشر الإعلان</button>';
+        h+='<div class="fg fg-full" style="margin-bottom:12px">';
+        h+='<div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px;margin-bottom:6px;">';
+        h+='<label style="margin:0;font-weight:800;">محتوى الإعلان (ادعم المواضيع وبنود النقاط والمنشن @)</label>';
+        h+='<div style="display:flex;gap:6px;flex-wrap:wrap;">';
+        h+='<button type="button" onclick="tgInsertAnnTemplate(\'topic\')" class="bt bt-o" style="padding:4px 10px;font-size:11px;border-radius:12px;font-weight:800;">🎯 إضافة موضوع (@)</button>';
+        h+='<button type="button" onclick="tgInsertAnnTemplate(\'bullet\')" class="bt bt-o" style="padding:4px 10px;font-size:11px;border-radius:12px;font-weight:800;">• إضافة نقطة</button>';
+        h+='<button type="button" onclick="tgInsertAnnTemplate(\'alert\')" class="bt bt-o" style="padding:4px 10px;font-size:11px;border-radius:12px;font-weight:800;">⚠️ تنبيه تذكيري</button>';
+        h+='<select id="annMentionEmpSelect" onchange="tgInsertEmpMention(this)" style="padding:4px 8px;border-radius:12px;font-size:11px;font-weight:800;border:1px solid var(--bd);background:var(--bg);color:var(--tx);outline:none;">';
+        h+='<option value="">👤 إشارة لموظف (@)...</option>';
+        h+='</select>';
+        h+='</div></div>';
+        h+='<textarea id="annContent" rows="6" placeholder="اكتب محتوى الإعلان هنا...\nمثال:\n@مصمم ابراهيم\n• أولوية موقع GO STORE\n*** تنبيه هام لحين انتهاء الأولويات"></textarea>';
+        h+='</div>';
+        h+='<button class="bt bt-p" onclick="addAnnouncement()" style="padding:10px 24px;font-weight:900;font-size:14px;border-radius:30px;">📢 نشر الإعلان والتكليفات</button>';
         h+='<div id="annMsg" style="margin-top:10px;font-weight:bold;font-size:12px;"></div>';
         h+='<hr style="margin:30px 0;border:0;border-top:2px solid var(--bd2)">';
         h+='<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">';
-        h+='<h3 style="margin:0">&#128209; الإعلانات السابقة</h3>';
-        h+='<button class="bt bt-d" style="padding:5px 14px;font-size:11px" onclick="deleteAllAnnouncements()">&#128465; حذف الكل</button>';
+        h+='<h3 style="margin:0">📋 الإعلانات والتكليفات السابقة</h3>';
+        h+='<button class="bt bt-d" style="padding:5px 14px;font-size:11px" onclick="deleteAllAnnouncements()">🗑 حذف الكل</button>';
         h+='</div>';
-        h+='<div id="annList" style="display:flex;flex-direction:column;gap:12px;"></div>';
+        h+='<div id="annList" style="display:flex;flex-direction:column;gap:14px;"></div>';
         h+='</div>';
     }
 
@@ -4648,21 +4661,124 @@ function toggleAnnTargetWrap() {
     if(!wrap) return;
     wrap.style.display = (checked && checked.value === 'private') ? 'block' : 'none';
 }
+window.tgFormatAnnouncementContent = function(rawText) {
+    if(!rawText) return '';
+    var lines = String(rawText).split('\n');
+    var html = '<div class="ann-structured-body" style="display:flex; flex-direction:column; gap:6px; margin:8px 0;">';
+
+    lines.forEach(function(line) {
+        var trimmed = line.trim();
+        if(!trimmed) return;
+
+        // Case 1: Notice / Alert line (*** or --- or ⚠️)
+        if(trimmed.indexOf('***') === 0 || trimmed.indexOf('---') === 0 || trimmed.indexOf('⚠️') === 0) {
+            var noticeContent = trimmed.replace(/^(\*\*\*|\-\-\-|⚠️)\s*/, '');
+            html += '<div style="background:rgba(245,158,11,0.12); border-right:4px solid #f59e0b; border-radius:8px; padding:10px 14px; font-weight:800; color:var(--tx); font-size:13px; margin:6px 0; display:flex; align-items:flex-start; gap:8px;">' +
+                    '<span style="font-size:16px;">⚠️</span>' +
+                    '<div>' + tgHighlightMentions(noticeContent) + '</div>' +
+                    '</div>';
+            return;
+        }
+
+        // Case 2: Mention or Topic Header line (starts with @ or 👤 or 📌 or 🎯)
+        if(trimmed.indexOf('@') === 0 || trimmed.indexOf('👤') === 0 || trimmed.indexOf('📌') === 0 || trimmed.indexOf('🎯') === 0) {
+            var headerText = trimmed.replace(/^([👤📌🎯])\s*/, '');
+            html += '<div style="margin-top:8px; margin-bottom:2px; background:linear-gradient(135deg, rgba(2,132,199,0.12), rgba(16,185,129,0.06)); border:1px solid rgba(2,132,199,0.25); border-radius:10px; padding:8px 14px; display:inline-flex; align-items:center; gap:8px;">' +
+                    '<span style="font-size:15px; color:#0284c7; font-weight:900;">🎯</span>' +
+                    '<span style="font-weight:900; font-size:14px; color:var(--tx);">' + tgHighlightMentions(headerText) + '</span>' +
+                    '</div>';
+            return;
+        }
+
+        // Case 3: Bullet points (starts with • or - or * or number like 1. 2.)
+        var bulletMatch = trimmed.match(/^([•\-\*]|\d+[\.\)])\s*(.*)/);
+        if(bulletMatch) {
+            var bulletText = bulletMatch[2];
+            html += '<div style="display:flex; align-items:flex-start; gap:10px; padding-right:12px; font-size:13.5px; line-height:1.6; color:var(--tx); font-weight:700;">' +
+                    '<span style="color:#10b981; font-weight:900; font-size:15px; line-height:1.2;">•</span>' +
+                    '<div>' + tgHighlightMentions(bulletText) + '</div>' +
+                    '</div>';
+            return;
+        }
+
+        // Case 4: Normal Line
+        html += '<div style="font-size:13.5px; line-height:1.6; color:var(--tx); font-weight:600; padding-right:6px;">' +
+                tgHighlightMentions(trimmed) +
+                '</div>';
+    });
+
+    html += '</div>';
+    return html;
+};
+
+window.tgHighlightMentions = function(str) {
+    if(!str) return '';
+    var escStr = escH(str);
+    return escStr.replace(/@([^\n\r@,;:<>\(\)]+)/g, function(match, name) {
+        var cleanName = name.trim();
+        return '<span class="emp-mention-pill" style="display:inline-flex; align-items:center; gap:4px; background:linear-gradient(135deg, rgba(16,185,129,0.18), rgba(2,132,199,0.18)); color:#0284c7; border:1px solid rgba(2,132,199,0.35); padding:2px 10px; border-radius:16px; font-weight:800; font-size:12px; margin:0 2px; box-shadow:0 2px 6px rgba(2,132,199,0.15);">👤 @' + cleanName + '</span>';
+    });
+};
+
+window.tgInsertAnnTemplate = function(type) {
+    var ta = document.getElementById('annContent');
+    if(!ta) return;
+    var start = ta.selectionStart || ta.value.length;
+    var end = ta.selectionEnd || ta.value.length;
+    var current = ta.value;
+
+    var insertText = '';
+    if(type === 'topic') insertText = '\n@اسم الموظف أو الموضوع الرئيسي\n';
+    else if(type === 'bullet') insertText = '\n• البند أو النقطة التنفيذية هنا\n';
+    else if(type === 'alert') insertText = '\n*** تنبيه تذكيري أو ملاحظة هامة\n';
+
+    ta.value = current.substring(0, start) + insertText + current.substring(end);
+    ta.focus();
+};
+
+window.tgInsertEmpMention = function(selectEl) {
+    if(!selectEl || !selectEl.value) return;
+    var empName = selectEl.value;
+    selectEl.value = '';
+
+    var ta = document.getElementById('annContent');
+    if(!ta) return;
+
+    var start = ta.selectionStart || ta.value.length;
+    var end = ta.selectionEnd || ta.value.length;
+    var current = ta.value;
+
+    var mentionText = '@' + empName + ' ';
+
+    ta.value = current.substring(0, start) + mentionText + current.substring(end);
+    ta.focus();
+};
+
 function loadAnnouncementTargetEmployees() {
     var sel = document.getElementById('annTargetEmployee');
-    if(!sel) return;
+    var mentionSel = document.getElementById('annMentionEmpSelect');
+    if(!sel && !mentionSel) return;
+
     db.collection('users').where('role','in',['employee','tech_admin']).get().then(function(snap) {
-        if(snap.empty) { sel.innerHTML = '<option value="">لا يوجد موظفون مسجّلون</option>'; return; }
+        if(snap.empty) {
+            if(sel) sel.innerHTML = '<option value="">لا يوجد موظفون مسجّلون</option>';
+            if(mentionSel) mentionSel.innerHTML = '<option value="">لا يوجد موظفون</option>';
+            return;
+        }
         var opts = '<option value="">اختر الموظف...</option>';
+        var mentionOpts = '<option value="">👤 إشارة لموظف (@)...</option>';
         var list = [];
         snap.forEach(function(doc) { list.push(Object.assign({uid:doc.id}, doc.data())); });
         list.sort(function(a,b){ return (a.name||'').localeCompare(b.name||'', 'ar'); });
         list.forEach(function(emp) {
-            opts += '<option value="'+emp.uid+'">'+escH(emp.name||emp.email||emp.uid)+'</option>';
+            var n = emp.name || emp.email || emp.uid;
+            opts += '<option value="'+emp.uid+'">'+escH(n)+'</option>';
+            mentionOpts += '<option value="'+escH(n)+'">👤 @'+escH(n)+'</option>';
         });
-        sel.innerHTML = opts;
+        if(sel) sel.innerHTML = opts;
+        if(mentionSel) mentionSel.innerHTML = mentionOpts;
     }).catch(function(err) {
-        sel.innerHTML = '<option value="">تعذر تحميل الموظفين</option>';
+        if(sel) sel.innerHTML = '<option value="">تعذر تحميل الموظفين</option>';
         console.error(err);
     });
 }
@@ -4670,7 +4786,7 @@ function loadAdminAnnouncements() {
     window.loadedAnnouncements = {};
     var box = document.getElementById('annList');
     if(!box) return;
-    box.innerHTML = '<div class="empty-hint" style="color:var(--tx3)">&#9203; جارٍ التحميل...</div>';
+    box.innerHTML = '<div class="empty-hint" style="color:var(--tx3)">⌛ جارٍ التحميل...</div>';
     db.collection('announcements').orderBy('createdAt', 'desc').limit(20).get().then(function(snap) {
         if(snap.empty) { box.innerHTML = '<div class="empty-hint">لا توجد إعلانات سابقة.</div>'; return; }
         var h = '';
@@ -4679,29 +4795,30 @@ function loadAdminAnnouncements() {
             window.loadedAnnouncements[d.id] = a;
             var ts = (a.createdAt && a.createdAt.seconds) ? new Date(a.createdAt.seconds*1000).toLocaleDateString('ar-EG') : '';
             var isPrivate = a.audience === 'private';
-            h += '<div class="pj-row" style="border-right:4px solid '+(isPrivate?'var(--gd)':'var(--nv)')+'">';
-            h += '<div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:4px">';
-            h += '<div class="pj-t" style="font-size:14px;font-weight:800">'+escH(a.title)+'</div>';
+            h += '<div class="pj-row" style="border-right:4px solid '+(isPrivate?'var(--gd)':'var(--nv)')+'; background:var(--w); border-radius:14px; padding:16px; border:1px solid var(--bd); box-shadow:0 4px 15px rgba(0,0,0,0.03);">';
+            h += '<div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:6px">';
+            h += '<div class="pj-t" style="font-size:16px;font-weight:900;color:var(--tx)">'+escH(a.title)+'</div>';
             h += isPrivate
-                ? '<span class="badge" style="background:var(--gd);color:#1b2a4a">&#128100; خاص &rarr; '+escH(a.targetName||'موظف')+'</span>'
-                : '<span class="badge" style="background:var(--nv);color:#fff">&#128226; عام لكل الموظفين</span>';
+                ? '<span class="badge" style="background:rgba(245,158,11,0.15);color:#d97706;border:1px solid rgba(245,158,11,0.3);font-weight:800;padding:3px 12px;border-radius:20px;">👤 خاص → '+escH(a.targetName||'موظف')+'</span>'
+                : '<span class="badge" style="background:rgba(16,185,129,0.15);color:#10b981;border:1px solid rgba(16,185,129,0.3);font-weight:800;padding:3px 12px;border-radius:20px;">📢 عام لكل الموظفين</span>';
             h += '</div>';
-            h += '<div class="pj-meta" style="margin:6px 0 10px;font-size:12px;color:var(--tx);line-height:1.6">'+escH(a.content)+'</div>';
-            h += '<div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:6px">';
-            h += '<div class="pj-meta" style="display:flex;gap:12px;opacity:0.85">';
-            h += (a.date ? '<span>&#128197; '+escH(a.date)+'</span>' : '');
-            h += (ts ? '<span>&#128336; نُشر: '+ts+'</span>' : '');
-            h += (a.createdBy ? '<span>&#128100; '+escH(a.createdBy)+' ('+escH(a.createdByRole||'أدمن إداري')+')</span>' : '');
+            h += '<div class="pj-meta" style="margin:8px 0 12px;">' + tgFormatAnnouncementContent(a.content) + '</div>';
+            h += '<div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px;border-top:1px dashed var(--bd);padding-top:10px">';
+            h += '<div class="pj-meta" style="display:flex;gap:12px;opacity:0.85;font-size:12px;color:var(--tx2);font-weight:700;">';
+            h += (a.date ? '<span>📅 '+escH(a.date)+'</span>' : '');
+            h += (ts ? '<span>🕒 نُشر: '+ts+'</span>' : '');
+            h += (a.createdBy ? '<span>👤 '+escH(a.createdBy)+' ('+escH(a.createdByRole||'أدمن إداري')+')</span>' : '');
             h += '</div>';
             h += '<div style="display:flex;gap:6px">';
-            var hideBtnText = a.isHidden ? '&#128065; إظهار' : '&#128123; إخفاء مؤقت';
-            h += '<button class="bt bt-o" style="padding:4px 10px;font-size:11px" onclick="toggleAnnouncementVisibility(\''+d.id+'\', '+!!a.isHidden+')">'+hideBtnText+'</button>';
-            h += '<button class="bt bt-d" style="padding:4px 10px;font-size:11px" onclick="deleteAnnouncement(\''+d.id+'\')">&#128465; حذف</button>';
+            var hideBtnText = a.isHidden ? '👁 إظهار' : '👻 إخفاء مؤقت';
+            h += '<button class="bt bt-o" style="padding:5px 12px;font-size:12px;font-weight:800;border-radius:20px;" onclick="republishAnnouncement(\''+d.id+'\')">✏️ تعديل</button>';
+            h += '<button class="bt bt-o" style="padding:5px 12px;font-size:12px;font-weight:800;border-radius:20px;" onclick="toggleAnnouncementVisibility(\''+d.id+'\', '+!!a.isHidden+')">'+hideBtnText+'</button>';
+            h += '<button class="bt bt-d" style="padding:5px 12px;font-size:12px;font-weight:800;border-radius:20px;" onclick="deleteAnnouncement(\''+d.id+'\')">🗑 حذف</button>';
             h += '</div></div></div>';
         });
         box.innerHTML = h;
     }).catch(function(err) {
-        box.innerHTML = '<div class="empty-hint" style="color:var(--no)">&#10060; تعذر التحميل: '+err.message+'<br><small style="color:var(--tx3)">تأكد من نشر قواعد Firestore في Firebase Console</small></div>';
+        box.innerHTML = '<div class="empty-hint" style="color:var(--no)">❌ تعذر التحميل: '+err.message+'</div>';
     });
 }
 
@@ -5384,11 +5501,13 @@ function loadEmpAnnouncements() {
 
     function annCard(data, isPrivate) {
         var borderColor = isPrivate ? 'var(--gd)' : 'var(--nv)';
-        var h = '<div style="background:rgba(255,255,255,.1);padding:14px 18px;border-radius:10px;border-right:4px solid '+borderColor+';margin-bottom:8px">';
-        h += '<div style="font-size:15px;font-weight:800;margin-bottom:6px">'+esc(data.title)+'</div>';
-        h += '<div style="font-size:13px;opacity:.9;line-height:1.6">'+esc(data.content)+'</div>';
-        if(data.createdBy) h += '<div style="font-size:11px;opacity:.75;margin-top:8px">👤 '+esc(data.createdBy)+(data.createdByRole?' <span style="opacity:.8">('+esc(data.createdByRole)+')</span>':'')+'</div>';
-        if(data.date) h += '<div style="font-size:11px;opacity:.6;margin-top:4px">📅 '+esc(data.date)+'</div>';
+        var h = '<div style="background:var(--w);padding:16px 20px;border-radius:14px;border-right:5px solid '+borderColor+';border:1px solid var(--bd);margin-bottom:12px;box-shadow:0 4px 15px rgba(0,0,0,0.03);">';
+        h += '<div style="font-size:16px;font-weight:900;margin-bottom:6px;color:var(--tx)">'+esc(data.title)+'</div>';
+        h += '<div style="font-size:13px;line-height:1.6;color:var(--tx)">'+tgFormatAnnouncementContent(data.content)+'</div>';
+        h += '<div style="display:flex;gap:12px;margin-top:10px;border-top:1px dashed var(--bd);padding-top:8px;font-size:11px;color:var(--tx2);font-weight:700;">';
+        if(data.createdBy) h += '<div>👤 '+esc(data.createdBy)+(data.createdByRole?' <span style="opacity:.8">('+esc(data.createdByRole)+')</span>':'')+'</div>';
+        if(data.date) h += '<div>📅 '+esc(data.date)+'</div>';
+        h += '</div>';
         h += '</div>';
         return h;
     }
