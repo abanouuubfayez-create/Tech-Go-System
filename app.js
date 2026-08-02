@@ -161,6 +161,7 @@ var T={
     res:"طلب استقالة", promo:"قرار ترقية", contract:"عقد عمل", raise:"زيادة راتب / علاوة",
     staff:"متابعة الموظفين", pmgmt:"إدارة المشاريع", account:"حسابي",
     tasksmgmt:"توزيع المهام", announcements:"إدارة الإعلانات", empdocs:"ملفات الموظفين", wkreports:"بريد التقارير الأسبوعية", devres:"مكتبة التطوير المهني",
+    allrequests:"مركز طلبات الموظفين",
     aiadvisor:"المستشار الذكي"
 };
 
@@ -395,7 +396,7 @@ function go(id, nav, force){
     if(gf) { gf.value = ""; tgFilterVisibleTables(""); }
         // Show/Hide top bar tools
     var formIds = ['gen','notice','warn','inv','exp','clr','res','promo','raise','contract','task','proj','sal','salrec','emp','leave','perm','delay','sendform','mexp'];
-    var tableIds = ['la','lb','lc','ld','pmgmt','tasksmgmt','staff','wkreports','empdocs','att_live','att','archive','announcements','mexp','devres'];
+    var tableIds = ['la','lb','lc','ld','pmgmt','tasksmgmt','staff','wkreports','allrequests','empdocs','att_live','att','archive','announcements','mexp','devres'];
 
     var tgTableTools = document.getElementById('tgTableTools');
     var tgFormTools = document.getElementById('tgFormTools');
@@ -4205,7 +4206,7 @@ function load(id,c){
         // إشعار بادج
         h+='<div id="staffListViewContainer">';
         h+='<div style="display:flex;gap:12px;margin-bottom:14px;flex-wrap:wrap">';
-        h+='<div style="display:flex;align-items:center;gap:8px;background:rgba(231,76,60,.08);border:1.5px solid rgba(231,76,60,.25);padding:10px 16px;border-radius:10px;cursor:pointer" onclick="clearAdminBadge(\'notif-req-badge\',\'notif-req-badge-sb\')">';
+        h+='<div style="display:flex;align-items:center;gap:8px;background:rgba(231,76,60,.08);border:1.5px solid rgba(231,76,60,.25);padding:10px 16px;border-radius:10px;cursor:pointer" onclick="clearAdminBadge(\'notif-req-badge\',\'notif-req-badge-sb\'); go(\'allrequests\');">';
         h+='📨 طلبات جديدة <span id="notif-req-badge" style="display:none;background:var(--no);color:#fff;border-radius:50%;min-width:20px;height:20px;font-size:11px;font-weight:800;align-items:center;justify-content:center;padding:0 4px">0</span></div>';
         h+='<div style="display:flex;align-items:center;gap:8px;background:rgba(39,174,96,.08);border:1.5px solid rgba(39,174,96,.25);padding:10px 16px;border-radius:10px;cursor:pointer" onclick="clearAdminBadge(\'notif-wkr-badge\',\'notif-wkr-badge-sb\')">';
         h+='📆 تقارير أسبوعية جديدة <span id="notif-wkr-badge" style="display:none;background:var(--ok);color:#fff;border-radius:50%;min-width:20px;height:20px;font-size:11px;font-weight:800;align-items:center;justify-content:center;padding:0 4px">0</span></div>';
@@ -4261,6 +4262,40 @@ function load(id,c){
         c.innerHTML = h;
         loadWeeklyReportsInbox();
         clearAdminBadge('notif-wkr-badge','notif-wkr-badge-sb');
+    }
+
+    // ── مركز طلبات الموظفين الموحد ──────────────────────────────────────────
+    else if(id==="allrequests"){
+        h='<div class="SP"><h3>📥 مركز طلبات الموظفين الموحد</h3>';
+        h+='<div class="set-hint">مكان واحد متكامل لمتابعة وتمرير كافة طلبات الموظفين (إجازات، أذونات، التماسات، استقالات، خطابات، شكاوى)، والبت فيها بالموافقة أو الرفض بنقرة واحدة.</div>';
+        h+='<div id="reqHubStatsBar" style="display:flex;gap:12px;margin:16px 0;flex-wrap:wrap"></div>';
+
+        h+='<div style="display:flex;gap:10px;margin-bottom:16px;flex-wrap:wrap;border-bottom:2px solid var(--bd);padding-bottom:8px" id="reqHubStatusTabs">';
+        h+='<button class="tg-task-tab tg-task-tab-active" data-status="pending" onclick="tgSetReqHubStatusTab(this, \'pending\')"><span class="tab-label">⏳ المعلقة</span> <span class="tab-count" id="reqhub-cnt-pending">0</span></button>';
+        h+='<button class="tg-task-tab" data-status="all" onclick="tgSetReqHubStatusTab(this, \'all\')"><span class="tab-label">📋 كافة الطلبات</span> <span class="tab-count" id="reqhub-cnt-all">0</span></button>';
+        h+='<button class="tg-task-tab" data-status="approved" onclick="tgSetReqHubStatusTab(this, \'approved\')"><span class="tab-label">✅ المقبولة</span> <span class="tab-count" id="reqhub-cnt-approved">0</span></button>';
+        h+='<button class="tg-task-tab" data-status="rejected" onclick="tgSetReqHubStatusTab(this, \'rejected\')"><span class="tab-label">❌ المرفوضة</span> <span class="tab-count" id="reqhub-cnt-rejected">0</span></button>';
+        h+='</div>';
+
+        h+='<div class="staff-toolbar" style="margin-bottom:16px;gap:10px;flex-wrap:wrap">';
+        h+='<input type="text" class="staff-search" id="reqHubSearch" oninput="renderAllRequestsListHub()" placeholder="🔍 ابحث باسم الموظف، نوع الطلب، أو التفاصيل..." style="max-width:320px">';
+        h+='<select id="reqHubTypeFilter" class="global-table-filter" onchange="renderAllRequestsListHub()" style="width:200px">';
+        h+='<option value="all">كل أنواع الطلبات</option>';
+        h+='<option value="leave">طلب إجازة</option>';
+        h+='<option value="perm">إذن حضور / انصراف</option>';
+        h+='<option value="delay">التماس تعديل الحضور</option>';
+        h+='<option value="res">طلب استقالة</option>';
+        h+='<option value="comp">الشكاوى والمقترحات</option>';
+        h+='<option value="other">طلبات أخرى</option>';
+        h+='</select>';
+        h+='<button class="bt bt-d" style="padding:6px 14px;font-size:11px;margin-right:auto" onclick="tgDeleteAllRecords(\'requests\', \'الطلبات\', null, null, loadAllRequestsHub)">🗑 حذف سجلات الطلبات</button>';
+        h+='</div>';
+
+        h+='<div id="allRequestsHubList"><div class="empty-hint">⏳ جارٍ تحميل الطلبات...</div></div>';
+        h+='</div>';
+        c.innerHTML = h;
+        loadAllRequestsHub();
+        clearAdminBadge('notif-req-badge','notif-req-badge-sb');
         return;
     }
 
@@ -4395,6 +4430,214 @@ function load(id,c){
     if(id==="announcements") { loadAdminAnnouncements(); loadAnnouncementTargetEmployees(); }
     if(id==="empdocs") loadEmpDocsOverview();
     if(id==="cal") initGeneralCalendar();
+    if(id==="allrequests") loadAllRequestsHub();
+}
+
+// ═══════════════════════════════════════════════════════════════
+// ── مركز طلبات الموظفين الموحد ──────────────────────────────────
+// ═══════════════════════════════════════════════════════════════
+window._reqHubStatusTab = 'pending';
+window._reqHubDataCache = [];
+
+function tgSetReqHubStatusTab(btnEl, status) {
+    window._reqHubStatusTab = status || 'all';
+    var tabs = document.querySelectorAll('#reqHubStatusTabs .tg-task-tab');
+    tabs.forEach(function(t) { t.classList.remove('tg-task-tab-active'); });
+    if(btnEl) btnEl.classList.add('tg-task-tab-active');
+    renderAllRequestsListHub();
+}
+
+function loadAllRequestsHub() {
+    var container = document.getElementById('allRequestsHubList');
+    if(container) container.innerHTML = '<div class="empty-hint">⏳ جارٍ تحميل طلبات الموظفين...</div>';
+
+    db.collection('requests').get().then(function(snap) {
+        var list = [];
+        snap.forEach(function(doc) {
+            var data = doc.data() || {};
+            data.id = doc.id;
+            list.push(data);
+        });
+
+        // Sort desc by createdAt or timestamp
+        list.sort(function(a, b) {
+            var tA = a.createdAt && a.createdAt.toMillis ? a.createdAt.toMillis() : (new Date(a.createdAt || 0).getTime() || 0);
+            var tB = b.createdAt && b.createdAt.toMillis ? b.createdAt.toMillis() : (new Date(b.createdAt || 0).getTime() || 0);
+            return tB - tA;
+        });
+
+        window._reqHubDataCache = list;
+        updateReqHubStats();
+        renderAllRequestsListHub();
+    }).catch(function(err) {
+        console.error("loadAllRequestsHub error:", err);
+        if(container) container.innerHTML = '<div class="empty-hint" style="color:var(--no)">❌ تعذر تحميل الطلبات: ' + escH(err.message) + '</div>';
+    });
+}
+
+function updateReqHubStats() {
+    var list = window._reqHubDataCache || [];
+    var pending = 0, approved = 0, rejected = 0;
+    list.forEach(function(r) {
+        var s = (r.status || 'pending').toLowerCase();
+        if(s === 'approved') approved++;
+        else if(s === 'rejected') rejected++;
+        else pending++;
+    });
+
+    var pEl = document.getElementById('reqhub-cnt-pending'); if(pEl) pEl.textContent = pending;
+    var aEl = document.getElementById('reqhub-cnt-all'); if(aEl) aEl.textContent = list.length;
+    var apEl = document.getElementById('reqhub-cnt-approved'); if(apEl) apEl.textContent = approved;
+    var rEl = document.getElementById('reqhub-cnt-rejected'); if(rEl) rEl.textContent = rejected;
+
+    var statsBar = document.getElementById('reqHubStatsBar');
+    if(statsBar) {
+        statsBar.innerHTML = 
+            '<div style="flex:1;min-width:130px;background:rgba(243,156,18,0.1);border:1px solid rgba(243,156,18,0.3);padding:12px 16px;border-radius:10px;display:flex;align-items:center;justify-content:space-between">' +
+            '<div><div style="font-size:11px;color:var(--tx3);font-weight:700">⏳ طلبات معلقة</div><div style="font-size:22px;font-weight:800;color:#d35400">' + pending + '</div></div>' +
+            '<span style="font-size:24px">⌛</span></div>' +
+
+            '<div style="flex:1;min-width:130px;background:rgba(39,174,96,0.1);border:1px solid rgba(39,174,96,0.3);padding:12px 16px;border-radius:10px;display:flex;align-items:center;justify-content:space-between">' +
+            '<div><div style="font-size:11px;color:var(--tx3);font-weight:700">✅ طلبات مقبولة</div><div style="font-size:22px;font-weight:800;color:#27ae60">' + approved + '</div></div>' +
+            '<span style="font-size:24px">✔</span></div>' +
+
+            '<div style="flex:1;min-width:130px;background:rgba(231,76,60,0.1);border:1px solid rgba(231,76,60,0.3);padding:12px 16px;border-radius:10px;display:flex;align-items:center;justify-content:space-between">' +
+            '<div><div style="font-size:11px;color:var(--tx3);font-weight:700">❌ طلبات مرفوضة</div><div style="font-size:22px;font-weight:800;color:#c0392b">' + rejected + '</div></div>' +
+            '<span style="font-size:24px">✖</span></div>' +
+
+            '<div style="flex:1;min-width:130px;background:rgba(41,128,185,0.1);border:1px solid rgba(41,128,185,0.3);padding:12px 16px;border-radius:10px;display:flex;align-items:center;justify-content:space-between">' +
+            '<div><div style="font-size:11px;color:var(--tx3);font-weight:700">📋 إجمالي الطلبات</div><div style="font-size:22px;font-weight:800;color:#2980b9">' + list.length + '</div></div>' +
+            '<span style="font-size:24px">📥</span></div>';
+    }
+}
+
+function renderAllRequestsListHub() {
+    var container = document.getElementById('allRequestsHubList');
+    if(!container) return;
+
+    var list = window._reqHubDataCache || [];
+    var statusFilter = window._reqHubStatusTab || 'pending';
+    var search = (document.getElementById('reqHubSearch') ? document.getElementById('reqHubSearch').value : '').toLowerCase().trim();
+    var typeFilter = document.getElementById('reqHubTypeFilter') ? document.getElementById('reqHubTypeFilter').value : 'all';
+
+    var filtered = list.filter(function(r) {
+        var s = (r.status || 'pending').toLowerCase();
+        if(statusFilter !== 'all') {
+            if(statusFilter === 'pending' && s !== 'pending') return false;
+            if(statusFilter === 'approved' && s !== 'approved') return false;
+            if(statusFilter === 'rejected' && s !== 'rejected') return false;
+        }
+
+        if(typeFilter !== 'all') {
+            var t = (r.type || '').toLowerCase();
+            if(typeFilter === 'leave' && t.indexOf('إجازة') === -1) return false;
+            if(typeFilter === 'perm' && t.indexOf('إذن') === -1) return false;
+            if(typeFilter === 'delay' && t.indexOf('التماس') === -1 && t.indexOf('تعديل') === -1) return false;
+            if(typeFilter === 'res' && t.indexOf('استقالة') === -1) return false;
+            if(typeFilter === 'comp' && t.indexOf('شكوى') === -1 && t.indexOf('مقترح') === -1) return false;
+            if(typeFilter === 'other' && (t.indexOf('إجازة') !== -1 || t.indexOf('إذن') !== -1 || t.indexOf('التماس') !== -1 || t.indexOf('استقالة') !== -1 || t.indexOf('شكوى') !== -1)) return false;
+        }
+
+        if(search) {
+            var empMatch = window._staffEmpCache ? (window._staffEmpCache.find(function(e) { return e.uid === r.uid; }) || {}) : {};
+            var nameStr = (empMatch.name || r.uid || '').toLowerCase();
+            var typeStr = (r.type || '').toLowerCase();
+            var detStr = (r.details || '').toLowerCase();
+            var dateStr = (r.fromDate || '').toLowerCase() + (r.toDate || '').toLowerCase();
+            if(nameStr.indexOf(search) === -1 && typeStr.indexOf(search) === -1 && detStr.indexOf(search) === -1 && dateStr.indexOf(search) === -1) {
+                return false;
+            }
+        }
+        return true;
+    });
+
+    if(filtered.length === 0) {
+        container.innerHTML = '<div class="empty-hint" style="padding:30px;background:var(--bg2);border-radius:12px;margin-top:10px">' +
+                              '📭 لا توجد طلبات تطابق عناصر البحث أو الفلترة المحددة.' +
+                              '</div>';
+        return;
+    }
+
+    var h = '<div style="display:flex;flex-direction:column;gap:12px;margin-top:10px">';
+    filtered.forEach(function(r) {
+        var empMatch = window._staffEmpCache ? (window._staffEmpCache.find(function(e) { return e.uid === r.uid; }) || {}) : {};
+        var empName = empMatch.name || r.uid || 'غير معروف';
+        var empJob = empMatch.jobTitle || empMatch.dept || '';
+
+        var st = (r.status || 'pending').toLowerCase();
+        var statusBadge = '';
+        if(st === 'approved') statusBadge = '<span style="background:rgba(39,174,96,0.15);color:#27ae60;padding:4px 10px;border-radius:20px;font-size:11px;font-weight:800;border:1px solid rgba(39,174,96,0.3)">✅ تمت الموافقة</span>';
+        else if(st === 'rejected') statusBadge = '<span style="background:rgba(231,76,60,0.15);color:#c0392b;padding:4px 10px;border-radius:20px;font-size:11px;font-weight:800;border:1px solid rgba(231,76,60,0.3)">❌ مرفوض</span>';
+        else statusBadge = '<span style="background:rgba(243,156,18,0.15);color:#d35400;padding:4px 10px;border-radius:20px;font-size:11px;font-weight:800;border:1px solid rgba(243,156,18,0.3)">⏳ قيد الانتظار</span>';
+
+        var dh = '';
+        if(r.dynamicData) {
+            var tpl = window.FS_TEMPLATES && r.formTemplateId ? window.FS_TEMPLATES[r.formTemplateId] : null;
+            var fieldLabels = {};
+            if(tpl && tpl.fields) { tpl.fields.forEach(function(f){ fieldLabels[f.id] = f.label; }); }
+            dh = '<div style="margin-top:8px;padding:10px;background:rgba(0,0,0,0.03);border-radius:8px;font-size:12px;display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:6px">';
+            for(var k in r.dynamicData){
+                var v = r.dynamicData[k];
+                if(v === true) v = 'نعم / تم التسليم';
+                if(v === false) v = 'لا';
+                var lbl = fieldLabels[k] || k;
+                if(lbl === 'chk1') lbl = 'تسليم العهدة المالية';
+                if(lbl === 'chk2') lbl = 'تسليم العهدة العينية';
+                if(lbl === 'chk3') lbl = 'تسليم المستندات والملفات';
+                if(lbl === 'chk4') lbl = 'إنهاء المهام المعلقة';
+                dh += '<div><span style="color:var(--tx3);display:inline-block;">' + escH(lbl) + ':</span> <b style="white-space:pre-wrap;">' + escH(v) + '</b></div>';
+            }
+            dh += '</div>';
+        }
+
+        var attachHtml = '';
+        if(r.fileUrl && r.fileType){
+            if(r.fileType.indexOf('image/')===0){ attachHtml = '<div style="margin-top:8px"><a href="'+r.fileUrl+'" target="_blank"><img src="'+r.fileUrl+'" style="max-width:160px;max-height:110px;border-radius:8px;display:block;border:1px solid var(--bd)"></a></div>'; }
+            else if(r.fileType.indexOf('video/')===0){ attachHtml = '<div style="margin-top:8px"><video src="'+r.fileUrl+'" controls style="max-width:220px;border-radius:8px"></video></div>'; }
+            else { attachHtml = '<div style="margin-top:8px"><a href="'+r.fileUrl+'" target="_blank" style="color:var(--tx);font-weight:700;text-decoration:underline">📎 '+escH(r.fileName||'تحميل الملف المرفق')+'</a></div>'; }
+        }
+
+        var createdDateStr = r.createdAt ? (r.createdAt.toMillis ? new Date(r.createdAt.toMillis()).toLocaleString('ar-EG') : new Date(r.createdAt).toLocaleString('ar-EG')) : '';
+
+        h += '<div class="rq-row" style="background:var(--w);padding:16px;border-radius:12px;border:1px solid var(--bd);box-shadow:0 2px 8px rgba(0,0,0,0.03);">' +
+             '  <div style="display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:8px">' +
+             '    <div>' +
+             '      <div style="font-size:15px;font-weight:800;color:var(--tx);display:flex;align-items:center;gap:8px">' +
+             '        <span>' + escH(r.type || 'طلب جديد') + '</span>' + statusBadge +
+             '      </div>' +
+             '      <div style="font-size:12px;color:var(--tx2);margin-top:4px;display:flex;align-items:center;gap:12px;flex-wrap:wrap">' +
+             '        <span>👤 <strong>' + escH(empName) + '</strong>' + (empJob ? ' (' + escH(empJob) + ')' : '') + '</span>' +
+             (createdDateStr ? ('<span>🕒 ' + escH(createdDateStr) + '</span>') : '') +
+             '      </div>' +
+             '    </div>' +
+             '  </div>' +
+             (r.fromDate ? ('<div style="margin-top:8px;font-size:12px;color:var(--tx2);background:rgba(52,152,219,0.08);padding:6px 10px;border-radius:6px;display:inline-block">📅 المدة المطلوبة: من <strong>' + escH(r.fromDate) + '</strong>' + (r.toDate ? (' إلى <strong>' + escH(r.toDate) + '</strong>') : '') + '</div>') : '') +
+             (r.details ? ('<div style="margin-top:8px;font-size:13px;line-height:1.6;color:var(--tx);background:var(--bg2);padding:10px;border-radius:8px">' + escH(r.details) + '</div>') : '') +
+             dh + attachHtml +
+             (r.reviewedBy ? ('<div style="margin-top:8px;font-size:11px;color:var(--tx3)">تمت المراجعة بواسطة: ' + escH(r.reviewedBy) + '</div>') : '') +
+             (st === 'pending' ? (
+                 '  <div style="margin-top:12px;display:flex;gap:8px;border-top:1px dashed var(--bd);padding-top:12px">' +
+                 '    <button class="bt bt-p" style="padding:7px 18px;font-size:12px;font-weight:700" onclick="reviewRequestHub(\'' + r.id + '\',\'approved\')">✔ موافقة على الطلب</button>' +
+                 '    <button class="bt bt-d" style="padding:7px 18px;font-size:12px;font-weight:700" onclick="reviewRequestHub(\'' + r.id + '\',\'rejected\')">✕ رفض الطلب</button>' +
+                 '  </div>'
+             ) : '') +
+             '</div>';
+    });
+    h += '</div>';
+    container.innerHTML = h;
+}
+
+function reviewRequestHub(reqId, newStatus) {
+    if(!reqId) return;
+    reviewRequest(reqId, newStatus);
+    var match = (window._reqHubDataCache || []).find(function(r) { return r.id === reqId; });
+    if(match) {
+        match.status = newStatus;
+        match.reviewedBy = TG_USER ? TG_USER.name : 'المدير';
+        match.reviewedAt = new Date();
+    }
+    updateReqHubStats();
+    renderAllRequestsListHub();
 }
 // ═══════════════════════════════════════════════════════════════
 // ── الإعلانات ─────────────────────────────────────────────────
