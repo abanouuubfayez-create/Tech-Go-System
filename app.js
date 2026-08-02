@@ -4787,13 +4787,26 @@ function loadAdminAnnouncements() {
     var box = document.getElementById('annList');
     if(!box) return;
     box.innerHTML = '<div class="empty-hint" style="color:var(--tx3)">⌛ جارٍ التحميل...</div>';
-    db.collection('announcements').orderBy('createdAt', 'desc').limit(20).get().then(function(snap) {
+    db.collection('announcements').limit(50).get().then(function(snap) {
         if(snap.empty) { box.innerHTML = '<div class="empty-hint">لا توجد إعلانات سابقة.</div>'; return; }
-        var h = '';
+        
+        var list = [];
         snap.forEach(function(d) {
             var a = d.data();
+            a._id = d.id;
             window.loadedAnnouncements[d.id] = a;
-            var ts = (a.createdAt && a.createdAt.seconds) ? new Date(a.createdAt.seconds*1000).toLocaleDateString('ar-EG') : '';
+            list.push(a);
+        });
+
+        list.sort(function(a, b) {
+            var tA = a.createdAt && a.createdAt.seconds ? a.createdAt.seconds*1000 : (a.createdAt ? new Date(a.createdAt).getTime() : 0);
+            var tB = b.createdAt && b.createdAt.seconds ? b.createdAt.seconds*1000 : (b.createdAt ? new Date(b.createdAt).getTime() : 0);
+            return tB - tA;
+        });
+
+        var h = '';
+        list.forEach(function(a) {
+            var ts = (a.createdAt && a.createdAt.seconds) ? new Date(a.createdAt.seconds*1000).toLocaleDateString('ar-EG') : (a.createdAt ? new Date(a.createdAt).toLocaleDateString('ar-EG') : '');
             var isPrivate = a.audience === 'private';
             h += '<div class="pj-row" style="border-right:4px solid '+(isPrivate?'var(--gd)':'var(--nv)')+'; background:var(--w); border-radius:14px; padding:16px; border:1px solid var(--bd); box-shadow:0 4px 15px rgba(0,0,0,0.03);">';
             h += '<div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:6px">';
@@ -4811,9 +4824,9 @@ function loadAdminAnnouncements() {
             h += '</div>';
             h += '<div style="display:flex;gap:6px">';
             var hideBtnText = a.isHidden ? '👁 إظهار' : '👻 إخفاء مؤقت';
-            h += '<button class="bt bt-o" style="padding:5px 12px;font-size:12px;font-weight:800;border-radius:20px;" onclick="republishAnnouncement(\''+d.id+'\')">✏️ تعديل</button>';
-            h += '<button class="bt bt-o" style="padding:5px 12px;font-size:12px;font-weight:800;border-radius:20px;" onclick="toggleAnnouncementVisibility(\''+d.id+'\', '+!!a.isHidden+')">'+hideBtnText+'</button>';
-            h += '<button class="bt bt-d" style="padding:5px 12px;font-size:12px;font-weight:800;border-radius:20px;" onclick="deleteAnnouncement(\''+d.id+'\')">🗑 حذف</button>';
+            h += '<button class="bt bt-o" style="padding:5px 12px;font-size:12px;font-weight:800;border-radius:20px;" onclick="republishAnnouncement(\''+a._id+'\')">✏️ تعديل</button>';
+            h += '<button class="bt bt-o" style="padding:5px 12px;font-size:12px;font-weight:800;border-radius:20px;" onclick="toggleAnnouncementVisibility(\''+a._id+'\', '+!!a.isHidden+')">'+hideBtnText+'</button>';
+            h += '<button class="bt bt-d" style="padding:5px 12px;font-size:12px;font-weight:800;border-radius:20px;" onclick="deleteAnnouncement(\''+a._id+'\')">🗑 حذف</button>';
             h += '</div></div></div>';
         });
         box.innerHTML = h;
@@ -5513,16 +5526,27 @@ function loadEmpAnnouncements() {
     }
 
     // نجيب أحدث 30 إعلان ونقسمهم على العميل — بيغطي الإعلانات القديمة اللي مفيهاش حقل audience (بتتعامل كـ "عام")
-    db.collection('announcements').orderBy('createdAt', 'desc').limit(30).onSnapshot(function(snap) {
+    db.collection('announcements').limit(50).onSnapshot(function(snap) {
         if(snap.empty) {
             panel.style.display = 'none';
             return;
         }
-        var publicOnes = [];
-        var privateOnes = [];
+        var allList = [];
         snap.forEach(function(d) {
             var data = d.data();
             if(data.isHidden) return;
+            allList.push(data);
+        });
+
+        allList.sort(function(a, b) {
+            var tA = a.createdAt && a.createdAt.seconds ? a.createdAt.seconds*1000 : (a.createdAt ? new Date(a.createdAt).getTime() : 0);
+            var tB = b.createdAt && b.createdAt.seconds ? b.createdAt.seconds*1000 : (b.createdAt ? new Date(b.createdAt).getTime() : 0);
+            return tB - tA;
+        });
+
+        var publicOnes = [];
+        var privateOnes = [];
+        allList.forEach(function(data) {
             if(data.audience === 'private') {
                 if(data.targetUid === myUid) privateOnes.push(data);
             } else {
