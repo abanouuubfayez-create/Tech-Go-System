@@ -68,7 +68,7 @@ service cloud.firestore {
       allow create: if isSignedIn() && myUid() == request.resource.data.uid;
       allow update: if isAnyAdmin() || (
                       isSignedIn() && myUid() == resource.data.uid &&
-                      request.resource.data.diff(resource.data).affectedKeys().hasOnly(['checkOut'])
+                      request.resource.data.diff(resource.data).affectedKeys().hasAny(['checkOut', 'serverTimestamp'])
                     );
       allow delete: if isAdmin();
     }
