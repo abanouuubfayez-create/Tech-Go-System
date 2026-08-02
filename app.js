@@ -4344,10 +4344,14 @@ function load(id,c){
         h+='<button class="bt bt-p" style="padding:6px 14px;font-size:12px" onclick="saveAppSettings()">💾 حفظ إعدادات النظام</button>';
         h+='</div>';
 
-        h+='<div class="set-sec"><div class="set-sec-title">🤖 الذكاء الاصطناعي (Cerebras / Together / Gemini / Groq / OpenRouter)</div>';
+        h+='<div class="set-sec"><div class="set-sec-title">🤖 الذكاء الاصطناعي والمستشار الذكي (Cerebras / Together / Gemini / Groq / OpenRouter)</div>';
         h+='<div class="set-hint" style="margin-bottom:12px">ضع هنا مفتاح API الخاص بك (Cerebras أو Together AI أو Gemini أو Groq أو OpenRouter). يتعرف النظام على مزود الخدمة تلقائياً عبر صيغة المفتاح (ينصح بـ Cerebras أو Together للملفات والتقارير الكبيرة).</div>';
-        h+='<div class="fr fr2"><div class="fg" style="margin:0"><input type="password" id="txtGeminiApi" placeholder="csk-... (Cerebras) | tgp_... (Together) | gsk_... (Groq) | AIzaSy... (Gemini)" value="'+(window._appSettingsCache&&window._appSettingsCache.geminiApiKey?window._appSettingsCache.geminiApiKey:'')+'"></div></div>';
-        h+='<button class="bt bt-p" style="padding:6px 14px;font-size:12px;margin-top:10px" onclick="saveAppSettings()">💾 حفظ إعدادات النظام</button>';
+        h+='<div class="fg" style="margin:10px 0 14px; width:100%;">';
+        h+='<label style="font-weight:800; font-size:13px; color:var(--tx); margin-bottom:6px; display:block;">🔑 مفتاح الـ API الخاص بالخدمة</label>';
+        h+='<input type="text" id="txtGeminiApi" style="width:100%; direction:ltr; text-align:left; font-family:monospace; padding:12px 16px; border-radius:10px; border:1.5px solid var(--bd); background:var(--w); color:var(--tx);" placeholder="csk-... (Cerebras) | tgp_... (Together) | gsk_... (Groq) | AIzaSy... (Gemini)" value="'+(window._appSettingsCache&&window._appSettingsCache.geminiApiKey?escH(window._appSettingsCache.geminiApiKey):'')+'">';
+        h+='<div style="font-size:12px; color:var(--tx2); margin-top:8px; display:flex; gap:8px; align-items:center; flex-wrap:wrap;"><span>✨ صيغ المفاتيح المدعومة:</span> <span style="background:rgba(2,132,199,0.12); color:#0284c7; padding:3px 10px; border-radius:8px; font-weight:800;">Cerebras (csk-)</span> <span style="background:rgba(16,185,129,0.12); color:#10b981; padding:3px 10px; border-radius:8px; font-weight:800;">Together AI (tgp_)</span> <span style="background:rgba(245,158,11,0.12); color:#d97706; padding:3px 10px; border-radius:8px; font-weight:800;">Groq (gsk_)</span> <span style="background:rgba(99,102,241,0.12); color:#6366f1; padding:3px 10px; border-radius:8px; font-weight:800;">Gemini (AIzaSy)</span></div>';
+        h+='</div>';
+        h+='<button class="bt bt-p" style="padding:8px 20px; font-size:13px; font-weight:800;" onclick="saveAppSettings()">💾 حفظ إعدادات النظام</button>';
         h+='</div>';
 
         h+='<div class="set-sec"><div class="set-sec-title">📋 ترقيم المستندات</div>';
