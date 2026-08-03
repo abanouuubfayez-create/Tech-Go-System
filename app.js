@@ -7404,8 +7404,7 @@ async function buildAdvisorLiveContext(questionText) {
         if (reqSnap.size === 0) ctx += "لا توجد طلبات معلقة.\n";
         reqSnap.forEach(function(d) {
             var r = d.data();
-            var empMatch = (window._staffEmpCache || []).find(function(e){ return e.uid === r.uid; });
-            var empName = empMatch ? empMatch.name : (r.uid || 'غير معروف');
+            var empName = tgGetRealEmpName(r.userName || r.name, r.uid);
             ctx += "- " + (r.type || 'طلب') + " من " + empName + (r.fromDate ? (" بتاريخ " + r.fromDate + (r.toDate ? (" إلى " + r.toDate) : "")) : "") + "\n";
         });
     } catch(e) { console.error("Advisor ctx (requests) error", e); }
@@ -12836,22 +12835,50 @@ window.tgGetRealEmpName = function(nameOrUid, uid) {
     var raw = String(nameOrUid || '').trim();
     var id = String(uid || raw).trim();
 
-    if (raw && raw.length < 25 && raw.indexOf('Txeg') === -1 && !/^[A-Za-z0-9]{20,}$/.test(raw)) {
+    var isUid = (raw.indexOf('Txeg') !== -1 || /^[A-Za-z0-9]{20,}$/.test(raw));
+
+    // 1. If raw is already a clean human name (not a UID)
+    if (raw && !isUid && raw.length < 35 && raw !== 'null' && raw !== 'undefined') {
         return raw;
     }
 
+    // 2. Check staff cache
     if (window._staffEmpCache && Array.isArray(window._staffEmpCache)) {
         var match = window._staffEmpCache.find(function(e) {
             return e.uid === id || e.uid === raw || (e.id && e.id === id);
         });
-        if (match && match.name && match.name.length < 30) return match.name;
+        if (match && match.name && match.name.length < 35 && !/^[A-Za-z0-9]{20,}$/.test(match.name)) {
+            return match.name;
+        }
     }
 
-    var u = window.TG_USER || {};
-    if (u.uid === id && u.name) return u.name;
+    // 3. Check all employees cache or users cache
+    var empList = window._allEmployeesCache || window._usersCache;
+    if (empList && Array.isArray(empList)) {
+        var match2 = empList.find(function(e) {
+            return e.uid === id || e.uid === raw || (e.id && e.id === id);
+        });
+        if (match2 && match2.name && match2.name.length < 35 && !/^[A-Za-z0-9]{20,}$/.test(match2.name)) {
+            return match2.name;
+        }
+    }
 
+    // 4. Check current user
+    var u = window.TG_USER || {};
+    if ((u.uid === id || u.uid === raw) && u.name) {
+        return u.name;
+    }
+
+    // 5. Check LocalStorage fallback cache
+    var cachedName = localStorage.getItem('tg_emp_name_' + id) || localStorage.getItem('tg_emp_name_' + raw);
+    if (cachedName && cachedName.length < 35 && !/^[A-Za-z0-9]{20,}$/.test(cachedName)) {
+        return cachedName;
+    }
+
+    // Never return raw UID!
     return 'موظف';
 };
+
 
 window.tgOpenSystemGuideModal = function(initialQuery) {
     var modalId = 'tgSystemGuideModalOverlay';

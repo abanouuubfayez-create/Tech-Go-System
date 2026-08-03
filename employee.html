@@ -64,7 +64,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Alexandria:wght@300;400;500;600;700;800;900&family=Cairo:wght@400;600;700;800;900&family=Tajawal:wght@400;500;700;800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="styles.css?v=1785751022">
+<link rel="stylesheet" href="styles.css?v=1785752637">
 <link rel="manifest" href="manifest.json">
 <link rel="icon" type="image/png" sizes="192x192" href="icon-192.png">
 <link rel="apple-touch-icon" href="icon-192.png">
@@ -72,10 +72,10 @@
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-storage-compat.js"></script>
-<script src="firebase-config.js?v=1785751022"></script>
-<script src="auth.js?v=1785751022"></script>
-<script src="app.js?v=1785751022"></script>
-<script src="formsend.js?v=1785751022"></script>
+<script src="firebase-config.js?v=1785752637"></script>
+<script src="auth.js?v=1785752637"></script>
+<script src="app.js?v=1785752637"></script>
+<script src="formsend.js?v=1785752637"></script>
 <script>
     (function() {
         const theme = localStorage.getItem('tg-theme') || 'light';
@@ -1826,10 +1826,18 @@ function tgOnReqTypeChange(val) {
     var off = window.FS_OFFICIAL ? window.FS_OFFICIAL[val] : null;
     var h = '';
     
+    // Quick control header banner
+    h += '<div style="background:rgba(2,132,199,0.08); border:1px solid rgba(2,132,199,0.25); border-radius:12px; padding:10px 14px; margin-bottom:14px; display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:8px;">' +
+            '<span style="font-size:12.5px; font-weight:800; color:#0284c7; display:inline-flex; align-items:center; gap:6px;">' +
+                '✨ تم تفعيل الحفظ التلقائي وإعادة ملء البيانات المكررة' +
+            '</span>' +
+            '<button type="button" onclick="tgClearFormDraft(\'' + val + '\')" class="bt bt-o" style="font-size:11px; padding:4px 12px; border-radius:14px; font-weight:700; border-color:rgba(239,68,68,0.4); color:#ef4444;">🧹 تفريغ النموذج</button>' +
+         '</div>';
+
     if (off && typeof off.fill === 'function') {
-        h = off.fill();
+        h += off.fill();
     } else if (tpl && typeof tpl.fill === 'function') {
-        h = tpl.fill();
+        h += tpl.fill();
     } else if (tpl && tpl.fields) {
         h += '<div class="set-sec-title" style="margin-top:0">' + escH(tpl.title) + '</div>';
         tpl.fields.forEach(function(f) {
@@ -1847,6 +1855,58 @@ function tgOnReqTypeChange(val) {
         });
     }
     dynWrap.innerHTML = h;
+
+    // Auto-restore saved draft / last submitted data for this template
+    setTimeout(function() {
+        tgRestoreFormDraft(val);
+        // Bind auto-save on input change
+        dynWrap.querySelectorAll('input, select, textarea').forEach(function(el) {
+            el.addEventListener('input', function() { tgAutoSaveFormDraft(val); });
+            el.addEventListener('change', function() { tgAutoSaveFormDraft(val); });
+        });
+    }, 50);
+}
+
+function tgAutoSaveFormDraft(val) {
+    if (!val || val === 'other') return;
+    var dynWrap = document.getElementById('reqDynamicFormWrap');
+    if (!dynWrap) return;
+    var draft = {};
+    dynWrap.querySelectorAll('[data-fid], input, select, textarea').forEach(function(el) {
+        var fid = el.getAttribute('data-fid') || el.name || el.id;
+        if (!fid) return;
+        if (el.type === 'checkbox') draft[fid] = el.checked;
+        else if (el.type === 'radio') { if (el.checked) draft[fid] = el.value; }
+        else draft[fid] = el.value;
+    });
+    localStorage.setItem('tg_form_draft_' + val, JSON.stringify(draft));
+}
+
+function tgRestoreFormDraft(val) {
+    if (!val || val === 'other') return;
+    var dynWrap = document.getElementById('reqDynamicFormWrap');
+    if (!dynWrap) return;
+    var rawDraft = localStorage.getItem('tg_form_draft_' + val) || localStorage.getItem('tg_saved_form_' + val);
+    if (!rawDraft) return;
+    try {
+        var draft = JSON.parse(rawDraft);
+        dynWrap.querySelectorAll('[data-fid], input, select, textarea').forEach(function(el) {
+            var fid = el.getAttribute('data-fid') || el.name || el.id;
+            if (!fid || !(fid in draft)) return;
+            var v = draft[fid];
+            if (el.type === 'checkbox') el.checked = Boolean(v);
+            else if (el.type === 'radio') { if (el.value === String(v)) el.checked = true; }
+            else el.value = v;
+        });
+    } catch(e) {}
+}
+
+function tgClearFormDraft(val) {
+    if (!val) return;
+    localStorage.removeItem('tg_form_draft_' + val);
+    localStorage.removeItem('tg_saved_form_' + val);
+    tgOnReqTypeChange(val);
+    if (typeof tgShowToast === 'function') tgShowToast('تم تفريغ مدخلات النموذج بنجاح', 'info');
 }
 
 function submitRequest(){
@@ -1856,8 +1916,15 @@ function submitRequest(){
     
     if(!type){ msg.style.color='var(--no)'; msg.textContent='الرجاء اختيار نوع الطلب أولاً.'; return; }
     
+    var empName = (window.TG_USER && TG_USER.name) ? TG_USER.name : (localStorage.getItem('tg_user_name') || 'موظف');
+    var empDept = (window.TG_USER && TG_USER.dept) ? TG_USER.dept : (localStorage.getItem('tg_user_dept') || '');
+
     var reqData = {
         uid: TG_USER.uid,
+        userName: empName,
+        employeeName: empName,
+        targetName: empName,
+        dept: empDept,
         status: 'pending',
         createdAt: new Date()
     };
@@ -1887,6 +1954,9 @@ function submitRequest(){
         Object.keys(radioFids).forEach(function (fid) { if (!reqData.dynamicData[fid]) missing = true; });
         
         if (missing) { msg.style.color = 'var(--no)'; msg.textContent = 'من فضلك املأ كل حقول النموذج.'; return; }
+
+        // Save submitted values for auto-fill on future forms
+        localStorage.setItem('tg_saved_form_' + type, JSON.stringify(reqData.dynamicData));
     } else {
         var details = (document.getElementById('reqDetails').value||'').trim();
         var from = document.getElementById('reqFrom').value||'';
@@ -1908,7 +1978,8 @@ function submitRequest(){
             if(fileInput) fileInput.value='';
             document.getElementById('reqFileName').textContent='';
             loadMyRequests();
-            tgNotifyAdmins('📩 طلب جديد من موظف', (TG_USER.name||'موظف') + ' أرسل طلباً جديداً: ' + finalData.type, 'request-new');
+            tgNotifyAdmins('📩 طلب جديد من موظف', (empName || 'موظف') + ' أرسل طلباً جديداً: ' + finalData.type, 'request-new');
+            if (typeof tgShowToast === 'function') tgShowToast('تم إرسال الطلب بنجاح', 'success');
             setTimeout(function(){ msg.textContent=''; }, 3000);
         }).catch(function(err){ 
             msg.style.color='var(--no)'; msg.textContent='❌ '+err.message; 
@@ -2605,7 +2676,7 @@ function tgNotifDelClick(id, ev) {
 <div style="position:fixed;bottom:4px;left:50%;transform:translateX(-50%);font-size:9px;color:rgba(255,255,255,0.2);z-index:9999;pointer-events:none;white-space:nowrap;font-family:inherit">تطوير وتصميم: أبانوب فايز</div>
 <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
-<script src="theme.js?v=1785751022"></script>
+<script src="theme.js?v=1785752637"></script>
 
 
 <!-- Incoming Meeting Call Modal -->
