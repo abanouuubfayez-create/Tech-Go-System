@@ -7203,7 +7203,7 @@ window.addDevRes = function() {
         if(file.size > 100*1024*1024) { alert('حجم الملف كبير جداً (يجب أن يكون أقل من 100 ميجا)'); return; }
         
         btn.disabled = true;
-        status.innerText = '⏳ جارٍ رفع الملف...';
+        status.innerText = '⏳ جارٍ رفع الملف... 0%';
         
         tgUploadFile('dev_resources', file.name, file, 
             function(progress) {

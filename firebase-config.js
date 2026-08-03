@@ -68,8 +68,8 @@ function tgDeleteSupabaseFile(publicUrl, onDone, onError) {
 }
 
 /**
- * رفع ملف على Supabase Storage مع متابعة نسبة الرفع
- * @param {string} folder - المجلد (مثلاً 'tasks', 'projects', 'requests')
+ * رفع ملف على Supabase Storage مع متابعة نسبة الرفع، مع fallback تلقائي إلى Firebase Storage في حالة حدوث أي مشكلة
+ * @param {string} folder - المجلد (مثلاً 'tasks', 'projects', 'requests', 'dev_resources')
  * @param {string} fileName - اسم الملف الفريد
  * @param {File} file - كائن الملف
  * @param {function} onProgress - callback نسبة الرفع (0-100)
@@ -77,45 +77,97 @@ function tgDeleteSupabaseFile(publicUrl, onDone, onError) {
  * @param {function} onDone - callback عند النجاح (يستقبل الـ public URL)
  */
 function tgUploadFile(folder, fileName, file, onProgress, onError, onDone) {
+    if (!file) {
+        if (onError) onError('لم يتم اختيار ملف');
+        return;
+    }
+
+    var ext = (fileName.lastIndexOf('.') !== -1) ? fileName.substring(fileName.lastIndexOf('.')) : '';
+    var base = (fileName.lastIndexOf('.') !== -1) ? fileName.substring(0, fileName.lastIndexOf('.')) : fileName;
+    // تنظيف اسم الملف لدعم الأرقام والحروف واللغة العربية بشكل آمن
+    var safeBase = base.replace(/[^\w\u0600-\u06FF\-]/g, '_').replace(/_+/g, '_');
+    if (!safeBase || safeBase === '_') safeBase = 'doc_' + Math.random().toString(36).substring(2, 8);
+    var safeFileName = safeBase + ext;
+    var timestamp = Date.now();
+    var path = folder + '/' + timestamp + '_' + encodeURIComponent(safeFileName);
+
+    // دالة الـ Fallback لاستخدام Firebase Storage
+    function uploadToFirebaseStorage(reason) {
+        console.warn('Supabase upload skipped/failed (' + reason + '), falling back to Firebase Storage...');
+        try {
+            if (typeof firebase !== 'undefined' && firebase.storage) {
+                var fbPath = folder + '/' + timestamp + '_' + safeFileName;
+                var storageRef = firebase.storage().ref();
+                var fileRef = storageRef.child(fbPath);
+                var uploadTask = fileRef.put(file);
+
+                uploadTask.on('state_changed',
+                    function(snapshot) {
+                        if (snapshot.totalBytes > 0 && onProgress) {
+                            var pct = Math.round((snapshot.bytesTransferred / snapshot.totalBytes) * 100);
+                            onProgress(pct);
+                        }
+                    },
+                    function(err) {
+                        console.error('Firebase Storage upload error:', err);
+                        if (onError) onError('خطأ في الرفع: ' + (err.message || 'فشل رفع الملف'));
+                    },
+                    function() {
+                        uploadTask.snapshot.ref.getDownloadURL().then(function(downloadURL) {
+                            console.log('Firebase Storage upload success:', downloadURL);
+                            if (onDone) onDone(downloadURL);
+                        }).catch(function(err) {
+                            if (onError) onError('خطأ في الحصول على رابط التحميل: ' + err.message);
+                        });
+                    }
+                );
+                return;
+            }
+        } catch (fbErr) {
+            console.error('Firebase Storage fallback failed:', fbErr);
+        }
+        if (onError) onError('فشل رفع الملف: ' + (reason || 'حدث خطأ في الشبكة'));
+    }
+
     try {
-        var ext = (fileName.lastIndexOf('.') !== -1) ? fileName.substring(fileName.lastIndexOf('.')) : '';
-        var base = (fileName.lastIndexOf('.') !== -1) ? fileName.substring(0, fileName.lastIndexOf('.')) : fileName;
-        var safeBase = base.replace(/[^a-zA-Z0-9]/g, '_').replace(/_+/g, '_');
-        if (!safeBase || safeBase === '_') safeBase = 'doc_' + Math.random().toString(36).substring(2, 8);
-        var safeFileName = safeBase + ext;
-        var path = folder + '/' + Date.now() + '_' + safeFileName;
-        
         var xhr = new XMLHttpRequest();
         xhr.open('POST', SUPABASE_URL + '/storage/v1/object/' + SUPABASE_BUCKET + '/' + path, true);
         xhr.setRequestHeader('apikey', SUPABASE_ANON_KEY);
         xhr.setRequestHeader('Authorization', 'Bearer ' + SUPABASE_ANON_KEY);
         xhr.setRequestHeader('Content-Type', file.type || 'application/octet-stream');
-        
+        xhr.setRequestHeader('x-upsert', 'true');
+
         xhr.upload.onprogress = function(e) {
             if (e.lengthComputable && onProgress) {
                 var percentComplete = Math.round((e.loaded / e.total) * 100);
                 onProgress(percentComplete);
             }
         };
-        
+
         xhr.onload = function() {
             if (xhr.status >= 200 && xhr.status < 300) {
                 var publicUrl = SUPABASE_URL + '/storage/v1/object/public/' + SUPABASE_BUCKET + '/' + path;
                 if (onDone) onDone(publicUrl);
             } else {
-                var errDesc = 'Upload failed with status: ' + xhr.status;
-                try { errDesc += ' - ' + JSON.parse(xhr.responseText).message; } catch(e){}
-                if (onError) onError(errDesc);
+                var errDesc = 'Status ' + xhr.status;
+                try {
+                    var jsonRes = JSON.parse(xhr.responseText);
+                    if (jsonRes.message) errDesc += ' (' + jsonRes.message + ')';
+                } catch(e){}
+                uploadToFirebaseStorage(errDesc);
             }
         };
-        
+
         xhr.onerror = function() {
-            if (onError) onError('Network error occurred during upload.');
+            uploadToFirebaseStorage('Network error');
         };
-        
+
+        xhr.ontimeout = function() {
+            uploadToFirebaseStorage('Timeout');
+        };
+
         xhr.send(file);
     } catch(err) {
-        console.error("Sync Upload Error:", err);
-        if (onError) onError(err.message || err);
+        uploadToFirebaseStorage(err.message || 'Sync error');
     }
 }
