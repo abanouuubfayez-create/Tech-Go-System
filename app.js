@@ -4578,19 +4578,75 @@ function renderAllRequestsListHub() {
         return;
     }
 
+window.tgExtractNameFromRequest = function(r) {
+    if (!r) return 'موظف';
+    
+    // 1. Check direct name properties
+    var directNames = [r.userName, r.employeeName, r.targetName, r.name, r.creatorName];
+    for (var i = 0; i < directNames.length; i++) {
+        var dn = String(directNames[i] || '').trim();
+        if (dn && dn !== 'موظف' && dn !== 'غير معروف' && dn !== 'null' && dn !== 'undefined' && !/^[A-Za-z0-9]{20,}$/.test(dn) && dn.indexOf('Txeg') === -1) {
+            return dn;
+        }
+    }
+
+    // 2. Check dynamicData values
+    if (r.dynamicData && typeof r.dynamicData === 'object') {
+        var dynKeys = ['name', 'empName', 'employeeName', 'fullName', 'اسم الموظف', 'اسم الموظف الكامل', 'الاسم الكامل', 'f1'];
+        for (var j = 0; j < dynKeys.length; j++) {
+            var k = dynKeys[j];
+            var val = String(r.dynamicData[k] || '').trim();
+            if (val && val !== 'null' && val !== 'undefined' && !/^[A-Za-z0-9]{20,}$/.test(val) && val.indexOf('Txeg') === -1) {
+                return val;
+            }
+        }
+
+        // Search dynamicData keys matching label "اسم"
+        var tpl = window.FS_TEMPLATES && r.formTemplateId ? window.FS_TEMPLATES[r.formTemplateId] : null;
+        if (tpl && tpl.fields) {
+            for (var m = 0; m < tpl.fields.length; m++) {
+                var f = tpl.fields[m];
+                if (f.label && (f.label.indexOf('اسم الموظف') !== -1 || f.label.indexOf('اسم') !== -1)) {
+                    var v = String(r.dynamicData[f.id] || '').trim();
+                    if (v && !/^[A-Za-z0-9]{20,}$/.test(v) && v.indexOf('Txeg') === -1) {
+                        return v;
+                    }
+                }
+            }
+        }
+
+        // Search raw key/value pairs in dynamicData where key contains "اسم" or "name"
+        for (var dk in r.dynamicData) {
+            var dv = String(r.dynamicData[dk] || '').trim();
+            if (dk.indexOf('اسم') !== -1 || dk.indexOf('name') !== -1 || dk.indexOf('Name') !== -1) {
+                if (dv && dv.length > 2 && dv.length < 40 && !/^[A-Za-z0-9]{20,}$/.test(dv) && dv.indexOf('Txeg') === -1) {
+                    return dv;
+                }
+            }
+        }
+    }
+
+    // 3. Check staff cache
+    if (window._staffEmpCache && Array.isArray(window._staffEmpCache)) {
+        var match = window._staffEmpCache.find(function(e) { return e.uid === r.uid || (r.uid && e.id === r.uid); });
+        if (match && match.name && !/^[A-Za-z0-9]{20,}$/.test(match.name)) {
+            return match.name;
+        }
+    }
+
+    // 4. Check tgGetRealEmpName
+    if (typeof tgGetRealEmpName === 'function') {
+        var realName = tgGetRealEmpName(r.userName || r.name, r.uid);
+        if (realName && realName !== 'موظف') return realName;
+    }
+
+    return 'موظف';
+};
+
     var h = '<div style="display:flex;flex-direction:column;gap:12px;margin-top:10px">';
     filtered.forEach(function(r) {
         var empMatch = window._staffEmpCache ? (window._staffEmpCache.find(function(e) { return e.uid === r.uid; }) || {}) : {};
-        
-        var nameFromDynamic = r.dynamicData ? (r.dynamicData['اسم الموظف'] || r.dynamicData['f1'] || r.dynamicData['empName']) : '';
-        var rawName = empMatch.name || r.userName || r.employeeName || r.targetName || nameFromDynamic;
-        
-        var empName = 'موظف';
-        if (rawName && !/^[A-Za-z0-9]{20,}$/.test(rawName) && rawName.indexOf('Txeg') === -1) {
-            empName = rawName;
-        } else if (typeof tgGetRealEmpName === 'function') {
-            empName = tgGetRealEmpName(r.userName || r.name, r.uid);
-        }
+        var empName = tgExtractNameFromRequest(r);
         var empJob = empMatch.jobTitle || empMatch.dept || r.dept || '';
 
         var st = (r.status || 'pending').toLowerCase();
