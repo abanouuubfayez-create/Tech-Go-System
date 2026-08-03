@@ -4581,8 +4581,17 @@ function renderAllRequestsListHub() {
     var h = '<div style="display:flex;flex-direction:column;gap:12px;margin-top:10px">';
     filtered.forEach(function(r) {
         var empMatch = window._staffEmpCache ? (window._staffEmpCache.find(function(e) { return e.uid === r.uid; }) || {}) : {};
-        var empName = empMatch.name || r.uid || 'غير معروف';
-        var empJob = empMatch.jobTitle || empMatch.dept || '';
+        
+        var nameFromDynamic = r.dynamicData ? (r.dynamicData['اسم الموظف'] || r.dynamicData['f1'] || r.dynamicData['empName']) : '';
+        var rawName = empMatch.name || r.userName || r.employeeName || r.targetName || nameFromDynamic;
+        
+        var empName = 'موظف';
+        if (rawName && !/^[A-Za-z0-9]{20,}$/.test(rawName) && rawName.indexOf('Txeg') === -1) {
+            empName = rawName;
+        } else if (typeof tgGetRealEmpName === 'function') {
+            empName = tgGetRealEmpName(r.userName || r.name, r.uid);
+        }
+        var empJob = empMatch.jobTitle || empMatch.dept || r.dept || '';
 
         var st = (r.status || 'pending').toLowerCase();
         var statusBadge = '';
@@ -4595,8 +4604,20 @@ function renderAllRequestsListHub() {
             var tpl = window.FS_TEMPLATES && r.formTemplateId ? window.FS_TEMPLATES[r.formTemplateId] : null;
             var fieldLabels = {};
             if(tpl && tpl.fields) { tpl.fields.forEach(function(f){ fieldLabels[f.id] = f.label; }); }
+            
+            // Canonical consistent field ordering
+            var sortedKeys = [];
+            if(tpl && tpl.fields) {
+                tpl.fields.forEach(function(f) {
+                    if (f.id in r.dynamicData) sortedKeys.push(f.id);
+                });
+            }
+            for(var k in r.dynamicData) {
+                if (sortedKeys.indexOf(k) === -1) sortedKeys.push(k);
+            }
+
             dh = '<div style="margin-top:8px;padding:10px;background:rgba(0,0,0,0.03);border-radius:8px;font-size:12px;display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:6px">';
-            for(var k in r.dynamicData){
+            sortedKeys.forEach(function(k){
                 var v = r.dynamicData[k];
                 if(v === true) v = 'نعم / تم التسليم';
                 if(v === false) v = 'لا';
@@ -4606,7 +4627,7 @@ function renderAllRequestsListHub() {
                 if(lbl === 'chk3') lbl = 'تسليم المستندات والملفات';
                 if(lbl === 'chk4') lbl = 'إنهاء المهام المعلقة';
                 dh += '<div><span style="color:var(--tx3);display:inline-block;">' + escH(lbl) + ':</span> <b style="white-space:pre-wrap;">' + escH(v) + '</b></div>';
-            }
+            });
             dh += '</div>';
         }
 
