@@ -13016,14 +13016,39 @@ document.addEventListener('click', function(e) {
     }
 });
 
-document.addEventListener('keydown', function(e) {
-    if (e.key === 'Escape') {
-        var overlays = document.querySelectorAll('[id*="Overlay"], [id*="modal-overlay"]');
-        overlays.forEach(function(el) {
-            if (el.style.display !== 'none') {
-                if (typeof el.remove === 'function') el.remove();
-                else el.style.display = 'none';
-            }
-        });
+
+// ── Unified Toast Notification System ──
+window.tgShowToast = function(message, type, duration) {
+    if (!type) type = 'info';
+    if (!duration) duration = 3500;
+    
+    var container = document.getElementById('tgToastContainer');
+    if (!container) {
+        container = document.createElement('div');
+        container.id = 'tgToastContainer';
+        document.body.appendChild(container);
     }
-});
+    
+    var iconMap = {
+        'success': '✅',
+        'danger': '⚠️',
+        'info': 'ℹ️'
+    };
+    var icon = iconMap[type] || 'ℹ️';
+    
+    var toast = document.createElement('div');
+    toast.className = 'tg-toast tg-toast-' + type;
+    toast.innerHTML = '<span style="font-size:16px;">' + icon + '</span><span>' + message + '</span>';
+    
+    container.appendChild(toast);
+    
+    setTimeout(function() {
+        toast.classList.add('tg-toast-out');
+        setTimeout(function() {
+            if (toast.parentNode) {
+                toast.parentNode.removeChild(toast);
+            }
+        }, 300);
+    }, duration);
+};
+
