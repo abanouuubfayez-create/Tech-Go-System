@@ -1220,7 +1220,7 @@ input[type="time"]::-webkit-calendar-picker-indicator {
 /* ═══════════════════════════════════════════ */
 /*   المصادقة (تسجيل الدخول) وبوابة الموظف       */
 /* ═══════════════════════════════════════════ */
-html.tg-auth-pending body { visibility: hidden; }
+html.tg-auth-pending body { opacity: 0; transition: opacity 0.25s ease; }
 
 .tg-login-wrap {
     min-height: 100vh; display: flex; align-items: center; justify-content: center;

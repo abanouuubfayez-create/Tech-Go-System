@@ -366,6 +366,10 @@ function tgDeleteAllRecords(collectionName, label, filterField, filterValue, cal
 
 // يمنع وميض عرض المحتوى قبل التأكد من تسجيل الدخول
 document.documentElement.classList.add('tg-auth-pending');
+setTimeout(function() {
+    document.documentElement.classList.remove('tg-auth-pending');
+}, 1500);
+
 
     // Periodically update user online status (Using Web Worker to bypass page/tab minimize throttling)
     function updatePresence() {
