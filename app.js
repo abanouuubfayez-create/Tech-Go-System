@@ -46,39 +46,56 @@ window.tgPrintMonthlyPermissionSheet = async function() {
         }
     } catch(e) { console.warn('Real emp fetch error:', e); }
 
-    // If no real employees yet, provide 12 blank rows for physical pen entry without fake names!
+    // If no real employees, provide 6 blank employee columns for physical pen entry without fake names!
     if (realEmps.length === 0) {
-        for (var i = 1; i <= 12; i++) {
-            realEmps.push({ name: '', code: '' });
+        for (var i = 1; i <= 6; i++) {
+            realEmps.push({ name: 'موظف ' + i, code: '' });
         }
     }
 
-    // Section 2: 31-Day Financial Style Matrix Table (Optimized for Portrait)
-    h += SC('٢', 'سجل التأشير الميداني واليومي (1 — 31)');
+    // Section 2: Transposed Matrix (Days 1..31 as ROWS, Employees as COLUMNS) - Ideal for A4 Portrait!
+    h += SC('٢', 'سجل التأشير الميداني اليومي (الأيام 1 — 31)');
     h += '<div style="overflow-x:auto; margin-bottom:12px;">';
-    h += '<table class="tg-fin-matrix-table" style="width:100%; border-collapse:collapse; font-size:8.5px; text-align:center; direction:rtl; border:1.5px solid var(--bd); font-family:inherit; table-layout:fixed;">';
-    h += '<thead><tr style="background:var(--nv); color:#ffffff; font-size:8.5px;">';
-    h += '<th style="padding:6px 4px; width:110px; text-align:right; border:1px solid rgba(255,255,255,0.2);">اسم الموظف</th>';
-    h += '<th style="padding:6px 2px; width:45px; border:1px solid rgba(255,255,255,0.2);">الرقم</th>';
-    for (var d = 1; d <= 31; d++) {
-        h += '<th style="padding:4px 1px; width:17px; border:1px solid rgba(255,255,255,0.2); font-size:8px;">' + d + '</th>';
-    }
-    h += '<th style="padding:6px 2px; width:38px; border:1px solid rgba(255,255,255,0.2);">مستغرق</th>';
-    h += '<th style="padding:6px 2px; width:38px; border:1px solid rgba(255,255,255,0.2);">متبقي</th>';
+    h += '<table class="tg-fin-matrix-table" style="width:100%; border-collapse:collapse; font-size:9px; text-align:center; direction:rtl; border:1.5px solid var(--bd); font-family:inherit;">';
+    
+    // Header Row (Employees as Columns across page)
+    h += '<thead><tr style="background:var(--nv); color:#ffffff; font-size:9px;">';
+    h += '<th style="padding:6px 4px; width:65px; border:1px solid rgba(255,255,255,0.2);">اليوم / التاريخ</th>';
+    realEmps.forEach(function(emp) {
+        h += '<th style="padding:6px 4px; border:1px solid rgba(255,255,255,0.2); text-align:center; font-weight:bold;">' + escH(emp.name) + '</th>';
+    });
+    h += '<th style="padding:6px 4px; width:70px; border:1px solid rgba(255,255,255,0.2);">ملاحظات</th>';
     h += '</tr></thead><tbody>';
 
-    realEmps.forEach(function(emp, idx) {
-        var bgStyle = (idx % 2 === 1) ? 'background:var(--bg2);' : 'background:var(--bg);';
-        h += '<tr style="' + bgStyle + ' border-bottom:1px solid var(--bd);">';
-        h += '<td style="padding:5px 6px; font-weight:bold; text-align:right; border:1px solid var(--bd); color:var(--tx); overflow:hidden; white-space:nowrap; text-overflow:ellipsis;">' + (emp.name || '&nbsp;') + '</td>';
-        h += '<td style="padding:5px 2px; font-size:8.5px; border:1px solid var(--bd); color:var(--tx2);">' + (emp.code || '') + '</td>';
-        for (var day = 1; day <= 31; day++) {
-            h += '<td style="border:1px solid var(--bd); font-size:8px;"></td>';
-        }
-        h += '<td style="padding:5px 2px; font-weight:bold; border:1px solid var(--bd); color:#d97706;"></td>';
-        h += '<td style="padding:5px 2px; font-weight:bold; border:1px solid var(--bd); color:#10b981;"></td>';
+    // Rows (Days 1 to 31 down page)
+    for (var day = 1; day <= 31; day++) {
+        var rowBg = (day % 2 === 0) ? 'background:var(--bg2);' : 'background:var(--bg);';
+        h += '<tr style="' + rowBg + ' border-bottom:1px solid var(--bd);">';
+        h += '<td style="padding:4px; font-weight:bold; border:1px solid var(--bd); background:var(--bg2); color:var(--tx);">يوم ' + day + '</td>';
+        realEmps.forEach(function(emp) {
+            h += '<td style="border:1px solid var(--bd); padding:4px;"></td>';
+        });
+        h += '<td style="border:1px solid var(--bd); padding:4px;"></td>';
         h += '</tr>';
+    }
+
+    // Bottom Summary Row 1: Used Count
+    h += '<tr style="background:rgba(217,119,6,0.1); font-weight:bold; border-top:2px solid var(--bd);">';
+    h += '<td style="padding:6px 4px; border:1px solid var(--bd); color:#d97706;">المستغرق (من 5)</td>';
+    realEmps.forEach(function(emp) {
+        h += '<td style="border:1px solid var(--bd); padding:6px; color:#d97706;"></td>';
     });
+    h += '<td style="border:1px solid var(--bd);"></td>';
+    h += '</tr>';
+
+    // Bottom Summary Row 2: Remaining Balance
+    h += '<tr style="background:rgba(16,185,129,0.1); font-weight:bold;">';
+    h += '<td style="padding:6px 4px; border:1px solid var(--bd); color:#10b981;">الرصيد المتبقي</td>';
+    realEmps.forEach(function(emp) {
+        h += '<td style="border:1px solid var(--bd); padding:6px; color:#10b981;"></td>';
+    });
+    h += '<td style="border:1px solid var(--bd);"></td>';
+    h += '</tr>';
 
     h += '</tbody></table></div>';
 
