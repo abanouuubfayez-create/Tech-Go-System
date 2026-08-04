@@ -3503,18 +3503,18 @@ function mexpAddRow(row){
     var tbody = document.getElementById('mexp-tbody');
     if(!tbody) return;
     var tr = document.createElement('tr');
-    tr.style.height = '34px';
+    tr.style.height = '32px';
     var priceVal = (row && row.price !== undefined && row.price !== null) ? String(row.price) : '';
     var amtVal = (row && row.amt !== undefined && row.amt !== null && row.amt !== '') ? String(row.amt) : '';
     
     tr.innerHTML =
-        '<td class="mexp-idx" style="font-weight:bold; font-size:11px; background:#ffffff;">' + (tbody.children.length + 1) + '</td>' +
-        '<td><input type="text" class="mexp-spender" style="padding:4px 6px; font-size:11.5px; background:#ffffff !important; color:var(--tx) !important;" value="' + escH(row && row.spender || '') + '"></td>' +
-        '<td><input type="text" class="mexp-cat" style="padding:4px 6px; font-size:11.5px; background:#ffffff !important; color:var(--tx) !important;" value="' + escH(row && row.cat || '') + '"></td>' +
-        '<td><input type="number" step="0.01" min="0" class="mexp-price" style="padding:4px 6px; font-size:11.5px; background:#ffffff !important; color:var(--tx) !important; text-align:center;" value="' + escH(priceVal) + '" oninput="mexpRowCalc(this)"></td>' +
-        '<td><input type="number" step="0.01" min="0" class="mexp-amt" style="padding:4px 6px; font-size:11.5px; font-weight:bold; background:#ffffff !important; color:var(--nv) !important; text-align:center;" value="' + escH(amtVal) + '" oninput="mexpCalc()"></td>' +
-        '<td><input type="date" class="mexp-date" style="padding:4px 4px; font-size:11px; font-weight:bold; background:#ffffff !important; color:var(--tx) !important; min-width:115px; width:100%; text-align:center;" value="' + escH(row && row.date || '') + '"></td>' +
-        '<td><input type="text" class="mexp-notes" style="padding:4px 6px; font-size:11px; background:#ffffff !important; color:var(--tx) !important;" value="' + escH(row && row.notes || '') + '"></td>' +
+        '<td class="mexp-idx" style="font-weight:bold; font-size:11px; text-align:center;">' + (tbody.children.length + 1) + '</td>' +
+        '<td><input type="text" class="mexp-spender" value="' + escH(row && row.spender || '') + '"></td>' +
+        '<td><input type="text" class="mexp-cat" value="' + escH(row && row.cat || '') + '"></td>' +
+        '<td><input type="number" step="0.01" min="0" class="mexp-price" style="text-align:center;" value="' + escH(priceVal) + '" oninput="mexpRowCalc(this)"></td>' +
+        '<td><input type="number" step="0.01" min="0" class="mexp-amt" style="font-weight:bold; color:var(--nv); text-align:center;" value="' + escH(amtVal) + '" oninput="mexpCalc()"></td>' +
+        '<td><input type="date" class="mexp-date" style="font-weight:bold; text-align:center;" value="' + escH(row && row.date || '') + '"></td>' +
+        '<td><input type="text" class="mexp-notes" value="' + escH(row && row.notes || '') + '"></td>' +
         '<td class="np" style="text-align:center"><button class="bt bt-d" style="padding:2px 6px;font-size:10px;border-radius:4px;" onclick="mexpDelRow(this)">✕</button></td>';
     tbody.appendChild(tr);
 }

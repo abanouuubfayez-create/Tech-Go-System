@@ -3884,20 +3884,53 @@ body.dark-mode .tg-expand-btn:hover {
 }
 
 /* ==========================================================================
-   MONTHLY EXPENSE TABLE (MEXP) CLEAN WHITE STYLING & PRINT SIGNATURE RULES
+   MONTHLY EXPENSE TABLE (MEXP) - PURE WHITE FLAT GRID & ZERO INPUT BOXES
    ========================================================================== */
-#mexp-table td {
-  background: #ffffff !important;
-  padding: 3px 4px !important;
+#mexp-table {
+  border-collapse: collapse !important;
+  width: 100% !important;
+  border: 1.5px solid #0f172a !important;
 }
 
-#mexp-table input {
-  background-color: #ffffff !important;
+#mexp-table th {
+  background-color: #0f172a !important;
+  color: #ffffff !important;
+  border: 1px solid #334155 !important;
+  padding: 8px 6px !important;
+  font-size: 11px !important;
+}
+
+#mexp-table tr,
+#mexp-table tbody tr,
+#mexp-table tr:nth-child(even),
+#mexp-table tr:nth-child(odd) {
   background: #ffffff !important;
-  color: var(--tx) !important;
-  border: 1px solid var(--bd) !important;
+  background-color: #ffffff !important;
+}
+
+#mexp-table td {
+  background: #ffffff !important;
+  background-color: #ffffff !important;
+  border: 1px solid #cbd5e1 !important;
+  padding: 3px 4px !important;
+  height: 32px !important;
+}
+
+#mexp-table td input,
+#mexp-table input {
+  background: transparent !important;
+  background-color: transparent !important;
+  border: none !important;
+  outline: none !important;
   box-shadow: none !important;
-  border-radius: 4px !important;
+  border-radius: 0 !important;
+  -webkit-appearance: none !important;
+  appearance: none !important;
+  color: var(--tx) !important;
+  width: 100% !important;
+  height: 100% !important;
+  padding: 2px 4px !important;
+  font-size: 11.5px !important;
 }
 
 #mexp-table input:-webkit-autofill,
@@ -3908,45 +3941,27 @@ body.dark-mode .tg-expand-btn:hover {
 }
 
 @media print {
-  .SG3, .SC-sec, .FT-footer {
-    page-break-before: auto !important;
-    page-break-inside: avoid !important;
-    break-inside: avoid !important;
+  #mexp-table,
+  #mexp-table tr,
+  #mexp-table tbody tr,
+  #mexp-table td {
+    background: #ffffff !important;
+    background-color: #ffffff !important;
+    border-color: #64748b !important;
   }
 
-  /* Remove all input boxes, rounded borders, and backgrounds in printouts */
-  #mexp-table input,
-  .dt input,
-  .tg-fin-matrix-table input,
-  table input,
-  input[type="text"],
-  input[type="number"],
-  input[type="date"] {
+  #mexp-table input {
     border: none !important;
     outline: none !important;
     background: transparent !important;
     box-shadow: none !important;
     border-radius: 0 !important;
-    -webkit-appearance: none !important;
-    appearance: none !important;
-    padding: 0 4px !important;
   }
 
-  /* Ensure table cells print crisp flat grid lines */
-  #mexp-table td,
-  .dt td {
-    border: 1px solid #94a3b8 !important;
-    background: transparent !important;
-    padding: 5px 6px !important;
-  }
-
-  #mexp-table th,
-  .dt th {
-    background-color: #0f172a !important;
-    color: #ffffff !important;
-    border: 1px solid #334155 !important;
-    -webkit-print-color-adjust: exact !important;
-    print-color-adjust: exact !important;
+  .SG3, .SC-sec, .FT-footer {
+    page-break-before: auto !important;
+    page-break-inside: avoid !important;
+    break-inside: avoid !important;
   }
 }
 
