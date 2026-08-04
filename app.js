@@ -1339,149 +1339,38 @@ function renderStaffList(list){
             return s+(pm||0);
         },0)/emp.projects.length):0;
         var searchKey=((emp.name||'')+' '+(emp.email||'')).toLowerCase();
-        h+='<div class="staff-card'+(emp.disabled?' is-disabled':'')+'" id="staffCard'+idx+'" data-search="'+escH(searchKey)+'">';
-        h+='<div class="staff-card-h" onclick="toggleStaffCard('+idx+')">'+
-           '<div><div class="staff-name-row"><span class="staff-name">'+escH(emp.name||emp.email)+'</span>'+
-           (emp.jobTitle?'<span class="badge" style="background:var(--gd);color:#1b2a4a">'+escH(emp.jobTitle)+'</span>':'')+
-           (emp.disabled?'<span class="badge badge-disabled">🚫 معطّل</span>':'<span class="badge badge-active">✅ نشط</span>')+
-           '<span class="perf-score" title="تقييم الأداء العام">🏆 '+emp.perf.total+'%</span>'+
-           '</div><div class="staff-email">'+escH(emp.email||'')+'</div>'+
-           '<div class="perf-stars">'+renderStars(emp.perf.stars)+'</div>'+
+        var initials = (emp.name || emp.email || 'U').split(' ').map(function(n){return n[0];}).join('').toUpperCase().substring(0,2);
+        
+        h+='<div class="staff-card'+(emp.disabled?' is-disabled':'')+'" id="staffCard'+idx+'" data-search="'+escH(searchKey)+'" style="cursor:pointer; margin-bottom:14px;" onclick="tgOpenEmployeeProfile(\''+emp.uid+'\')">';
+        h+='<div class="staff-card-h" style="padding:18px 22px; display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:16px; border-radius:16px;">'+
+           '<div style="display:flex; align-items:center; gap:16px; flex:1; min-width:260px;">'+
+           '  <div class="profile-avatar-sm" style="width:50px; height:50px; border-radius:16px; background:linear-gradient(135deg,var(--gd),var(--gd2)); color:var(--nv); font-weight:900; font-size:20px; display:flex; align-items:center; justify-content:center; flex-shrink:0; box-shadow:0 4px 12px rgba(0,0,0,0.15);">'+
+           initials+
+           '  </div>'+
+           '  <div>'+
+           '    <div class="staff-name-row" style="display:flex; align-items:center; gap:8px; flex-wrap:wrap;">'+
+           '      <span class="staff-name" style="font-size:16px; font-weight:800; color:var(--nv);">'+escH(emp.name||emp.email)+'</span>'+
+                  (emp.jobTitle?'<span class="badge" style="background:var(--gd);color:#1b2a4a;font-weight:700">'+escH(emp.jobTitle)+'</span>':'')+
+                  (emp.disabled?'<span class="badge badge-disabled">🚫 معطّل</span>':'<span class="badge badge-active">✅ نشط</span>')+
+           '      <span class="perf-score" title="تقييم الأداء العام">🏆 '+emp.perf.total+'%</span>'+
+           '    </div>'+
+           '    <div class="staff-email" style="font-size:12px; color:var(--tx3); margin-top:2px;">'+escH(emp.email||'')+'</div>'+
+           '    <div class="perf-stars" style="margin-top:4px;">'+renderStars(emp.perf.stars)+'</div>'+
+           '  </div>'+
            '</div>'+
-           '<div class="staff-stats">'+
-           '<span class="staff-stat">📁 '+emp.projects.length+' مشروع</span>'+
-           '<span class="staff-stat">📊 متوسط تقدم '+avgProg+'%</span>'+
+           
+           '<div class="staff-stats" style="display:flex; align-items:center; gap:8px; flex-wrap:wrap;">'+
+           '  <span class="staff-stat">📁 '+emp.projects.length+' مشروع</span>'+
+           '  <span class="staff-stat">📊 تقدم '+avgProg+'%</span>'+
            (emp.role === 'tech_admin' ? '' :
-               '<span class="staff-stat">📆 '+emp.weeklyReports.length+' تقرير أسبوعي</span>'+
+               '<span class="staff-stat">📆 '+emp.weeklyReports.length+' تقرير</span>'+
                '<span class="staff-stat">🏆 '+emp.achievements.length+' إنجاز</span>'+
-               (pending?('<span class="staff-stat pending">⏳ '+pending+' طلب معلّق</span>'):'<span class="staff-stat">✅ لا طلبات معلّقة</span>')
+               (pending?('<span class="staff-stat pending" onclick="event.stopPropagation();window._reqHubStatusTab=\'pending\';go(\'allrequests\')">⏳ '+pending+' طلب معلّق</span>'):'<span class="staff-stat">✅ لا طلبات معلّقة</span>')
            )+
-           '</div></div>';
-        h+='<div class="staff-card-body">';
-
-        h+='<div class="staff-actions-row">'+
-           '<button class="bt bt-g" onclick="event.stopPropagation();tgOpenEmployeeProfile(\''+emp.uid+'\')">👤 عرض البروفايل</button>'+
-           '<button class="bt bt-o" onclick="event.stopPropagation();toggleEmpNameEdit('+idx+')">✏️ تعديل الاسم</button>'+
-           '<button class="bt bt-o" onclick="event.stopPropagation();toggleEmpJobEdit('+idx+')">🏷 تعديل المسمى الوظيفي</button>'+
-           '<button class="bt bt-o" onclick="event.stopPropagation();toggleEmpDeptPhoneEdit('+idx+')">☎️ الإدارة والهاتف</button>'+
-           '<button class="bt '+(emp.chatAccess===false?'bt-p':'bt-o')+'" onclick="event.stopPropagation();tgToggleEmpChatAccess(\''+emp.uid+'\','+(emp.chatAccess!==false)+')">'+
-           (emp.chatAccess===false?'💬 السماح بالشات':'💬 منع الشات')+'</button>'+
-           '<button class="bt '+(emp.disabled?'bt-p':'bt-o')+'" onclick="event.stopPropagation();toggleEmpDisabled(\''+emp.uid+'\','+(!!emp.disabled)+')">'+
-           (emp.disabled?'✅ إعادة تفعيل الحساب':'🚫 تعطيل الحساب')+'</button>'+
-           '<button class="bt bt-d" onclick="event.stopPropagation();openDeleteEmpModal(\''+emp.uid+'\','+idx+')">🗑 حذف الموظف</button>'+
+           '  <button class="bt bt-p" style="margin-right:8px; padding:8px 18px; font-weight:800; font-size:12px; border-radius:20px; box-shadow:0 4px 12px rgba(201,162,39,0.3);" onclick="event.stopPropagation();tgOpenEmployeeProfile(\''+emp.uid+'\')">👤 صفحة الموظف 🚀</button>'+
            '</div>'+
-           '<div class="emp-inline-edit" id="empNameEdit'+idx+'" style="display:none">'+
-           '<input type="text" id="empNameInput\'+idx+\'" value="\'+escH(emp.baseName||emp.name||\'\')+\'">'+
-           '<button class="bt bt-p" onclick="saveEmpName(\''+emp.uid+'\','+idx+')">💾 حفظ</button>'+
-           '<span id="empNameMsg'+idx+'" style="font-size:10.5px"></span>'+
            '</div>'+
-           '<div class="emp-inline-edit" id="empJobEdit'+idx+'" style="display:none">'+
-           '<input type="text" id="empJobInput'+idx+'" value="'+escH(emp.jobTitle||'')+'" placeholder="مثلاً: مصمم جرافيك">'+
-           '<button class="bt bt-p" onclick="saveEmpJob(\''+emp.uid+'\','+idx+')">💾 حفظ</button>'+
-           '<span id="empJobMsg'+idx+'" style="font-size:10.5px"></span>'+
            '</div>';
-
-        h+='<div class="staff-sub-title">📁 المشاريع</div>';
-        if(emp.projects.length){
-            emp.projects.forEach(function(p){
-                var pm=(p.progressMap&&p.progressMap[emp.uid])||{progress:0,status:'لم يبدأ',note:''};
-                h+='<div class="pj-row"><div class="pj-t">'+escH(p.title||'بدون عنوان')+'</div>'+
-                   (p.description?'<div class="pj-meta">'+tgMakeExpandable(p.description, 120)+'</div>':'')+
-                   '<div class="pj-bar"><div class="pj-bar-in" style="width:'+(pm.progress||0)+'%"></div></div>'+
-                   '<div class="pj-meta">الحالة: <span class="badge '+badgeClassForStatus(pm.status)+'">'+escH(pm.status||'لم يبدأ')+'</span> · التقدم: '+(pm.progress||0)+'%'+(pm.note?(' · ملاحظة: '+escH(pm.note)):'')+'</div>'+
-                   '</div>';
-            });
-        }else h+='<div class="empty-hint">لا توجد مشاريع مُسندة حالياً.</div>';
-
-        if(emp.role !== 'tech_admin'){
-            h+='<div style="display:flex;justify-content:space-between;align-items:center;margin-top:16px">';
-            h+='<div class="staff-sub-title" style="margin:0;border:none">📆 التقارير الأسبوعية</div>';
-            if(emp.weeklyReports.length) h+='<button class="bt bt-d" style="padding:4px 10px;font-size:10px" onclick="event.stopPropagation();tgDeleteAllRecords(\'weeklyReports\', \'تقارير الموظف\', \'uid\', \''+emp.uid+'\', loadStaffOverview)">🗑 حذف الكل</button>';
-            h+='</div>';
-            if(emp.weeklyReports.length){
-                window._staffWkrCache=window._staffWkrCache||{};
-                window._staffWkrCache[idx]=emp.weeklyReports;
-                emp.weeklyReports.forEach(function(r,ri){
-                    var waMsg = encodeURIComponent(
-                        'التقرير الأسبوعي - ' + (emp.name||emp.email||'') + '\n' +
-                        'الأسبوع: ' + (r.weekStart||'') + '\n' +
-                        '---\n' + (r.content||'')
-                    );
-                    h+='<div class="ac-row"><div class="ac-t">أسبوع '+escH(r.weekStart||'')+
-                       ' <button class="bt bt-o" style="padding:2px 8px;font-size:10px;margin-right:8px" onclick="printWeeklyReportDoc(window._staffEmpCache['+idx+'],window._staffWkrCache['+idx+']['+ri+'])">🖨 طباعة</button>'+
-                       ' <a href="https://wa.me/?text='+waMsg+'" target="_blank" class="bt bt-g" style="padding:2px 8px;font-size:10px;margin-right:8px;display:inline-flex;align-items:center;gap:4px;text-decoration:none">📲 واتساب</a></div>'+
-                       (r.content?'<div class="ac-meta">'+tgMakeExpandable(r.content, 120)+'</div>':'')+'</div>';
-                });
-            }else h+='<div class="empty-hint">لم يُرسل الموظف أي تقرير أسبوعي بعد.</div>';
-
-            h+='<div style="display:flex;justify-content:space-between;align-items:center;margin-top:16px">';
-            h+='<div class="staff-sub-title" style="margin:0;border:none">🏆 الإنجازات</div>';
-            if(emp.achievements.length) h+='<button class="bt bt-d" style="padding:4px 10px;font-size:10px" onclick="event.stopPropagation();tgDeleteAllRecords(\'achievements\', \'إنجازات الموظف\', \'uid\', \''+emp.uid+'\', loadStaffOverview)">🗑 حذف الكل</button>';
-            h+='</div>';
-            if(emp.achievements.length){
-                window._staffAchCache=window._staffAchCache||{};
-                window._staffAchCache[idx]=emp.achievements;
-                emp.achievements.forEach(function(a,ai){
-                    h+='<div class="ac-row"><div class="ac-t">'+escH(a.title||'')+
-                       ' <button class="bt bt-o" style="padding:2px 8px;font-size:10px;margin-right:8px" onclick="printAchievementDoc(window._staffEmpCache['+idx+'],window._staffAchCache['+idx+']['+ai+'])">🖨 طباعة</button></div>'+
-                       (a.description?'<div class="ac-meta">'+tgMakeExpandable(a.description, 120)+'</div>':'')+
-                       (a.date?'<div class="ac-meta">📅 '+escH(a.date)+'</div>':'')+'</div>';
-                });
-            }else h+='<div class="empty-hint">لا توجد إنجازات مسجّلة بعد.</div>';
-
-            h+='<div style="display:flex;justify-content:space-between;align-items:center;margin-top:16px">';
-            h+='<div class="staff-sub-title" style="margin:0;border:none">📨 الطلبات</div>';
-            if(emp.requests.length) h+='<button class="bt bt-d" style="padding:4px 10px;font-size:10px" onclick="event.stopPropagation();tgDeleteAllRecords(\'requests\', \'طلبات الموظف\', \'uid\', \''+emp.uid+'\', loadStaffOverview)">🗑 حذف الكل</button>';
-            h+='</div>';
-            if(emp.requests.length){
-                window._staffReqCache=window._staffReqCache||{};
-                window._staffReqCache[idx]=emp.requests;
-                emp.requests.forEach(function(r,qi){
-                    var attachHtml = '';
-                    if(r.fileUrl && r.fileType){
-                        if(r.fileType.indexOf('image/')===0){
-                            attachHtml = '<div style="margin-top:6px"><a href="'+r.fileUrl+'" target="_blank"><img src="'+r.fileUrl+'" style="max-width:140px;max-height:100px;border-radius:6px;display:block"></a></div>';
-                        } else if(r.fileType.indexOf('video/')===0){
-                            attachHtml = '<div style="margin-top:6px"><video src="'+r.fileUrl+'" controls style="max-width:180px;border-radius:6px"></video></div>';
-                        } else {
-                            attachHtml = '<div style="margin-top:6px"><a href="'+r.fileUrl+'" target="_blank" style="color:var(--tx);font-weight:700;text-decoration:underline">📎 '+escH(r.fileName||'ملف مرفق')+'</a></div>';
-                        }
-                    }
-                    h+='<div class="rq-row"><div class="rq-t">'+escH(r.type||'طلب')+' <span class="badge '+badgeClassForReq(r.status)+'">'+reqStatusLabel(r.status)+'</span>'+
-                       (r.type !== 'طلب نموذج' ? ' <button class="bt bt-o" style="padding:2px 8px;font-size:10px;margin-right:8px" onclick="printRequestDoc(window._staffEmpCache['+idx+'],window._staffReqCache['+idx+']['+qi+'])">🖨 طباعة</button>' : '') + '</div>'+
-                       (r.details?'<div class="pj-meta">'+tgMakeExpandable(r.details, 120)+'</div>':'')+
-                       (r.fromDate?('<div class="pj-meta">من '+escH(r.fromDate)+(r.toDate?(' إلى '+escH(r.toDate)):'')+'</div>'):'')+
-                       (r.reviewedBy?('<div class="pj-meta">تمت المراجعة بواسطة: '+escH(r.reviewedBy)+'</div>'):'')+
-                       (function(){
-                           if(!r.dynamicData) return '';
-                           var dh = '<div style="margin-top:10px;padding:10px;background:rgba(0,0,0,0.03);border-radius:6px;font-size:12px;">';
-                           var tpl = window.FS_TEMPLATES && r.formTemplateId ? window.FS_TEMPLATES[r.formTemplateId] : null;
-                           var fieldLabels = {};
-                           if(tpl && tpl.fields) { tpl.fields.forEach(function(f){ fieldLabels[f.id] = f.label; }); }
-                           for(var k in r.dynamicData){
-                               var v = r.dynamicData[k];
-                               if(v === true) v = 'نعم / تم';
-                               if(v === false) v = 'لا';
-                               var lbl = fieldLabels[k] || k;
-                               if(lbl === 'chk1') lbl = 'تسليم العهدة المالية';
-                               if(lbl === 'chk2') lbl = 'تسليم العهدة العينية';
-                               if(lbl === 'chk3') lbl = 'تسليم المستندات والملفات';
-                               if(lbl === 'chk4') lbl = 'إنهاء المهام المعلقة';
-                               dh += '<div style="margin-bottom:4px;display:flex;"><span style="color:var(--tx3);min-width:120px;padding-left:10px;">' + escH(lbl) + ':</span> <b style="white-space:pre-wrap;">' + escH(v) + '</b></div>';
-                           }
-                           dh += '</div>';
-                           return dh;
-                       })()+
-                       attachHtml+
-                       (r.status==='pending'?('<div class="rq-actions" style="margin-top:8px">'+
-                           (r.type==='طلب نموذج'?'<button class="bt bt-o" style="border-color:var(--pr);color:var(--pr);margin-left:8px" onclick="goSendForm(document.querySelector(\'[onclick*=\\\'goSendForm\\\']\'), \''+emp.uid+'\', window._staffReqCache['+idx+']['+qi+'].details)">📨 إرسال نموذج للموظف</button>':'')+
-                           '<button class="bt bt-p" onclick="reviewRequest(\''+r.id+'\',\'approved\')">✔ موافقة</button><button class="bt bt-d" onclick="reviewRequest(\''+r.id+'\',\'rejected\')">✕ رفض</button></div>'):'')+
-                       '</div>';
-                });
-            }else h+='<div class="empty-hint">لا توجد طلبات بعد.</div>';
-        }
-
-        h+='</div></div>';
     });
     box.innerHTML=h;
 }
@@ -6692,6 +6581,67 @@ function tgOpenEmployeeProfile(uid) {
     });
 }
 
+function tgToggleProfEdit(id) {
+    var el = document.getElementById(id);
+    if(!el) return;
+    el.style.display = (el.style.display === 'none' || !el.style.display) ? 'flex' : 'none';
+}
+
+function saveEmpNameFromProfile(uid) {
+    var input = document.getElementById('empProfNameInput');
+    var msg = document.getElementById('empProfNameMsg');
+    if(!input) return;
+    var name = (input.value || '').trim();
+    if(!name){ if(msg) msg.textContent = 'اكتب اسماً صحيحاً.'; return; }
+    if(msg) { msg.style.color = '#fff'; msg.textContent = '⏳ جارٍ الحفظ...'; }
+    
+    db.collection('users').doc(uid).get().then(function(doc){
+        var jt = doc.data().jobTitle || '';
+        var finalName = jt ? name + ' (' + jt + ')' : name;
+        return db.collection('users').doc(uid).update({baseName: name, name: finalName});
+    }).then(function(){
+        if(typeof addEmployeeName === 'function') addEmployeeName(name);
+        if(typeof tgToast === 'function') tgToast('✅ تم حفظ الاسم بنجاح', 'ok');
+        loadStaffOverview();
+        tgOpenEmployeeProfile(uid);
+    }).catch(function(err){ if(msg) { msg.style.color = '#ff6b6b'; msg.textContent = '❌ ' + err.message; } });
+}
+
+function saveEmpJobFromProfile(uid) {
+    var input = document.getElementById('empProfJobInput');
+    var msg = document.getElementById('empProfJobMsg');
+    if(!input) return;
+    var jobTitle = (input.value || '').trim();
+    if(msg) { msg.style.color = '#fff'; msg.textContent = '⏳ جارٍ الحفظ...'; }
+    
+    db.collection('users').doc(uid).get().then(function(doc){
+        var baseName = doc.data().baseName || doc.data().name || '';
+        if (baseName.includes(' (')) baseName = baseName.split(' (')[0].trim();
+        var finalName = jobTitle ? baseName + ' (' + jobTitle + ')' : baseName;
+        return db.collection('users').doc(uid).update({jobTitle: jobTitle, baseName: baseName, name: finalName});
+    }).then(function(){
+        if(typeof tgToast === 'function') tgToast('✅ تم حفظ المسمى الوظيفي بنجاح', 'ok');
+        loadStaffOverview();
+        tgOpenEmployeeProfile(uid);
+    }).catch(function(err){ if(msg) { msg.style.color = '#ff6b6b'; msg.textContent = '❌ ' + err.message; } });
+}
+
+function saveEmpDeptPhoneFromProfile(uid) {
+    var deptInput = document.getElementById('empProfDeptInput');
+    var phoneInput = document.getElementById('empProfPhoneInput');
+    var msg = document.getElementById('empProfDeptPhoneMsg');
+    if(!deptInput || !phoneInput) return;
+    var dept = (deptInput.value || '').trim();
+    var phone = (phoneInput.value || '').trim();
+    if(msg) { msg.style.color = '#fff'; msg.textContent = '⏳ جارٍ الحفظ...'; }
+    
+    db.collection('users').doc(uid).update({dept: dept, phone: phone}).then(function(){
+        if(typeof tgToast === 'function') tgToast('✅ تم حفظ البيانات بنجاح', 'ok');
+        loadStaffOverview();
+        tgOpenEmployeeProfile(uid);
+    }).catch(function(err){ if(msg) { msg.style.color = '#ff6b6b'; msg.textContent = '❌ ' + err.message; } });
+}
+
 function renderEmployeeProfileModal(emp) {
     var modal = document.getElementById('tgProfileModal');
     if(!modal) {
@@ -6707,103 +6657,220 @@ function renderEmployeeProfileModal(emp) {
         return s + (pm || 0);
     }, 0) / emp.projects.length) : 0;
 
-    var h = '<div class="profile-container">' +
-        '<div class="profile-header">' +
-            '<div class="profile-close" onclick="tgCloseProfile()">✕</div>' +
-            '<div class="profile-info">' +
-                '<div class="profile-avatar">' + initials + '</div>' +
-                '<div class="profile-details">' +
-                    '<div class="profile-name">' + escH(emp.name || emp.email) + '</div>' +
-                    '<div class="profile-job">💼 ' + escH(emp.jobTitle || 'موظف') + ' · 📧 ' + escH(emp.email) + '</div>' +
+    var empIdx = (window._staffEmpCache || []).findIndex(function(e){ return e.uid === emp.uid; });
+    if(empIdx !== -1) {
+        window._staffEmpCache[empIdx] = emp;
+    }
+
+    var h = '<div class="profile-container" style="max-width:1100px; margin:20px auto; min-height:92vh; border-radius:24px;">' +
+        // Top Toolbar Header
+        '<div style="background:var(--w); padding:14px 24px; border-bottom:1px solid var(--bd); display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:10px;">' +
+            '<button class="bt bt-p" onclick="tgCloseProfile()" style="border-radius:20px; padding:8px 20px; font-weight:800; font-size:13px; cursor:pointer;">' +
+                '<span style="font-size:14px; margin-left:6px;">⬅️</span> العودة لقائمة الموظفين' +
+            '</button>' +
+            '<div style="font-size:15px; font-weight:800; color:var(--nv);">👤 صفحة الموظف: ' + escH(emp.name || emp.email) + '</div>' +
+        '</div>' +
+
+        // Main Employee Banner Header
+        '<div class="profile-header" style="height:auto; min-height:220px; padding:24px 30px; flex-direction:column; justify-content:space-between;">' +
+            '<div class="profile-info" style="align-items:flex-start; flex-wrap:wrap; gap:20px;">' +
+                '<div class="profile-avatar" style="width:100px; height:100px; font-size:40px; border-radius:24px;">' + initials + '</div>' +
+                '<div class="profile-details" style="flex:1;">' +
+                    '<div style="display:flex; align-items:center; gap:10px; flex-wrap:wrap; margin-bottom:6px;">' +
+                        '<span class="profile-name" style="margin:0; font-size:26px;">' + escH(emp.name || emp.email) + '</span>' +
+                        (emp.jobTitle ? '<span class="badge" style="background:var(--gd); color:#1b2a4a; font-weight:800; font-size:12px;">' + escH(emp.jobTitle) + '</span>' : '') +
+                        (emp.disabled ? '<span class="badge badge-disabled">🚫 معطّل</span>' : '<span class="badge badge-active">✅ نشط</span>') +
+                        '<span class="perf-score" title="تقييم الأداء العام" style="background:rgba(255,255,255,0.2); color:#fff; border:1px solid rgba(255,255,255,0.3);">🏆 ' + (emp.perf ? emp.perf.total : 0) + '%</span>' +
+                    '</div>' +
+                    '<div class="profile-job" style="color:rgba(255,255,255,0.85); margin-bottom:6px; flex-wrap:wrap;">' +
+                        '📧 ' + escH(emp.email || '-') + 
+                        (emp.phone ? ' · ☎️ ' + escH(emp.phone) : '') + 
+                        (emp.dept ? ' · 🏢 ' + escH(emp.dept) : '') + 
+                        ' · 🏢 ' + (emp.workMode === 'remote' ? 'عن بُعد' : 'من المكتب') +
+                    '</div>' +
+                    '<div class="perf-stars">' + renderStars(emp.perf ? emp.perf.stars : 0) + '</div>' +
                 '</div>' +
             '</div>' +
+
+            // Admin Controls Toolbar inside header
+            '<div style="margin-top:20px; padding-top:14px; border-top:1px solid rgba(255,255,255,0.15); display:flex; gap:8px; flex-wrap:wrap; width:100%; z-index:2;">' +
+                '<button class="bt bt-o" style="background:rgba(255,255,255,0.15); color:#fff; border-color:rgba(255,255,255,0.3); font-size:11px;" onclick="tgToggleProfEdit(\'empProfNameEdit\')">✏️ تعديل الاسم</button>' +
+                '<button class="bt bt-o" style="background:rgba(255,255,255,0.15); color:#fff; border-color:rgba(255,255,255,0.3); font-size:11px;" onclick="tgToggleProfEdit(\'empProfJobEdit\')">🏷 تعديل المسمى</button>' +
+                '<button class="bt bt-o" style="background:rgba(255,255,255,0.15); color:#fff; border-color:rgba(255,255,255,0.3); font-size:11px;" onclick="tgToggleProfEdit(\'empProfDeptPhoneEdit\')">☎️ الإدارة والهاتف</button>' +
+                '<button class="bt ' + (emp.chatAccess === false ? 'bt-p' : 'bt-o') + '" style="font-size:11px;" onclick="tgToggleEmpChatAccess(\'' + emp.uid + '\',' + (emp.chatAccess !== false) + ')">' + (emp.chatAccess === false ? '💬 السماح بالشات' : '💬 منع الشات') + '</button>' +
+                '<button class="bt ' + (emp.disabled ? 'bt-p' : 'bt-o') + '" style="font-size:11px;" onclick="toggleEmpDisabled(\'' + emp.uid + '\',' + (!!emp.disabled) + ')">' + (emp.disabled ? '✅ إعادة تفعيل الحساب' : '🚫 تعطيل الحساب') + '</button>' +
+                '<button class="bt bt-d" style="font-size:11px; margin-right:auto;" onclick="openDeleteEmpModal(\'' + emp.uid + '\')">🗑 حذف الموظف</button>' +
+            '</div>' +
+
+            // Inline edit boxes
+            '<div id="empProfNameEdit" style="display:none; margin-top:12px; gap:8px; align-items:center; z-index:2; background:rgba(0,0,0,0.3); padding:10px 14px; border-radius:10px;">' +
+                '<input type="text" id="empProfNameInput" value="' + escH(emp.baseName || emp.name || '') + '" style="max-width:240px; padding:6px 12px; font-size:12px; border-radius:6px; border:1px solid rgba(255,255,255,0.3); background:#fff; color:#000;">' +
+                '<button class="bt bt-p" style="padding:6px 14px; font-size:11px;" onclick="saveEmpNameFromProfile(\'' + emp.uid + '\')">💾 حفظ</button>' +
+                '<span id="empProfNameMsg" style="font-size:11px; color:#fff;"></span>' +
+            '</div>' +
+
+            '<div id="empProfJobEdit" style="display:none; margin-top:12px; gap:8px; align-items:center; z-index:2; background:rgba(0,0,0,0.3); padding:10px 14px; border-radius:10px;">' +
+                '<input type="text" id="empProfJobInput" value="' + escH(emp.jobTitle || '') + '" placeholder="المسمى الوظيفي" style="max-width:240px; padding:6px 12px; font-size:12px; border-radius:6px; border:1px solid rgba(255,255,255,0.3); background:#fff; color:#000;">' +
+                '<button class="bt bt-p" style="padding:6px 14px; font-size:11px;" onclick="saveEmpJobFromProfile(\'' + emp.uid + '\')">💾 حفظ</button>' +
+                '<span id="empProfJobMsg" style="font-size:11px; color:#fff;"></span>' +
+            '</div>' +
+
+            '<div id="empProfDeptPhoneEdit" style="display:none; margin-top:12px; gap:8px; align-items:center; flex-wrap:wrap; z-index:2; background:rgba(0,0,0,0.3); padding:10px 14px; border-radius:10px;">' +
+                '<input type="text" id="empProfDeptInput" value="' + escH(emp.dept || '') + '" placeholder="القسم / الإدارة" style="max-width:160px; padding:6px 12px; font-size:12px; border-radius:6px; border:1px solid rgba(255,255,255,0.3); background:#fff; color:#000;">' +
+                '<input type="text" id="empProfPhoneInput" value="' + escH(emp.phone || '') + '" placeholder="رقم الهاتف" style="max-width:160px; padding:6px 12px; font-size:12px; border-radius:6px; border:1px solid rgba(255,255,255,0.3); background:#fff; color:#000;">' +
+                '<button class="bt bt-p" style="padding:6px 14px; font-size:11px;" onclick="saveEmpDeptPhoneFromProfile(\'' + emp.uid + '\')">💾 حفظ</button>' +
+                '<span id="empProfDeptPhoneMsg" style="font-size:11px; color:#fff;"></span>' +
+            '</div>' +
+
         '</div>' +
+
+        // Navigation Tabs
         '<div class="profile-nav">' +
             '<div class="profile-tab a" data-pt="ov" onclick="tgProfileGo(\'ov\',this)">🏠 نظرة عامة</div>' +
-            '<div class="profile-tab" data-pt="pj" onclick="tgProfileGo(\'pj\',this)">📁 المشاريع ('+emp.projects.length+')</div>' +
-            '<div class="profile-tab" data-pt="tk" onclick="tgProfileGo(\'tk\',this)">🗂 المهام ('+(emp.tasks?emp.tasks.length:0)+')</div>' +
-            '<div class="profile-tab" data-pt="ac" onclick="tgProfileGo(\'ac\',this)">🏆 الإنجازات ('+emp.achievements.length+')</div>' +
-            '<div class="profile-tab" data-pt="wr" onclick="tgProfileGo(\'wr\',this)">📊 التقارير ('+emp.weeklyReports.length+')</div>' +
-            '<div class="profile-tab" data-pt="rq" onclick="tgProfileGo(\'rq\',this)">📨 الطلبات ('+emp.requests.length+')</div>' +
+            '<div class="profile-tab" data-pt="pj" onclick="tgProfileGo(\'pj\',this)">📁 المشاريع والمهام (' + (emp.projects.length + (emp.tasks ? emp.tasks.length : 0)) + ')</div>' +
+            '<div class="profile-tab" data-pt="wr" onclick="tgProfileGo(\'wr\',this)">📊 التقارير الأسبوعية (' + emp.weeklyReports.length + ')</div>' +
+            '<div class="profile-tab" data-pt="ac" onclick="tgProfileGo(\'ac\',this)">🏆 الإنجازات (' + emp.achievements.length + ')</div>' +
+            '<div class="profile-tab" data-pt="rq" onclick="tgProfileGo(\'rq\',this)">📨 الطلبات (' + emp.requests.length + ')</div>' +
         '</div>' +
+
+        // Profile Content Area
         '<div class="profile-content">' +
-            // Overview
+            // Overview Tab
             '<div class="profile-pg a" id="ppg-ov">' +
-                '<div class="p-stats">' +
-                    '<div class="p-stat-box"><div class="p-stat-val">' + emp.projects.length + '</div><div class="p-stat-lbl">مشاريع</div></div>' +
+                '<div class="p-stats" style="grid-template-columns:repeat(auto-fit, minmax(160px, 1fr)); gap:14px; margin-bottom:24px;">' +
+                    '<div class="p-stat-box"><div class="p-stat-val">' + emp.projects.length + '</div><div class="p-stat-lbl">مشاريع مُسندة</div></div>' +
                     '<div class="p-stat-box"><div class="p-stat-val">' + avgProg + '%</div><div class="p-stat-lbl">متوسط التقدم</div></div>' +
-                    '<div class="p-stat-box"><div class="p-stat-val">' + emp.achievements.length + '</div><div class="p-stat-lbl">إنجازات</div></div>' +
-                    '<div class="p-stat-box"><div class="p-stat-val">' + emp.weeklyReports.length + '</div><div class="p-stat-lbl">تقارير</div></div>' +
+                    '<div class="p-stat-box"><div class="p-stat-val">' + emp.achievements.length + '</div><div class="p-stat-lbl">إنجازات مسجلة</div></div>' +
+                    '<div class="p-stat-box"><div class="p-stat-val">' + emp.weeklyReports.length + '</div><div class="p-stat-lbl">تقارير أسبوعية</div></div>' +
+                    '<div class="p-stat-box"><div class="p-stat-val">' + emp.requests.length + '</div><div class="p-stat-lbl">إجمالي الطلبات</div></div>' +
+                    '<div class="p-stat-box" style="background:rgba(201,162,39,0.1); border-color:var(--gd);"><div class="p-stat-val" style="color:var(--gd2);">' + (emp.perf ? emp.perf.total : 0) + '%</div><div class="p-stat-lbl">الأداء العام</div></div>' +
                 '</div>' +
+                
                 '<div class="profile-grid">' +
-                    '<div class="p-card"><div class="p-card-h">🧑 البيانات الشخصية</div>' +
+                    '<div class="p-card"><div class="p-card-h">🧑 البيانات الوظيفية والشخصية</div>' +
                         '<div class="p-info-list">' +
-                            '<div class="p-info-item"><span class="p-info-lbl">الاسم</span><span class="p-info-val">' + escH(emp.name || '-') + '</span></div>' +
+                            '<div class="p-info-item"><span class="p-info-lbl">الاسم الكامل</span><span class="p-info-val">' + escH(emp.name || '-') + '</span></div>' +
                             '<div class="p-info-item"><span class="p-info-lbl">المسمى الوظيفي</span><span class="p-info-val">' + escH(emp.jobTitle || '-') + '</span></div>' +
                             '<div class="p-info-item"><span class="p-info-lbl">البريد الإلكتروني</span><span class="p-info-val">' + escH(emp.email || '-') + '</span></div>' +
+                            '<div class="p-info-item"><span class="p-info-lbl">الهاتف</span><span class="p-info-val">' + escH(emp.phone || '-') + '</span></div>' +
+                            '<div class="p-info-item"><span class="p-info-lbl">الإدارة / القسم</span><span class="p-info-val">' + escH(emp.dept || '-') + '</span></div>' +
                             '<div class="p-info-item"><span class="p-info-lbl">نظام العمل</span><span class="p-info-val">' + (emp.workMode==='remote'?'عن بُعد':'من المكتب') + '</span></div>' +
+                            '<div class="p-info-item"><span class="p-info-lbl">حالة الحساب</span><span class="p-info-val">' + (emp.disabled?'🚫 معطّل':'✅ نشط') + '</span></div>' +
                         '</div>' +
                     '</div>' +
-                    '<div class="p-card"><div class="p-card-h">📅 آخر النشاطات</div>' +
-                        '<div class="empty-hint" style="font-size:11px">سيتم ربط سجل النشاطات لاحقاً...</div>' +
+                    '<div class="p-card"><div class="p-card-h">🏆 تقييم وتفاعل الموظف</div>' +
+                        '<div style="text-align:center; padding:20px 0;">' +
+                            '<div style="font-size:36px; font-weight:900; color:var(--gd2);">' + (emp.perf ? emp.perf.total : 0) + '%</div>' +
+                            '<div style="font-size:13px; color:var(--tx3); margin:4px 0 12px 0;">نسبة الإنجاز والالتزام الكلية</div>' +
+                            '<div class="perf-stars" style="font-size:24px;">' + renderStars(emp.perf ? emp.perf.stars : 0) + '</div>' +
+                        '</div>' +
                     '</div>' +
                 '</div>' +
             '</div>' +
-            // Projects
+
+            // Projects & Tasks Tab
             '<div class="profile-pg" id="ppg-pj">' +
-                '<div class="profile-grid">' +
+                '<div style="font-size:15px; font-weight:800; margin-bottom:14px; color:var(--nv);">📁 المشاريع المُسندة (' + emp.projects.length + ')</div>' +
+                '<div class="profile-grid" style="margin-bottom:24px;">' +
                     (emp.projects.length ? emp.projects.map(function(p){
-                        var pm = (p.progressMap && p.progressMap[emp.uid]) || {progress:0, status:'لم يبدأ'};
-                        return '<div class="p-card"><div class="p-card-h">📁 ' + escH(p.title) + '</div>' +
-                               '<div class="pj-bar"><div class="pj-bar-in" style="width:'+pm.progress+'%"></div></div>' +
-                               '<div style="font-size:11px;margin-top:8px;display:flex;justify-content:space-between">' +
-                               '<span>الحالة: <b>'+escH(pm.status)+'</b></span><span>'+pm.progress+'%</span></div>' +
+                        var pm = (p.progressMap && p.progressMap[emp.uid]) || {progress:0, status:'لم يبدأ', note:''};
+                        return '<div class="p-card">' +
+                               '<div class="p-card-h">📁 ' + escH(p.title) + '</div>' +
+                               (p.description ? '<div style="font-size:12px; color:var(--tx3); margin-bottom:10px;">' + tgMakeExpandable(p.description, 100) + '</div>' : '') +
+                               '<div class="pj-bar" style="height:10px; border-radius:5px; background:var(--bd);"><div class="pj-bar-in" style="width:' + pm.progress + '%; background:var(--gd);"></div></div>' +
+                               '<div style="font-size:12px; margin-top:10px; display:flex; justify-content:space-between; align-items:center;">' +
+                               '<span>الحالة: <span class="badge ' + badgeClassForStatus(pm.status) + '">' + escH(pm.status) + '</span></span>' +
+                               '<b style="color:var(--nv);">' + pm.progress + '%</b>' +
+                               '</div>' +
+                               (pm.note ? '<div style="font-size:11px; color:var(--tx3); margin-top:6px;">ملاحظة: ' + escH(pm.note) + '</div>' : '') +
                                '</div>';
-                    }).join('') : '<div class="empty-hint">لا توجد مشاريع حالية.</div>') +
+                    }).join('') : '<div class="empty-hint">لا توجد مشاريع مُسندة حالياً.</div>') +
                 '</div>' +
-            '</div>' +
-            // Tasks
-            '<div class="profile-pg" id="ppg-tk">' +
+
+                '<div style="font-size:15px; font-weight:800; margin-bottom:14px; color:var(--nv);">🗂 المهام المُسندة (' + (emp.tasks ? emp.tasks.length : 0) + ')</div>' +
                 '<div class="profile-grid">' +
                     (emp.tasks && emp.tasks.length ? emp.tasks.map(function(t){
                         return '<div class="p-card"><div class="p-card-h">🗂 ' + escH(t.title) + '</div>' +
-                               '<div style="font-size:11px;opacity:0.8">' + escH(t.description || '') + '</div>' +
-                               '<div style="margin-top:10px"><span class="badge '+pstatusBadgeClass(t.status)+'">'+escH(t.status)+'</span></div>' +
+                               '<div style="font-size:12px; opacity:0.8; margin-bottom:10px;">' + escH(t.description || '') + '</div>' +
+                               '<div><span class="badge ' + badgeClassForStatus(t.status) + '">' + escH(t.status || 'لم يبدأ') + '</span></div>' +
                                '</div>';
-                    }).join('') : '<div class="empty-hint">لا توجد مهام حالية.</div>') +
+                    }).join('') : '<div class="empty-hint">لا توجد مهام مُسندة حالياً.</div>') +
                 '</div>' +
             '</div>' +
-            // Achievements
-            '<div class="profile-pg" id="ppg-ac">' +
-                '<div class="p-timeline">' +
-                    (emp.achievements.length ? emp.achievements.map(function(a){
-                        return '<div class="p-timeline-item"><div class="p-timeline-dot"></div>' +
-                               '<div class="p-timeline-content"><div class="p-timeline-date">' + escH(a.date) + '</div>' +
-                               '<div class="p-timeline-title">' + escH(a.title) + '</div>' +
-                               (a.description?'<div style="font-size:11px;opacity:0.7;margin-top:4px">'+escH(a.description)+'</div>':'') +
-                               '</div></div>';
-                    }).join('') : '<div class="empty-hint">لا توجد إنجازات مسجلة.</div>') +
-                '</div>' +
-            '</div>' +
-            // Weekly Reports
+
+            // Weekly Reports Tab
             '<div class="profile-pg" id="ppg-wr">' +
+                '<div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:14px;">' +
+                    '<div style="font-size:15px; font-weight:800; color:var(--nv);">📊 التقارير الأسبوعية (' + emp.weeklyReports.length + ')</div>' +
+                    (emp.weeklyReports.length ? '<button class="bt bt-d" style="padding:4px 12px; font-size:11px;" onclick="tgDeleteAllRecords(\'weeklyReports\', \'تقارير الموظف\', \'uid\', \'' + emp.uid + '\', function(){ tgOpenEmployeeProfile(\'' + emp.uid + '\'); loadStaffOverview(); })">🗑 حذف كافة التقارير</button>' : '') +
+                '</div>' +
                 '<div class="profile-grid">' +
-                    (emp.weeklyReports.length ? emp.weeklyReports.map(function(r){
-                        return '<div class="p-card"><div class="p-card-h">📅 أسبوع ' + escH(r.weekStart) + '</div>' +
-                               '<div style="font-size:11px;opacity:0.8;white-space:pre-wrap">' + escH(r.content) + '</div>' +
+                    (emp.weeklyReports.length ? emp.weeklyReports.map(function(r, ri){
+                        var waMsg = encodeURIComponent('التقرير الأسبوعي - ' + (emp.name || emp.email || '') + '\n' + 'الأسبوع: ' + (r.weekStart || '') + '\n---\n' + (r.content || ''));
+                        return '<div class="p-card">' +
+                               '<div class="p-card-h" style="display:flex; justify-content:space-between; align-items:center;">' +
+                               '<span>📅 أسبوع ' + escH(r.weekStart || '') + '</span>' +
+                               '<div>' +
+                               '  <button class="bt bt-o" style="padding:2px 8px; font-size:10px;" onclick="printWeeklyReportDoc(' + JSON.stringify(emp).replace(/"/g, '&quot;') + ',' + JSON.stringify(r).replace(/"/g, '&quot;') + ')">🖨 طباعة</button>' +
+                               '  <a href="https://wa.me/?text=' + waMsg + '" target="_blank" class="bt bt-g" style="padding:2px 8px; font-size:10px; text-decoration:none; display:inline-flex; align-items:center;">📲 واتساب</a>' +
+                               '</div>' +
+                               '</div>' +
+                               '<div style="font-size:12px; line-height:1.6; opacity:0.9; white-space:pre-wrap; margin-top:8px;">' + escH(r.content || '') + '</div>' +
                                '</div>';
-                    }).join('') : '<div class="empty-hint">لا توجد تقارير أسبوعية.</div>') +
+                    }).join('') : '<div class="empty-hint">لم يُرسل الموظف أي تقرير أسبوعي بعد.</div>') +
                 '</div>' +
             '</div>' +
-            // Requests
+
+            // Achievements Tab
+            '<div class="profile-pg" id="ppg-ac">' +
+                '<div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:14px;">' +
+                    '<div style="font-size:15px; font-weight:800; color:var(--nv);">🏆 الإنجازات المسجلة (' + emp.achievements.length + ')</div>' +
+                    (emp.achievements.length ? '<button class="bt bt-d" style="padding:4px 12px; font-size:11px;" onclick="tgDeleteAllRecords(\'achievements\', \'إنجازات الموظف\', \'uid\', \'' + emp.uid + '\', function(){ tgOpenEmployeeProfile(\'' + emp.uid + '\'); loadStaffOverview(); })">🗑 حذف كافة الإنجازات</button>' : '') +
+                '</div>' +
+                '<div class="profile-grid">' +
+                    (emp.achievements.length ? emp.achievements.map(function(a){
+                        return '<div class="p-card">' +
+                               '<div class="p-card-h" style="display:flex; justify-content:space-between; align-items:center;">' +
+                               '<span>🏆 ' + escH(a.title || '') + '</span>' +
+                               '<button class="bt bt-o" style="padding:2px 8px; font-size:10px;" onclick="printAchievementDoc(' + JSON.stringify(emp).replace(/"/g, '&quot;') + ',' + JSON.stringify(a).replace(/"/g, '&quot;') + ')">🖨 طباعة</button>' +
+                               '</div>' +
+                               (a.description ? '<div style="font-size:12px; opacity:0.8; margin-top:6px;">' + escH(a.description) + '</div>' : '') +
+                               (a.date ? '<div style="font-size:11px; color:var(--tx3); margin-top:6px;">📅 ' + escH(a.date) + '</div>' : '') +
+                               '</div>';
+                    }).join('') : '<div class="empty-hint">لا توجد إنجازات مسجلة بعد.</div>') +
+                '</div>' +
+            '</div>' +
+
+            // Requests Tab
             '<div class="profile-pg" id="ppg-rq">' +
+                '<div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:14px;">' +
+                    '<div style="font-size:15px; font-weight:800; color:var(--nv);">📨 الطلبات (' + emp.requests.length + ')</div>' +
+                    (emp.requests.length ? '<button class="bt bt-d" style="padding:4px 12px; font-size:11px;" onclick="tgDeleteAllRecords(\'requests\', \'طلبات الموظف\', \'uid\', \'' + emp.uid + '\', function(){ tgOpenEmployeeProfile(\'' + emp.uid + '\'); loadStaffOverview(); })">🗑 حذف كافة الطلبات</button>' : '') +
+                '</div>' +
                 '<div class="profile-grid">' +
                     (emp.requests.length ? emp.requests.map(function(r){
-                        return '<div class="p-card"><div class="p-card-h">📨 ' + escH(r.type) + '</div>' +
-                               '<div style="font-size:11px;margin-bottom:8px">' + escH(r.details || '') + '</div>' +
+                        var attachHtml = '';
+                        if(r.fileUrl && r.fileType){
+                            if(r.fileType.indexOf('image/')===0){
+                                attachHtml = '<div style="margin-top:8px"><a href="'+r.fileUrl+'" target="_blank"><img src="'+r.fileUrl+'" style="max-width:160px; max-height:110px; border-radius:8px; display:block"></a></div>';
+                            } else if(r.fileType.indexOf('video/')===0){
+                                attachHtml = '<div style="margin-top:8px"><video src="'+r.fileUrl+'" controls style="max-width:200px; border-radius:8px"></video></div>';
+                            } else {
+                                attachHtml = '<div style="margin-top:8px"><a href="'+r.fileUrl+'" target="_blank" style="color:var(--tx); font-weight:700; text-decoration:underline">📎 '+escH(r.fileName||'ملف مرفق')+'</a></div>';
+                            }
+                        }
+                        return '<div class="p-card">' +
+                               '<div class="p-card-h" style="display:flex; justify-content:space-between; align-items:center;">' +
+                               '<span>📨 ' + escH(r.type || 'طلب') + '</span>' +
+                               (r.type !== 'طلب نموذج' ? '<button class="bt bt-o" style="padding:2px 8px; font-size:10px;" onclick="printRequestDoc(' + JSON.stringify(emp).replace(/"/g, '&quot;') + ',' + JSON.stringify(r).replace(/"/g, '&quot;') + ')">🖨 طباعة</button>' : '') +
+                               '</div>' +
+                               '<div style="margin:6px 0;"><span class="badge ' + badgeClassForReq(r.status) + '">' + reqStatusLabel(r.status) + '</span></div>' +
+                               (r.details ? '<div style="font-size:12px; margin-bottom:6px;">' + escH(r.details) + '</div>' : '') +
+                               (r.fromDate ? ('<div style="font-size:11px; color:var(--tx3);">من ' + escH(r.fromDate) + (r.toDate ? (' إلى ' + escH(r.toDate)) : '') + '</div>') : '') +
+                               (r.reviewedBy ? ('<div style="font-size:11px; color:var(--tx3);">مراجعة: ' + escH(r.reviewedBy) + '</div>') : '') +
                                (function(){
                                    if(!r.dynamicData) return '';
-                                   var dh = '<div style="margin-bottom:8px;padding:8px;background:rgba(0,0,0,0.04);border-radius:6px;font-size:11px;">';
+                                   var dh = '<div style="margin-top:8px; padding:8px; background:rgba(0,0,0,0.03); border-radius:6px; font-size:11px;">';
                                    var tpl = window.FS_TEMPLATES && r.formTemplateId ? window.FS_TEMPLATES[r.formTemplateId] : null;
                                    var fieldLabels = {};
                                    if(tpl && tpl.fields) { tpl.fields.forEach(function(f){ fieldLabels[f.id] = f.label; }); }
@@ -6812,16 +6879,17 @@ function renderEmployeeProfileModal(emp) {
                                        if(v === true) v = 'نعم / تم';
                                        if(v === false) v = 'لا';
                                        var lbl = fieldLabels[k] || k;
-                                       if(lbl === 'chk1') lbl = 'تسليم العهدة المالية';
-                                       if(lbl === 'chk2') lbl = 'تسليم العهدة العينية';
-                                       if(lbl === 'chk3') lbl = 'تسليم المستندات والملفات';
-                                       if(lbl === 'chk4') lbl = 'إنهاء المهام المعلقة';
-                                       dh += '<div style="margin-bottom:3px;"><span style="color:var(--tx3);display:inline-block;width:100px;">' + escH(lbl) + ':</span> <b style="white-space:pre-wrap;">' + escH(v) + '</b></div>';
+                                       dh += '<div style="margin-bottom:3px;"><span style="color:var(--tx3); display:inline-block; width:100px;">' + escH(lbl) + ':</span> <b>' + escH(v) + '</b></div>';
                                    }
                                    dh += '</div>';
                                    return dh;
                                })() +
-                               '<div><span class="badge '+badgeClassForReq(r.status)+'">'+reqStatusLabel(r.status)+'</span></div>' +
+                               attachHtml +
+                               (r.status==='pending' ? ('<div style="margin-top:10px; display:flex; gap:6px; flex-wrap:wrap;">' +
+                                   (r.type==='طلب نموذج' ? '<button class="bt bt-o" style="font-size:10px;" onclick="goSendForm(document.querySelector(\'[onclick*=\\\'goSendForm\\\']\'), \'' + emp.uid + '\', \'' + escH(r.details || '') + '\')">📨 إرسال نموذج</button>' : '') +
+                                   '<button class="bt bt-p" style="padding:4px 10px; font-size:11px;" onclick="reviewRequest(\'' + r.id + '\',\'approved\'); setTimeout(function(){ tgOpenEmployeeProfile(\'' + emp.uid + '\'); }, 500);">✔ موافقة</button>' +
+                                   '<button class="bt bt-d" style="padding:4px 10px; font-size:11px;" onclick="reviewRequest(\'' + r.id + '\',\'rejected\'); setTimeout(function(){ tgOpenEmployeeProfile(\'' + emp.uid + '\'); }, 500);">✕ رفض</button>' +
+                               '</div>') : '') +
                                '</div>';
                     }).join('') : '<div class="empty-hint">لا توجد طلبات سابقة.</div>') +
                 '</div>' +
