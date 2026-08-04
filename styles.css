@@ -3883,3 +3883,35 @@ body.dark-mode .tg-expand-btn:hover {
   }
 }
 
+/* ==========================================================================
+   MONTHLY EXPENSE TABLE (MEXP) CLEAN WHITE STYLING & PRINT SIGNATURE RULES
+   ========================================================================== */
+#mexp-table td {
+  background: #ffffff !important;
+  padding: 3px 4px !important;
+}
+
+#mexp-table input {
+  background-color: #ffffff !important;
+  background: #ffffff !important;
+  color: var(--tx) !important;
+  border: 1px solid var(--bd) !important;
+  box-shadow: none !important;
+  border-radius: 4px !important;
+}
+
+#mexp-table input:-webkit-autofill,
+#mexp-table input:-webkit-autofill:hover, 
+#mexp-table input:-webkit-autofill:focus {
+  -webkit-box-shadow: 0 0 0px 1000px #ffffff inset !important;
+  -webkit-text-fill-color: var(--tx) !important;
+}
+
+@media print {
+  .SG3, .SC-sec, .FT-footer {
+    page-break-before: auto !important;
+    page-break-inside: avoid !important;
+    break-inside: avoid !important;
+  }
+}
+
