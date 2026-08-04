@@ -1,6 +1,89 @@
 
 window._availableUsersForMeeting = [];
 
+window.tgToggleAdminOverride = function(checked) {
+    var noticeBox = document.getElementById('tgAdminNoticeBox');
+    var limitAlert = document.getElementById('tgPermLimitAlert');
+    if (noticeBox) noticeBox.style.display = checked ? 'block' : 'none';
+    if (limitAlert && checked) limitAlert.style.display = 'none';
+};
+
+window.tgPrintMonthlyPermissionSheet = function() {
+    var win = window.open('', '_blank');
+    var currentMonthStr = new Date().toLocaleDateString('ar-EG', { month: 'long', year: 'numeric' });
+    
+    var html = '<!DOCTYPE html><html lang="ar" dir="rtl"><head><meta charset="UTF-8">';
+    html += '<title>كشف متابعة أذونات الحضور والانصراف - ' + currentMonthStr + '</title>';
+    html += '<style>';
+    html += '@page { size: A4 landscape; margin: 6mm; }';
+    html += 'body { font-family: system-ui, sans-serif; direction: rtl; margin: 0; padding: 10px; background: #fff; color: #000; font-size: 10px; }';
+    html += '.header { display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid #000; padding-bottom: 8px; margin-bottom: 10px; }';
+    html += '.title { font-size: 16px; font-weight: bold; }';
+    html += '.subtitle { font-size: 11px; color: #444; }';
+    html += 'table { width: 100%; border-collapse: collapse; margin-top: 5px; }';
+    html += 'th, td { border: 1px solid #000; text-align: center; padding: 3px 2px; font-size: 9px; }';
+    html += 'th { background: #f0f0f0; font-weight: bold; }';
+    html += '.name-col { width: 120px; text-align: right; padding-right: 5px; font-weight: bold; }';
+    html += '.legend { display: flex; gap: 20px; font-size: 10px; font-weight: bold; margin-top: 10px; border: 1px solid #000; padding: 6px 12px; background: #fafafa; }';
+    html += '.signatures { display: flex; justify-content: space-between; margin-top: 25px; font-weight: bold; font-size: 11px; }';
+    html += '</style></head><body>';
+    
+    html += '<div class="header">';
+    html += '  <div>';
+    html += '    <div class="title">شركة تيك جو (Tech-Go) — سجل متابعة إذنات الحضور والانصراف الورقي</div>';
+    html += '    <div class="subtitle">شهر: ' + currentMonthStr + ' | الحد الأقصى المسموح به: 5 أيام شهرياً لكل موظف</div>';
+    html += '  </div>';
+    html += '  <div style="text-align:left;">';
+    html += '    <div>تاريخ الطباعة: ' + new Date().toLocaleDateString('ar-EG') + '</div>';
+    html += '    <div>نموذج رقم: TG-HR-PM-31</div>';
+    html += '  </div>';
+    html += '</div>';
+
+    html += '<table><thead><tr>';
+    html += '<th class="name-col">اسم الموظف</th>';
+    html += '<th>الرقم الوظيفي</th>';
+    for (var d = 1; d <= 31; d++) {
+        html += '<th style="width:20px;">' + d + '</th>';
+    }
+    html += '<th>المستغرق</th>';
+    html += '<th>المتبقي (من 5)</th>';
+    html += '</tr></thead><tbody>';
+
+    var emps = ['أحمد محمود', 'سارة حسن', 'محمد علي', 'مروة عبد العزيز', 'إبراهيم روماني', 'ابتهال أحمد', 'عمر خالد', 'مصطفى حسين'];
+    emps.forEach(function(empName, idx) {
+        html += '<tr>';
+        html += '<td class="name-col">' + empName + '</td>';
+        html += '<td>EMP-00' + (idx + 1) + '</td>';
+        for (var day = 1; day <= 31; day++) {
+            html += '<td></td>';
+        }
+        html += '<td>___</td>';
+        html += '<td>___</td>';
+        html += '</tr>';
+    });
+
+    html += '</tbody></table>';
+
+    html += '<div class="legend">';
+    html += '  <span>رموز التأشير الورقي:</span>';
+    html += '  <span>(ح) = حضور متأخر</span>';
+    html += '  <span>(ص) = انصراف مبكر</span>';
+    html += '  <span>(م) = إذن مؤقت أثناء الدوام</span>';
+    html += '</div>';
+
+    html += '<div class="signatures">';
+    html += '  <div>مسؤول الموارد البشرية: ..............................</div>';
+    html += '  <div>المدير الإداري: ..............................</div>';
+    html += '  <div>اعتماد مدير الفرع: ..............................</div>';
+    html += '</div>';
+
+    html += '<script>window.onload = function() { window.print(); };</script>';
+    html += '</body></html>';
+
+    win.document.write(html);
+    win.document.close();
+};
+
 window.openSelectEmpMeetingModal = function() {
     var modal = document.getElementById('selectEmpMeetingModal');
     var listContainer = document.getElementById('selectEmpMeetingList');
@@ -3665,6 +3748,29 @@ function load(id,c){
     // ── إذن حضور / انصراف ─────────────────────────────────────────────
     else if(id==="perm"){
         h=H('إذن حضور / انصراف','اللائحة التنظيمية — المادة الثالثة','ATTENDANCE PERMISSION','perm');
+        
+        // ── 📊 العداد الشهري ووضع الإدارة للإدخال اليدوي وطباعة الكشف الورقي ───
+        h += '<div style="background:var(--bg2); border:1px solid var(--bd); border-radius:10px; padding:12px 16px; margin-bottom:14px; display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px;">';
+        h += '  <div>';
+        h += '    <div style="font-size:12px; font-weight:bold; color:var(--tx)">📊 رصيد إذنات الشهر الحالي (الحد الأقصى 5 أيام شهرياً)</div>';
+        h += '    <div style="font-size:11px; color:var(--tx2); margin-top:2px;">المستغرق: <span id="tgPermUsedCount" style="font-weight:bold; color:#d97706">0</span> من 5 أيام | المتبقي: <span id="tgPermRemCount" style="font-weight:bold; color:#10b981">5</span> أيام</div>';
+        h += '  </div>';
+        h += '  <div style="display:flex; align-items:center; gap:10px;">';
+        h += '    <label style="display:flex; align-items:center; gap:6px; font-size:11px; font-weight:bold; color:var(--tx2); cursor:pointer;">';
+        h += '      <input type="checkbox" id="tgAdminOverrideToggle" onchange="tgToggleAdminOverride(this.checked)"> وضع الإدخال اليدوي والتجاوز للإدارة ⚙️';
+        h += '    </label>';
+        h += '    <button type="button" class="bt bt-o" onclick="tgPrintMonthlyPermissionSheet()" style="font-size:11px; padding:4px 10px;">🖨️ كشف المتابعة الورقي (31 يوماً)</button>';
+        h += '  </div>';
+        h += '</div>';
+
+        h += '<div id="tgAdminNoticeBox" style="display:none; background:rgba(217,119,6,0.1); border:1px solid #d97706; border-radius:8px; padding:10px 14px; margin-bottom:12px; font-size:11px; color:var(--tx);">';
+        h += '  ⚠️ <strong>تنبيه وضع الإدارة:</strong> أنت تعمل بوضع الإدخال اليدوي والتجاوز الإداري. يُسمح بإدخال إذن نيابة عن الموظف أو تجاوز حد الـ 5 أيام.';
+        h += '</div>';
+
+        h += '<div id="tgPermLimitAlert" style="display:none; background:rgba(239,68,68,0.1); border:1px solid #ef4444; border-radius:8px; padding:10px 14px; margin-bottom:12px; font-size:11px; color:#ef4444; font-weight:bold;">';
+        h += '  ⛔ <strong>عفواً:</strong> لقد استنفذت الحد الأقصى المسموح به للإذنات هذا الشهر (5/5 أيام). يرجى مراجعة الإدارة إذا كنت بحاجة لاستثناء.';
+        h += '</div>';
+
         h+=SC('١','نوع الإذن');
         h+='<div class="chk-grid" style="grid-template-columns:1fr 1fr"><label><input type="radio" name="pt"> <strong>حضور</strong> بعد مواعيد العمل</label><label><input type="radio" name="pt"> <strong>انصراف</strong> قبل مواعيد العمل</label></div>';
         h+=SC('٢','بيانات الموظف');
