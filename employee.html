@@ -1844,6 +1844,38 @@ function tgOnReqTypeChange(val) {
             '<button type="button" onclick="tgClearFormDraft(\'' + val + '\')" class="bt bt-o" style="font-size:11px; padding:4px 12px; border-radius:14px; font-weight:700; border-color:rgba(239,68,68,0.4); color:#ef4444;">🧹 تفريغ النموذج</button>' +
          '</div>';
 
+    if (val === 'perm') {
+        var usedCount = 0;
+        var now = new Date();
+        var currentYear = now.getFullYear();
+        var currentMonth = now.getMonth();
+        
+        if (window._reqCache) {
+            window._reqCache.forEach(function(r) {
+                if (r.formTemplateId === 'perm' || r.templateKey === 'perm' || (r.type && r.type.indexOf('إذن') !== -1)) {
+                    var rDate = r.createdAt && r.createdAt.toDate ? r.createdAt.toDate() : (r.createdAt && r.createdAt.seconds ? new Date(r.createdAt.seconds * 1000) : null);
+                    if (rDate && rDate.getFullYear() === currentYear && rDate.getMonth() === currentMonth) {
+                        usedCount++;
+                    }
+                }
+            });
+        }
+        var remCount = Math.max(0, 5 - usedCount);
+
+        h += '<div style="background:var(--bg2); border:1px solid var(--bd); border-radius:10px; padding:12px 16px; margin-bottom:14px; display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px;">';
+        h += '  <div>';
+        h += '    <div style="font-size:12px; font-weight:bold; color:var(--tx)">📊 رصيد إذنات الشهر الحالي (الحد الأقصى 5 أيام شهرياً)</div>';
+        h += '    <div style="font-size:11px; color:var(--tx2); margin-top:2px;">المستغرق: <span style="font-weight:bold; color:#d97706">' + usedCount + '</span> من 5 أيام | المتبقي: <span style="font-weight:bold; color:#10b981">' + remCount + '</span> أيام</div>';
+        h += '  </div>';
+        h += '</div>';
+
+        if (usedCount >= 5) {
+            h += '<div style="background:rgba(239,68,68,0.1); border:1px solid #ef4444; border-radius:8px; padding:10px 14px; margin-bottom:12px; font-size:11.5px; color:#ef4444; font-weight:bold;">';
+            h += '  ⛔ <strong>عفواً:</strong> لقد استنفذت الحد الأقصى المسموح به للإذنات هذا الشهر (5/5 أيام). لا يمكن تقديم طلب إذن جديد هذا الشهر، يرجى مراجعة الإدارة.';
+            h += '</div>';
+        }
+    }
+
     if (off && typeof off.fill === 'function') {
         h += off.fill();
     } else if (tpl && typeof tpl.fill === 'function') {
@@ -1943,6 +1975,28 @@ function submitRequest(){
     var file = fileInput && fileInput.files && fileInput.files[0];
     
     if (type !== 'other') {
+        if (type === 'perm') {
+            var usedCount = 0;
+            var now = new Date();
+            var currentYear = now.getFullYear();
+            var currentMonth = now.getMonth();
+            if (window._reqCache) {
+                window._reqCache.forEach(function(r) {
+                    if (r.formTemplateId === 'perm' || r.templateKey === 'perm' || (r.type && r.type.indexOf('إذن') !== -1)) {
+                        var rDate = r.createdAt && r.createdAt.toDate ? r.createdAt.toDate() : (r.createdAt && r.createdAt.seconds ? new Date(r.createdAt.seconds * 1000) : null);
+                        if (rDate && rDate.getFullYear() === currentYear && rDate.getMonth() === currentMonth) {
+                            usedCount++;
+                        }
+                    }
+                });
+            }
+            if (usedCount >= 5) {
+                msg.style.color = 'var(--no)';
+                msg.textContent = '❌ عفواً: لقد استنفذت الحد الأقصى للإذنات هذا الشهر (5/5 أيام). يرجى مراجعة الإدارة.';
+                return;
+            }
+        }
+        
         var tpl = window.FS_TEMPLATES[type];
         reqData.type = 'نموذج: ' + (tpl ? tpl.title : type);
         reqData.formTemplateId = type;

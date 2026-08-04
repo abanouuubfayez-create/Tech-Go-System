@@ -9,29 +9,20 @@ window.tgToggleAdminOverride = function(checked) {
 };
 
 window.tgPrintMonthlyPermissionSheet = function() {
-    var win = window.open('', '_blank');
+    var sheetContainer = document.getElementById('tgPrintMonthlySheetOverlay');
+    if (!sheetContainer) {
+        sheetContainer = document.createElement('div');
+        sheetContainer.id = 'tgPrintMonthlySheetOverlay';
+        document.body.appendChild(sheetContainer);
+    }
+    
     var currentMonthStr = new Date().toLocaleDateString('ar-EG', { month: 'long', year: 'numeric' });
     
-    var html = '<!DOCTYPE html><html lang="ar" dir="rtl"><head><meta charset="UTF-8">';
-    html += '<title>كشف متابعة أذونات الحضور والانصراف - ' + currentMonthStr + '</title>';
-    html += '<style>';
-    html += '@page { size: A4 landscape; margin: 6mm; }';
-    html += 'body { font-family: system-ui, sans-serif; direction: rtl; margin: 0; padding: 10px; background: #fff; color: #000; font-size: 10px; }';
-    html += '.header { display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid #000; padding-bottom: 8px; margin-bottom: 10px; }';
-    html += '.title { font-size: 16px; font-weight: bold; }';
-    html += '.subtitle { font-size: 11px; color: #444; }';
-    html += 'table { width: 100%; border-collapse: collapse; margin-top: 5px; }';
-    html += 'th, td { border: 1px solid #000; text-align: center; padding: 3px 2px; font-size: 9px; }';
-    html += 'th { background: #f0f0f0; font-weight: bold; }';
-    html += '.name-col { width: 120px; text-align: right; padding-right: 5px; font-weight: bold; }';
-    html += '.legend { display: flex; gap: 20px; font-size: 10px; font-weight: bold; margin-top: 10px; border: 1px solid #000; padding: 6px 12px; background: #fafafa; }';
-    html += '.signatures { display: flex; justify-content: space-between; margin-top: 25px; font-weight: bold; font-size: 11px; }';
-    html += '</style></head><body>';
-    
-    html += '<div class="header">';
+    var html = '<div class="tg-print-sheet-landscape">';
+    html += '<div class="sheet-hd">';
     html += '  <div>';
-    html += '    <div class="title">شركة تيك جو (Tech-Go) — سجل متابعة إذنات الحضور والانصراف الورقي</div>';
-    html += '    <div class="subtitle">شهر: ' + currentMonthStr + ' | الحد الأقصى المسموح به: 5 أيام شهرياً لكل موظف</div>';
+    html += '    <div class="sheet-title">شركة تيك جو (Tech-Go) — سجل متابعة إذنات الحضور والانصراف الورقي</div>';
+    html += '    <div class="sheet-sub">شهر: ' + currentMonthStr + ' | الحد الأقصى المسموح به: 5 أيام شهرياً لكل موظف</div>';
     html += '  </div>';
     html += '  <div style="text-align:left;">';
     html += '    <div>تاريخ الطباعة: ' + new Date().toLocaleDateString('ar-EG') + '</div>';
@@ -39,9 +30,9 @@ window.tgPrintMonthlyPermissionSheet = function() {
     html += '  </div>';
     html += '</div>';
 
-    html += '<table><thead><tr>';
+    html += '<table class="sheet-tbl"><thead><tr>';
     html += '<th class="name-col">اسم الموظف</th>';
-    html += '<th>الرقم الوظيفي</th>';
+    html += '<th>الرقم</th>';
     for (var d = 1; d <= 31; d++) {
         html += '<th style="width:20px;">' + d + '</th>';
     }
@@ -64,24 +55,25 @@ window.tgPrintMonthlyPermissionSheet = function() {
 
     html += '</tbody></table>';
 
-    html += '<div class="legend">';
+    html += '<div class="sheet-legend">';
     html += '  <span>رموز التأشير الورقي:</span>';
     html += '  <span>(ح) = حضور متأخر</span>';
     html += '  <span>(ص) = انصراف مبكر</span>';
     html += '  <span>(م) = إذن مؤقت أثناء الدوام</span>';
     html += '</div>';
 
-    html += '<div class="signatures">';
+    html += '<div class="sheet-sigs">';
     html += '  <div>مسؤول الموارد البشرية: ..............................</div>';
     html += '  <div>المدير الإداري: ..............................</div>';
     html += '  <div>اعتماد مدير الفرع: ..............................</div>';
     html += '</div>';
+    html += '</div>';
 
-    html += '<script>window.onload = function() { window.print(); };</script>';
-    html += '</body></html>';
-
-    win.document.write(html);
-    win.document.close();
+    sheetContainer.innerHTML = html;
+    
+    setTimeout(function() {
+        window.print();
+    }, 150);
 };
 
 window.openSelectEmpMeetingModal = function() {
