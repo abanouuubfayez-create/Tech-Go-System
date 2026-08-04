@@ -267,13 +267,17 @@
         return '<div style="background:var(--bg2); border:1px solid var(--bd); border-radius:12px; padding:24px; text-align:center; margin-bottom:16px;">' +
                '  <div style="font-size:32px; margin-bottom:8px;">🖨️</div>' +
                '  <div style="font-size:15px; font-weight:bold; color:var(--tx); margin-bottom:6px;">سجل متابعة إذنات الحضور والانصراف الورقي الشهري (A4 Portrait)</div>' +
-               '  <div style="font-size:12.5px; color:var(--tx2); margin-bottom:18px; line-height:1.6;">تسطيرة مالية فاخرة مقسمة بالأيام من 1 إلى 31 لجميع الموظفين بدون مديري الشركة.</div>' +
-               '  <button type="button" onclick="tgPrintMonthlyPermissionSheet()" class="bt bt-p" style="font-weight:bold; padding:10px 26px; font-size:13.5px; border-radius:8px;">🖨️ طباعة الكشف الورقي الآن</button>' +
+               '  <div style="font-size:12.5px; color:var(--tx2); margin-bottom:18px; line-height:1.6;">تسطيرة مالية فاخرة مقسمة بالأيام من 1 إلى 31 لجميع الموظفين مع إمكانية التحديد والاستبعاد.</div>' +
+               '  <div style="display:flex; justify-content:center; gap:10px; flex-wrap:wrap;">' +
+               '    <button type="button" onclick="tgOpenPermSheetEmpModal()" class="bt bt-p" style="font-weight:bold; padding:10px 22px; font-size:13.5px; border-radius:8px; background:linear-gradient(135deg, #0f172a, #1e293b); color:#fff;">⚙️ تخصيص / استبعاد الموظفين</button>' +
+               '    <button type="button" onclick="tgPrintMonthlyPermissionSheet(true)" class="bt bt-o" style="font-weight:bold; padding:10px 22px; font-size:13.5px; border-radius:8px;">🖨️ طباعة الكشف الورقي الآن</button>' +
+               '  </div>' +
                '</div>';
       },
       print: function() {
-        return '<div style="text-align:center; padding:20px;">' +
-               '  <button type="button" onclick="tgPrintMonthlyPermissionSheet()" class="bt bt-p">🖨️ طباعة الكشف الورقي A4</button>' +
+        return '<div style="text-align:center; padding:20px; display:flex; justify-content:center; gap:10px;">' +
+               '  <button type="button" onclick="tgOpenPermSheetEmpModal()" class="bt bt-p" style="background:linear-gradient(135deg, #0f172a, #1e293b); color:#fff;">⚙️ تخصيص / استبعاد الموظفين</button>' +
+               '  <button type="button" onclick="tgPrintMonthlyPermissionSheet(true)" class="bt bt-o">🖨️ طباعة الكشف الورقي A4</button>' +
                '</div>';
       }
     }

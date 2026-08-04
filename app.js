@@ -3942,11 +3942,12 @@ function load(id,c){
         h += '    <div style="font-size:12px; font-weight:bold; color:var(--tx)">📊 رصيد إذنات الشهر الحالي (الحد الأقصى 5 أيام شهرياً)</div>';
         h += '    <div style="font-size:11px; color:var(--tx2); margin-top:2px;">المستغرق: <span id="tgPermUsedCount" style="font-weight:bold; color:#d97706">0</span> من 5 أيام | المتبقي: <span id="tgPermRemCount" style="font-weight:bold; color:#10b981">5</span> أيام</div>';
         h += '  </div>';
-        h += '  <div style="display:flex; align-items:center; gap:10px;">';
+        h += '  <div style="display:flex; align-items:center; gap:8px; flex-wrap:wrap;">';
         h += '    <label style="display:flex; align-items:center; gap:6px; font-size:11px; font-weight:bold; color:var(--tx2); cursor:pointer;">';
         h += '      <input type="checkbox" id="tgAdminOverrideToggle" onchange="tgToggleAdminOverride(this.checked)"> وضع الإدخال اليدوي والتجاوز للإدارة ⚙️';
         h += '    </label>';
         h += '    <button type="button" class="bt bt-o" onclick="tgPrintMonthlyPermissionSheet()" style="font-size:11px; padding:4px 10px;">🖨️ كشف المتابعة الورقي (31 يوماً)</button>';
+        h += '    <button type="button" class="bt bt-p" onclick="tgOpenPermSheetEmpModal()" style="font-size:11px; padding:4px 12px; font-weight:bold; background:linear-gradient(135deg, #0f172a, #1e293b); color:#fff; border-radius:6px;" title="اختيار واستبعاد وتحديد الموظفين المظهرين في الكشف الورقي">⚙️ تخصيص الموظفين</button>';
         h += '  </div>';
         h += '</div>';
 
