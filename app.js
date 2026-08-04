@@ -1046,7 +1046,7 @@ function loadDashboardSummary(){
         var empCount=res[0].size, projCount=res[1].size;
         var h = '<div class="DC" onclick="go(\'staff\')" style="cursor:pointer"><div class="di-wrap"><div class="di">👥</div></div><div class="dt2">'+empCount+' موظف</div><div class="dd">إجمالي حسابات الموظفين المسجّلة</div></div>'+
             '<div class="DC" onclick="go(\'pmgmt\')" style="cursor:pointer"><div class="di-wrap"><div class="di">📁</div></div><div class="dt2">'+projCount+' مشروع</div><div class="dd">إجمالي المشاريع الحالية</div></div>'+
-            '<div class="DC" onclick="go(\'staff\')" style="cursor:pointer'+(pendingCount?';border:1px solid var(--no);box-shadow:0 4px 12px rgba(239,68,68,0.15)':'')+'"><div class="di-wrap"><div class="di" '+(pendingCount?'style="background:#fef2f2"':'')+'>⏳</div>'+(pendingCount?'<span class="badge-new" style="background:#fef2f2;color:#ef4444;border-color:rgba(239,68,68,0.2)">عاجل</span>':'')+'</div><div class="dt2" '+(pendingCount?'style="color:#ef4444"':'')+'>'+pendingCount+' طلب معلّق</div><div class="dd">بانتظار موافقة أو رفض الأدمن</div></div>';
+            '<div class="DC" onclick="window._reqHubStatusTab=\'pending\';go(\'allrequests\')" style="cursor:pointer'+(pendingCount?';border:1px solid var(--no);box-shadow:0 4px 12px rgba(239,68,68,0.15)':'')+'"><div class="di-wrap"><div class="di" '+(pendingCount?'style="background:#fef2f2"':'')+'>⏳</div>'+(pendingCount?'<span class="badge-new" style="background:#fef2f2;color:#ef4444;border-color:rgba(239,68,68,0.2)">عاجل</span>':'')+'</div><div class="dt2" '+(pendingCount?'style="color:#ef4444"':'')+'>'+pendingCount+' طلب معلّق</div><div class="dd">بانتظار موافقة أو رفض الأدمن</div></div>';
         
         box.innerHTML = h;
 
@@ -4576,11 +4576,12 @@ function load(id,c){
         h+='<div class="set-hint">مكان واحد متكامل لمتابعة وتمرير كافة طلبات الموظفين (إجازات، أذونات، التماسات، استقالات، خطابات، شكاوى)، والبت فيها بالموافقة أو الرفض بنقرة واحدة.</div>';
         h+='<div id="reqHubStatsBar" style="display:flex;gap:12px;margin:16px 0;flex-wrap:wrap"></div>';
 
+        var tabSt = window._reqHubStatusTab || 'pending';
         h+='<div style="display:flex;gap:10px;margin-bottom:16px;flex-wrap:wrap;border-bottom:2px solid var(--bd);padding-bottom:8px" id="reqHubStatusTabs">';
-        h+='<button class="tg-task-tab tg-task-tab-active" data-status="pending" onclick="tgSetReqHubStatusTab(this, \'pending\')"><span class="tab-label">⏳ المعلقة</span> <span class="tab-count" id="reqhub-cnt-pending">0</span></button>';
-        h+='<button class="tg-task-tab" data-status="all" onclick="tgSetReqHubStatusTab(this, \'all\')"><span class="tab-label">📋 كافة الطلبات</span> <span class="tab-count" id="reqhub-cnt-all">0</span></button>';
-        h+='<button class="tg-task-tab" data-status="approved" onclick="tgSetReqHubStatusTab(this, \'approved\')"><span class="tab-label">✅ المقبولة</span> <span class="tab-count" id="reqhub-cnt-approved">0</span></button>';
-        h+='<button class="tg-task-tab" data-status="rejected" onclick="tgSetReqHubStatusTab(this, \'rejected\')"><span class="tab-label">❌ المرفوضة</span> <span class="tab-count" id="reqhub-cnt-rejected">0</span></button>';
+        h+='<button class="tg-task-tab '+(tabSt==='pending'?'tg-task-tab-active':'')+'" data-status="pending" onclick="tgSetReqHubStatusTab(this, \'pending\')"><span class="tab-label">⏳ المعلقة</span> <span class="tab-count" id="reqhub-cnt-pending">0</span></button>';
+        h+='<button class="tg-task-tab '+(tabSt==='all'?'tg-task-tab-active':'')+'" data-status="all" onclick="tgSetReqHubStatusTab(this, \'all\')"><span class="tab-label">📋 كافة الطلبات</span> <span class="tab-count" id="reqhub-cnt-all">0</span></button>';
+        h+='<button class="tg-task-tab '+(tabSt==='approved'?'tg-task-tab-active':'')+'" data-status="approved" onclick="tgSetReqHubStatusTab(this, \'approved\')"><span class="tab-label">✅ المقبولة</span> <span class="tab-count" id="reqhub-cnt-approved">0</span></button>';
+        h+='<button class="tg-task-tab '+(tabSt==='rejected'?'tg-task-tab-active':'')+'" data-status="rejected" onclick="tgSetReqHubStatusTab(this, \'rejected\')"><span class="tab-label">❌ المرفوضة</span> <span class="tab-count" id="reqhub-cnt-rejected">0</span></button>';
         h+='</div>';
 
         h+='<div class="staff-toolbar" style="margin-bottom:16px;gap:10px;flex-wrap:wrap">';
