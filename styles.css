@@ -3913,5 +3913,40 @@ body.dark-mode .tg-expand-btn:hover {
     page-break-inside: avoid !important;
     break-inside: avoid !important;
   }
+
+  /* Remove all input boxes, rounded borders, and backgrounds in printouts */
+  #mexp-table input,
+  .dt input,
+  .tg-fin-matrix-table input,
+  table input,
+  input[type="text"],
+  input[type="number"],
+  input[type="date"] {
+    border: none !important;
+    outline: none !important;
+    background: transparent !important;
+    box-shadow: none !important;
+    border-radius: 0 !important;
+    -webkit-appearance: none !important;
+    appearance: none !important;
+    padding: 0 4px !important;
+  }
+
+  /* Ensure table cells print crisp flat grid lines */
+  #mexp-table td,
+  .dt td {
+    border: 1px solid #94a3b8 !important;
+    background: transparent !important;
+    padding: 5px 6px !important;
+  }
+
+  #mexp-table th,
+  .dt th {
+    background-color: #0f172a !important;
+    color: #ffffff !important;
+    border: 1px solid #334155 !important;
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+  }
 }
 
