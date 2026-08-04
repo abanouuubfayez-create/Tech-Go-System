@@ -9,71 +9,63 @@ window.tgToggleAdminOverride = function(checked) {
 };
 
 window.tgPrintMonthlyPermissionSheet = function() {
-    var sheetContainer = document.getElementById('tgPrintMonthlySheetOverlay');
-    if (!sheetContainer) {
-        sheetContainer = document.createElement('div');
-        sheetContainer.id = 'tgPrintMonthlySheetOverlay';
-        document.body.appendChild(sheetContainer);
-    }
-    
     var currentMonthStr = new Date().toLocaleDateString('ar-EG', { month: 'long', year: 'numeric' });
-    
-    var html = '<div class="tg-print-sheet-landscape">';
-    html += '<div class="sheet-hd">';
-    html += '  <div>';
-    html += '    <div class="sheet-title">شركة تيك جو (Tech-Go) — سجل متابعة إذنات الحضور والانصراف الورقي</div>';
-    html += '    <div class="sheet-sub">شهر: ' + currentMonthStr + ' | الحد الأقصى المسموح به: 5 أيام شهرياً لكل موظف</div>';
-    html += '  </div>';
-    html += '  <div style="text-align:left;">';
-    html += '    <div>تاريخ الطباعة: ' + new Date().toLocaleDateString('ar-EG') + '</div>';
-    html += '    <div>نموذج رقم: TG-HR-PM-31</div>';
-    html += '  </div>';
-    html += '</div>';
+    var docTitle = 'سجل متابعة أذونات الحضور والانصراف الورقي - ' + currentMonthStr;
 
-    html += '<table class="sheet-tbl"><thead><tr>';
-    html += '<th class="name-col">اسم الموظف</th>';
-    html += '<th>الرقم</th>';
+    var h = H('سجل متابعة ورقي', 'سجل متابعة إذنات الحضور والانصراف الشهري (31 يوماً)', 'ATTENDANCE PERMISSION TRACKING SHEET', 'perm_sheet');
+    
+    // Section 1: Sheet Info
+    h += SC('١', 'بيانات الكشف وضوابط الاستخدام');
+    h += '<div style="display:flex; justify-content:space-between; align-items:center; background:var(--bg2); padding:10px 16px; border-radius:8px; border:1px solid var(--bd); margin-bottom:14px; font-size:11.5px; font-weight:bold; color:var(--tx); flex-wrap:wrap; gap:10px;">';
+    h += '  <div>📅 <strong>الشهر / السنة:</strong> ' + currentMonthStr + '</div>';
+    h += '  <div>📊 <strong>الحد الأقصى للإذنات:</strong> 5 أيام شهرياً لكل موظف</div>';
+    h += '  <div>📄 <strong>رقم المستند الرسمي:</strong> TG-HR-PM-31</div>';
+    h += '</div>';
+
+    // Section 2: 31-Day Financial Style Matrix Table
+    h += SC('٢', 'سجل التأشير الميداني واليومي (1 — 31)');
+    h += '<div style="overflow-x:auto; margin-bottom:14px;">';
+    h += '<table class="tg-fin-matrix-table" style="width:100%; border-collapse:collapse; font-size:10px; text-align:center; direction:rtl; border:1.5px solid var(--bd); font-family:inherit;">';
+    h += '<thead><tr style="background:var(--nv); color:#ffffff; font-size:10px;">';
+    h += '<th style="padding:8px 6px; width:130px; text-align:right; border:1px solid rgba(255,255,255,0.2);">اسم الموظف</th>';
+    h += '<th style="padding:8px 4px; width:65px; border:1px solid rgba(255,255,255,0.2);">الرقم</th>';
     for (var d = 1; d <= 31; d++) {
-        html += '<th style="width:20px;">' + d + '</th>';
+        h += '<th style="padding:6px 2px; width:22px; border:1px solid rgba(255,255,255,0.2);">' + d + '</th>';
     }
-    html += '<th>المستغرق</th>';
-    html += '<th>المتبقي (من 5)</th>';
-    html += '</tr></thead><tbody>';
+    h += '<th style="padding:8px 4px; width:55px; border:1px solid rgba(255,255,255,0.2);">المستغرق</th>';
+    h += '<th style="padding:8px 4px; width:50px; border:1px solid rgba(255,255,255,0.2);">المتبقي</th>';
+    h += '</tr></thead><tbody>';
 
     var emps = ['أحمد محمود', 'سارة حسن', 'محمد علي', 'مروة عبد العزيز', 'إبراهيم روماني', 'ابتهال أحمد', 'عمر خالد', 'مصطفى حسين'];
     emps.forEach(function(empName, idx) {
-        html += '<tr>';
-        html += '<td class="name-col">' + empName + '</td>';
-        html += '<td>EMP-00' + (idx + 1) + '</td>';
+        var bgStyle = (idx % 2 === 1) ? 'background:var(--bg2);' : 'background:var(--bg);';
+        h += '<tr style="' + bgStyle + ' border-bottom:1px solid var(--bd);">';
+        h += '<td style="padding:7px 8px; font-weight:bold; text-align:right; border:1px solid var(--bd); color:var(--tx);">' + empName + '</td>';
+        h += '<td style="padding:7px 4px; font-size:9.5px; border:1px solid var(--bd); color:var(--tx2);">EMP-00' + (idx + 1) + '</td>';
         for (var day = 1; day <= 31; day++) {
-            html += '<td></td>';
+            h += '<td style="border:1px solid var(--bd); font-size:9px;"></td>';
         }
-        html += '<td>___</td>';
-        html += '<td>___</td>';
-        html += '</tr>';
+        h += '<td style="padding:7px 4px; font-weight:bold; border:1px solid var(--bd); color:#d97706;">___</td>';
+        h += '<td style="padding:7px 4px; font-weight:bold; border:1px solid var(--bd); color:#10b981;">___</td>';
+        h += '</tr>';
     });
 
-    html += '</tbody></table>';
+    h += '</tbody></table></div>';
 
-    html += '<div class="sheet-legend">';
-    html += '  <span>رموز التأشير الورقي:</span>';
-    html += '  <span>(ح) = حضور متأخر</span>';
-    html += '  <span>(ص) = انصراف مبكر</span>';
-    html += '  <span>(م) = إذن مؤقت أثناء الدوام</span>';
-    html += '</div>';
+    // Section 3: Legend Key
+    h += '<div style="background:var(--bg2); border:1px solid var(--bd); border-radius:8px; padding:10px 16px; margin-bottom:16px; display:flex; gap:20px; font-size:10.5px; font-weight:bold; color:var(--tx); flex-wrap:wrap;">';
+    h += '  <span>📌 <strong>رموز التأشير الورقي:</strong></span>';
+    h += '  <span>(ح) = حضور متأخر</span>';
+    h += '  <span>(ص) = انصراف مبكر</span>';
+    h += '  <span>(م) = إذن مؤقت أثناء العمل</span>';
+    h += '</div>';
 
-    html += '<div class="sheet-sigs">';
-    html += '  <div>مسؤول الموارد البشرية: ..............................</div>';
-    html += '  <div>المدير الإداري: ..............................</div>';
-    html += '  <div>اعتماد مدير الفرع: ..............................</div>';
-    html += '</div>';
-    html += '</div>';
+    // Section 4: Signatures & Footer
+    h += SC('٣', 'التوقيعات واعتمادات الإدارة');
+    h += SG3('مسؤول الموارد البشرية', '', 'المدير الإداري / المشروعات', 'الموافقة', 'المدير التنفيذي / الفرع', 'الاعتماد النهائي', null, 'admin', 'exec');
+    h += FT(['نسخة للموارد البشرية', 'نسخة للمالية والإدارة']);
 
-    sheetContainer.innerHTML = html;
-    
-    setTimeout(function() {
-        window.print();
-    }, 150);
+    printDoc(h, docTitle);
 };
 
 window.openSelectEmpMeetingModal = function() {
