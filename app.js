@@ -8,7 +8,137 @@ window.tgToggleAdminOverride = function(checked) {
     if (limitAlert && checked) limitAlert.style.display = 'none';
 };
 
-window.tgPrintMonthlyPermissionSheet = async function() {
+window.tgOpenPermSheetEmpModal = async function() {
+    var modal = document.getElementById('tgPermSheetEmpModal');
+    if (!modal) {
+        modal = document.createElement('div');
+        modal.id = 'tgPermSheetEmpModal';
+        modal.className = 'modal-backdrop';
+        modal.style.cssText = 'position:fixed; top:0; left:0; right:0; bottom:0; background:rgba(0,0,0,0.6); z-index:99999; display:flex; align-items:center; justify-content:center; padding:16px; backdrop-filter:blur(4px);';
+        document.body.appendChild(modal);
+    }
+    modal.style.display = 'flex';
+
+    var allEmps = [];
+    try {
+        if (window.db) {
+            var snap = await db.collection('users').get();
+            snap.forEach(function(doc) {
+                var d = doc.data();
+                var empName = d.name || d.displayName;
+                var role = (d.role || '').toLowerCase();
+                var jobTitle = (d.jobTitle || '').toLowerCase();
+                var isManager = (role === 'admin' || role === 'exec' || role === 'tech_admin' || jobTitle.indexOf('مدير') !== -1 || jobTitle.indexOf('تنفذ') !== -1);
+                if (empName && !isManager) {
+                    var isTest = (empName.toLowerCase().indexOf('test') > -1 || empName.indexOf('تست') > -1);
+                    allEmps.push({ uid: doc.id, name: empName, defaultChecked: !isTest });
+                }
+            });
+        }
+    } catch(e) { console.warn('Fetch users err:', e); }
+
+    var savedCustom = [];
+    var savedChecked = null;
+    try {
+        var raw = localStorage.getItem('tg_perm_sheet_config');
+        if (raw) {
+            var parsed = JSON.parse(raw);
+            savedCustom = parsed.custom || [];
+            savedChecked = parsed.checked || null;
+        }
+    } catch(e) {}
+
+    var h = '<div style="background:var(--bg); border:1px solid var(--bd); border-radius:14px; width:100%; max-width:540px; max-height:90vh; overflow-y:auto; padding:22px; box-shadow:0 20px 40px rgba(0,0,0,0.4); direction:rtl; font-family:inherit;">';
+    h += '<div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:16px; border-bottom:1px solid var(--bd); padding-bottom:12px;">';
+    h += '  <h3 style="margin:0; font-size:16px; font-weight:800; color:var(--tx); display:flex; align-items:center; gap:8px;">⚙️ تخصيص موظفي كشف المتابعة الورقي</h3>';
+    h += '  <button onclick="document.getElementById(\'tgPermSheetEmpModal\').style.display=\'none\'" style="background:none; border:none; font-size:18px; cursor:pointer; color:var(--tx2);">✕</button>';
+    h += '</div>';
+
+    h += '<div style="font-size:12px; color:var(--tx2); margin-bottom:14px; line-height:1.5;">حدد الموظفين المراد إظهارهم في الكشف الورقي (يمكنك إلغاء تحديد حسابات التست أو إضافة أسماء موظفين غير مسجلين بالنظام):</div>';
+
+    // System Employees Section
+    h += '<div style="font-weight:bold; font-size:13px; color:var(--tx); margin-bottom:8px;">👥 الموظفون المسجلون بالنظام:</div>';
+    h += '<div id="tgPermModalSysEmpsList" style="display:grid; grid-template-columns:1fr 1fr; gap:8px; margin-bottom:16px; max-height:200px; overflow-y:auto; background:var(--bg2); padding:10px; border-radius:8px; border:1px solid var(--bd);">';
+    allEmps.forEach(function(emp) {
+        var isChecked = savedChecked ? (savedChecked.indexOf(emp.name) > -1) : emp.defaultChecked;
+        h += '<label style="display:flex; align-items:center; gap:6px; font-size:12px; cursor:pointer; color:var(--tx); padding:2px 4px;">';
+        h += '  <input type="checkbox" class="tg-perm-emp-chk" value="' + escH(emp.name) + '" ' + (isChecked ? 'checked' : '') + '>';
+        h += '  <span>' + escH(emp.name) + '</span>';
+        h += '</label>';
+    });
+    h += '</div>';
+
+    // External Non-Registered Employees Section
+    h += '<div style="font-weight:bold; font-size:13px; color:var(--tx); margin-bottom:8px;">➕ إضافة موظفين غير مسجلين على السيستم:</div>';
+    h += '<div style="display:flex; gap:8px; margin-bottom:10px;">';
+    h += '  <input type="text" id="tgPermCustomEmpInput" placeholder="اكتب اسم الموظف..." style="flex:1; padding:8px 12px; border-radius:6px; border:1px solid var(--bd); font-size:12px; background:var(--bg2); color:var(--tx);">';
+    h += '  <button onclick="tgAddPermCustomEmpRow()" class="bt bt-p" style="padding:8px 14px; font-size:12px; font-weight:bold;">➕ إضافة</button>';
+    h += '</div>';
+
+    h += '<div id="tgPermCustomEmpsWrap" style="display:flex; flex-wrap:wrap; gap:6px; margin-bottom:20px;">';
+    savedCustom.forEach(function(cName) {
+        h += '<span class="tg-perm-custom-tag" style="background:var(--bg2); border:1px solid var(--bd); padding:4px 10px; border-radius:14px; font-size:12px; color:var(--tx); display:inline-flex; align-items:center; gap:6px;">' +
+             escH(cName) +
+             ' <button onclick="this.parentElement.remove()" style="background:none; border:none; color:#ef4444; cursor:pointer; font-weight:bold;">✕</button>' +
+             '</span>';
+    });
+    h += '</div>';
+
+    // Actions
+    h += '<div style="display:flex; justify-content:flex-end; gap:10px; border-top:1px solid var(--bd); padding-top:14px;">';
+    h += '  <button onclick="document.getElementById(\'tgPermSheetEmpModal\').style.display=\'none\'" class="bt bt-o" style="padding:8px 16px; font-size:12px;">إلغاء</button>';
+    h += '  <button onclick="tgSaveAndPrintPermSheet()" class="bt bt-p" style="padding:8px 22px; font-size:12.5px; font-weight:bold;">🖨️ حفظ وتوليد الطباعة الآن</button>';
+    h += '</div>';
+
+    h += '</div>';
+    modal.innerHTML = h;
+};
+
+window.tgAddPermCustomEmpRow = function() {
+    var inp = document.getElementById('tgPermCustomEmpInput');
+    if (!inp) return;
+    var name = inp.value.trim();
+    if (!name) return;
+
+    var wrap = document.getElementById('tgPermCustomEmpsWrap');
+    if (wrap) {
+        var tag = document.createElement('span');
+        tag.className = 'tg-perm-custom-tag';
+        tag.style.cssText = 'background:var(--bg2); border:1px solid var(--bd); padding:4px 10px; border-radius:14px; font-size:12px; color:var(--tx); display:inline-flex; align-items:center; gap:6px;';
+        tag.innerHTML = escH(name) + ' <button onclick="this.parentElement.remove()" style="background:none; border:none; color:#ef4444; cursor:pointer; font-weight:bold;">✕</button>';
+        wrap.appendChild(tag);
+    }
+    inp.value = '';
+};
+
+window.tgSaveAndPrintPermSheet = function() {
+    var checked = [];
+    document.querySelectorAll('.tg-perm-emp-chk:checked').forEach(function(chk) {
+        checked.push(chk.value);
+    });
+
+    var custom = [];
+    document.querySelectorAll('.tg-perm-custom-tag').forEach(function(tag) {
+        var t = tag.textContent.replace('✕', '').trim();
+        if (t) custom.push(t);
+    });
+
+    var config = { checked: checked, custom: custom };
+    localStorage.setItem('tg_perm_sheet_config', JSON.stringify(config));
+
+    var modal = document.getElementById('tgPermSheetEmpModal');
+    if (modal) modal.style.display = 'none';
+
+    window.tgPrintMonthlyPermissionSheet(true);
+};
+
+window.tgPrintMonthlyPermissionSheet = async function(direct) {
+    var rawConfig = localStorage.getItem('tg_perm_sheet_config');
+    if (!direct && !rawConfig) {
+        tgOpenPermSheetEmpModal();
+        return;
+    }
+
     var currentMonthStr = new Date().toLocaleDateString('ar-EG', { month: 'long', year: 'numeric' });
     var docTitle = 'سجل متابعة أذونات الحضور والانصراف الورقي - ' + currentMonthStr;
 
@@ -19,78 +149,83 @@ window.tgPrintMonthlyPermissionSheet = async function() {
     h += '<div style="display:flex; justify-content:space-between; align-items:center; background:var(--bg2); padding:10px 14px; border-radius:8px; border:1px solid var(--bd); margin-bottom:14px; font-size:11.5px; font-weight:bold; color:var(--tx); flex-wrap:wrap; gap:10px;">';
     h += '  <div>📅 <strong>الشهر / السنة:</strong> ' + currentMonthStr + '</div>';
     h += '  <div>📊 <strong>الحد الأقصى للإذنات:</strong> 5 أيام شهرياً لكل موظف</div>';
-    h += '  <div>📄 <strong>رقم المستند:</strong> TG-HR-PM-31</div>';
+    h += '  <div style="display:flex; align-items:center; gap:10px;">';
+    h += '    <span>📄 <strong>رقم المستند:</strong> TG-HR-PM-31</span>';
+    h += '    <button type="button" onclick="tgOpenPermSheetEmpModal()" class="bt bt-o np" style="font-size:11px; padding:3px 10px; border-radius:6px; font-weight:bold;">⚙️ تخصيص / استبعاد موظفين</button>';
+    h += '  </div>';
     h += '</div>';
 
-    // Fetch REAL EMPLOYEES ONLY (Filter out Admins & Managers!)
-    var realEmps = [];
-    try {
-        var processUser = function(d) {
-            var empName = d.name || d.displayName;
-            var role = (d.role || '').toLowerCase();
-            var jobTitle = (d.jobTitle || '').toLowerCase();
-            var isManager = (role === 'admin' || role === 'exec' || role === 'tech_admin' || jobTitle.indexOf('مدير') !== -1 || jobTitle.indexOf('تنفذ') !== -1 || jobTitle.indexOf('تقن') !== -1);
-            
-            if (empName && !isManager) {
-                realEmps.push({ name: empName, code: d.empId || d.employeeCode || ('EMP-' + String(realEmps.length + 1).padStart(3, '0')) });
+    // Combine Selected System Emps & External Custom Emps
+    var finalEmps = [];
+    if (rawConfig) {
+        try {
+            var cfg = JSON.parse(rawConfig);
+            (cfg.checked || []).forEach(function(n) { finalEmps.push({ name: n }); });
+            (cfg.custom || []).forEach(function(n) { finalEmps.push({ name: n }); });
+        } catch(e) {}
+    }
+
+    // Fallback if empty config
+    if (finalEmps.length === 0) {
+        try {
+            if (window._lastUsersSnap && window._lastUsersSnap.size > 0) {
+                window._lastUsersSnap.forEach(function(doc) {
+                    var d = doc.data();
+                    var empName = d.name || d.displayName;
+                    var role = (d.role || '').toLowerCase();
+                    var isTest = (empName && (empName.toLowerCase().indexOf('test') > -1 || empName.indexOf('تست') > -1));
+                    if (empName && role === 'employee' && !isTest) {
+                        finalEmps.push({ name: empName });
+                    }
+                });
             }
-        };
+        } catch(e) {}
+    }
 
-        if (window._lastUsersSnap && window._lastUsersSnap.size > 0) {
-            window._lastUsersSnap.forEach(function(doc) { processUser(doc.data()); });
-        }
-        if (realEmps.length === 0 && window.db) {
-            var snap = await db.collection('users').get();
-            snap.forEach(function(doc) { processUser(doc.data()); });
-        }
-    } catch(e) { console.warn('Real emp fetch error:', e); }
-
-    // If no employees found, provide 5 blank employee columns for physical pen entry!
-    if (realEmps.length === 0) {
+    if (finalEmps.length === 0) {
         for (var i = 1; i <= 5; i++) {
-            realEmps.push({ name: 'موظف ' + i, code: '' });
+            finalEmps.push({ name: 'موظف ' + i });
         }
     }
 
-    // Section 2: Transposed Spacious Matrix (Spacious Rows 1..31 for A4 Portrait, Employees as Columns)
+    // Section 2: Transposed Matrix
     h += SC('٢', 'سجل التأشير الميداني اليومي (الأيام 1 — 31)');
     h += '<div style="overflow-x:auto; margin-bottom:14px;">';
     h += '<table class="tg-fin-matrix-table" style="width:100%; border-collapse:collapse; font-size:10.5px; text-align:center; direction:rtl; border:1.5px solid var(--bd); font-family:inherit;">';
     
-    // Header Row (Employees ONLY as Columns)
+    // Header Row
     h += '<thead><tr style="background:var(--nv); color:#ffffff; font-size:10.5px;">';
     h += '<th style="padding:10px 6px; width:75px; border:1px solid rgba(255,255,255,0.2);">اليوم / التاريخ</th>';
-    realEmps.forEach(function(emp) {
+    finalEmps.forEach(function(emp) {
         h += '<th style="padding:10px 6px; border:1px solid rgba(255,255,255,0.2); text-align:center; font-weight:bold;">' + escH(emp.name) + '</th>';
     });
     h += '<th style="padding:10px 6px; width:80px; border:1px solid rgba(255,255,255,0.2);">ملاحظات</th>';
     h += '</tr></thead><tbody>';
 
-    // Rows (Days 1 to 31 down page with spacious heights for easy writing)
+    // Rows 1..31
     for (var day = 1; day <= 31; day++) {
         var rowBg = (day % 2 === 0) ? 'background:var(--bg2);' : 'background:var(--bg);';
         h += '<tr style="' + rowBg + ' border-bottom:1px solid var(--bd); height:32px;">';
         h += '<td style="padding:8px 6px; font-weight:bold; border:1px solid var(--bd); background:var(--bg2); color:var(--tx);">يوم ' + day + '</td>';
-        realEmps.forEach(function(emp) {
+        finalEmps.forEach(function(emp) {
             h += '<td style="border:1px solid var(--bd); padding:8px 6px;"></td>';
         });
         h += '<td style="border:1px solid var(--bd); padding:8px 6px;"></td>';
         h += '</tr>';
     }
 
-    // Bottom Summary Row 1: Used Count
+    // Summary Rows
     h += '<tr style="background:rgba(217,119,6,0.1); font-weight:bold; border-top:2px solid var(--bd); height:36px;">';
     h += '<td style="padding:8px 6px; border:1px solid var(--bd); color:#d97706;">المستغرق (من 5)</td>';
-    realEmps.forEach(function(emp) {
+    finalEmps.forEach(function(emp) {
         h += '<td style="border:1px solid var(--bd); padding:8px 6px; color:#d97706;"></td>';
     });
     h += '<td style="border:1px solid var(--bd);"></td>';
     h += '</tr>';
 
-    // Bottom Summary Row 2: Remaining Balance
     h += '<tr style="background:rgba(16,185,129,0.1); font-weight:bold; height:36px;">';
     h += '<td style="padding:8px 6px; border:1px solid var(--bd); color:#10b981;">الرصيد المتبقي</td>';
-    realEmps.forEach(function(emp) {
+    finalEmps.forEach(function(emp) {
         h += '<td style="border:1px solid var(--bd); padding:8px 6px; color:#10b981;"></td>';
     });
     h += '<td style="border:1px solid var(--bd);"></td>';
@@ -98,7 +233,7 @@ window.tgPrintMonthlyPermissionSheet = async function() {
 
     h += '</tbody></table></div>';
 
-    // Section 3: Legend Key
+    // Legend
     h += '<div style="background:var(--bg2); border:1px solid var(--bd); border-radius:8px; padding:10px 14px; margin-bottom:16px; display:flex; gap:20px; font-size:10.5px; font-weight:bold; color:var(--tx); flex-wrap:wrap;">';
     h += '  <span>📌 <strong>رموز التأشير الورقي:</strong></span>';
     h += '  <span>(ح) = حضور متأخر</span>';
@@ -106,7 +241,7 @@ window.tgPrintMonthlyPermissionSheet = async function() {
     h += '  <span>(م) = إذن مؤقت أثناء العمل</span>';
     h += '</div>';
 
-    // Section 4: Signatures & Footer
+    // Signatures
     h += SC('٣', 'التوقيعات واعتمادات الإدارة');
     h += SG3('مسؤول الموارد البشرية', '', 'المدير الإداري / المشروعات', 'الموافقة', 'المدير التنفيذي / الفرع', 'الاعتماد النهائي', null, 'admin', 'exec');
     h += FT(['نسخة للموارد البشرية', 'نسخة للمالية والإدارة']);
