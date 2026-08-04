@@ -72,7 +72,7 @@ window.tgOpenPermSheetEmpModal = async function() {
     h += '<div style="font-weight:bold; font-size:13px; color:var(--tx); margin-bottom:8px;">➕ إضافة موظفين غير مسجلين على السيستم:</div>';
     h += '<div style="display:flex; gap:8px; margin-bottom:10px;">';
     h += '  <input type="text" id="tgPermCustomEmpInput" placeholder="اكتب اسم الموظف..." style="flex:1; padding:8px 12px; border-radius:6px; border:1px solid var(--bd); font-size:12px; background:var(--bg2); color:var(--tx);">';
-    h += '  <button onclick="tgAddPermCustomEmpRow()" class="bt bt-p" style="padding:8px 14px; font-size:12px; font-weight:bold;">➕ إضافة</button>';
+    h += '  <button onclick="tgAddPermCustomEmpRow()" class="bt bt-p" style="padding:8px 16px; font-size:12px; font-weight:bold; background:linear-gradient(135deg, #0f172a, #1e293b); color:#fff; border-radius:8px;">➕ إضافة</button>';
     h += '</div>';
 
     h += '<div id="tgPermCustomEmpsWrap" style="display:flex; flex-wrap:wrap; gap:6px; margin-bottom:20px;">';
@@ -86,8 +86,8 @@ window.tgOpenPermSheetEmpModal = async function() {
 
     // Actions
     h += '<div style="display:flex; justify-content:flex-end; gap:10px; border-top:1px solid var(--bd); padding-top:14px;">';
-    h += '  <button onclick="document.getElementById(\'tgPermSheetEmpModal\').style.display=\'none\'" class="bt bt-o" style="padding:8px 16px; font-size:12px;">إلغاء</button>';
-    h += '  <button onclick="tgSaveAndPrintPermSheet()" class="bt bt-p" style="padding:8px 22px; font-size:12.5px; font-weight:bold;">🖨️ حفظ وتوليد الطباعة الآن</button>';
+    h += '  <button onclick="document.getElementById(\'tgPermSheetEmpModal\').style.display=\'none\'" class="bt bt-o" style="padding:8px 16px; font-size:12px; font-weight:bold;">إلغاء</button>';
+    h += '  <button onclick="tgSaveAndPrintPermSheet()" class="bt bt-p" style="padding:9px 24px; font-size:13px; font-weight:bold; background:linear-gradient(135deg, #0f172a, #1e293b); color:#fff; border-radius:8px; box-shadow:0 4px 14px rgba(15,23,42,0.3);">🖨️ حفظ وتوليد الطباعة الآن</button>';
     h += '</div>';
 
     h += '</div>';

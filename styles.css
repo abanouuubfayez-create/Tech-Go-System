@@ -3778,12 +3778,18 @@ body.dark-mode .tg-expand-btn:hover {
 }
 
 .bt-p {
-  background: #2563eb;
-  color: #ffffff;
+  background: linear-gradient(135deg, #0f172a, #1e293b) !important;
+  color: #ffffff !important;
+  border: 1px solid rgba(255, 255, 255, 0.15) !important;
+  box-shadow: 0 4px 12px rgba(15, 23, 42, 0.25) !important;
 }
 
-.bt-p:hover { background: #1d4ed8; }
-.bt-p:disabled { background: #94a3b8; cursor: not-allowed; }
+.bt-p:hover {
+  background: linear-gradient(135deg, #1e293b, #334155) !important;
+  box-shadow: 0 6px 16px rgba(15, 23, 42, 0.35) !important;
+  transform: translateY(-1px);
+}
+.bt-p:disabled { background: #94a3b8 !important; cursor: not-allowed; }
 
 .tg-login-btn {
   width: 100%;
