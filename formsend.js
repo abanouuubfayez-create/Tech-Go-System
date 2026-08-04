@@ -66,6 +66,10 @@
         { id: 'reason', label: 'السبب', type: 'textarea' }
       ]
     },
+    perm_sheet: {
+      title: 'كشف متابعة إذنات الحضور والانصراف الورقي (31 يوماً)',
+      fields: []
+    },
     delay: {
       title: 'التماس تعديل موعد الحضور',
       fields: [
@@ -256,6 +260,21 @@
         h += fsStatusBlock();
         h += '<div style="margin-top:16px">'+SG3('توقيع المستلم (الموظف)', '', 'مسؤول المالية', '', 'اعتماد المدير التنفيذي', 'اعتماد نهائي', null, 'admin', 'exec')+'</div>';
         return h;
+      }
+    },
+    perm_sheet: {
+      fill: function() {
+        return '<div style="background:var(--bg2); border:1px solid var(--bd); border-radius:12px; padding:24px; text-align:center; margin-bottom:16px;">' +
+               '  <div style="font-size:32px; margin-bottom:8px;">🖨️</div>' +
+               '  <div style="font-size:15px; font-weight:bold; color:var(--tx); margin-bottom:6px;">سجل متابعة إذنات الحضور والانصراف الورقي الشهري (A4 Portrait)</div>' +
+               '  <div style="font-size:12.5px; color:var(--tx2); margin-bottom:18px; line-height:1.6;">تسطيرة مالية فاخرة مقسمة بالأيام من 1 إلى 31 لجميع الموظفين بدون مديري الشركة.</div>' +
+               '  <button type="button" onclick="tgPrintMonthlyPermissionSheet()" class="bt bt-p" style="font-weight:bold; padding:10px 26px; font-size:13.5px; border-radius:8px;">🖨️ طباعة الكشف الورقي الآن</button>' +
+               '</div>';
+      },
+      print: function() {
+        return '<div style="text-align:center; padding:20px;">' +
+               '  <button type="button" onclick="tgPrintMonthlyPermissionSheet()" class="bt bt-p">🖨️ طباعة الكشف الورقي A4</button>' +
+               '</div>';
       }
     }
   };
