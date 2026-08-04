@@ -16,83 +16,82 @@ window.tgPrintMonthlyPermissionSheet = async function() {
     
     // Section 1: Sheet Info
     h += SC('١', 'بيانات الكشف وضوابط الاستخدام');
-    h += '<div style="display:flex; justify-content:space-between; align-items:center; background:var(--bg2); padding:8px 12px; border-radius:8px; border:1px solid var(--bd); margin-bottom:12px; font-size:11px; font-weight:bold; color:var(--tx); flex-wrap:wrap; gap:8px;">';
+    h += '<div style="display:flex; justify-content:space-between; align-items:center; background:var(--bg2); padding:10px 14px; border-radius:8px; border:1px solid var(--bd); margin-bottom:14px; font-size:11.5px; font-weight:bold; color:var(--tx); flex-wrap:wrap; gap:10px;">';
     h += '  <div>📅 <strong>الشهر / السنة:</strong> ' + currentMonthStr + '</div>';
     h += '  <div>📊 <strong>الحد الأقصى للإذنات:</strong> 5 أيام شهرياً لكل موظف</div>';
     h += '  <div>📄 <strong>رقم المستند:</strong> TG-HR-PM-31</div>';
     h += '</div>';
 
-    // Fetch REAL employees from Firestore / cache
+    // Fetch REAL EMPLOYEES ONLY (Filter out Admins & Managers!)
     var realEmps = [];
     try {
+        var processUser = function(d) {
+            var empName = d.name || d.displayName;
+            var role = (d.role || '').toLowerCase();
+            var jobTitle = (d.jobTitle || '').toLowerCase();
+            var isManager = (role === 'admin' || role === 'exec' || role === 'tech_admin' || jobTitle.indexOf('مدير') !== -1 || jobTitle.indexOf('تنفذ') !== -1 || jobTitle.indexOf('تقن') !== -1);
+            
+            if (empName && !isManager) {
+                realEmps.push({ name: empName, code: d.empId || d.employeeCode || ('EMP-' + String(realEmps.length + 1).padStart(3, '0')) });
+            }
+        };
+
         if (window._lastUsersSnap && window._lastUsersSnap.size > 0) {
-            window._lastUsersSnap.forEach(function(doc) {
-                var d = doc.data();
-                var empName = d.name || d.displayName;
-                if (empName) {
-                    realEmps.push({ name: empName, code: d.empId || d.employeeCode || ('EMP-' + String(realEmps.length + 1).padStart(3, '0')) });
-                }
-            });
+            window._lastUsersSnap.forEach(function(doc) { processUser(doc.data()); });
         }
         if (realEmps.length === 0 && window.db) {
             var snap = await db.collection('users').get();
-            snap.forEach(function(doc) {
-                var d = doc.data();
-                var empName = d.name || d.displayName;
-                if (empName) {
-                    realEmps.push({ name: empName, code: d.empId || d.employeeCode || ('EMP-' + String(realEmps.length + 1).padStart(3, '0')) });
-                }
-            });
+            snap.forEach(function(doc) { processUser(doc.data()); });
         }
     } catch(e) { console.warn('Real emp fetch error:', e); }
 
-    // If no real employees, provide 6 blank employee columns for physical pen entry without fake names!
+    // If no employees found, provide 5 blank employee columns for physical pen entry!
     if (realEmps.length === 0) {
-        for (var i = 1; i <= 6; i++) {
+        for (var i = 1; i <= 5; i++) {
             realEmps.push({ name: 'موظف ' + i, code: '' });
         }
     }
 
-    // Section 2: Transposed Matrix (Days 1..31 as ROWS, Employees as COLUMNS) - Ideal for A4 Portrait!
+    // Section 2: Transposed Spacious Matrix (Spacious Rows 1..31 for A4 Portrait, Employees as Columns)
     h += SC('٢', 'سجل التأشير الميداني اليومي (الأيام 1 — 31)');
-    h += '<div style="overflow-x:auto; margin-bottom:12px;">';
-    h += '<table class="tg-fin-matrix-table" style="width:100%; border-collapse:collapse; font-size:9px; text-align:center; direction:rtl; border:1.5px solid var(--bd); font-family:inherit;">';
+    h += '<div style="overflow-x:auto; margin-bottom:14px;">';
+    h += '<table class="tg-fin-matrix-table" style="width:100%; border-collapse:collapse; font-size:10.5px; text-align:center; direction:rtl; border:1.5px solid var(--bd); font-family:inherit;">';
     
-    // Header Row (Employees as Columns across page)
-    h += '<thead><tr style="background:var(--nv); color:#ffffff; font-size:9px;">';
-    h += '<th style="padding:6px 4px; width:65px; border:1px solid rgba(255,255,255,0.2);">اليوم / التاريخ</th>';
+    // Header Row (Employees ONLY as Columns)
+    h += '<thead><tr style="background:var(--nv); color:#ffffff; font-size:10.5px;">';
+    h += '<th style="padding:10px 6px; width:75px; border:1px solid rgba(255,255,255,0.2);">اليوم / التاريخ</th>';
     realEmps.forEach(function(emp) {
-        h += '<th style="padding:6px 4px; border:1px solid rgba(255,255,255,0.2); text-align:center; font-weight:bold;">' + escH(emp.name) + '</th>';
+        h += '<th style="padding:10px 6px; border:1px solid rgba(255,255,255,0.2); text-align:center; font-weight:bold;">' + escH(emp.name) + '</th>';
     });
-    h += '<th style="padding:6px 4px; width:70px; border:1px solid rgba(255,255,255,0.2);">ملاحظات</th>';
+    h += '<th style="padding:10px 6px; width:80px; border:1px solid rgba(255,255,255,0.2);">ملاحظات</th>';
     h += '</tr></thead><tbody>';
 
-    // Rows (Days 1 to 31 down page)
+    // Rows (Days 1 to 31 down page with spacious heights for easy writing)
     for (var day = 1; day <= 31; day++) {
         var rowBg = (day % 2 === 0) ? 'background:var(--bg2);' : 'background:var(--bg);';
-        h += '<tr style="' + rowBg + ' border-bottom:1px solid var(--bd);">';
-        h += '<td style="padding:4px; font-weight:bold; border:1px solid var(--bd); background:var(--bg2); color:var(--tx);">يوم ' + day + '</td>';
+        h += '<tr style="' + rowBg + ' border-bottom:1px solid var(--bd); height:32px;">';
+        h += '<td style="padding:8px 6px; font-weight:bold; border:1px solid var(--bd); background:var(--bg2); color:var(--tx);">يوم ' + day + '</td>';
         realEmps.forEach(function(emp) {
-            h += '<td style="border:1px solid var(--bd); padding:4px;"></td>';
+            h += '<td style="border:1px solid var(--bd); padding:8px 6px;"></td>';
         });
-        h += '<td style="border:1px solid var(--bd); padding:4px;"></td>';
+        h += '<td style="border:1px solid var(--bd); padding:8px 6px;"></td>';
         h += '</tr>';
     }
 
     // Bottom Summary Row 1: Used Count
-    h += '<tr style="background:rgba(217,119,6,0.1); font-weight:bold; border-top:2px solid var(--bd);">';
-    h += '<td style="padding:6px 4px; border:1px solid var(--bd); color:#d97706;">المستغرق (من 5)</td>';
+    h += '<tr style="background:rgba(217,119,6,0.1); font-weight:bold; border-top:2px solid var(--bd); height:36px;">';
+    h += '<td style="padding:8px 6px; border:1px solid var(--bd); color:#d97706;">المستغرق (من 5)</td>';
     realEmps.forEach(function(emp) {
-        h += '<td style="border:1px solid var(--bd); padding:6px; color:#d97706;"></td>';
+        h += '<td style="border:1px solid var(--bd); padding:8px 6px; color:#d97706;"></td>';
     });
     h += '<td style="border:1px solid var(--bd);"></td>';
     h += '</tr>';
 
     // Bottom Summary Row 2: Remaining Balance
-    h += '<tr style="background:rgba(16,185,129,0.1); font-weight:bold;">';
-    h += '<td style="padding:6px 4px; border:1px solid var(--bd); color:#10b981;">الرصيد المتبقي</td>';
+    h += '<tr style="background:rgba(16,185,129,0.1); font-weight:bold; height:36px;">';
+    h += '<td style="padding:8px 6px; border:1px solid var(--bd); color:#10b981;">الرصيد المتبقي</td>';
     realEmps.forEach(function(emp) {
-        h += '<td style="border:1px solid var(--bd); padding:6px; color:#10b981;"></td>';
+        h += '<td style="border:1px solid var(--bd); padding:8px 6px; color:#10b981;"></td>';
     });
     h += '<td style="border:1px solid var(--bd);"></td>';
     h += '</tr>';
@@ -100,7 +99,7 @@ window.tgPrintMonthlyPermissionSheet = async function() {
     h += '</tbody></table></div>';
 
     // Section 3: Legend Key
-    h += '<div style="background:var(--bg2); border:1px solid var(--bd); border-radius:8px; padding:8px 12px; margin-bottom:14px; display:flex; gap:16px; font-size:9.5px; font-weight:bold; color:var(--tx); flex-wrap:wrap;">';
+    h += '<div style="background:var(--bg2); border:1px solid var(--bd); border-radius:8px; padding:10px 14px; margin-bottom:16px; display:flex; gap:20px; font-size:10.5px; font-weight:bold; color:var(--tx); flex-wrap:wrap;">';
     h += '  <span>📌 <strong>رموز التأشير الورقي:</strong></span>';
     h += '  <span>(ح) = حضور متأخر</span>';
     h += '  <span>(ص) = انصراف مبكر</span>';

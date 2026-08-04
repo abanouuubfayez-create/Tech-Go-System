@@ -3845,29 +3845,41 @@ body.dark-mode .tg-expand-btn:hover {
 @media print {
   @page {
     size: A4 portrait !important;
-    margin: 5mm !important;
+    margin: 8mm !important;
   }
 
   .tg-fin-matrix-table {
     border: 1.5px solid #0f172a !important;
     border-collapse: collapse !important;
     width: 100% !important;
-    font-size: 8px !important;
+    font-size: 10px !important;
+    page-break-inside: auto !important;
+  }
+
+  .tg-fin-matrix-table thead {
+    display: table-header-group !important;
+  }
+
+  .tg-fin-matrix-table tr {
+    page-break-inside: avoid !important;
+    page-break-after: auto !important;
   }
 
   .tg-fin-matrix-table th {
     background-color: #0f172a !important;
     color: #ffffff !important;
     border: 1px solid #334155 !important;
-    padding: 3px 1px !important;
+    padding: 8px 4px !important;
+    font-size: 10.5px !important;
     -webkit-print-color-adjust: exact !important;
     print-color-adjust: exact !important;
   }
 
   .tg-fin-matrix-table td {
     border: 1px solid #cbd5e1 !important;
-    font-size: 8px !important;
-    padding: 3px 1px !important;
+    font-size: 10.5px !important;
+    padding: 8px 4px !important;
+    height: 30px !important;
   }
 }
 
