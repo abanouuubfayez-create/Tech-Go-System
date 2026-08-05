@@ -1004,7 +1004,7 @@ function loadDashboardSummary(){
     var box=document.getElementById('dashSummary');
     if(!box)return;
     Promise.all([
-        db.collection('users').where('role','in',['employee','tech_admin']).get(),
+        db.collection('users').where('role','==','employee').get(),
         db.collection('projects').get(),
         db.collection('requests').where('status','==','pending').get(),
         db.collection('tasks').get(),
@@ -3258,7 +3258,7 @@ function loadWeeklyReportsInbox(){
     var listEl = document.getElementById('wkrInboxList');
     Promise.all([
         db.collection('weeklyReports').orderBy('createdAt','desc').get(),
-        db.collection('users').where('role','in',['employee','tech_admin']).get()
+        db.collection('users').where('role','==','employee').get()
     ]).then(function(res){
         var reports = res[0].docs.map(function(d){ return Object.assign({id:d.id}, d.data()); });
         var users = {};
@@ -5127,7 +5127,7 @@ function loadAnnouncementTargetEmployees() {
     var mentionSel = document.getElementById('annMentionEmpSelect');
     if(!sel && !mentionSel) return;
 
-    db.collection('users').where('role','in',['employee','tech_admin']).get().then(function(snap) {
+    db.collection('users').where('role','==','employee').get().then(function(snap) {
         if(snap.empty) {
             if(sel) sel.innerHTML = '<option value="">لا يوجد موظفون مسجّلون</option>';
             if(mentionSel) mentionSel.innerHTML = '<option value="">لا يوجد موظفون</option>';
@@ -5983,7 +5983,7 @@ function loadEmpAnnouncements() {
 function loadEmpDocsOverview() {
     var box = document.getElementById('empDocsList');
     if(!box) return;
-    db.collection('users').where('role','in',['employee','tech_admin']).get().then(function(snap){
+    db.collection('users').where('role','==','employee').get().then(function(snap){
         if(snap.empty){
             box.innerHTML = '<div class="empty-hint">لا يوجد موظفون مسجّلون بعد.</div>';
             return;
@@ -7215,7 +7215,7 @@ function tgViewArchiveDoc(id) {
 // ─── ميزة التعبئة التلقائية ──────────────────────────────────────────
 var tgAutoEmpList = [];
 function tgLoadAutoCompleteList() {
-    db.collection('users').where('role','in',['employee','tech_admin']).get().then(function(snap){
+    db.collection('users').where('role','==','employee').get().then(function(snap){
         tgAutoEmpList = snap.docs.map(function(d){ return Object.assign({uid:d.id}, d.data()); });
         tgAutoEmpList.sort(function(a,b){ return (a.name||a.email||'').localeCompare(b.name||b.email||''); });
         
