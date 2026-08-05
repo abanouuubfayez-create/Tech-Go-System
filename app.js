@@ -842,25 +842,10 @@ function tgToast(msg, type, isPersistent, titleOverride){
     return t;
 }
 
-// ─── تقييد صلاحيات الأدمن التقني ────────────────────────────────────────
+// ─── قيود الأدمن ────────────────────────────────────────
 function applyTechAdminRestrictions(u){
-    if(!u || u.role !== 'tech_admin') return;
-    // أخفِ بنود الشريط الجانبي غير المسموح بها للأدمن التقني
-    var allowed = TECH_ALLOWED;
-    document.querySelectorAll('.sb-group').forEach(function(g){
-        var items = g.querySelectorAll('.S-i');
-        var hasVisible = false;
-        items.forEach(function(el){
-            var onclick = el.getAttribute('onclick') || '';
-            var allowed_item = allowed.some(function(id){ 
-                if(id === 'livetrack' && onclick.indexOf('goLiveTrack') > -1) return true;
-                return onclick.indexOf("'"+id+"'")>-1||onclick.indexOf('"'+id+'"')>-1; 
-            });
-            if(!allowed_item && onclick.indexOf('tgLogout')===-1){ el.style.display='none'; }
-            else { hasVisible = true; }
-        });
-        if(!hasVisible) g.style.display = 'none';
-    });
+    // الأدمن التقني أصبح أدمن عادي بكامل الصلاحيات، لا يتم إخفاء أي عنصر
+    return;
 }
 
 // ─── إعادة ضبط النظام (للأدمن الرئيسي فقط) ───────────────────────────────
@@ -1146,7 +1131,7 @@ function applyAssistantAdminRestrictions(){
     });
     // عرض رسالة ترحيب مخصصة
     var subEl = document.querySelector('.S-h .sub');
-    if(subEl) subEl.textContent = 'أدمن تقني — إدارة المشاريع';
+    if(subEl) subEl.textContent = 'أدمن — إدارة المشاريع';
 }
 
 // ─── إشعارات الأدمن اللحظية من الموظفين (طلبات + تقارير + مشاريع جديدة) ───
@@ -1262,21 +1247,23 @@ function clearAdminBadge(badgeId, sbBadgeId){
     });
 }
 
-// ─── متابعة الموظفين (بيانات حية من Firebase Firestore) ──────────────────
+// ─── متابعة الموظفين والأدمنز (بيانات حية من Firebase Firestore) ──────────────────
 function loadStaffOverview(){
     var box=document.getElementById('staffList');
     if(!box)return;
-    db.collection('users').where('role','in',['employee','tech_admin']).get().then(function(snap){
+    db.collection('users').get().then(function(snap){
         if(snap.empty){
-            box.innerHTML='<div class="empty-hint">لا يوجد موظفون مسجّلون بعد. أنشئ أول حساب من الأعلى.</div>';
+            box.innerHTML='<div class="empty-hint">لا يوجد مستخدمون مسجّلون بعد. أنشئ أول حساب من الأعلى.</div>';
             return;
         }
-        var employees=[];
-        snap.forEach(function(doc){employees.push(Object.assign({uid:doc.id},doc.data()));});
-        // مزامنة قائمة أسماء الموظفين الحقيقيين (حسابات الدخول) مع قائمة الأوتوكومبليت في كل النماذج
-        employees.forEach(function(emp){ if(emp.name) addEmployeeName(emp.name); });
+        var allUsers=[];
+        snap.forEach(function(doc){allUsers.push(Object.assign({uid:doc.id},doc.data()));});
+        
+        // مزامنة قائمة أسماء الموظفين الحقيقيين مع قائمة الأوتوكومبليت
+        allUsers.forEach(function(emp){ if(emp.name) addEmployeeName(emp.name); });
         renderEmpListSec();
-        var proms=employees.map(function(emp){
+
+        var proms=allUsers.map(function(emp){
             return Promise.all([
                 db.collection('projects').where('assignees','array-contains',emp.uid).get(),
                 db.collection('achievements').where('uid','==',emp.uid).get(),
@@ -1304,10 +1291,10 @@ function loadStaffOverview(){
             });
         });
         Promise.all(proms).then(renderStaffList).catch(function(err){
-            box.innerHTML='<div class="empty-hint" style="color:var(--no)">تعذر تحميل بيانات المشاريع/الطلبات: '+escH(err.message)+'</div>';
+            box.innerHTML='<div class="empty-hint" style="color:var(--no)">تعذر تحميل البيانات: '+escH(err.message)+'</div>';
         });
     }).catch(function(err){
-        box.innerHTML='<div class="empty-hint" style="color:var(--no)">تعذر تحميل بيانات الموظفين: '+escH(err.message)+'</div>';
+        box.innerHTML='<div class="empty-hint" style="color:var(--no)">تعذر تحميل بيانات الحسابات: '+escH(err.message)+'</div>';
     });
 }
 function badgeClassForStatus(s){
@@ -1329,49 +1316,102 @@ function renderStaffList(list){
     var box=document.getElementById('staffList');
     if(!box)return;
     window._staffEmpCache=list;
+
+    var employeesList = list.filter(function(u){ return u.role === 'employee'; });
+    var adminsList = list.filter(function(u){ return u.role === 'admin' || u.role === 'tech_admin'; });
+
     var countEl=document.getElementById('staffCount');
-    if(countEl)countEl.textContent=list.length+' موظف';
+    if(countEl)countEl.textContent=employeesList.length+' موظف (' + adminsList.length + ' أدمن)';
+
     var h='';
-    list.forEach(function(emp,idx){
-        var pending=emp.requests.filter(function(r){return r.status==='pending';}).length;
-        var avgProg=emp.projects.length?Math.round(emp.projects.reduce(function(s,p){
-            var pm=(p.progressMap&&p.progressMap[emp.uid])?p.progressMap[emp.uid].progress:0;
-            return s+(pm||0);
-        },0)/emp.projects.length):0;
-        var searchKey=((emp.name||'')+' '+(emp.email||'')).toLowerCase();
-        var initials = (emp.name || emp.email || 'U').split(' ').map(function(n){return n[0];}).join('').toUpperCase().substring(0,2);
-        
-        h+='<div class="staff-card'+(emp.disabled?' is-disabled':'')+'" id="staffCard'+idx+'" data-search="'+escH(searchKey)+'" style="cursor:pointer; margin-bottom:14px;" onclick="tgOpenEmployeeProfile(\''+emp.uid+'\')">';
-        h+='<div class="staff-card-h" style="padding:18px 22px; display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:16px; border-radius:16px;">'+
-           '<div style="display:flex; align-items:center; gap:16px; flex:1; min-width:260px;">'+
-           '  <div class="profile-avatar-sm" style="width:50px; height:50px; border-radius:16px; background:linear-gradient(135deg,var(--gd),var(--gd2)); color:var(--nv); font-weight:900; font-size:20px; display:flex; align-items:center; justify-content:center; flex-shrink:0; box-shadow:0 4px 12px rgba(0,0,0,0.15);">'+
-           initials+
-           '  </div>'+
-           '  <div>'+
-           '    <div class="staff-name-row" style="display:flex; align-items:center; gap:8px; flex-wrap:wrap;">'+
-           '      <span class="staff-name" style="font-size:16px; font-weight:800; color:var(--nv);">'+escH(emp.name||emp.email)+'</span>'+
-                  (emp.jobTitle?'<span class="badge" style="background:var(--gd);color:#1b2a4a;font-weight:700">'+escH(emp.jobTitle)+'</span>':'')+
-                  (emp.disabled?'<span class="badge badge-disabled">🚫 معطّل</span>':'<span class="badge badge-active">✅ نشط</span>')+
-           '      <span class="perf-score" title="تقييم الأداء العام">🏆 '+emp.perf.total+'%</span>'+
-           '    </div>'+
-           '    <div class="staff-email" style="font-size:12px; color:var(--tx3); margin-top:2px;">'+escH(emp.email||'')+'</div>'+
-           '    <div class="perf-stars" style="margin-top:4px;">'+renderStars(emp.perf.stars)+'</div>'+
-           '  </div>'+
-           '</div>'+
-           
-           '<div class="staff-stats" style="display:flex; align-items:center; gap:8px; flex-wrap:wrap;">'+
-           '  <span class="staff-stat">📁 '+emp.projects.length+' مشروع</span>'+
-           '  <span class="staff-stat">📊 تقدم '+avgProg+'%</span>'+
-           (emp.role === 'tech_admin' ? '' :
-               '<span class="staff-stat">📆 '+emp.weeklyReports.length+' تقرير</span>'+
-               '<span class="staff-stat">🏆 '+emp.achievements.length+' إنجاز</span>'+
-               (pending?('<span class="staff-stat pending" onclick="event.stopPropagation();window._reqHubStatusTab=\'pending\';go(\'allrequests\')">⏳ '+pending+' طلب معلّق</span>'):'<span class="staff-stat">✅ لا طلبات معلّقة</span>')
-           )+
-           '  <button class="bt bt-p" style="margin-right:8px; padding:8px 18px; font-weight:800; font-size:12px; border-radius:20px; box-shadow:0 4px 12px rgba(201,162,39,0.3);" onclick="event.stopPropagation();tgOpenEmployeeProfile(\''+emp.uid+'\')">👤 صفحة الموظف 🚀</button>'+
-           '</div>'+
-           '</div>'+
-           '</div>';
-    });
+
+    // ── 👔 قسم فريق الإدارة والمسؤولين ──
+    if(adminsList.length) {
+        h += '<div style="margin-bottom:24px; padding:16px; background:rgba(27,42,74,0.04); border:1.5px solid rgba(27,42,74,0.15); border-radius:16px;">';
+        h += '<div style="font-size:15px; font-weight:900; color:var(--nv); margin-bottom:12px; display:flex; align-items:center; gap:8px;">';
+        h += '<span>👑 فريق الإدارة والمسؤولين</span>';
+        h += '<span style="background:var(--nv); color:#fff; padding:2px 10px; border-radius:20px; font-size:11px; font-weight:800;">' + adminsList.length + '</span>';
+        h += '</div>';
+
+        adminsList.forEach(function(emp){
+            var idx = list.indexOf(emp);
+            var searchKey=((emp.name||'')+' '+(emp.email||'')).toLowerCase();
+            var initials = (emp.name || emp.email || 'A').split(' ').map(function(n){return n[0];}).join('').toUpperCase().substring(0,2);
+            
+            h+='<div class="staff-card is-admin-card'+(emp.disabled?' is-disabled':'')+'" id="staffCard'+idx+'" data-search="'+escH(searchKey)+'" style="cursor:pointer; margin-bottom:10px;" onclick="tgOpenEmployeeProfile(\''+emp.uid+'\')">';
+            h+='<div class="staff-card-h" style="padding:14px 18px; display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:12px; border-radius:14px; background:var(--w); border-right:5px solid var(--nv);">';
+            h+='<div style="display:flex; align-items:center; gap:14px; flex:1; min-width:240px;">';
+            h+='  <div class="profile-avatar-sm" style="width:44px; height:44px; border-radius:12px; background:linear-gradient(135deg,#1b2a4a,#2c3e6b); color:#fff; font-weight:900; font-size:18px; display:flex; align-items:center; justify-content:center; flex-shrink:0;">';
+            h+=initials;
+            h+='  </div>';
+            h+='  <div>';
+            h+='    <div class="staff-name-row" style="display:flex; align-items:center; gap:8px; flex-wrap:wrap;">';
+            h+='      <span class="staff-name" style="font-size:15px; font-weight:800; color:var(--nv);">'+escH(emp.name||emp.email)+'</span>';
+            h+='      <span class="badge" style="background:var(--nv);color:#fff;font-weight:800">👑 أدمن</span>';
+            if(emp.jobTitle) h+='<span class="badge" style="background:var(--gd);color:#1b2a4a;font-weight:700">'+escH(emp.jobTitle)+'</span>';
+            if(emp.disabled) h+='<span class="badge badge-disabled">🚫 معطّل</span>';
+            h+='    </div>';
+            h+='    <div class="staff-email" style="font-size:12px; color:var(--tx3); margin-top:2px;">'+escH(emp.email||'')+'</div>';
+            h+='  </div>';
+            h+='</div>';
+            h+='<div class="staff-stats" style="display:flex; align-items:center; gap:8px;">';
+            h+='  <button class="bt bt-p" style="padding:6px 14px; font-weight:800; font-size:11px; border-radius:16px;" onclick="event.stopPropagation();tgOpenEmployeeProfile(\''+emp.uid+'\')">⚙️ إدارة الحساب</button>';
+            h+='</div>';
+            h+='</div>';
+            h+='</div>';
+        });
+        h += '</div>';
+    }
+
+    // ── 👥 قسم فريق العمل والموظفين ──
+    h += '<div style="font-size:15px; font-weight:900; color:var(--nv); margin:16px 0 12px; display:flex; align-items:center; gap:8px;">';
+    h += '<span>👥 فريق العمل والموظفين</span>';
+    h += '<span style="background:var(--gd); color:#1b2a4a; padding:2px 10px; border-radius:20px; font-size:11px; font-weight:800;">' + employeesList.length + '</span>';
+    h += '</div>';
+
+    if(!employeesList.length) {
+        h += '<div class="empty-hint">لا يوجد موظفون مسجّلون حالياً في هذا القسم.</div>';
+    } else {
+        employeesList.forEach(function(emp){
+            var idx = list.indexOf(emp);
+            var pending=emp.requests.filter(function(r){return r.status==='pending';}).length;
+            var avgProg=emp.projects.length?Math.round(emp.projects.reduce(function(s,p){
+                var pm=(p.progressMap&&p.progressMap[emp.uid])?p.progressMap[emp.uid].progress:0;
+                return s+(pm||0);
+            },0)/emp.projects.length):0;
+            var searchKey=((emp.name||'')+' '+(emp.email||'')).toLowerCase();
+            var initials = (emp.name || emp.email || 'U').split(' ').map(function(n){return n[0];}).join('').toUpperCase().substring(0,2);
+            
+            h+='<div class="staff-card'+(emp.disabled?' is-disabled':'')+'" id="staffCard'+idx+'" data-search="'+escH(searchKey)+'" style="cursor:pointer; margin-bottom:14px;" onclick="tgOpenEmployeeProfile(\''+emp.uid+'\')">';
+            h+='<div class="staff-card-h" style="padding:18px 22px; display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:16px; border-radius:16px;">'+
+               '<div style="display:flex; align-items:center; gap:16px; flex:1; min-width:260px;">'+
+               '  <div class="profile-avatar-sm" style="width:50px; height:50px; border-radius:16px; background:linear-gradient(135deg,var(--gd),var(--gd2)); color:var(--nv); font-weight:900; font-size:20px; display:flex; align-items:center; justify-content:center; flex-shrink:0; box-shadow:0 4px 12px rgba(0,0,0,0.15);">'+
+               initials+
+               '  </div>'+
+               '  <div>'+
+               '    <div class="staff-name-row" style="display:flex; align-items:center; gap:8px; flex-wrap:wrap;">'+
+               '      <span class="staff-name" style="font-size:16px; font-weight:800; color:var(--nv);">'+escH(emp.name||emp.email)+'</span>'+
+                      (emp.jobTitle?'<span class="badge" style="background:var(--gd);color:#1b2a4a;font-weight:700">'+escH(emp.jobTitle)+'</span>':'')+
+                      (emp.disabled?'<span class="badge badge-disabled">🚫 معطّل</span>':'<span class="badge badge-active">✅ نشط</span>')+
+               '      <span class="perf-score" title="تقييم الأداء العام">🏆 '+emp.perf.total+'%</span>'+
+               '    </div>'+
+               '    <div class="staff-email" style="font-size:12px; color:var(--tx3); margin-top:2px;">'+escH(emp.email||'')+'</div>'+
+               '    <div class="perf-stars" style="margin-top:4px;">'+renderStars(emp.perf.stars)+'</div>'+
+               '  </div>'+
+               '</div>'+
+               
+               '<div class="staff-stats" style="display:flex; align-items:center; gap:8px; flex-wrap:wrap;">'+
+               '  <span class="staff-stat">📁 '+emp.projects.length+' مشروع</span>'+
+               '  <span class="staff-stat">📊 تقدم '+avgProg+'%</span>'+
+               '  <span class="staff-stat">📆 '+emp.weeklyReports.length+' تقرير</span>'+
+               '  <span class="staff-stat">🏆 '+emp.achievements.length+' إنجاز</span>'+
+               (pending?('<span class="staff-stat pending" onclick="event.stopPropagation();window._reqHubStatusTab=\'pending\';go(\'allrequests\')">⏳ '+pending+' طلب معلّق</span>'):'<span class="staff-stat">✅ لا طلبات معلّقة</span>')+
+               '  <button class="bt bt-p" style="margin-right:8px; padding:8px 18px; font-weight:800; font-size:12px; border-radius:20px; box-shadow:0 4px 12px rgba(201,162,39,0.3);" onclick="event.stopPropagation();tgOpenEmployeeProfile(\''+emp.uid+'\')">👤 صفحة الموظف 🚀</button>'+
+               '</div>'+
+               '</div>'+
+               '</div>';
+        });
+    }
     box.innerHTML=h;
 }
 function toggleStaffCard(idx){
@@ -1636,7 +1676,7 @@ function createStaffAccount(){
     msg.style.color='var(--tx3)'; msg.textContent='⏳ جارٍ إنشاء الحساب...';
     tgCreateEmployeeAccount(name,email,pass,'',jobTitle,role,workMode,dept,phone,function(){
         if(role==='employee') addEmployeeName(name);
-        var roleAr = role==='tech_admin' ? 'أدمن تقني' : 'موظف';
+        var roleAr = role==='tech_admin' ? 'أدمن' : 'موظف';
         msg.style.color='var(--ok)'; msg.textContent='✅ تم إنشاء حساب '+roleAr+' بنجاح.';
         document.getElementById('newAccName').value='';
         document.getElementById('newAccEmail').value='';
@@ -1707,7 +1747,7 @@ function createProject(){
     if(!title){ msg.style.color='var(--no)'; msg.textContent='من فضلك اكتب عنوان المشروع.'; return; }
     msg.style.color='var(--tx3)'; msg.textContent='⏳ جارٍ إنشاء المشروع...';
 
-    var createdByRole = (TG_USER && TG_USER.role === 'tech_admin') ? 'أدمن تقني' : 'أدمن إداري';
+    var createdByRole = (TG_USER && TG_USER.role === 'tech_admin') ? 'أدمن' : 'أدمن';
     var projectData = {
         title:title, description:desc, assignees:checked, progressMap:{},
         priority:priority, status:status, deadline:deadline,
@@ -2200,7 +2240,7 @@ function createTask(){
     if(!title){ msg.style.color='var(--no)'; msg.textContent='من فضلك اكتب عنوان المهمة.'; return; }
     msg.style.color='var(--tx3)'; msg.textContent='⏳ جارٍ التكليف...';
 
-    var createdByRole = (TG_USER && TG_USER.role === 'tech_admin') ? 'أدمن تقني' : 'أدمن إداري';
+    var createdByRole = (TG_USER && TG_USER.role === 'tech_admin') ? 'أدمن' : 'أدمن';
     var taskData = {
         title:title, description:desc, assignedTo:uid, assignedToName:name||'',
         priority:priority, deadline:deadline, status:'لم يبدأ',
@@ -2856,7 +2896,7 @@ function renderProjectsList(list){
            '<div><div class="staff-name">'+escH(p.title||'بدون عنوان')+'</div>'+
            (p.description?'<div class="staff-email">'+tgMakeExpandable(p.description, 100)+'</div>':'')+
            projectTagsHtml(p)+
-           '<div class="pj-meta" style="margin-top:4px;font-size:10px;color:var(--tx3)">بواسطة: '+escH(p.createdBy||'الإدارة')+' ('+escH(p.createdByRole||'أدمن إداري')+')</div>'+
+           '<div class="pj-meta" style="margin-top:4px;font-size:10px;color:var(--tx3)">بواسطة: '+escH(p.createdBy||'الإدارة')+' ('+escH(p.createdByRole||'أدمن')+')</div>'+
            '</div>'+
            '<div class="staff-stats">'+
            '<span class="staff-stat">👥 '+assignees.length+' موظف</span>'+
@@ -2984,7 +3024,7 @@ function quickCompleteProject(id){
                 content: content,
                 createdAt: new Date(),
                 createdBy: TG_USER ? (TG_USER.name || TG_USER.email) : 'الإدارة',
-                createdByRole: (TG_USER && TG_USER.role === 'tech_admin') ? 'أدمن تقني' : 'أدمن إداري'
+                createdByRole: (TG_USER && TG_USER.role === 'tech_admin') ? 'أدمن' : 'أدمن'
             }).then(function(){
                 if(typeof tgBroadcastPush === 'function'){
                     tgBroadcastPush('🎊 إنجاز جديد!', 'تم الانتهاء من مشروع: ' + p.title, 'project-completed', TG_USER ? TG_USER.uid : '');
@@ -4408,8 +4448,8 @@ function load(id,c){
         h+='<button class="bt bt-g" onclick="sendWeeklyReportReminder()" style="min-width:120px" id="sysrepReminderBtn">🔔 تذكير الموظفين بالتقرير الأسبوعي</button>';
         h+='</div>';
 
-        h+='<div class="set-sec"><div class="set-sec-title">➕ إضافة حساب جديد</div>';
-        h+='<div class="set-hint">أنشئ بريد إلكتروني وكلمة مرور للموظف حتى يدخل بوابته، أو أنشئ حساب أدمن تقني يملك صلاحية إضافة المشاريع فقط.</div>';
+        h+='<div class="set-sec"><div class="set-sec-title">➕ إنشاء حساب جديد</div>';
+        h+='<div class="set-hint">أنشئ بريد إلكتروني وكلمة مرور للموظف حتى يدخل بوابته، أو أنشئ حساب أدمن بصلاحيات إدارية واستخدام كامل للنظام.</div>';
         h+='<div class="fr fr3" style="margin-top:10px">';
         h+='<div class="fg"><label>اسم المستخدم</label><input type="text" id="newAccName" class="emp-name-fld" list="tgEmpDL" autocomplete="off"></div>';
         h+='<div class="fg"><label>البريد الإلكتروني</label><input type="email" id="newAccEmail" placeholder="name@techgo.com"></div>';
@@ -4422,7 +4462,7 @@ function load(id,c){
         h+='</div>';
         h+='<div class="fr fr2" style="margin-top:10px">';
         h+='<div class="fg"><label>نظام العمل</label><select id="newAccWorkMode"><option value="office">من المكتب</option><option value="remote">عن بُعد (ريموتلي)</option></select></div>';
-        h+='<div class="fg"><label>دور الحساب</label><select id="newAccRole"><option value="employee">موظف (employee)</option><option value="tech_admin">أدمن تقني (بدون صلاحيات إدارية)</option></select></div>';
+        h+='<div class="fg"><label>دور الحساب</label><select id="newAccRole"><option value="employee">موظف (employee)</option><option value="admin">أدمن (صلاحيات كاملة)</option><option value="tech_admin">أدمن (صلاحيات كاملة)</option></select></div>';
         h+='</div>';
         h+='<button class="bt bt-p" onclick="createStaffAccount()">➕ إنشاء الحساب</button>';
         h+='<div id="newAccMsg" style="margin-top:8px;font-size:11px"></div>';
@@ -5146,7 +5186,7 @@ function loadAdminAnnouncements() {
             h += '<div class="pj-meta" style="display:flex;gap:12px;opacity:0.85;font-size:12px;color:var(--tx2);font-weight:700;">';
             h += (a.date ? '<span>📅 '+escH(a.date)+'</span>' : '');
             h += (ts ? '<span>🕒 نُشر: '+ts+'</span>' : '');
-            h += (a.createdBy ? '<span>👤 '+escH(a.createdBy)+' ('+escH(a.createdByRole||'أدمن إداري')+')</span>' : '');
+            h += (a.createdBy ? '<span>👤 '+escH(a.createdBy)+' ('+escH(a.createdByRole||'أدمن')+')</span>' : '');
             h += '</div>';
             h += '<div style="display:flex;gap:6px">';
             var hideBtnText = a.isHidden ? '👁 إظهار' : '👻 إخفاء مؤقت';
@@ -5788,7 +5828,7 @@ function addAnnouncement() {
     
     msg.style.color = 'var(--tx3)'; msg.textContent = '⏳ جارٍ النشر...';
     
-    var createdByRole = (TG_USER && TG_USER.role === 'tech_admin') ? 'أدمن تقني' : 'أدمن إداري';
+    var createdByRole = (TG_USER && TG_USER.role === 'tech_admin') ? 'أدمن' : 'أدمن';
     try {
         var annData = {
             title: title,

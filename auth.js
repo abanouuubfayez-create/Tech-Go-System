@@ -257,11 +257,11 @@ function tgDeleteNotif(notifId) {
 
 // هل المستخدم الحالي لديه صلاحية الأدمن الكاملة؟
 function isFullAdmin() {
-    return TG_USER && TG_USER.role === 'admin';
+    return TG_USER && (TG_USER.role === 'admin' || TG_USER.role === 'tech_admin');
 }
-// هل المستخدم الحالي أدمن تقني؟
+// هل المستخدم الحالي أدمن؟
 function isAssistantAdmin() {
-    return TG_USER && TG_USER.role === 'tech_admin';
+    return TG_USER && (TG_USER.role === 'admin' || TG_USER.role === 'tech_admin');
 }
 
 function tgLogout() {

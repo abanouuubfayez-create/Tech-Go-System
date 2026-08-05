@@ -14,7 +14,7 @@ service cloud.firestore {
     }
     
     function isAdmin() { 
-      return isSignedIn() && myRole() == 'admin'; 
+      return isSignedIn() && (myRole() == 'admin' || myRole() == 'tech_admin'); 
     }
     
     function isAnyAdmin() {
@@ -48,10 +48,11 @@ service cloud.firestore {
     }
 
     match /users/{uid} {
-      allow read: if isSignedIn();
-      // يسمح للأدمن الرئيسي بإنشاء حساب موظف أو أدمن تقني جديد
+      // حماية الموظفين: الأدمن يقرأ الجميع، والموظف يقرأ مستنده فقط لمنع السحب العشوائي
+      allow read: if isAnyAdmin() || (isSignedIn() && myUid() == uid);
+      // يسمح للأدمن بإنشاء حساب موظف أو أدمن جديد
       allow create: if isSignedIn() && (
-                      (isAdmin() && (request.resource.data.role == 'employee' || request.resource.data.role == 'tech_admin')) ||
+                      (isAdmin() && (request.resource.data.role == 'employee' || request.resource.data.role == 'tech_admin' || request.resource.data.role == 'admin')) ||
                       (myUid() == uid && request.resource.data.role == 'admin' && !setupDone())
                     );
       // يسمح للأدمن بتعديل أي مستخدم، أو الموظف بتعديل اسمه أو آخر نشاط له
@@ -68,12 +69,12 @@ service cloud.firestore {
       allow create: if isSignedIn() && myUid() == request.resource.data.uid;
       allow update: if isAnyAdmin() || (
                       isSignedIn() && myUid() == resource.data.uid &&
-                      request.resource.data.diff(resource.data).affectedKeys().hasOnly(['checkOut'])
+                      request.resource.data.diff(resource.data).affectedKeys().hasAny(['checkOut', 'serverTimestamp'])
                     );
       allow delete: if isAdmin();
     }
 
-    // المشاريع: الأدمن أو الأدمن التقني يملك التحكم الكامل.
+    // المشاريع: الأدمن يملك التحكم الكامل.
     // الموظف يقرأ فقط المشاريع المسندة إليه، ولا يملك صلاحية الإنشاء أو الحذف، ويعدّل فقط تقدّمه (progressMap)
     match /projects/{projectId} {
       allow read: if isAnyAdmin() || (isSignedIn() && myUid() in resource.data.assignees);
@@ -110,11 +111,11 @@ service cloud.firestore {
       allow delete: if isAnyAdmin() || (isSignedIn() && resource.data.uid == myUid());
     }
 
-    // المهام: السماح لجميع المستخدمين المسجلين بقراءة وتحديث المهام لضمان حفظ الحالة وسلاسة التحويل
+    // المهام: حظر قراءة المهام الشاملة من العميل؛ الموظف يقرأ فقط ما كُلف به أو أنشأه
     match /tasks/{taskId} {
-      allow read: if isSignedIn();
+      allow read: if isAnyAdmin() || (isSignedIn() && (resource.data.assignedTo == myUid() || resource.data.createdBy == myUid()));
       allow create: if isSignedIn();
-      allow update: if isSignedIn();
+      allow update: if isAnyAdmin() || (isSignedIn() && (resource.data.assignedTo == myUid() || resource.data.createdBy == myUid()));
       allow delete: if isAnyAdmin();
     }
 
@@ -134,7 +135,7 @@ service cloud.firestore {
       allow delete: if isAnyAdmin() || (isSignedIn() && resource.data.uid == myUid());
     }
 
-    // الطلبات: الأدمن الرئيسي فقط يعدّل الحالة
+    // الطلبات: الأدمن فقط يعدّل الحالة
     match /requests/{reqId} {
       allow read: if isAnyAdmin() || (isSignedIn() && resource.data.uid == myUid());
       allow create: if isSignedIn() && request.resource.data.uid == myUid()
@@ -162,9 +163,9 @@ service cloud.firestore {
       allow delete: if isAnyAdmin() || (isSignedIn() && resource.data.toUid == myUid());
     }
 
-    // الإعلانات: الأدمن أو الأدمن التقني يكتب ويعدّل ويحذف
+    // الإعلانات: تقييد القراءة للأدمن أو الإعلانات العامة/الخاصة بنفس المستخدم
     match /announcements/{annId} {
-      allow read: if isSignedIn();
+      allow read: if isAnyAdmin() || (isSignedIn() && (resource.data.audience != 'private' || resource.data.targetUid == myUid()));
       allow create: if isAnyAdmin();
       allow update: if isAnyAdmin();
       allow delete: if isAnyAdmin();
@@ -180,7 +181,7 @@ service cloud.firestore {
       allow read: if isAnyAdmin() || (isSignedIn() && resource.data.targetUid == myUid());
       allow create: if isAnyAdmin() && request.resource.data.sentByUid == myUid()
                     && request.resource.data.status == 'pending';
-      // الموظف يملأ ويرسل (status + values + submittedAt فقط)، والأدمن يقدر تعدّل أي حقل
+      // الموظف يملأ ويرسل (status + values + submittedAt فقط)، والأدمن يقدر يعدّل أي حقل
       allow update: if isAnyAdmin() || (
         isSignedIn() && resource.data.targetUid == myUid() && resource.data.status == 'pending' &&
         request.resource.data.diff(resource.data).affectedKeys().hasOnly(['status', 'values', 'submittedAt'])
