@@ -1330,8 +1330,29 @@ function renderStaffList(list){
     if(!box)return;
     window._staffEmpCache=list;
 
-    var employeesList = list.filter(function(u){ return u.role === 'employee'; });
-    var adminsList = list.filter(function(u){ return u.role === 'admin' || u.role === 'tech_admin'; });
+    var rawEmployees = list.filter(function(u){ return u.role === 'employee'; });
+    var rawAdmins = list.filter(function(u){ return u.role === 'admin' || u.role === 'tech_admin'; });
+
+    // فلتر قوي يمنع تكرار أي حساب بالبريد الإلكتروني أو الاسم أو الـ UID
+    var adminsList = [];
+    var seenAdminMap = {};
+    rawAdmins.forEach(function(u){
+        var key = (u.email || u.name || u.uid || '').toLowerCase().trim();
+        if(key && !seenAdminMap[key]){
+            seenAdminMap[key] = true;
+            adminsList.push(u);
+        }
+    });
+
+    var employeesList = [];
+    var seenEmpMap = {};
+    rawEmployees.forEach(function(u){
+        var key = (u.email || u.name || u.uid || '').toLowerCase().trim();
+        if(key && !seenEmpMap[key]){
+            seenEmpMap[key] = true;
+            employeesList.push(u);
+        }
+    });
 
     var countEl=document.getElementById('staffCount');
     if(countEl)countEl.textContent=employeesList.length+' موظف (' + adminsList.length + ' أدمن)';
