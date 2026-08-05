@@ -5342,6 +5342,8 @@ function deleteAllSystemData() {
             if(done+errors.length >= collections.length) {
                 msg.style.background = '#c0392b';
                 msg.textContent = '\u274C \u062A\u0639\u0630\u0631 \u062D\u0630\u0641 \u0628\u0639\u0636 \u0627\u0644\u0628\u064A\u0627\u0646\u0627\u062A. \u062A\u062D\u0642\u0642 \u0645\u0646 \u0627\u0644\u0635\u0644\u0627\u062D\u064A\u0627\u062A.';
+                setTimeout(function(){ document.body.removeChild(msg); }, 4000);
+            }
         });
     });
 }
