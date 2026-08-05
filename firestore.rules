@@ -48,9 +48,11 @@ service cloud.firestore {
     }
 
     match /users/{uid} {
-      // حماية الموظفين: الأدمن يقرأ الجميع، والموظف يقرأ مستنده فقط لمنع السحب العشوائي
-      allow read: if isAnyAdmin() || (isSignedIn() && myUid() == uid);
-      // يسمح للأدمن بإنشاء حساب موظف أو أدمن جديد
+      // القراءة الفردية لمستند المستخدم مسموحة فقط لنفس المستخدم أو الأدمن الرئيسي
+      allow get: if isSignedIn() && (myUid() == uid || isAdmin());
+      // استعلام وقراءة قائمة الحسابات (List Query) مسموح حصرياً للأدمن الرئيسي فقط (يمنع أي شخص تقني أو مستخدم آخر من سحب/استخراج الحسابات الحقيقية)
+      allow list: if isAdmin();
+      // يسمح للأدمن الرئيسي بإنشاء حساب موظف أو أدمن تقني جديد
       allow create: if isSignedIn() && (
                       (isAdmin() && (request.resource.data.role == 'employee' || request.resource.data.role == 'tech_admin' || request.resource.data.role == 'admin')) ||
                       (myUid() == uid && request.resource.data.role == 'admin' && !setupDone())

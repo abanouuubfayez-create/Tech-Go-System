@@ -4647,6 +4647,7 @@ function load(id,c){
         h+='<h3 style="color:var(--no)">&#9888;&#65039; منطقة الخطر</h3>';
         h+='<p style="font-size:13px;color:var(--tx);margin-bottom:16px">سيؤدي هذا إلى حذف <strong>جميع بيانات النظام</strong> بشكل نهائي لا يمكن التراجع عنه، بما في ذلك الموظفون، المشاريع، المهام، الطلبات، والإشعارات.<br><strong>باستثناء حسابك الحالي (المدير)</strong> — هيفضل موجوداً عشان تقدر تدخل على النظام بعد الحذف.</p>';
         h+='<button class="bt bt-d" style="padding:10px 24px;font-size:13px;font-weight:800" onclick="deleteAllSystemData()">&#128465; حذف جميع بيانات النظام</button>';
+        h+='<div style="margin-top:12px"><button class="bt bt-o" style="padding:8px 18px;font-size:12px;font-weight:700" onclick="cleanDummyTestAccounts()">🧹 تنظيف الحسابات الوهمية والتجريبية من Firestore</button></div>';
         h+='</div>';
 
         h+='<div style="text-align:left;margin-top:20px">'+
@@ -5341,9 +5342,45 @@ function deleteAllSystemData() {
             if(done+errors.length >= collections.length) {
                 msg.style.background = '#c0392b';
                 msg.textContent = '\u274C \u062A\u0639\u0630\u0631 \u062D\u0630\u0641 \u0628\u0639\u0636 \u0627\u0644\u0628\u064A\u0627\u0646\u0627\u062A. \u062A\u062D\u0642\u0642 \u0645\u0646 \u0627\u0644\u0635\u0644\u0627\u062D\u064A\u0627\u062A.';
-                setTimeout(function(){ document.body.removeChild(msg); }, 4000);
+        });
+    });
+}
+
+function cleanDummyTestAccounts() {
+    if (!confirm('هل تريد تنظيف وإزالة جميع الحسابات الوهمية والتجريبية (مثل script_ و admin_ و @temp) من قاعدة بيانات Firestore؟')) return;
+    var msg = document.createElement('div');
+    msg.style.cssText = 'position:fixed;top:20px;left:50%;transform:translateX(-50%);background:#1b2a4a;color:#fff;padding:14px 28px;border-radius:10px;z-index:99999;font-size:14px;font-weight:700;box-shadow:0 8px 24px rgba(0,0,0,.3)';
+    msg.textContent = '⏳ جارٍ فحص الحسابات الوهمية وتنظيفها...';
+    document.body.appendChild(msg);
+
+    db.collection('users').get().then(function(snap) {
+        var batch = db.batch();
+        var deletedCount = 0;
+        snap.forEach(function(doc) {
+            var data = doc.data() || {};
+            var email = (data.email || '').toLowerCase();
+            var name = (data.name || '').toLowerCase();
+            if (email.startsWith('script_') || email.startsWith('admin_') || email.includes('@temp') || email === 'test@gmail.com' || email === 'test@techgo.com' || name.includes('script_') || name.includes('admin_')) {
+                batch.delete(doc.ref);
+                deletedCount++;
             }
         });
+        if (deletedCount > 0) {
+            return batch.commit().then(function() {
+                msg.style.background = '#1d7a4f';
+                msg.textContent = '✅ تم حذف ' + deletedCount + ' حساب وهمي وتجريبي من Firestore بنجاح!';
+                setTimeout(function(){ if (msg.parentNode) msg.parentNode.removeChild(msg); }, 3500);
+                if (typeof loadStaffOverview === 'function') loadStaffOverview();
+            });
+        } else {
+            msg.style.background = '#2c3e50';
+            msg.textContent = 'ℹ️ لم يتم العثور على أي حسابات وهمية في Firestore.';
+            setTimeout(function(){ if (msg.parentNode) msg.parentNode.removeChild(msg); }, 3000);
+        }
+    }).catch(function(err) {
+        msg.style.background = '#c0392b';
+        msg.textContent = '❌ تعذر تنظيف الحسابات: ' + err.message;
+        setTimeout(function(){ if (msg.parentNode) msg.parentNode.removeChild(msg); }, 4000);
     });
 }
 

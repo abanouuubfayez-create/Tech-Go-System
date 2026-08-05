@@ -1,5 +1,9 @@
 // ─── Service Worker for Tech Go PWA ─────────────────────────────────────────
-const CACHE_NAME = 'techgo-v1785922279-force-purge';
+<<<<<<< HEAD
+const CACHE_NAME = 'techgo-v1785923545-force-purge';
+=======
+const CACHE_NAME = 'techgo-v1785923545-force-purge';
+>>>>>>> 8172252 (security: enforce strict firestore rules for user list protection and add dummy account cleaner tool)
 const STATIC_ASSETS = [
     './login.html',
     './styles.css',
