@@ -4496,7 +4496,7 @@ function load(id,c){
         h+='</div>';
         h+='<div class="fr fr2" style="margin-top:10px">';
         h+='<div class="fg"><label>نظام العمل</label><select id="newAccWorkMode"><option value="office">من المكتب</option><option value="remote">عن بُعد (ريموتلي)</option></select></div>';
-        h+='<div class="fg"><label>دور الحساب</label><select id="newAccRole"><option value="employee">موظف (employee)</option><option value="admin">أدمن (صلاحيات كاملة)</option><option value="tech_admin">أدمن (صلاحيات كاملة)</option></select></div>';
+        h+='<div class="fg"><label>دور الحساب</label><select id="newAccRole"><option value="employee">موظف (employee)</option><option value="admin">أدمن (صلاحيات كاملة)</option></select></div>';
         h+='</div>';
         h+='<button class="bt bt-p" onclick="createStaffAccount()">➕ إنشاء الحساب</button>';
         h+='<div id="newAccMsg" style="margin-top:8px;font-size:11px"></div>';
