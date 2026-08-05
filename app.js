@@ -1257,7 +1257,20 @@ function loadStaffOverview(){
             return;
         }
         var allUsers=[];
-        snap.forEach(function(doc){allUsers.push(Object.assign({uid:doc.id},doc.data()));});
+        var seenKeys={};
+        snap.forEach(function(doc){
+            var data = doc.data() || {};
+            var uid = doc.id;
+            var emKey = (data.email || '').toLowerCase().trim();
+            if(emKey) {
+                if(seenKeys['email:' + emKey]) return;
+                seenKeys['email:' + emKey] = true;
+            }
+            if(seenKeys['uid:' + uid]) return;
+            seenKeys['uid:' + uid] = true;
+
+            allUsers.push(Object.assign({uid:uid}, data));
+        });
         
         // مزامنة قائمة أسماء الموظفين الحقيقيين مع قائمة الأوتوكومبليت
         allUsers.forEach(function(emp){ if(emp.name) addEmployeeName(emp.name); });
