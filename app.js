@@ -9467,123 +9467,167 @@ window.tgRenderMRSectionsInModal = function() {
         var topicNum = sIdx + 1;
         html += `
             <div class="mr-section-card" style="background:#0f172a; border:1.5px solid #334155; border-radius:16px; padding:16px;">
-                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:14px; gap:10px; flex-wrap:wrap;">
-                    <div style="display:flex; align-items:center; gap:8px; flex:1;">
-                        <span style="background:rgba(52,211,153,0.15); color:#34d399; border:1px solid rgba(52,211,153,0.3); padding:4px 12px; border-radius:20px; font-weight:900; font-size:13px; white-space:nowrap;">
-                            📌 الموضوع ${topicNum}:
-                        </span>
-                        <input type="text" value="${sec.title || ''}" onchange="window._mrActiveSections[${sIdx}].title = this.value" placeholder="أدخل عنوان الموضوع..." style="font-size:15px; font-weight:900; color:#34d399; background:transparent; border:none; border-bottom:1.5px dashed #34d399; width:100%; padding:4px 0; outline:none;">
-                    </div>
-                    ${window._mrActiveSections.length > 1 ? `
-                        <button type="button" onclick="tgRemoveMRSection(${sIdx})" style="background:rgba(239,68,68,0.15); border:1px solid rgba(239,68,68,0.4); color:#ef4444; border-radius:8px; padding:4px 10px; font-size:12px; font-weight:800; cursor:pointer;">🗑 حذف الموضوع</button>
-                    ` : ''}
+                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:14px; gap:10pwindow.tgRenderMonthlyPlansEmp = function(retryCount) {
+    retryCount = retryCount || 0;
+    var listEl = document.getElementById('mpEmpList');
+    if (!listEl || !window.db) return;
+
+    var u = window.TG_USER || {};
+    var myUid = u.uid || (window.firebase && firebase.auth && firebase.auth().currentUser ? firebase.auth().currentUser.uid : '');
+    var isAnyAdmin = (u.role === 'admin' || u.role === 'tech_admin');
+
+    if (!myUid && !isAnyAdmin) {
+        if (retryCount < 10) {
+            setTimeout(function(){ tgRenderMonthlyPlansEmp(retryCount + 1); }, 300);
+        } else {
+            listEl.innerHTML = `
+                <div style="background:var(--bg2); border:1.5px dashed var(--bd); padding:40px; text-align:center; border-radius:16px; color:var(--tx2); font-weight:bold; font-size:14.5px;">
+                    🎯 تعذر التحقق من بيانات الدخول. يرجى إيقاف أي مانع إعلانات أو إعادة تسجيل الدخول.
                 </div>
+            `;
+        }
+        return;
+    }
 
-                <div style="display:flex; flex-direction:column; gap:10px; margin-bottom:12px;">
-                    ${(sec.items || []).map(function(item, iIdx) {
-                        return `
-                            <div style="display:flex; gap:8px; align-items:center;">
-                                <span style="color:#10b981; font-weight:900;">•</span>
-                                <input type="text" value="${item.text || ''}" onchange="window._mrActiveSections[${sIdx}].items[${iIdx}].text = this.value" placeholder="اكتب النقطة / بند الإنجاز هنا..." required style="flex:2; padding:10px; border-radius:8px; border:1px solid #334155; background:#1e293b; color:#ffffff; font-size:13px; font-weight:600; outline:none;">
-                                <input type="text" value="${item.metric || ''}" onchange="window._mrActiveSections[${sIdx}].items[${iIdx}].metric = this.value" placeholder="النتيجة/القيمة (اختياري)..." style="width:140px; padding:10px; border-radius:8px; border:1px solid #334155; background:#1e293b; color:#34d399; font-size:13px; font-weight:700; outline:none;">
-                                ${(sec.items && sec.items.length > 1) ? `
-                                    <button type="button" onclick="tgRemoveMRItem(${sIdx}, ${iIdx})" style="background:none; border:none; color:#ef4444; font-size:16px; cursor:pointer; font-weight:bold;">✕</button>
-                                ` : ''}
-                            </div>
-                        `;
-                    }).join('')}
+    if (window._mpEmpUnsub1) { try { window._mpEmpUnsub1(); } catch(e){} }
+    if (window._mpEmpUnsub2) { try { window._mpEmpUnsub2(); } catch(e){} }
+
+    var map1 = {};
+    var map2 = {};
+
+    var renderPlans = function() {
+        var merged = {};
+        Object.keys(map1).forEach(function(k){ merged[k] = map1[k]; });
+        Object.keys(map2).forEach(function(k){ merged[k] = map2[k]; });
+
+        var plans = Object.values(merged);
+        plans.sort(function(a, b) {
+            var tA = a.createdAt && a.createdAt.seconds ? a.createdAt.seconds : 0;
+            var tB = b.createdAt && b.createdAt.seconds ? b.createdAt.seconds : 0;
+            return tB - tA;
+        });
+
+        var listEl = document.getElementById('mpEmpList');
+        if (!listEl) return;
+
+        if (plans.length === 0) {
+            listEl.innerHTML = `
+                <div style="background:var(--bg2); border:1.5px dashed var(--bd); padding:40px; text-align:center; border-radius:16px; color:var(--tx2); font-weight:bold; font-size:14.5px;">
+                    🎯 لا توجد خطط شهرية مُقدمة منك حالياً. اضغط على "تقديم خطة شهرية جديدة للإدارة" أعلاه لإرسال خطتك.
                 </div>
-
-                <button type="button" onclick="tgAddMRItemToSection(${sIdx})" style="background:#1e293b; color:#34d399; border:1px solid #10b981; padding:6px 14px; border-radius:8px; font-size:12px; font-weight:800; cursor:pointer; display:inline-flex; align-items:center; gap:5px;">
-                    ➕ إضافة نقطة بهذا الموضوع
-                </button>
-            </div>
-        `;
-    });
-
-    container.innerHTML = html;
-};
-
-window.tgAddMRCustomSection = function(defaultTitle) {
-    window._mrActiveSections.push({
-        title: defaultTitle || 'قسم مخصص جديد',
-        items: [{ text: '', metric: '' }]
-    });
-    tgRenderMRSectionsInModal();
-};
-
-window.tgRemoveMRSection = function(sIdx) {
-    window._mrActiveSections.splice(sIdx, 1);
-    tgRenderMRSectionsInModal();
-};
-
-window.tgAddMRItemToSection = function(sIdx) {
-    if (window._mrActiveSections[sIdx]) {
-        window._mrActiveSections[sIdx].items.push({ text: '', metric: '' });
-        tgRenderMRSectionsInModal();
-    }
-};
-
-window.tgRemoveMRItem = function(sIdx, iIdx) {
-    if (window._mrActiveSections[sIdx] && window._mrActiveSections[sIdx].items) {
-        window._mrActiveSections[sIdx].items.splice(iIdx, 1);
-        tgRenderMRSectionsInModal();
-    }
-};
-
-
-window.tgOpenEditMonthlyReportModal = function(reportId) {
-    if (!reportId) return;
-
-    var openModalWithData = function(r) {
-        window._mrEditingReportId = reportId;
-        var u = window.TG_USER || {};
-        var myRole = r.userRole || r.department || u.jobTitle || u.role || 'عضو في الفريق';
+            `;
+            return;
+        }
 
         var html = `
-            <div id="mrModalOverlay" style="position:fixed; top:0; left:0; right:0; bottom:0; background:rgba(15,23,42,0.85); z-index:999999; display:flex; align-items:center; justify-content:center; padding:15px; backdrop-filter:blur(10px);">
-                <div style="background:#1e293b; border:1.5px solid #334155; width:100%; max-width:820px; max-height:92vh; overflow-y:auto; border-radius:24px; padding:25px; box-shadow:0 25px 60px rgba(0,0,0,0.7); color:#ffffff; font-family:inherit;">
-                    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px; border-bottom:1.5px solid #334155; padding-bottom:14px;">
+            <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px; margin-bottom:16px; background:var(--bg2); padding:12px 18px; border-radius:14px; border:1.5px solid var(--bd);">
+                <span style="font-size:13.5px; font-weight:800; color:var(--tx2);">📋 عدد خططك المسجلة: <b>${plans.length}</b></span>
+                <div style="display:flex; gap:10px;">
+                    <button type="button" onclick="tgExpandAllCards('mpEmpList')" class="bt bt-o" style="font-size:12.5px; padding:6px 14px; border-radius:20px; font-weight:800; cursor:pointer;">📂 فتح جميع الكروت</button>
+                    <button type="button" onclick="tgCollapseAllCards('mpEmpList')" class="bt bt-o" style="font-size:12.5px; padding:6px 14px; border-radius:20px; font-weight:800; cursor:pointer;">📁 طي جميع الكروت</button>
+                </div>
+            </div>
+        `;
+        plans.forEach(function(p, pIdx) {
+            var tasks = p.tasks || [];
+            var completedCount = tasks.filter(function(t){ return t.done; }).length;
+            var progress = tasks.length > 0 ? Math.round((completedCount / tasks.length) * 100) : (p.progress || 0);
+
+            html += `
+                <div class="card p-3 mb-3" style="background:var(--bg2); border:1.5px solid var(--bd); border-radius:18px; box-shadow:0 4px 20px rgba(0,0,0,0.06); padding:20px; margin-bottom:20px;">
+                    <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:12px;">
                         <div>
-                            <h3 style="margin:0; font-size:20px; font-weight:900; color:#3b82f6; display:flex; align-items:center; gap:8px;">✏️ تعديل وتحديث التقرير الشهري المخصص (MR)</h3>
-                            <p style="margin:4px 0 0; font-size:12px; color:#94a3b8; font-weight:600;">قم بتعديل وتحديث البنود والتصنيفات المطلوبة ثم اضغط على حفظ وإعادة الإرسال للإدارة.</p>
+                            <h3 style="font-size:18.5px; font-weight:900; color:var(--tx); margin:0 0 6px;">📌 ${p.title || 'خطة شهرية'}</h3>
+                            <div style="display:flex; gap:10px; flex-wrap:wrap; font-size:13px; font-weight:800; color:var(--tx2); margin-top:4px;">
+                                <span style="color:#0284c7; background:rgba(2,132,199,0.12); padding:4px 12px; border-radius:8px; border:1px solid rgba(2,132,199,0.25);">👤 الموظف (الراسل): <b>${p.creatorName || p.userName || u.name || 'موظف'}</b></span>
+                                <span style="color:#10b981; background:rgba(16,185,129,0.12); padding:4px 12px; border-radius:8px; border:1px solid rgba(16,185,129,0.25);">🏢 القسم: <b>${p.department || u.role || 'قسم عام'}</b></span>
+                                <span style="color:#f59e0b; background:rgba(245,158,11,0.12); padding:4px 12px; border-radius:8px; border:1px solid rgba(245,158,11,0.25);">📅 الشهر: <b>${p.monthYear || ''}</b></span>
+                            </div>
                         </div>
-                        <button type="button" onclick="document.getElementById('mrModalOverlay').remove()" style="background:#334155; border:none; color:#f8fafc; font-size:16px; width:34px; height:34px; border-radius:50%; display:flex; align-items:center; justify-content:center; cursor:pointer; font-weight:900;">✕</button>
+                        <div style="display:flex; align-items:center; gap:10px;">
+                            <span class="badge" style="background:#10b981; color:#fff; font-size:13px; font-weight:900; padding:6px 16px; border-radius:30px;">نسبة الإنجاز ${progress}%</span>
+                            <button type="button" onclick="tgToggleCardDetails('mp-emp-body-${p.id}', this)" class="tg-toggle-btn bt bt-o" style="font-size:12.5px; padding:6px 14px; border-radius:20px; font-weight:800; cursor:pointer;">
+                                ${pIdx === 0 ? '🔼 إخفاء التفاصيل' : '🔽 عرض التفاصيل والبنود'}
+                            </button>
+                        </div>
                     </div>
 
-                    ${r.adminNotes ? `
-                        <div style="background:rgba(239,68,68,0.15); border:1.5px solid #ef4444; padding:12px 16px; border-radius:12px; font-size:13px; color:#fca5a5; margin-bottom:20px; font-weight:bold;">
-                            ⚠️ توجيه الإدارة للتعديل: ${r.adminNotes}
+                    <!-- Collapsible Body -->
+                    <div id="mp-emp-body-${p.id}" class="tg-card-body" style="display:${pIdx === 0 ? 'block' : 'none'}; margin-top:16px; border-top:1.5px dashed var(--bd); padding-top:16px;">
+                        <!-- Progress Bar -->
+                        <div style="background:var(--bg); border:1.5px solid var(--bd); height:12px; border-radius:10px; overflow:hidden; margin-bottom:14px;">
+                            <div style="background:linear-gradient(90deg, #10b981, #34d399); height:100%; width:${progress}%; transition:width 0.4s;"></div>
                         </div>
-                    ` : ''}
 
-                    <form onsubmit="tgSubmitMonthlyReport(event)">
-                        <div style="display:grid; grid-template-columns:1fr 1fr; gap:14px; margin-bottom:18px;">
-                            <div>
-                                <label style="font-size:13px; font-weight:800; color:#93c5fd; display:block; margin-bottom:6px;">الشهر والسنة *</label>
-                                <input type="month" id="mrFormMonth" value="${r.monthYear || ''}" required style="width:100%; padding:12px; border-radius:10px; border:1.5px solid #334155; background:#0f172a; color:#ffffff; font-weight:700; outline:none;">
+                        <div style="background:rgba(16,185,129,0.08); border:1.5px solid rgba(16,185,129,0.25); border-radius:14px; padding:14px; margin-bottom:14px;">
+                            <strong style="color:#34d399; font-size:14px; font-weight:900; display:block; margin-bottom:6px;">📌 الملخص والاستراتيجية:</strong>
+                            <div style="white-space:pre-line; line-height:1.6; color:var(--tx); font-weight:700; font-size:13.5px;">${p.objectives || p.execSummary || 'لا يوجد ملخص'}</div>
+                        </div>
+
+                        <!-- Tasks Checklist with interactive checkboxes -->
+                        <div style="background:var(--bg); padding:16px; border-radius:14px; border:1.5px solid var(--bd); margin-bottom:14px;">
+                            <strong style="color:var(--tx); font-size:14px; font-weight:900; display:block; margin-bottom:10px;">✅ بنود وقائمة تنفيذ الخطة (${completedCount} من ${tasks.length}):</strong>
+                            <div style="display:flex; flex-direction:column; gap:8px;">
+                                ${tasks.map(function(t, tIdx) {
+                                    return `
+                                        <label style="font-size:13.5px; padding:10px 14px; background:var(--bg2); border:1.5px solid var(--bd); border-radius:10px; color:${t.done ? '#10b981' : 'var(--tx)'}; font-weight:${t.done ? '800' : '600'}; display:flex; justify-content:space-between; align-items:center; cursor:pointer;">
+                                            <div style="display:flex; align-items:center; gap:10px;">
+                                                <input type="checkbox" ${t.done ? 'checked' : ''} onchange="tgToggleEmpPlanTaskDone('${p.id}', ${tIdx}, this.checked)" style="width:18px; height:18px; cursor:pointer;">
+                                                <span>${t.title}</span>
+                                            </div>
+                                            <div style="display:flex; gap:8px; align-items:center;">
+                                                ${t.kpi ? '<span style="font-size:11px; background:rgba(16,185,129,0.15); color:#34d399; padding:2px 8px; border-radius:6px; font-weight:800;">KPI: ' + t.kpi + '</span>' : ''}
+                                                <span style="font-size:11px; background:rgba(59,130,246,0.15); color:#60a5fa; padding:2px 8px; border-radius:6px; font-weight:800;">${t.week || 'أسبوع'}</span>
+                                            </div>
+                                        </label>
+                                    `;
+                                }).join('')}
                             </div>
-                            <div>
-                                <label style="font-size:13px; font-weight:800; color:#93c5fd; display:block; margin-bottom:6px;">القسم / التخصص / المسمى الوظيفي *</label>
-                                <input type="text" id="mrFormDept" value="${myRole}" required style="width:100%; padding:12px; border-radius:10px; border:1.5px solid #334155; background:#0f172a; color:#ffffff; font-weight:700; outline:none;">
-                            </div>
                         </div>
 
-                        <!-- Dynamic Custom Sections Container -->
-                        <div id="mrCustomSectionsContainer" style="display:flex; flex-direction:column; gap:16px; margin-bottom:20px;"></div>
-
-                        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:22px; background:#0f172a; padding:12px 16px; border-radius:14px; border:1px solid #334155;">
-                            <button type="button" onclick="tgAddMRCustomSection('تصنيف مخصص جديد')" style="background:#334155; color:#34d399; border:1.5px dashed #34d399; padding:9px 18px; border-radius:10px; font-weight:800; font-size:13px; cursor:pointer; display:flex; align-items:center; gap:6px;">
-                                ➕ إضافة موضوع جديد
-                            </button>
-                            <span style="font-size:12px; color:#94a3b8; font-weight:600;">💡 أضف أو غيّر بنود التقرير حسب التوجيه</span>
+                        <div style="display:flex; justify-content:flex-end; gap:10px;">
+                            <button type="button" onclick="tgOpenEditMonthlyPlanModal('${p.id}')" class="bt" style="background:linear-gradient(135deg, #3b82f6, #1d4ed8); color:#fff; font-size:12.5px; padding:8px 20px; font-weight:900; border:none; border-radius:20px; box-shadow:0 4px 12px rgba(59,130,246,0.35); cursor:pointer;">✏️ تعديل الخطة</button>
+                            <button type="button" onclick="tgPrintMonthlyPlan('${p.id}')" class="bt bt-o" style="font-size:12.5px; padding:8px 20px; font-weight:800; border-radius:20px;">🖨 طباعة الخطة MP</button>
                         </div>
+                    </div>
+                </div>
+            `;
+        });
 
-                        <div style="display:flex; justify-content:flex-end; gap:12px;">
-                            <button type="button" onclick="document.getElementById('mrModalOverlay').remove()" style="background:#334155; color:#cbd5e1; border:1px solid #475569; padding:11px 24px; border-radius:10px; font-weight:800; cursor:pointer;">إلغاء</button>
-                            <button type="submit" style="background:linear-gradient(135deg, #3b82f6, #1d4ed8); color:#ffffff; border:none; padding:11px 28px; border-radius:10px; font-weight:900; cursor:pointer; box-shadow:0 4px 15px rgba(59,130,246,0.4);">💾 حفظ التعديلات وإعادة إرسال التقرير للإدارة</button>
-                        </div>
-                    </form>
+        listEl.innerHTML = html;
+    };
+
+    if (isAnyAdmin) {
+        window._mpEmpUnsub1 = db.collection('monthly_plans').onSnapshot(function(snap) {
+            map1 = {};
+            snap.forEach(function(doc) {
+                var d = doc.data(); d.id = doc.id;
+                if (d.type !== 'executive_master') map1[doc.id] = d;
+            });
+            renderPlans();
+        }, function(err) {
+            listEl.innerHTML = '<div style="color:var(--no); text-align:center;">تعذر التحميل: ' + err.message + '</div>';
+        });
+    } else {
+        window._mpEmpUnsub1 = db.collection('monthly_plans').where('uid', '==', myUid).onSnapshot(function(snap) {
+            map1 = {};
+            snap.forEach(function(doc) {
+                var d = doc.data(); d.id = doc.id;
+                if (d.type !== 'executive_master') map1[doc.id] = d;
+            });
+            renderPlans();
+        }, function(err) { console.error("Error in mp uid query:", err); });
+
+        window._mpEmpUnsub2 = db.collection('monthly_plans').where('createdBy', '==', myUid).onSnapshot(function(snap) {
+            map2 = {};
+            snap.forEach(function(doc) {
+                var d = doc.data(); d.id = doc.id;
+                if (d.type !== 'executive_master') map2[doc.id] = d;
+            });
+            renderPlans();
+        }, function(err) { console.error("Error in mp createdBy query:", err); });
+    }
+};         </form>
                 </div>
             </div>
         `;
