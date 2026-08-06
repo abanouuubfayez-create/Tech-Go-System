@@ -12114,19 +12114,26 @@ window.tgRenderWeeklyReportsEmp = function(retryCount) {
     var isAnyAdmin = (u.role === 'admin' || u.role === 'tech_admin');
 
     if (!myUid && !isAnyAdmin) {
-        renderEmpty();
+        if (retryCount < 10) {
+            setTimeout(function(){ tgRenderWeeklyReportsEmp(retryCount + 1); }, 300);
+        } else {
+            renderEmpty();
+        }
         return;
     }
 
-    var p1 = (isAnyAdmin || !myUid)
-        ? targetDb.collection('weekly_reports').get().catch(function(){ return {docs:[]}; })
-        : targetDb.collection('weekly_reports').where('uid', '==', myUid).get().catch(function(){ return {docs:[]}; });
+    var queries = [];
+    if (isAnyAdmin) {
+        queries.push(targetDb.collection('weekly_reports').get().catch(function(){ return {docs:[]}; }));
+        queries.push(targetDb.collection('weeklyReports').get().catch(function(){ return {docs:[]}; }));
+    } else {
+        queries.push(targetDb.collection('weekly_reports').where('uid', '==', myUid).get().catch(function(){ return {docs:[]}; }));
+        queries.push(targetDb.collection('weekly_reports').where('createdBy', '==', myUid).get().catch(function(){ return {docs:[]}; }));
+        queries.push(targetDb.collection('weeklyReports').where('uid', '==', myUid).get().catch(function(){ return {docs:[]}; }));
+        queries.push(targetDb.collection('weeklyReports').where('createdBy', '==', myUid).get().catch(function(){ return {docs:[]}; }));
+    }
 
-    var p2 = (isAnyAdmin || !myUid)
-        ? targetDb.collection('weeklyReports').get().catch(function(){ return {docs:[]}; })
-        : targetDb.collection('weeklyReports').where('uid', '==', myUid).get().catch(function(){ return {docs:[]}; });
-
-    Promise.all([p1, p2]).then(function(results) {
+    Promise.all(queries).then(function(results) {
         clearTimeout(timer);
         var reports = [];
         var seenIds = {};
@@ -12138,7 +12145,7 @@ window.tgRenderWeeklyReportsEmp = function(retryCount) {
                         seenIds[doc.id] = true;
                         var d = doc.data();
                         d.id = doc.id;
-                        if (isAnyAdmin || d.uid === myUid || d.createdBy === myUid) {
+                        if (isAnyAdmin || d.uid === myUid || d.createdBy === myUid || (d.userName && d.userName === u.name)) {
                             reports.push(d);
                         }
                     }
@@ -12231,19 +12238,26 @@ window.tgRenderMonthlyReportsEmp = function(retryCount) {
     var isAnyAdmin = (u.role === 'admin' || u.role === 'tech_admin');
 
     if (!myUid && !isAnyAdmin) {
-        renderEmpty();
+        if (retryCount < 10) {
+            setTimeout(function(){ tgRenderMonthlyReportsEmp(retryCount + 1); }, 300);
+        } else {
+            renderEmpty();
+        }
         return;
     }
 
-    var p1 = (isAnyAdmin || !myUid)
-        ? targetDb.collection('monthly_reports').get().catch(function(){ return {docs:[]}; })
-        : targetDb.collection('monthly_reports').where('uid', '==', myUid).get().catch(function(){ return {docs:[]}; });
+    var queries = [];
+    if (isAnyAdmin) {
+        queries.push(targetDb.collection('monthly_reports').get().catch(function(){ return {docs:[]}; }));
+        queries.push(targetDb.collection('monthlyReports').get().catch(function(){ return {docs:[]}; }));
+    } else {
+        queries.push(targetDb.collection('monthly_reports').where('uid', '==', myUid).get().catch(function(){ return {docs:[]}; }));
+        queries.push(targetDb.collection('monthly_reports').where('createdBy', '==', myUid).get().catch(function(){ return {docs:[]}; }));
+        queries.push(targetDb.collection('monthlyReports').where('uid', '==', myUid).get().catch(function(){ return {docs:[]}; }));
+        queries.push(targetDb.collection('monthlyReports').where('createdBy', '==', myUid).get().catch(function(){ return {docs:[]}; }));
+    }
 
-    var p2 = (isAnyAdmin || !myUid)
-        ? targetDb.collection('monthlyReports').get().catch(function(){ return {docs:[]}; })
-        : targetDb.collection('monthlyReports').where('uid', '==', myUid).get().catch(function(){ return {docs:[]}; });
-
-    Promise.all([p1, p2]).then(function(results) {
+    Promise.all(queries).then(function(results) {
         clearTimeout(timer);
         var reports = [];
         var seenIds = {};
