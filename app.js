@@ -10280,13 +10280,18 @@ window.tgRenderMonthlyPlansEmp = function() {
         try { window._mpEmpUnsub(); } catch(e){}
     }
 
-    window._mpEmpUnsub = db.collection('monthly_plans').onSnapshot(function(snap) {
+    var isAnyAdmin = (u.role === 'admin' || u.role === 'tech_admin');
+    var targetQuery = (isAnyAdmin || !myUid)
+        ? db.collection('monthly_plans')
+        : db.collection('monthly_plans').where('uid', '==', myUid);
+
+    window._mpEmpUnsub = targetQuery.onSnapshot(function(snap) {
         var plans = [];
         snap.forEach(function(doc) {
             var data = doc.data();
             data.id = doc.id;
             if (data.type === 'executive_master') return;
-            if (data.uid === myUid || data.createdBy === myUid || (data.creatorName && data.creatorName === u.name)) {
+            if (isAnyAdmin || data.uid === myUid || data.createdBy === myUid || (data.creatorName && data.creatorName === u.name)) {
                 plans.push(data);
             }
         });
@@ -10406,9 +10411,11 @@ window.tgToggleEmpPlanTaskDone = function(planId, taskIndex, isDone) {
             });
         }
     });
+window.loadMonthlyReportsEmp = function(container) {
+    if (typeof loadWeeklyReportsEmp === 'function') {
+        loadWeeklyReportsEmp(container);
+    }
 };
-
-
 
 window.loadMonthlyPlansEmp = function(container) {
     if (!container) container = document.getElementById('epg-monthlyplans');
@@ -12049,7 +12056,7 @@ window.tgRenderWeeklyReportsEmp = function(retryCount) {
         }
     };
 
-    var timer = setTimeout(renderEmpty, 1500);
+    var timer = setTimeout(renderEmpty, 3000);
 
     var targetDb = window.db || (typeof db !== 'undefined' ? db : (window.firebase ? firebase.firestore() : null));
     if (!targetDb) {
@@ -12060,14 +12067,39 @@ window.tgRenderWeeklyReportsEmp = function(retryCount) {
 
     var u = window.TG_USER || {};
     var myUid = u.uid || (window.firebase && firebase.auth && firebase.auth().currentUser ? firebase.auth().currentUser.uid : '');
+    var isAnyAdmin = (u.role === 'admin' || u.role === 'tech_admin');
 
-    db.collection('weekly_reports').get().then(function(snap) {
+    if (!myUid && !isAnyAdmin) {
+        renderEmpty();
+        return;
+    }
+
+    var p1 = (isAnyAdmin || !myUid)
+        ? targetDb.collection('weekly_reports').get().catch(function(){ return {docs:[]}; })
+        : targetDb.collection('weekly_reports').where('uid', '==', myUid).get().catch(function(){ return {docs:[]}; });
+
+    var p2 = (isAnyAdmin || !myUid)
+        ? targetDb.collection('weeklyReports').get().catch(function(){ return {docs:[]}; })
+        : targetDb.collection('weeklyReports').where('uid', '==', myUid).get().catch(function(){ return {docs:[]}; });
+
+    Promise.all([p1, p2]).then(function(results) {
         clearTimeout(timer);
         var reports = [];
-        snap.forEach(function(doc) {
-            var data = doc.data();
-            data.id = doc.id;
-            if (myUid && data.uid === myUid) reports.push(data);
+        var seenIds = {};
+
+        results.forEach(function(snap) {
+            if (snap && snap.docs) {
+                snap.docs.forEach(function(doc) {
+                    if (!seenIds[doc.id]) {
+                        seenIds[doc.id] = true;
+                        var d = doc.data();
+                        d.id = doc.id;
+                        if (isAnyAdmin || d.uid === myUid || d.createdBy === myUid) {
+                            reports.push(d);
+                        }
+                    }
+                });
+            }
         });
 
         reports.sort(function(a, b) {
@@ -12077,6 +12109,9 @@ window.tgRenderWeeklyReportsEmp = function(retryCount) {
         });
 
         window._allWeeklyReports = reports;
+
+        var listEl = document.getElementById('wrEmpList');
+        if (!listEl) return;
 
         if (reports.length === 0) {
             renderEmpty();
@@ -12096,7 +12131,7 @@ window.tgRenderWeeklyReportsEmp = function(retryCount) {
                         <h4 style="margin:0; font-size:16px; font-weight:900; color:var(--tx);">تقرير: ${tgFormatWeekName(r.weekYear)}</h4>
                         <div>${statusBadge}</div>
                     </div>
-                    <p style="font-size:13px; color:var(--tx); margin:0 0 10px; font-weight:600;">${(r.content || '').slice(0, 180)}...</p>
+                    <p style="font-size:13px; color:var(--tx); margin:0 0 10px; font-weight:600; white-space:pre-line;">${(r.content || '').slice(0, 240)}${(r.content || '').length > 240 ? '...' : ''}</p>
 
                     ${r.adminNotes ? `
                         <div style="background:rgba(239,68,68,0.12); border:1.5px solid rgba(239,68,68,0.3); padding:10px 14px; border-radius:10px; font-size:13px; color:#ef4444; margin-bottom:10px; font-weight:bold;">
@@ -12118,6 +12153,125 @@ window.tgRenderWeeklyReportsEmp = function(retryCount) {
         listEl.innerHTML = html;
     }).catch(function(err) {
         console.error("Error loading emp weekly reports:", err);
+        clearTimeout(timer);
+        renderEmpty();
+    });
+};
+
+window.tgRenderMonthlyReportsEmp = function(retryCount) {
+    retryCount = retryCount || 0;
+    var listEl = document.getElementById('mrEmpListInUnified') || document.getElementById('mrEmpList');
+    if (!listEl) return;
+
+    var renderEmpty = function() {
+        if (listEl && listEl.innerHTML.indexOf('جاري تحميل') !== -1) {
+            listEl.innerHTML = `
+                <div style="background:var(--bg2); border:1.5px dashed var(--bd); padding:30px; text-align:center; border-radius:14px; color:var(--tx); font-weight:800; font-size:14px;">
+                    📄 لا توجد تقارير شهرية (MR) مسجلة باسمك حالياً. يمكنك تجميع تقاريرك الأسبوعية تلقائياً أو تقديم تقرير جديد.
+                </div>
+            `;
+        }
+    };
+
+    var timer = setTimeout(renderEmpty, 3000);
+
+    var targetDb = window.db || (typeof db !== 'undefined' ? db : (window.firebase ? firebase.firestore() : null));
+    if (!targetDb) {
+        if (retryCount < 10) setTimeout(function(){ tgRenderMonthlyReportsEmp(retryCount + 1); }, 300);
+        else renderEmpty();
+        return;
+    }
+
+    var u = window.TG_USER || {};
+    var myUid = u.uid || (window.firebase && firebase.auth && firebase.auth().currentUser ? firebase.auth().currentUser.uid : '');
+    var isAnyAdmin = (u.role === 'admin' || u.role === 'tech_admin');
+
+    if (!myUid && !isAnyAdmin) {
+        renderEmpty();
+        return;
+    }
+
+    var p1 = (isAnyAdmin || !myUid)
+        ? targetDb.collection('monthly_reports').get().catch(function(){ return {docs:[]}; })
+        : targetDb.collection('monthly_reports').where('uid', '==', myUid).get().catch(function(){ return {docs:[]}; });
+
+    var p2 = (isAnyAdmin || !myUid)
+        ? targetDb.collection('monthlyReports').get().catch(function(){ return {docs:[]}; })
+        : targetDb.collection('monthlyReports').where('uid', '==', myUid).get().catch(function(){ return {docs:[]}; });
+
+    Promise.all([p1, p2]).then(function(results) {
+        clearTimeout(timer);
+        var reports = [];
+        var seenIds = {};
+
+        results.forEach(function(snap) {
+            if (snap && snap.docs) {
+                snap.docs.forEach(function(doc) {
+                    if (!seenIds[doc.id]) {
+                        seenIds[doc.id] = true;
+                        var d = doc.data();
+                        d.id = doc.id;
+                        if (isAnyAdmin || d.uid === myUid || d.createdBy === myUid) {
+                            reports.push(d);
+                        }
+                    }
+                });
+            }
+        });
+
+        reports.sort(function(a, b) {
+            var tA = a.createdAt && a.createdAt.seconds ? a.createdAt.seconds : 0;
+            var tB = b.createdAt && b.createdAt.seconds ? b.createdAt.seconds : 0;
+            return tB - tA;
+        });
+
+        window._allMonthlyReports = reports;
+
+        var listEl = document.getElementById('mrEmpListInUnified') || document.getElementById('mrEmpList');
+        if (!listEl) return;
+
+        if (reports.length === 0) {
+            renderEmpty();
+            return;
+        }
+
+        var html = '';
+        reports.forEach(function(r) {
+            var statusBadge = '';
+            if (r.status === 'approved') statusBadge = '<span class="badge" style="background:rgba(16,185,129,0.2); color:#34d399; border:1.5px solid #10b981; font-weight:800; padding:4px 14px; border-radius:20px;">✅ معتمد</span>';
+            else if (r.status === 'rejected') statusBadge = '<span class="badge" style="background:rgba(239,68,68,0.2); color:#f87171; border:1.5px solid #ef4444; font-weight:800; padding:4px 14px; border-radius:20px;">❌ يحتاج تعديل</span>';
+            else statusBadge = '<span class="badge" style="background:rgba(245,158,11,0.2); color:#fbbf24; border:1.5px solid #f59e0b; font-weight:800; padding:4px 14px; border-radius:20px;">🕒 قيد المراجعة</span>';
+
+            html += `
+                <div class="card p-3 mb-3" style="background:var(--bg2); border:1.5px solid var(--bd); border-radius:16px; box-shadow:0 4px 15px rgba(0,0,0,0.05);">
+                    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px; border-bottom:1px solid var(--bd); padding-bottom:8px; flex-wrap:wrap; gap:8px;">
+                        <h4 style="margin:0; font-size:16px; font-weight:900; color:var(--tx); display:flex; align-items:center; gap:6px;">
+                            📌 تقرير شهر: ${r.monthYear || ''}
+                            ${r.autoGenerated ? '<span style="background:rgba(16,185,129,0.15); color:#10b981; border:1px solid rgba(16,185,129,0.4); font-size:11px; padding:2px 8px; border-radius:12px; font-weight:800;">⚡ مولد تلقائياً</span>' : ''}
+                        </h4>
+                        <div>${statusBadge}</div>
+                    </div>
+                    <div style="font-size:13px; color:var(--tx); margin:0 0 10px; font-weight:600; white-space:pre-line; max-height:160px; overflow-y:auto; background:var(--bg); padding:12px; border-radius:10px; border:1px solid var(--bd);">
+                        ${(r.achievements || r.content || 'لا تتوفر تفاصيل').slice(0, 400)}${(r.achievements || r.content || '').length > 400 ? '...' : ''}
+                    </div>
+
+                    ${r.adminNotes ? `
+                        <div style="background:rgba(239,68,68,0.12); border:1.5px solid rgba(239,68,68,0.3); padding:10px 14px; border-radius:10px; font-size:13px; color:#ef4444; margin-bottom:10px; font-weight:bold;">
+                            <strong>توجيه الإدارة:</strong> ${r.adminNotes}
+                        </div>
+                    ` : ''}
+
+                    <div style="display:flex; justify-content:flex-end; gap:10px; align-items:center;">
+                        <button type="button" onclick="tgPrintMonthlyReport('${r.id}')" class="bt bt-o" style="font-size:13px; padding:6px 14px; font-weight:800;">🖨 طباعة التقرير MR</button>
+                        <button type="button" onclick="tgDeleteMonthlyReport('${r.id}')" class="bt bt-o" style="border-color:#ef4444; color:#ef4444; font-size:13px; padding:6px 14px; font-weight:800;">🗑 حذف التقرير</button>
+                    </div>
+                </div>
+            `;
+        });
+
+        listEl.innerHTML = html;
+    }).catch(function(err) {
+        console.error("Error loading emp monthly reports:", err);
         clearTimeout(timer);
         renderEmpty();
     });
@@ -12149,7 +12303,7 @@ window.tgCheckAutomaticReminders = function() {
         });
 
         // Check Monthly Plan
-        db.collection('monthly_plans').get().then(function(mpSnap) {
+        db.collection('monthly_plans').where('uid', '==', myUid).get().then(function(mpSnap) {
             var hasMPThisMonth = false;
             mpSnap.forEach(function(doc) {
                 var d = doc.data();

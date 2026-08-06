@@ -221,23 +221,23 @@ service cloud.firestore {
 
     // التقارير الأسبوعية المخصصة (Weekly Reports - WR)
     match /weekly_reports/{reportId} {
-      allow read: if isAnyAdmin() || (isSignedIn() && resource.data.uid == myUid());
-      allow create: if isSignedIn() && request.resource.data.uid == myUid();
-      allow update, delete: if isAnyAdmin() || (isSignedIn() && resource.data.uid == myUid());
+      allow read: if isAnyAdmin() || (isSignedIn() && (resource.data.uid == myUid() || resource.data.createdBy == myUid()));
+      allow create: if isSignedIn() && (request.resource.data.uid == myUid() || request.resource.data.createdBy == myUid());
+      allow update, delete: if isAnyAdmin() || (isSignedIn() && (resource.data.uid == myUid() || resource.data.createdBy == myUid()));
     }
 
     // التقارير الشهرية (Monthly Reports - MR)
     match /monthly_reports/{reportId} {
-      allow read: if isAnyAdmin() || (isSignedIn() && resource.data.uid == myUid());
-      allow create: if isSignedIn() && request.resource.data.uid == myUid();
-      allow update, delete: if isAnyAdmin() || (isSignedIn() && resource.data.uid == myUid());
+      allow read: if isAnyAdmin() || (isSignedIn() && (resource.data.uid == myUid() || resource.data.createdBy == myUid()));
+      allow create: if isSignedIn() && (request.resource.data.uid == myUid() || request.resource.data.createdBy == myUid());
+      allow update, delete: if isAnyAdmin() || (isSignedIn() && (resource.data.uid == myUid() || resource.data.createdBy == myUid()));
     }
 
     // الخطط الشهرية (Monthly Plans - MP)
     match /monthly_plans/{planId} {
-      allow read: if isAnyAdmin() || (isSignedIn() && resource.data.uid == myUid());
-      allow create: if isSignedIn() && request.resource.data.uid == myUid();
-      allow update, delete: if isAnyAdmin() || (isSignedIn() && resource.data.uid == myUid());
+      allow read: if isAnyAdmin() || (isSignedIn() && (resource.data.uid == myUid() || resource.data.createdBy == myUid()));
+      allow create: if isSignedIn() && (request.resource.data.uid == myUid() || request.resource.data.createdBy == myUid());
+      allow update, delete: if isAnyAdmin() || (isSignedIn() && (resource.data.uid == myUid() || resource.data.createdBy == myUid()));
     }
 
     // إشعارات التقارير والخطط الواردة للإدارة
