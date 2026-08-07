@@ -400,7 +400,7 @@ var T={
     dash:"لوحة التحكم", emp:"ملف بيانات الموظف", leave:"طلب إجازة",
     perm:"إذن حضور / انصراف", delay:"التماس تعديل موعد الحضور", la:"سجل الإجازة السنوية",
     lb:"سجل الإجازة العارضة", lc:"سجل الأعياد والمناسبات",
-    ld:"سجل الغياب بالخصم", notice:"نموذج لفت نظر", warn:"خطاب إنذار",
+    ld:"سجل الغياب بالخصم", notice:"نموذج لفت نظر", warn:"خطاب إنذار", deduction:"إخطار خصم من الراتب",
     inv:"محضر تحقيق", exp:"شهادة خبرة", clr:"إخلاء طرف",
     gen:"خطاب إداري عام",
     task:"تكليف بمهمة عمل", sal:"شهادة راتب", salrec:"سند استلام راتب", att:"سجل الحضور اللحظي", cal:"التقويم العام",
@@ -416,7 +416,7 @@ var T={
 // ─── DOCUMENT NUMBERING ───────────────────────────────────────────────────
 var DCODES={
     emp:'EMP', leave:'LV', perm:'PM', delay:'DLY', la:'LA', lb:'LB', lc:'LC', ld:'LD',
-    notice:'NTC', warn:'WRN', inv:'INV', exp:'EXP', clr:'CLR', gen:'GEN',
+    notice:'NTC', warn:'WRN', deduction:'DED', inv:'INV', exp:'EXP', clr:'CLR', gen:'GEN',
     task:'TSK', sal:'SAL', salrec:'REC', comp:'CMP', proj:'PRJ', mexp:'MEXP',
     res:'RES', promo:'PRM', contract:'CTR', raise:'RAI',
     wkr:'WKR', ach:'ACH', req:'REQ'
@@ -643,7 +643,7 @@ function go(id, nav, force){
     var gf = document.getElementById("globalTableFilter");
     if(gf) { gf.value = ""; tgFilterVisibleTables(""); }
         // Show/Hide top bar tools
-    var formIds = ['gen','notice','warn','inv','exp','clr','res','promo','raise','contract','task','proj','sal','salrec','emp','leave','perm','delay','sendform','mexp'];
+    var formIds = ['gen','notice','warn','deduction','inv','exp','clr','res','promo','raise','contract','task','proj','sal','salrec','emp','leave','perm','delay','sendform','mexp'];
     var tableIds = ['la','lb','lc','ld','pmgmt','tasksmgmt','staff','wkreports','allrequests','empdocs','att_live','att','archive','announcements','mexp','devres'];
 
     var tgTableTools = document.getElementById('tgTableTools');
@@ -4024,6 +4024,32 @@ function load(id,c){
                'المدير التنفيذي','موافقة وإصدار',
                null,'admin','exec');
         h+=FT();
+    }
+
+    // ── نموذج إخطار خصم من الراتب ──────────────────────────────────────
+    else if(id==="deduction"){
+        h=H('إخطار توقيع جزاء خصم','تأديب رسمي وتوثيق الخصم من الراتب','DEDUCTION NOTICE','deduction');
+        h+=SC('١','بيانات الموظف');
+        h+=F2(FGE('اسم الموظف'),FG('القسم / الإدارة'));
+        h+=F2(FG('الكود الوظيفي'),FG('المسمى الوظيفي'));
+        h+=F2(FG('المدير المباشر'),FG('تاريخ الإصدار','date'));
+        
+        h+=SC('٢','تفاصيل المخالفة والسبب');
+        h+=F2(FG('تاريخ وقوع المخالفة','date'),FG('المادة / البند المخالف'));
+        h+='<div class="chk-grid" style="grid-template-columns:1fr 1fr 1fr"><label><input type="checkbox"> غياب بدون إذن مقبول</label><label><input type="checkbox"> التأخر المتكرر عن المواعيد</label><label><input type="checkbox"> الانصراف المبكر بدون تصريح</label><label><input type="checkbox"> إهمال وتقصير في العمل</label><label><input type="checkbox"> عدم الرد / مخالفة اللوائح</label><label><input type="checkbox"> بناءً على محضر تحقيق داخلي</label></div>';
+        h+='<div class="fg"><label>سبب آخر (إن وجد)</label><input type="text"></div>';
+        h+=FGA('توصيف المخالفة الإدارية بالتفصيل',4);
+        
+        h+=SC('٣','قرار الجزاء ومبلغ الخصم');
+        h+=F3(FG('مقدار الخصم (جنيه / أيام)'),FG('يُخصم من أجر شهر'),FG('رقم محضر التحقيق (إن وجد)'));
+        h+='<div class="wb wb-gd"><strong>⚠ تنبيه رسمي وأحكام قانونية:</strong><br>تم توقيع هذا الجزاء وفقاً لأحكام قانون العمل رقم 12 لسنة 2003 ولائحة الجزاءات التنظيمية بالشركة. يُحفظ هذا الإخطار في ملف الموظف وتُرسل نسخة للإدارة المالية لتطبيق الخصم.</div>';
+        
+        h+=SC('٤','التوقيعات والاعتماد');
+        h+=SG3('توقيع الموظف','إقراراً بالعلم والاستلام',
+               'المدير الإداري / الشؤون القانونية','مراجعة واعتماد الجزاء',
+               'المدير التنفيذي','تطبيق وإصدار قرار الخصم',
+               null,'admin','exec');
+        h+=FT(['نسخة للموظف','نسخة للحسابات والمالية','نسخة لملف الموظف (HR)']);
     }
 
     // ── محضر تحقيق ────────────────────────────────────────────────────
