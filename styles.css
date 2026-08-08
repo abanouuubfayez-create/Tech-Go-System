@@ -301,15 +301,15 @@ input[type="time"]::-webkit-calendar-picker-indicator {
 
 .fg { display: flex; flex-direction: column; }
 .fg label {
-    font-size: 11.5px; font-weight: 700; color: var(--tx2);
-    letter-spacing: .2px; margin-bottom: 7px; align-self: flex-start;
+    font-size: 12px; font-weight: 700; color: var(--tx2);
+    letter-spacing: .2px; margin-bottom: 6px; align-self: flex-start;
     line-height: 1.4;
 }
 .fg input, .fg select {
     width: 100%; box-sizing: border-box;
     padding: 10px 14px; border: 1.5px solid var(--bd2);
     border-radius: 9px;
-    font-size: 14px;
+    font-size: 14.5px; font-weight: 700;
     background: var(--w); color: var(--tx);
     transition: var(--tr);
     line-height: 1.5;
@@ -318,7 +318,7 @@ input[type="time"]::-webkit-calendar-picker-indicator {
     width: 100%; box-sizing: border-box;
     padding: 11px 14px; border: 1.5px solid var(--bd2);
     border-radius: 9px;
-    font-size: 14px;
+    font-size: 14.5px; font-weight: 600;
     background: var(--w); color: var(--tx);
     transition: var(--tr);
     line-height: 1.6;
@@ -414,19 +414,19 @@ input[type="time"]::-webkit-calendar-picker-indicator {
 .dt { width: 100%; border-collapse: collapse; margin: 10px 0; }
 .dt th {
     background: var(--nv); color: #fff;
-    padding: 6px 8px; font-size: 10px; font-weight: 600;
+    padding: 7px 8px; font-size: 11.5px; font-weight: 800;
     text-align: center; letter-spacing: .3px;
     border: 1px solid var(--nv2);
 }
 .dt td {
-    padding: 5px 6px; border: 1px solid var(--bd2);
-    text-align: center; font-size: 12px;
+    padding: 6px 7px; border: 1px solid var(--bd2);
+    text-align: center; font-size: 13px; font-weight: 600;
 }
 .dt tr:nth-child(even) { background: #f8f9fb; }
 .dt tr:hover { background: #f0f2f6; }
 .dt input {
     width: 100%; border: none; background: transparent;
-    text-align: center; font-family: 'Alexandria', 'Inter'; font-size: 12px; padding: 3px;
+    text-align: center; font-family: 'Alexandria', 'Inter'; font-size: 13px; font-weight: 700; padding: 3px;
 }
 .dt input:focus {
     outline: none; background: #fff;
@@ -675,29 +675,31 @@ input[type="time"]::-webkit-calendar-picker-indicator {
 
     /* ── FIELDS — صناديق مثل الواجهة للطباعة ── */
     .fg label {
-        font-size: 8px !important; padding: 0;
-        background: none !important; color: #6b7686 !important;
+        font-size: 10.5px !important; padding: 0;
+        background: none !important; color: #475569 !important;
         font-weight: 700; letter-spacing: .3px;
-        margin-bottom: 4px !important;
+        margin-bottom: 3px !important;
     }
     .fg input, .fg select {
-        font-size: 10px !important; padding: 6px 10px !important;
+        font-size: 12.5px !important; padding: 6px 10px !important;
         border: 1px solid #d0d5de !important;
         border-radius: 8px !important;
-        min-height: 28px !important;
+        min-height: 30px !important;
         line-height: 1.5 !important;
         color: #0d1b3a !important;
+        font-weight: 700 !important;
         background: #fafbfd !important;
         direction: rtl !important;
         text-align: right !important;
         font-family: 'Alexandria', 'Inter', 'Tahoma', sans-serif !important;
     }
     .fg textarea {
-        font-size: 10px !important; padding: 6px 10px !important;
+        font-size: 12px !important; padding: 6px 10px !important;
         border: 1px solid #d0d5de !important;
         border-radius: 8px !important;
         line-height: 1.5 !important;
         color: #0d1b3a !important;
+        font-weight: 600 !important;
         background: #fafbfd !important;
         direction: rtl !important;
         text-align: right !important;
@@ -709,7 +711,7 @@ input[type="time"]::-webkit-calendar-picker-indicator {
     .fg-full label {
         background: none !important;
         color: #1b2a4a !important;
-        padding: 0; font-size: 9px !important;
+        padding: 0; font-size: 10.5px !important;
         font-weight: 700; border-bottom: 1px solid #8a909a; display: inline-block;
     }
 
@@ -719,21 +721,22 @@ input[type="time"]::-webkit-calendar-picker-indicator {
     tfoot { display: table-footer-group; }
     .dt { border: 1.5px solid #1b2a4a !important; }
     .dt th {
-        font-size: 9px !important; padding: 3px 4px;
+        font-size: 10.5px !important; padding: 4px 5px;
         background: #1b2a4a !important; color: #fff !important;
         border: 1px solid #263d66 !important;
-        font-weight: 700;
+        font-weight: 800;
         text-align: right !important;
     }
     .dt td {
-        font-size: 9.5px !important; padding: 2px 3px;
+        font-size: 11.5px !important; padding: 3px 4px;
         border: 1px solid #b8bcc4 !important;
         color: #0d1b3a !important;
+        font-weight: 600;
         text-align: right !important;
     }
     .dt tr:nth-child(even) { background: #f6f7fa !important; }
     .dt tr, tr { page-break-inside: avoid; break-inside: avoid; }
-    .dt input { font-size: 10px !important; direction: rtl !important; text-align: right !important; }
+    .dt input { font-size: 11.5px !important; font-weight: 700 !important; direction: rtl !important; text-align: right !important; }
 
     /* ── CHECKBOXES — صف نظيف بخطوط فاصلة رفيعة ── */
     .chk-grid {
@@ -1077,22 +1080,22 @@ input[type="time"]::-webkit-calendar-picker-indicator {
 .FL-rule { height: 2px; background: linear-gradient(90deg, var(--gd), var(--gd2)); margin: 0 36px 20px; }
 .FL-meta { display: flex; justify-content: flex-start; gap: 44px; padding: 0 36px; margin-bottom: 20px; }
 .FL-meta-item { display: flex; align-items: baseline; gap: 7px; }
-.FL-meta-lbl { font-size: 10px; font-weight: 700; color: var(--tx3); flex-shrink: 0; }
-.FL-meta-val { border: none; border-bottom: 1px solid var(--bd); background: transparent; font-size: 11.5px; font-weight: 700; color: var(--nv); padding: 2px 4px; min-width: 120px; font-family: 'Alexandria', 'Inter'; }
+.FL-meta-lbl { font-size: 11px; font-weight: 700; color: var(--tx3); flex-shrink: 0; }
+.FL-meta-val { border: none; border-bottom: 1px solid var(--bd); background: transparent; font-size: 13.5px; font-weight: 700; color: var(--nv); padding: 2px 4px; min-width: 120px; font-family: 'Alexandria', 'Inter'; }
 .FL-meta-val:focus { outline: none; border-bottom-color: var(--gd); }
 .FL-body { padding: 0 36px; }
 .FL-line { display: flex; align-items: baseline; gap: 10px; margin-bottom: 12px; }
-.FL-line-lbl { font-size: 11.5px; font-weight: 700; color: var(--tx2); flex-shrink: 0; }
-.FL-line-val { flex: 1; border: none; border-bottom: 1px solid var(--bd); background: transparent; font-size: 12.5px; color: var(--tx); padding: 4px 4px; font-family: 'Alexandria', 'Inter'; }
+.FL-line-lbl { font-size: 12.5px; font-weight: 700; color: var(--tx2); flex-shrink: 0; }
+.FL-line-val { flex: 1; border: none; border-bottom: 1px solid var(--bd); background: transparent; font-size: 13.5px; font-weight: 600; color: var(--tx); padding: 4px 4px; font-family: 'Alexandria', 'Inter'; }
 .FL-line-val:focus { outline: none; border-bottom-color: var(--gd); }
 .FL-subject { font-weight: 800; color: var(--nv); }
 .FL-types { display: flex; flex-wrap: wrap; gap: 12px 20px; margin: 4px 0 20px; padding: 10px 2px; border-top: 1px solid var(--bd2); border-bottom: 1px solid var(--bd2); }
 .FL-types label { display: flex; align-items: center; gap: 5px; font-size: 10.5px; color: var(--tx2); cursor: pointer; }
-.FL-open { display: block; border: none; background: transparent; font-size: 12.5px; color: var(--tx); font-family: 'Alexandria', 'Inter'; padding: 2px 0; width: 100%; margin-bottom: 12px; }
+.FL-open { display: block; border: none; background: transparent; font-size: 13.5px; font-weight: 600; color: var(--tx); font-family: 'Alexandria', 'Inter'; padding: 2px 0; width: 100%; margin-bottom: 12px; }
 .FL-open:focus { outline: none; }
-.FL-textbody { width: 100%; border: none; border-top: 1px solid var(--bd2); border-bottom: 1px solid var(--bd2); background: repeating-linear-gradient(to bottom, transparent, transparent 27px, var(--bd2) 28px); line-height: 28px; font-size: 12.5px; color: var(--tx); font-family: 'Alexandria', 'Inter'; resize: vertical; padding: 4px 2px; }
+.FL-textbody { width: 100%; border: none; border-top: 1px solid var(--bd2); border-bottom: 1px solid var(--bd2); background: repeating-linear-gradient(to bottom, transparent, transparent 27px, var(--bd2) 28px); line-height: 28px; font-size: 13.5px; font-weight: 600; color: var(--tx); font-family: 'Alexandria', 'Inter'; resize: vertical; padding: 4px 2px; }
 .FL-textbody:focus { outline: none; }
-.FL-close { display: block; border: none; background: transparent; font-size: 12.5px; color: var(--tx); font-family: 'Alexandria', 'Inter'; padding: 14px 0 0; width: 100%; }
+.FL-close { display: block; border: none; background: transparent; font-size: 13.5px; font-weight: 600; color: var(--tx); font-family: 'Alexandria', 'Inter'; padding: 14px 0 0; width: 100%; }
 .FL-close:focus { outline: none; }
 .FL-extra { display: flex; gap: 34px; margin: 20px 0 6px; padding-top: 14px; border-top: 1px dashed var(--bd); }
 .FL-extra .FL-line { flex: 1; margin-bottom: 0; }
@@ -1138,12 +1141,12 @@ input[type="time"]::-webkit-calendar-picker-indicator {
     .FL-brand-ar { font-size: 13px !important; color: #1b2a4a !important; }
     .FL-brand-en { color: #a8871c !important; }
     .FL-brand-sub { font-size: 8px !important; }
-    .FL-doctype { color: #1b2a4a !important; font-size: 11px !important; }
+    .FL-doctype { color: #1b2a4a !important; font-size: 12.5px !important; font-weight: 800 !important; }
     .FL-rule { margin: 0 4px 14px; }
     .FL-meta { padding: 0 4px; gap: 32px; }
-    .FL-meta-val { color: #1b2a4a !important; font-size: 10.5px !important; }
+    .FL-meta-val { color: #1b2a4a !important; font-size: 12px !important; font-weight: 700 !important; }
     .FL-body { padding: 0 4px; }
-    .FL-line-val, .FL-open, .FL-close, .FL-textbody { color: #0d1b3a !important; font-size: 11px !important; direction: rtl !important; text-align: right !important; }
+    .FL-line-val, .FL-open, .FL-close, .FL-textbody { color: #0d1b3a !important; font-size: 12.5px !important; font-weight: 600 !important; direction: rtl !important; text-align: right !important; }
     .FL-types { page-break-inside: avoid; break-inside: avoid; border-color: #b8bcc4 !important; }
     .FL-signrow { page-break-inside: avoid; break-inside: avoid; margin-top: 10px !important; }
     .FL-sig-sub { margin-bottom: 12px !important; }
@@ -1163,12 +1166,12 @@ input[type="time"]::-webkit-calendar-picker-indicator {
     /* الحقول الداخلية (SC/fg/dt/sig...) داخل تنسيق FL الموحّد */
     .FL .sec { border-bottom: 1.5px solid #1b2a4a !important; margin: 11px 0 5px; padding: 0 0 4px; page-break-inside: avoid !important; break-inside: avoid !important; }
     .FL .sec .num { background: #c9a227 !important; color: #1b2a4a !important; width: 19px; height: 19px; font-size: 10.5px; }
-    .FL .sec .stx { font-size: 12px !important; color: #1b2a4a !important; }
-    .FL .fg label { font-size: 8px !important; background: none !important; color: #6b7686 !important; }
-    .FL .fg input, .FL .fg select { font-size: 10px !important; color: #0d1b3a !important; border: none !important; border-bottom: 1px solid #8a909a !important; background: transparent !important; }
-    .FL .fg textarea { font-size: 10px !important; color: #0d1b3a !important; border: 1px solid #b8bcc4 !important; background: transparent !important; }
-    .FL .dt th { background: #1b2a4a !important; color: #fff !important; font-size: 9px !important; }
-    .FL .dt td { font-size: 9.5px !important; color: #0d1b3a !important; }
+    .FL .sec .stx { font-size: 13px !important; color: #1b2a4a !important; }
+    .FL .fg label { font-size: 10.5px !important; background: none !important; color: #475569 !important; font-weight: 700 !important; }
+    .FL .fg input, .FL .fg select { font-size: 12.5px !important; font-weight: 700 !important; color: #0d1b3a !important; border: none !important; border-bottom: 1px solid #8a909a !important; background: transparent !important; }
+    .FL .fg textarea { font-size: 12px !important; font-weight: 600 !important; color: #0d1b3a !important; border: 1px solid #b8bcc4 !important; background: transparent !important; }
+    .FL .dt th { background: #1b2a4a !important; color: #fff !important; font-size: 10.5px !important; font-weight: 800 !important; }
+    .FL .dt td { font-size: 11.5px !important; font-weight: 600 !important; color: #0d1b3a !important; }
     .FL .sig { border: none !important; background: none !important; }
     .FL .sig .st { background: none !important; color: #1b2a4a !important; }
     .FL .cert { padding: 18px 10px; }
@@ -3722,7 +3725,7 @@ body.dark-mode .tg-expand-btn:hover {
 }
 
 .fg label {
-  font-size: 0.85rem;
+  font-size: 0.9rem;
   font-weight: 700;
   color: #334155;
 }
@@ -3735,7 +3738,8 @@ body.dark-mode .tg-expand-btn:hover {
   border: 1.5px solid #cbd5e1;
   border-radius: 8px;
   font-family: var(--font-family, 'Readex Pro', sans-serif);
-  font-size: 0.95rem;
+  font-size: 1rem;
+  font-weight: 700;
   outline: none;
   background: #f8fafc;
   color: #0f172a;
