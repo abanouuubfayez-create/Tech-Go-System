@@ -408,7 +408,7 @@ var T={
     mexp:"شيت المصروفات الشهري",
     res:"طلب استقالة", promo:"قرار ترقية", contract:"عقد عمل", raise:"زيادة راتب / علاوة",
     staff:"متابعة الموظفين", pmgmt:"إدارة المشاريع", account:"حسابي",
-    tasksmgmt:"توزيع المهام", announcements:"إدارة الإعلانات", empdocs:"ملفات الموظفين", wkreports:"بريد التقارير الأسبوعية", devres:"مكتبة التطوير المهني",
+    tasksmgmt:"توزيع المهام", announcements:"إدارة الإعلانات", empdocs:"ملفات الموظفين", devres:"مكتبة التطوير المهني",
     allrequests:"مركز طلبات الموظفين",
     aiadvisor:"المستشار الذكي",
     wkr:"التقارير الأسبوعية والشهرية",
@@ -556,7 +556,7 @@ function tgCloseModal(){
 
 // ─── NAVIGATION ───────────────────────────────────────────────────────────
 // الصفحات التي يمكن للأدمن التقني الوصول إليها
-var TECH_ALLOWED = ['pmgmt','tasksmgmt','livetrack','account','announcements','wkr','monthlyplans','wkreports'];
+var TECH_ALLOWED = ['pmgmt','tasksmgmt','livetrack','account','announcements','wkr','monthlyplans'];
 
 function hasUnsavedText() {
     var p = document.querySelector('.pg.a, .emp-pg.a');
@@ -646,7 +646,7 @@ function go(id, nav, force){
     if(gf) { gf.value = ""; tgFilterVisibleTables(""); }
         // Show/Hide top bar tools
     var formIds = ['gen','notice','warn','deduction','term','inv','exp','clr','res','promo','raise','contract','task','proj','sal','salrec','emp','leave','perm','delay','sendform','mexp'];
-    var tableIds = ['la','lb','lc','ld','pmgmt','tasksmgmt','staff','wkreports','allrequests','empdocs','att_live','att','archive','announcements','mexp','devres'];
+    var tableIds = ['la','lb','lc','ld','pmgmt','tasksmgmt','staff','wkr','allrequests','empdocs','att_live','att','archive','announcements','mexp','devres'];
 
     var tgTableTools = document.getElementById('tgTableTools');
     var tgFormTools = document.getElementById('tgFormTools');
@@ -4787,23 +4787,7 @@ function load(id,c){
         h+='</div>';
     }
 
-    // ── بريد التقارير الأسبوعية ─────────────────────────────────────────
-    else if(id==="wkreports"){
-        h='<div class="SP"><h3>📥 بريد التقارير الأسبوعية</h3>';
-        h+='<div class="set-hint">كل التقارير الأسبوعية المُرسلة من الموظفين في مكان واحد — فلترة حسب الموظف أو الأسبوع، تحديد ما تمت مراجعته، وطباعة مباشرة.</div>';
-        h+='<div id="wkrInboxStats" style="display:flex;gap:10px;margin:14px 0;flex-wrap:wrap"></div>';
-        h+='<div class="staff-toolbar">';
-        h+='<select id="wkrInboxEmpFilter" class="global-table-filter" style="width:220px" onchange="renderWeeklyReportsInbox()"><option value="all">كل الموظفين</option></select>';
-        h+='<select id="wkrInboxWeekFilter" class="global-table-filter" style="width:180px" onchange="renderWeeklyReportsInbox()"><option value="all">كل الأسابيع</option></select>';
-        h+='<select id="wkrInboxStatusFilter" class="global-table-filter" style="width:170px" onchange="renderWeeklyReportsInbox()">'+
-           '<option value="all">كل الحالات</option><option value="unreviewed">⏳ غير مراجَعة</option><option value="reviewed">✅ تمت مراجعتها</option></select>';
-        h+='</div>';
-        h+='<div id="wkrInboxList" style="margin-top:14px"><div class="empty-hint">⏳ جارٍ تحميل التقارير...</div></div>';
-        h+='</div>';
-        c.innerHTML = h;
-        loadWeeklyReportsInbox();
-        clearAdminBadge('notif-wkr-badge','notif-wkr-badge-sb');
-    }
+
 
     // ── مركز طلبات الموظفين الموحد ──────────────────────────────────────────
     else if(id==="allrequests"){
