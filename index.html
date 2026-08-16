@@ -921,7 +921,7 @@
                 else if (tag === 'project-new' || tag === 'project-update' || tag === 'project-status' || tag === 'project-progress' || tag === 'project-note' || tag === 'project-completed') go('pmgmt');
                 else if (tag === 'task-new' || tag === 'task-update' || tag === 'task-status') go('tasksmgmt');
                 else if (tag === 'weekly-report-new' || tag === 'weekly-report-reminder' || tag === 'monthly-report-new' || tag === 'monthly-plan-new') {
-                    go('wkreports');
+                    go('wkr');
                     var targetCol = col || (tag === 'monthly-report-new' ? 'monthly_reports' : (tag === 'monthly-plan-new' ? 'monthly_plans' : 'weekly_reports'));
                     if (typeof tgOpenReportDetailsModal === 'function') {
                         tgOpenReportDetailsModal(rId, targetCol, data);

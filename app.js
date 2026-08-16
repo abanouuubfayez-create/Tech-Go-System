@@ -640,7 +640,7 @@ function go(id, nav, force){
     document.getElementById("pT").innerText=T[id]||id;
     if(window.innerWidth<=900)document.getElementById("sb").classList.remove("opn");
     var c=document.getElementById("pg-"+id);
-    if(id!=="dash"&&c.innerHTML.trim()===""){load(id,c);upCN();setD(c)}
+    if(id!=="dash" && (c.innerHTML.trim()==="" || id==="wkr")){load(id,c);upCN();setD(c)}
     // Reset global table filter
     var gf = document.getElementById("globalTableFilter");
     if(gf) { gf.value = ""; tgFilterVisibleTables(""); }
@@ -11797,6 +11797,10 @@ window.tgGenerateMonthlyFromWeekly = function(targetMonthStr) {
 // Admin View for Unified Reports (Weekly & Monthly)
 window.loadWeeklyReportsAdmin = function(container) {
     if (!container) container = document.getElementById('pg-wkr') || document.getElementById('pg-weeklyreports');
+    if (!container) {
+        var pg = document.querySelector('.pg.a');
+        if (pg) container = pg;
+    }
     if (!container) return;
 
     container.innerHTML = `
