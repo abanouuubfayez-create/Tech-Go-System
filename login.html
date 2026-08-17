@@ -10,7 +10,7 @@
 <meta name="apple-mobile-web-app-title" content="Tech Go">
 <meta name="description" content="نظام الإدارة الشامل لشركة تيك جو">
 <title>تسجيل الدخول · تيك جو</title>
-<link rel="stylesheet" href="styles.css?v=1785922279">
+<link rel="stylesheet" href="styles.css?v=1786952414">
 <link rel="manifest" href="manifest.json">
 <link rel="icon" type="image/png" sizes="192x192" href="icon-192.png">
 <link rel="apple-touch-icon" href="icon-192.png">
@@ -60,6 +60,7 @@
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
 <script src="firebase-config.js"></script>
+<script src="auth.js?v=1786952414"></script>
 <script>
 function showErr(msg){
     var e=document.getElementById('loginErr');
@@ -67,7 +68,9 @@ function showErr(msg){
 }
 function hideErr(){ document.getElementById('loginErr').classList.remove('show'); }
 
-function friendlyErr(code){
+function friendlyErr(err){
+    if (!err) return 'حدث خطأ أثناء تسجيل الدخول.';
+    var code = typeof err === 'string' ? err : (err.code || '');
     var map={
         'auth/invalid-email':'صيغة البريد الإلكتروني غير صحيحة.',
         'auth/user-not-found':'لا يوجد حساب بهذا البريد الإلكتروني.',
@@ -76,7 +79,7 @@ function friendlyErr(code){
         'auth/too-many-requests':'محاولات كثيرة خاطئة، برجاء المحاولة لاحقاً.',
         'auth/network-request-failed':'تعذر الاتصال بالخادم، تحقق من الإنترنت.'
     };
-    return map[code] || 'حدث خطأ أثناء تسجيل الدخول.';
+    return map[code] || (typeof err === 'object' && err.message ? err.message : 'حدث خطأ أثناء تسجيل الدخول.');
 }
 
 function doLogin(){
@@ -97,25 +100,26 @@ function doLogin(){
             localStorage.removeItem('tg_saved_pass');
             localStorage.removeItem('tg_remember');
         }
-        return db.collection('users').doc(cred.user.uid).get();
-    }).then(function(doc){
-        if(!doc.exists){
+        return tgResolveUserProfile(cred.user);
+    }).then(function(res){
+        if(!res || !res.data){
             showErr('هذا الحساب غير مرتبط بملف مستخدم في النظام. تواصل مع مدير النظام.');
             auth.signOut();
             btn.disabled=false; btn.textContent='🔐 دخول';
             return;
         }
-        if(doc.data().disabled===true){
+        if(res.data.disabled===true){
             showErr('تم تعطيل هذا الحساب من قبل الإدارة. تواصل مع مدير النظام.');
             auth.signOut();
             btn.disabled=false; btn.textContent='🔐 دخول';
             return;
         }
-        var role=doc.data().role;
+        var role=res.data.role;
         location.href = (role==='admin'||role==='tech_admin') ? 'index.html' : 'employee.html';
     }).catch(function(err){
+        console.error('Login error:', err);
         btn.disabled=false; btn.textContent='🔐 دخول';
-        showErr(friendlyErr(err.code));
+        showErr(friendlyErr(err));
     });
 }
 
@@ -131,10 +135,11 @@ function doReset(){
 // لو المستخدم داخل بالفعل، حوّله مباشرة لصفحته
 auth.onAuthStateChanged(function(user){
     if(!user){ checkFirstRun(); return; }
-    db.collection('users').doc(user.uid).get().then(function(doc){
-        if(!doc.exists){ checkFirstRun(); return; }
-        if(doc.data().disabled===true){ auth.signOut(); return; }
-        location.href = (doc.data().role==='admin') ? 'index.html' : 'employee.html';
+    tgResolveUserProfile(user).then(function(res){
+        if(!res || !res.data){ checkFirstRun(); return; }
+        if(res.data.disabled===true){ auth.signOut(); return; }
+        var role = res.data.role;
+        location.href = (role==='admin'||role==='tech_admin') ? 'index.html' : 'employee.html';
     });
 });
 
@@ -163,6 +168,6 @@ if('serviceWorker' in navigator){
     });
 }
 </script>
-<script src="theme.js?v=1785922279"></script>
+<script src="theme.js?v=1786952414"></script>
 </body>
 </html>

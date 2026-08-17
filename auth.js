@@ -5,16 +5,66 @@ var TG_USER = null; // { uid, email, name, role, empId, jobTitle }
 
 // يتحقق من تسجيل الدخول والصلاحية المطلوبة، وينفّذ onOk(userDoc) لو كل شيء تمام.
 // requiredRole: 'admin' | 'tech_admin' | 'employee' | null (أي دور)
+// البحث الذكي وحل ملف المستخدم مع الربط التلقائي والشفاء الذاتي للملفات المفقودة
+function tgResolveUserProfile(user) {
+    if (!user) return Promise.resolve(null);
+    return db.collection('users').doc(user.uid).get().then(function (doc) {
+        if (doc.exists) return { doc: doc, data: doc.data() };
+        
+        var userEmail = (user.email || '').trim();
+        if (!userEmail) return null;
+        
+        var emailsToSearch = [userEmail];
+        if (userEmail.toLowerCase() !== userEmail) {
+            emailsToSearch.push(userEmail.toLowerCase());
+        }
+        
+        return db.collection('users').where('email', 'in', emailsToSearch).get().then(function (snap) {
+            if (!snap.empty) {
+                var foundDoc = snap.docs[0];
+                var foundData = foundDoc.data();
+                // ربط وحفظ المستند تلقائياً برقم UID الخاص بحساب المصادقة
+                return db.collection('users').doc(user.uid).set(foundData, { merge: true }).then(function () {
+                    return { doc: foundDoc, data: foundData };
+                }).catch(function () {
+                    return { doc: foundDoc, data: foundData };
+                });
+            }
+            // إذا كانت مجموعة المستخدمين فارغة بالكامل، إنشاء حساب المدير تلقائياً
+            return db.collection('users').limit(1).get().then(function (uSnap) {
+                if (uSnap.empty) {
+                    var adminData = {
+                        name: user.displayName || userEmail.split('@')[0] || 'مدير النظام',
+                        email: userEmail,
+                        role: 'admin',
+                        createdAt: new Date()
+                    };
+                    return db.collection('users').doc(user.uid).set(adminData).then(function () {
+                        return { doc: null, data: adminData };
+                    });
+                }
+                return null;
+            }).catch(function () { return null; });
+        }).catch(function (err) {
+            console.warn("Email fallback query issue:", err);
+            return null;
+        });
+    }).catch(function (err) {
+        console.warn("UID lookup query issue:", err);
+        return null;
+    });
+}
+
 function tgRequireAuth(requiredRole, onOk) {
     auth.onAuthStateChanged(function (user) {
         if (!user) { location.href = 'login.html'; return; }
-        db.collection('users').doc(user.uid).get().then(function (doc) {
-            if (!doc.exists) {
+        tgResolveUserProfile(user).then(function (res) {
+            if (!res || !res.data) {
                 alert('هذا الحساب غير مرتبط بملف مستخدم في النظام. تواصل مع مدير النظام.');
                 auth.signOut().then(function () { location.href = 'login.html'; });
                 return;
             }
-            var data = doc.data();
+            var data = res.data;
             if (data.disabled === true) {
                 alert('تم تعطيل هذا الحساب من قبل الإدارة. تواصل مع مدير النظام لمزيد من التفاصيل.');
                 auth.signOut().then(function () { location.href = 'login.html'; });
@@ -23,7 +73,7 @@ function tgRequireAuth(requiredRole, onOk) {
             TG_USER = {
                 uid: user.uid, email: user.email,
                 name: data.name || user.email,
-                role: data.role,
+                role: data.role || 'employee',
                 empId: data.empId || '',
                 jobTitle: data.jobTitle || '',
                 chatAccess: data.chatAccess !== false,
@@ -43,13 +93,13 @@ function tgRequireAuth(requiredRole, onOk) {
                     return;
                 }
             } else if (requiredRole && data.role !== requiredRole) {
-                location.href = (data.role === 'admin') ? 'index.html' : 'employee.html';
+                location.href = (data.role === 'admin' || data.role === 'tech_admin') ? 'index.html' : 'employee.html';
                 return;
             }
 
             document.documentElement.classList.remove('tg-auth-pending');
             // Listen to appSettings globally
-            db.collection('system').doc('appSettings').onSnapshot(function(sDoc) {
+            db.collection('system').doc('appSettings').onSnapshot(function (sDoc) {
                 window._appSettingsCache = sDoc.data() || {};
                 if (typeof window.onAppSettingsUpdate === 'function') {
                     window.onAppSettingsUpdate(window._appSettingsCache);
@@ -57,7 +107,7 @@ function tgRequireAuth(requiredRole, onOk) {
             });
             // طلب إذن الإشعارات وتشغيل استماع المكالمات فوراً لكل المستحدثين
             tgRequestNotificationPermission();
-            setTimeout(function() {
+            setTimeout(function () {
                 if (typeof window.initMeetingsListener === 'function') {
                     window.initMeetingsListener();
                 }
@@ -74,21 +124,21 @@ function tgRequireAuth(requiredRole, onOk) {
     });
 }
 
-function tgRequestNotificationPermission(){
+function tgRequestNotificationPermission() {
     if ("Notification" in window) {
         if (Notification.permission !== "granted" && Notification.permission !== "denied") {
-            Notification.requestPermission().then(function(perm) {
+            Notification.requestPermission().then(function (perm) {
                 if (perm === "granted" && typeof tgToast === 'function') {
                     tgToast('تم تفعيل إشعارات Push للمكالمات والاجتماعات بنجاح! 🔔', 'success', false, 'إشعارات النظام');
                 }
-            }).catch(function(){});
+            }).catch(function () { });
         }
     }
 }
 
 function tgShowNotification(title, body, opts) {
     var isCall = (opts && opts.isCall) || (opts && opts.tag && (opts.tag.indexOf('livemeeting') > -1 || opts.tag.indexOf('call') > -1)) || (title && (title.indexOf('مكالمة') > -1 || title.indexOf('اجتماع') > -1));
-    
+
     var defaultActions = isCall ? [
         { action: 'accept_call', title: '📞 قبول وانضمام' },
         { action: 'decline_call', title: '❌ رفض / كتم' }
@@ -109,15 +159,15 @@ function tgShowNotification(title, body, opts) {
 
     // Try Service Worker registration first
     if ('serviceWorker' in navigator) {
-        navigator.serviceWorker.ready.then(function(reg) {
+        navigator.serviceWorker.ready.then(function (reg) {
             reg.showNotification(title, options);
-        }).catch(function() {
+        }).catch(function () {
             if ('Notification' in window && Notification.permission === 'granted') {
-                try { new Notification(title, options); } catch(e) {}
+                try { new Notification(title, options); } catch (e) { }
             }
         });
     } else if ('Notification' in window && Notification.permission === 'granted') {
-        try { new Notification(title, options); } catch(e) {}
+        try { new Notification(title, options); } catch (e) { }
     }
 
     if (typeof tgToast === 'function') {
@@ -137,18 +187,18 @@ function tgSendPushToUser(toUid, title, body, tag, extraData) {
         seen: false,
         createdAt: firebase.firestore.FieldValue.serverTimestamp()
     }, extraData || {});
-    
-    db.collection('notifications').add(notifPayload).catch(function() {});
+
+    db.collection('notifications').add(notifPayload).catch(function () { });
 }
 
 // إرسال إشعار لكل المستخدمين في النظام ما عدا شخص واحد
 function tgBroadcastPush(title, body, tag, excludeUid, extraData) {
     if (!db) return;
-    db.collection('users').get().then(function(snap) {
-        snap.forEach(function(d) {
+    db.collection('users').get().then(function (snap) {
+        snap.forEach(function (d) {
             if (d.id !== excludeUid) tgSendPushToUser(d.id, title, body, tag, extraData);
         });
-    }).catch(function() {});
+    }).catch(function () { });
 }
 
 // استماع للإشعارات الواردة للمستخدم الحالي (يقرأه من onSnapshot عند فتح البوابة)
@@ -157,21 +207,21 @@ var _tgMyNotifShownIds = {}; // درع إضافي: يمنع إعادة عرض ن
 function tgListenMyNotifications(uid) {
     if (!uid) return;
     if (_tgMyNotifUnsub) { _tgMyNotifUnsub(); _tgMyNotifUnsub = null; }
-    
+
     var _isInitialLoad = true;
     _tgMyNotifUnsub = db.collection('notifications').where('toUid', '==', uid).where('seen', '==', false)
-        .onSnapshot(function(snap) {
+        .onSnapshot(function (snap) {
             var changes = snap.docChanges();
-            
+
             if (_isInitialLoad) {
                 _isInitialLoad = false;
                 var count = 0;
-                changes.forEach(function(change) {
+                changes.forEach(function (change) {
                     if (change.type === 'added') {
                         var id = change.doc.id;
                         var d = change.doc.data();
                         _tgMyNotifShownIds[id] = true;
-                        db.collection('notifications').doc(id).update({ seen: true }).catch(function(){});
+                        db.collection('notifications').doc(id).update({ seen: true }).catch(function () { });
                         if (!d.read) {
                             count++;
                         }
@@ -183,25 +233,25 @@ function tgListenMyNotifications(uid) {
                 return;
             }
 
-            changes.forEach(function(change) {
+            changes.forEach(function (change) {
                 if (change.type === 'added') {
                     var id = change.doc.id;
                     if (_tgMyNotifShownIds[id]) return;
                     _tgMyNotifShownIds[id] = true;
 
                     var d = change.doc.data();
-                    
+
                     if (!d.read) {
                         tgShowNotification(d.title || 'إشعار', d.body || '', { tag: 'techgo-notif-' + id });
                     }
-                    
+
                     if (d.tag === 'project-completed' && typeof tgCelebrate === 'function') {
                         setTimeout(tgCelebrate, 500);
                     }
-                    db.collection('notifications').doc(id).update({ seen: true }).catch(function() {});
+                    db.collection('notifications').doc(id).update({ seen: true }).catch(function () { });
                 }
             });
-        }, function() {});
+        }, function () { });
 }
 
 // ─── مركز الإشعارات (Facebook-style) — للأدمن فقط ─────────────────────────
@@ -212,47 +262,47 @@ function tgListenNotifCenter(uid, onUpdate) {
     if (_tgNotifCenterUnsub) { _tgNotifCenterUnsub(); _tgNotifCenterUnsub = null; }
     // بدون orderBy لتفادي الحاجة لفهرس مركّب — الترتيب يتم في العميل
     _tgNotifCenterUnsub = db.collection('notifications').where('toUid', '==', uid)
-        .onSnapshot(function(snap) {
+        .onSnapshot(function (snap) {
             var list = [];
             var unread = 0;
-            snap.forEach(function(doc) {
+            snap.forEach(function (doc) {
                 var d = doc.data();
                 d.id = doc.id;
                 if (!d.read) unread++;
                 list.push(d);
             });
-            list.sort(function(a, b) {
+            list.sort(function (a, b) {
                 var ta = (a.createdAt && a.createdAt.toMillis) ? a.createdAt.toMillis() : (a.createdAt ? new Date(a.createdAt).getTime() : 0);
                 var tb = (b.createdAt && b.createdAt.toMillis) ? b.createdAt.toMillis() : (b.createdAt ? new Date(b.createdAt).getTime() : 0);
                 return tb - ta;
             });
             onUpdate(list.slice(0, 40), unread);
-        }, function() {});
+        }, function () { });
 }
 
 function tgMarkNotifRead(notifId) {
     if (!notifId) return;
-    db.collection('notifications').doc(notifId).update({ read: true, seen: true }).catch(function() {});
+    db.collection('notifications').doc(notifId).update({ read: true, seen: true }).catch(function () { });
 }
 
 function tgMarkAllNotifsRead(uid) {
     if (!uid) return;
     db.collection('notifications').where('toUid', '==', uid).get()
-        .then(function(snap) {
+        .then(function (snap) {
             var count = 0;
-            snap.forEach(function(doc) { 
+            snap.forEach(function (doc) {
                 if (!doc.data().read) {
-                    db.collection('notifications').doc(doc.id).update({ read: true, seen: true }).catch(function(){}); 
+                    db.collection('notifications').doc(doc.id).update({ read: true, seen: true }).catch(function () { });
                     count++;
                 }
             });
             console.log('Marked ' + count + ' notifications as read.');
-        }).catch(function(e) { console.error('Mark all read error:', e); });
+        }).catch(function (e) { console.error('Mark all read error:', e); });
 }
 
 function tgDeleteNotif(notifId) {
     if (!notifId) return;
-    db.collection('notifications').doc(notifId).delete().catch(function() {});
+    db.collection('notifications').doc(notifId).delete().catch(function () { });
 }
 
 // هل المستخدم الحالي لديه صلاحية الأدمن الكاملة؟
@@ -331,7 +381,7 @@ function tgCreateFirstAdmin(name, email, password, onDone, onError) {
             setupDone: true, setupAt: new Date()
         });
         batch.commit().then(function () { onDone(uid); }).catch(function (err) {
-            cred.user.delete().catch(function () {});
+            cred.user.delete().catch(function () { });
             onError(err);
         });
     }).catch(function (err) { onError(err); });
@@ -339,63 +389,63 @@ function tgCreateFirstAdmin(name, email, password, onDone, onError) {
 
 // ─── مسح سجلات متعددة ────────────────────────────────────────────────────────
 function tgDeleteAllRecords(collectionName, label, filterField, filterValue, callback) {
-    if(!confirm('هل أنت متأكد من حذف جميع ' + label + ' نهائياً؟ لا يمكن التراجع عن هذا الإجراء.')) return;
+    if (!confirm('هل أنت متأكد من حذف جميع ' + label + ' نهائياً؟ لا يمكن التراجع عن هذا الإجراء.')) return;
     var msg = document.createElement('div');
     msg.style.cssText = 'position:fixed;top:20px;left:50%;transform:translateX(-50%);background:#1b2a4a;color:#fff;padding:14px 28px;border-radius:10px;z-index:99999;font-size:14px;font-weight:700;box-shadow:0 8px 24px rgba(0,0,0,.3)';
     msg.textContent = '⏳ جاري الحذف...';
     document.body.appendChild(msg);
 
     var query = db.collection(collectionName);
-    if(filterField && filterValue) query = query.where(filterField, '==', filterValue);
+    if (filterField && filterValue) query = query.where(filterField, '==', filterValue);
 
-    query.get().then(function(snap) {
+    query.get().then(function (snap) {
         var batch = db.batch();
-        snap.forEach(function(d) { batch.delete(d.ref); });
+        snap.forEach(function (d) { batch.delete(d.ref); });
         return batch.commit();
-    }).then(function() {
-        if(document.body.contains(msg)) document.body.removeChild(msg);
-        if(typeof tgToast === 'function') tgToast('✅ تم حذف جميع ' + label + ' بنجاح', 'ok');
-        else if(typeof showToast === 'function') showToast('✅ تم الحذف بنجاح');
+    }).then(function () {
+        if (document.body.contains(msg)) document.body.removeChild(msg);
+        if (typeof tgToast === 'function') tgToast('✅ تم حذف جميع ' + label + ' بنجاح', 'ok');
+        else if (typeof showToast === 'function') showToast('✅ تم الحذف بنجاح');
         else alert('✅ تم الحذف بنجاح');
-        if(callback) callback();
-    }).catch(function(err) {
-        if(document.body.contains(msg)) document.body.removeChild(msg);
+        if (callback) callback();
+    }).catch(function (err) {
+        if (document.body.contains(msg)) document.body.removeChild(msg);
         alert('❌ خطأ أثناء الحذف: ' + err.message);
     });
 }
 
 // يمنع وميض عرض المحتوى قبل التأكد من تسجيل الدخول
 document.documentElement.classList.add('tg-auth-pending');
-setTimeout(function() {
+setTimeout(function () {
     document.documentElement.classList.remove('tg-auth-pending');
 }, 1500);
 
 
-    // Periodically update user online status (Using Web Worker to bypass page/tab minimize throttling)
-    function updatePresence() {
-        if (window.db && firebase.auth().currentUser) {
-            var uid = firebase.auth().currentUser.uid;
-            db.collection('users').doc(uid).update({
-                lastActive: firebase.firestore.FieldValue.serverTimestamp()
-            }).catch(function(e) {});
-        }
+// Periodically update user online status (Using Web Worker to bypass page/tab minimize throttling)
+function updatePresence() {
+    if (window.db && firebase.auth().currentUser) {
+        var uid = firebase.auth().currentUser.uid;
+        db.collection('users').doc(uid).update({
+            lastActive: firebase.firestore.FieldValue.serverTimestamp()
+        }).catch(function (e) { });
     }
-    
-    // Initial updates
-    setTimeout(updatePresence, 2000);
-    setTimeout(updatePresence, 10000);
-    
-    // Background worker for steady updates even when minimized or hidden
-    try {
-        var workerBlob = new Blob([
-            "setInterval(function() { postMessage('tick'); }, 30000);"
-        ], { type: 'application/javascript' });
-        var worker = new Worker(URL.createObjectURL(workerBlob));
-        worker.onmessage = function() {
-            updatePresence();
-        };
-        console.log("Web Worker active-presence tracking successfully initialized.");
-    } catch(e) {
-        console.warn("Web Worker blocked or unsupported, falling back to standard interval.");
-        setInterval(updatePresence, 35000);
-    }
+}
+
+// Initial updates
+setTimeout(updatePresence, 2000);
+setTimeout(updatePresence, 10000);
+
+// Background worker for steady updates even when minimized or hidden
+try {
+    var workerBlob = new Blob([
+        "setInterval(function() { postMessage('tick'); }, 30000);"
+    ], { type: 'application/javascript' });
+    var worker = new Worker(URL.createObjectURL(workerBlob));
+    worker.onmessage = function () {
+        updatePresence();
+    };
+    console.log("Web Worker active-presence tracking successfully initialized.");
+} catch (e) {
+    console.warn("Web Worker blocked or unsupported, falling back to standard interval.");
+    setInterval(updatePresence, 35000);
+}

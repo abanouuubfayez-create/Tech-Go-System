@@ -5199,6 +5199,7 @@ window.tgExtractNameFromRequest = function(r) {
             dh = '<div style="margin-top:8px;padding:10px;background:rgba(0,0,0,0.03);border-radius:8px;font-size:12px;display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:6px">';
             sortedKeys.forEach(function(k){
                 var v = r.dynamicData[k];
+                if (v === '' || v === '-' || v === '—' || v === null || v === undefined) return;
                 if(v === true) v = 'نعم / تم التسليم';
                 if(v === false) v = 'لا';
                 var lbl = fieldLabels[k] || k;
@@ -5237,13 +5238,15 @@ window.tgExtractNameFromRequest = function(r) {
              dh + attachHtml +
              (r.reviewedBy ? ('<div style="margin-top:8px;font-size:11px;color:var(--tx3)">تمت المراجعة بواسطة: ' + escH(r.reviewedBy) + '</div>') : '') +
              '  <div style="margin-top:12px;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px;border-top:1px dashed var(--bd);padding-top:12px">' +
-             '    <div style="display:flex;gap:8px">' +
+             '    <div style="display:flex;gap:8px;flex-wrap:wrap;">' +
                     (st === 'pending' ? (
                         '<button class="bt bt-p" style="padding:7px 18px;font-size:12px;font-weight:700" onclick="reviewRequestHub(\'' + r.id + '\',\'approved\')">✔ موافقة على الطلب</button>' +
                         '<button class="bt bt-d" style="padding:7px 18px;font-size:12px;font-weight:700" onclick="reviewRequestHub(\'' + r.id + '\',\'rejected\')">✕ رفض الطلب</button>'
                     ) : '') +
              '    </div>' +
-             '    <div>' +
+             '    <div style="display:flex;gap:8px;flex-wrap:wrap;">' +
+                    (r.formTemplateId === 'emp' || (r.type && r.type.indexOf('بيانات الموظف') !== -1) ?
+                        '<button class="bt bt-o" style="padding:6px 14px;font-size:12px;font-weight:800;border-radius:20px;border-color:#0284c7;color:#0284c7;" onclick="tgOpenEditAdminDataModal(\'' + r.id + '\')">✏️ استكمال البيانات الإدارية</button>' : '') +
              '      <button class="bt bt-o" style="padding:6px 14px;font-size:12px;font-weight:800;border-radius:20px;" onclick="tgPrintRequestFromHub(\'' + r.id + '\')">🖨 طباعة الطلب الرسمية</button>' +
              '    </div>' +
              '  </div>' +
@@ -5252,6 +5255,104 @@ window.tgExtractNameFromRequest = function(r) {
     h += '</div>';
     container.innerHTML = h;
 }
+
+window.tgOpenEditAdminDataModal = function(reqId) {
+    if (!reqId) return;
+    var r = (window._reqHubDataCache || []).find(function(x) { return x.id === reqId; });
+    if (!r) return;
+    var empMatch = (window._staffEmpCache || []).find(function(e) { return e.uid === r.uid; }) || {};
+    var d = r.dynamicData || {};
+
+    var oldModal = document.getElementById('tgAdminDataEditModal');
+    if (oldModal) oldModal.remove();
+
+    var overlay = document.createElement('div');
+    overlay.id = 'tgAdminDataEditModal';
+    overlay.style.cssText = 'position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(15,23,42,0.7);backdrop-filter:blur(6px);z-index:99999;display:flex;align-items:center;justify-content:center;padding:16px;direction:rtl;';
+
+    var modalHtml = '<div style="background:var(--w);width:100%;max-width:560px;border-radius:16px;box-shadow:0 20px 40px rgba(0,0,0,0.25);border:1px solid var(--bd);overflow:hidden;">' +
+        '  <div style="background:linear-gradient(135deg, #0f172a, #1e293b);padding:16px 20px;color:#fff;display:flex;justify-content:space-between;align-items:center;">' +
+        '    <div>' +
+        '      <div style="font-size:16px;font-weight:900;">📋 استكمال وتعديل البيانات الإدارية والوظيفية</div>' +
+        '      <div style="font-size:12px;opacity:0.85;margin-top:2px;">الموظف: <strong>' + escH(tgExtractNameFromRequest(r)) + '</strong></div>' +
+        '    </div>' +
+        '    <button type="button" onclick="document.getElementById(\'tgAdminDataEditModal\').remove()" style="background:rgba(255,255,255,0.15);border:none;color:#fff;font-size:18px;cursor:pointer;width:32px;height:32px;border-radius:50%;display:flex;align-items:center;justify-content:center;">✕</button>' +
+        '  </div>' +
+        '  <form id="tgAdminDataForm" style="padding:20px;max-height:75vh;overflow-y:auto;display:flex;flex-direction:column;gap:12px;" onsubmit="return false;">' +
+        '    <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">' +
+        '      <div class="fg"><label style="font-size:12px;font-weight:800;color:var(--tx2);">الرقم الوظيفي (Emp ID)</label><input type="text" id="adm_empId" class="inp" value="' + escH(d.empId || empMatch.empId || '') + '" placeholder="مثال: TG-105" style="width:100%;"></div>' +
+        '      <div class="fg"><label style="font-size:12px;font-weight:800;color:var(--tx2);">المسمى الوظيفي</label><input type="text" id="adm_jobTitle" class="inp" value="' + escH(d.jobTitle || empMatch.jobTitle || '') + '" placeholder="مثال: مصمم جرافيك" style="width:100%;"></div>' +
+        '    </div>' +
+        '    <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">' +
+        '      <div class="fg"><label style="font-size:12px;font-weight:800;color:var(--tx2);">القسم / الإدارة</label><input type="text" id="adm_dept" class="inp" value="' + escH(d.dept || empMatch.dept || r.dept || '') + '" placeholder="مثال: قسم التصميم" style="width:100%;"></div>' +
+        '      <div class="fg"><label style="font-size:12px;font-weight:800;color:var(--tx2);">تاريخ التعيين</label><input type="date" id="adm_hireDate" class="inp" value="' + escH(d.hireDate || empMatch.hireDate || '') + '" style="width:100%;"></div>' +
+        '    </div>' +
+        '    <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">' +
+        '      <div class="fg"><label style="font-size:12px;font-weight:800;color:var(--tx2);">نوع العقد</label>' +
+        '        <select id="adm_contractType" class="inp" style="width:100%;">' +
+        '          <option value="دوام كامل" ' + (d.contractType === 'دوام كامل' || !d.contractType ? 'selected' : '') + '>دوام كامل</option>' +
+        '          <option value="دوام جزئي" ' + (d.contractType === 'دوام جزئي' ? 'selected' : '') + '>دوام جزئي</option>' +
+        '          <option value="عقد محدد المدة" ' + (d.contractType === 'عقد محدد المدة' ? 'selected' : '') + '>عقد محدد المدة</option>' +
+        '          <option value="فترة تجربة" ' + (d.contractType === 'فترة تجربة' ? 'selected' : '') + '>فترة تجربة</option>' +
+        '          <option value="تدريب" ' + (d.contractType === 'تدريب' ? 'selected' : '') + '>تدريب</option>' +
+        '        </select>' +
+        '      </div>' +
+        '      <div class="fg"><label style="font-size:12px;font-weight:800;color:var(--tx2);">المدير المباشر</label><input type="text" id="adm_manager" class="inp" value="' + escH(d.manager || '') + '" placeholder="اسم المدير المباشر" style="width:100%;"></div>' +
+        '    </div>' +
+        '    <div class="fg"><label style="font-size:12px;font-weight:800;color:var(--tx2);">درجة الوظيفة (Grade)</label><input type="text" id="adm_grade" class="inp" value="' + escH(d.grade || '') + '" placeholder="مثال: Senior / Grade A" style="width:100%;"></div>' +
+        '    <div style="margin-top:10px;display:flex;justify-content:flex-end;gap:10px;border-top:1px solid var(--bd);padding-top:14px;flex-wrap:wrap;">' +
+        '      <button type="button" onclick="document.getElementById(\'tgAdminDataEditModal\').remove()" class="bt bt-o" style="font-weight:700;">إلغاء</button>' +
+        '      <button type="button" onclick="tgSaveAdminDataForRequest(\'' + r.id + '\', false)" class="bt" style="background:#0284c7;color:#fff;font-weight:800;padding:8px 18px;border-radius:8px;">💾 حفظ البيانات</button>' +
+        '      ' + (r.status === 'pending' ? '<button type="button" onclick="tgSaveAdminDataForRequest(\'' + r.id + '\', true)" class="bt bt-p" style="font-weight:800;padding:8px 18px;border-radius:8px;">✔ حفظ واعتماد الطلب</button>' : '') +
+        '    </div>' +
+        '  </form>' +
+        '</div>';
+
+    overlay.innerHTML = modalHtml;
+    document.body.appendChild(overlay);
+};
+
+window.tgSaveAdminDataForRequest = function(reqId, approveToo) {
+    var r = (window._reqHubDataCache || []).find(function(x) { return x.id === reqId; });
+    if (!r) return;
+
+    var empId = (document.getElementById('adm_empId').value || '').trim();
+    var jobTitle = (document.getElementById('adm_jobTitle').value || '').trim();
+    var dept = (document.getElementById('adm_dept').value || '').trim();
+    var hireDate = (document.getElementById('adm_hireDate').value || '').trim();
+    var contractType = (document.getElementById('adm_contractType').value || '').trim();
+    var manager = (document.getElementById('adm_manager').value || '').trim();
+    var grade = (document.getElementById('adm_grade').value || '').trim();
+
+    if (!r.dynamicData) r.dynamicData = {};
+    if (empId) r.dynamicData.empId = empId;
+    if (jobTitle) r.dynamicData.jobTitle = jobTitle;
+    if (dept) r.dynamicData.dept = dept;
+    if (hireDate) r.dynamicData.hireDate = hireDate;
+    if (contractType) r.dynamicData.contractType = contractType;
+    if (manager) r.dynamicData.manager = manager;
+    if (grade) r.dynamicData.grade = grade;
+
+    var updates = { dynamicData: r.dynamicData };
+    if (approveToo) {
+        updates.status = 'approved';
+        updates.reviewedBy = TG_USER ? TG_USER.name : 'المدير';
+        updates.reviewedAt = new Date();
+        r.status = 'approved';
+        r.reviewedBy = updates.reviewedBy;
+        r.reviewedAt = updates.reviewedAt;
+    }
+
+    db.collection('requests').doc(reqId).update(updates).then(function() {
+        var m = document.getElementById('tgAdminDataEditModal');
+        if (m) m.remove();
+        if (typeof updateReqHubStats === 'function') updateReqHubStats();
+        if (typeof renderAllRequestsListHub === 'function') renderAllRequestsListHub();
+        alert(approveToo ? '✅ تم حفظ البيانات الإدارية واعتماد الطلب بنجاح!' : '✅ تم حفظ البيانات الإدارية وتحديث الطلب بنجاح!');
+    }).catch(function(err) {
+        alert('❌ حدث خطأ أثناء الحفظ: ' + err.message);
+    });
+};
 
 window.tgPrintRequestFromHub = function(reqId) {
     if (!reqId) return;

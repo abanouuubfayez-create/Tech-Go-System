@@ -29,12 +29,13 @@
         { id: 'phone',      label: 'رقم الهاتف',              type: 'tel'  },
         { id: 'email',      label: 'البريد الإلكتروني',       type: 'email'},
         { id: 'address',    label: 'العنوان',                  type: 'text' },
-        { id: 'jobTitle',   label: 'المسمى الوظيفي',          type: 'text' },
-        { id: 'dept',       label: 'القسم / الإدارة',         type: 'text' },
-        { id: 'hireDate',   label: 'تاريخ التعيين',           type: 'date' },
-        { id: 'empId',      label: 'الرقم الوظيفي',           type: 'text' },
-        { id: 'contractType',label:'نوع العقد',               type: 'text' },
-        { id: 'manager',    label: 'المدير المباشر',          type: 'text' }
+        { id: 'jobTitle',   label: 'المسمى الوظيفي',          type: 'text', admin: true },
+        { id: 'dept',       label: 'القسم / الإدارة',         type: 'text', admin: true },
+        { id: 'hireDate',   label: 'تاريخ التعيين',           type: 'date', admin: true },
+        { id: 'empId',      label: 'الرقم الوظيفي',           type: 'text', admin: true },
+        { id: 'contractType',label:'نوع العقد',               type: 'text', admin: true },
+        { id: 'manager',    label: 'المدير المباشر',          type: 'text', admin: true },
+        { id: 'grade',      label: 'درجة الوظيفة',            type: 'text', admin: true }
       ]
     },
     leave: {
@@ -319,15 +320,15 @@
     emp: {
       noteSection: '٣',
       fill: function () {
-        var h = SC('١', 'البيانات الشخصية');
+        var h = SC('١', 'البيانات الشخصية للموظف');
         h += F2(fgIn('الاسم الكامل', 'name'), fgIn('الرقم القومي', 'nid'));
         h += F3(fgIn('تاريخ الميلاد', 'birthDate', 'date'), fgIn('الجنسية', 'nationality'), fgIn('الحالة الاجتماعية', 'marital'));
         h += F2(fgIn('رقم الهاتف', 'phone', 'tel'), fgIn('البريد الإلكتروني', 'email', 'email'));
-        h += '<div class="fg fg-full"><label>العنوان</label><input type="text" data-fid="address"></div>';
-        h += SC('٢', 'بيانات الوظيفة');
-        h += F2(fgIn('المسمى الوظيفي', 'jobTitle'), fgIn('القسم / الإدارة', 'dept'));
-        h += F3(fgIn('تاريخ التعيين', 'hireDate', 'date'), fgIn('الرقم الوظيفي', 'empId'), fgIn('نوع العقد', 'contractType'));
-        h += F2(fgIn('المدير المباشر', 'manager'), fgIn('درجة الوظيفة', 'grade'));
+        h += '<div class="fg fg-full"><label>العنوان بالتفصيل</label><input type="text" data-fid="address"></div>';
+        h += '<div style="background:rgba(2,132,199,0.06); border:1px dashed rgba(2,132,199,0.3); border-radius:10px; padding:10px 14px; margin-top:12px; font-size:12.5px; color:var(--tx2); display:flex; align-items:center; gap:8px;">' +
+             '<span style="font-size:16px;">ℹ️</span>' +
+             '<span><strong>ملاحظة:</strong> البيانات الوظيفية (الرقم الوظيفي، المسمى، القسم، نوع العقد، المدير) تُستكمل وتُعتمد بواسطة إدارة الموارد البشرية.</span>' +
+             '</div>';
         return h;
       },
       print: function (v) {
@@ -336,12 +337,12 @@
         h += F3(fgOut('تاريخ الميلاد', v.birthDate), fgOut('الجنسية', v.nationality), fgOut('الحالة الاجتماعية', v.marital));
         h += F2(fgOut('رقم الهاتف', v.phone), fgOut('البريد الإلكتروني', v.email));
         h += fgOut('العنوان', v.address, true);
-        h += SC('٢', 'بيانات الوظيفة');
+        h += SC('٢', 'بيانات الوظيفة (استكمال واعتماد الإدارة)');
         h += F2(fgOut('المسمى الوظيفي', v.jobTitle), fgOut('القسم / الإدارة', v.dept));
         h += F3(fgOut('تاريخ التعيين', v.hireDate), fgOut('الرقم الوظيفي', v.empId), fgOut('نوع العقد', v.contractType));
         h += F2(fgOut('المدير المباشر', v.manager), fgOut('درجة الوظيفة', v.grade));
-        h += SC('٣', 'التوقيعات');
-        h += SG3('توقيع الموظف', '', 'المدير الإداري / مدير المشروعات', '', 'المدير التنفيذي', 'اعتماد', null, 'admin', 'exec');
+        h += SC('٣', 'التوقيعات والاعتماد');
+        h += SG3('توقيع الموظف', '', 'المدير الإداري / الموارد البشرية', '', 'المدير التنفيذي', 'اعتماد', null, 'admin', 'exec');
         return h;
       }
     },
