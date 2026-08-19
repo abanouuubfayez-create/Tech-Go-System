@@ -10,7 +10,7 @@
 <meta name="apple-mobile-web-app-title" content="Tech Go">
 <meta name="description" content="نظام الإدارة الشامل لشركة تيك جو">
 <title>تسجيل الدخول · تيك جو</title>
-<link rel="stylesheet" href="styles.css?v=1786952414">
+<link rel="stylesheet" href="styles.css?v=1787129535">
 <link rel="manifest" href="manifest.json">
 <link rel="icon" type="image/png" sizes="192x192" href="icon-192.png">
 <link rel="apple-touch-icon" href="icon-192.png">
@@ -23,29 +23,41 @@
 </head>
 <body>
 <div class="tg-login-wrap">
-  <button class="bt bt-o" id="themeToggle" onclick="tgToggleTheme()" title="تبديل الوضع الليلي" style="position:fixed;top:20px;right:20px;font-size:20px;padding:8px 12px;z-index:100;border-radius:50%;width:45px;height:45px;display:flex;align-items:center;justify-content:center;background:var(--w);box-shadow:var(--sh-md)">🌙</button>
+  <button class="bt bt-o tg-theme-btn" id="themeToggle" onclick="tgToggleTheme()" title="تبديل الوضع الليلي">🌙</button>
   <div class="tg-login-card">
     <div class="tg-login-logo">
-      <div class="lgo"><span>TECH - GO</span><small>تيك – جو</small></div>
+      <div class="lgo">
+        <span>TECH - GO</span>
+        <small>تيك – جو</small>
+      </div>
     </div>
     <div class="tg-login-title">تسجيل الدخول إلى نظام الإدارة الشامل</div>
 
     <div class="tg-login-err" id="loginErr"></div>
 
-    <div class="fg" style="margin-bottom:14px">
-      <label>البريد الإلكتروني</label>
-      <input type="email" id="loginEmail" placeholder="name@techgo.com" autofocus>
+    <div class="fg" style="margin-bottom:16px">
+      <label for="loginEmail">البريد الإلكتروني</label>
+      <div class="tg-input-group">
+        <span class="tg-input-icon">✉️</span>
+        <input type="email" id="loginEmail" placeholder="name@techgo.com" autocomplete="email" autofocus>
+      </div>
     </div>
-    <div class="fg" style="margin-bottom:8px">
-      <label>كلمة المرور</label>
-      <input type="password" id="loginPass" placeholder="••••••••" onkeydown="if(event.key==='Enter')doLogin()">
+    <div class="fg" style="margin-bottom:12px">
+      <label for="loginPass">كلمة المرور</label>
+      <div class="tg-input-group">
+        <span class="tg-input-icon">🔒</span>
+        <input type="password" id="loginPass" placeholder="••••••••" autocomplete="current-password" onkeydown="if(event.key==='Enter')doLogin()">
+        <button type="button" class="tg-pass-toggle" onclick="togglePassVisibility()" title="إظهار / إخفاء كلمة المرور">👁️</button>
+      </div>
     </div>
 
-    <div style="display:flex;align-items:center;gap:8px;margin-bottom:14px;padding:0 2px">
-      <input type="checkbox" id="rememberMe" style="width:15px;height:15px;accent-color:var(--nv);cursor:pointer;flex-shrink:0">
-      <label for="rememberMe" style="font-size:11px;color:var(--tx2);cursor:pointer;font-weight:600">تذكّرني على هذا الجهاز</label>
+    <div class="tg-remember-row">
+      <label class="tg-checkbox-label">
+        <input type="checkbox" id="rememberMe">
+        <span>تذكّرني على هذا الجهاز</span>
+      </label>
     </div>
-    <button class="bt bt-p tg-login-btn" id="loginBtn" onclick="doLogin()">🔐 دخول</button>
+    <button class="bt bt-p tg-login-btn" id="loginBtn" onclick="doLogin()">🔐 تسجيل الدخول</button>
 
     <div class="tg-login-foot">
       نسيت كلمة المرور؟ <a onclick="doReset()">إعادة تعيينها بالبريد الإلكتروني</a>
@@ -60,13 +72,26 @@
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
 <script src="firebase-config.js"></script>
-<script src="auth.js?v=1786952414"></script>
+<script src="auth.js?v=1787129535"></script>
 <script>
 function showErr(msg){
     var e=document.getElementById('loginErr');
     e.textContent=msg; e.classList.add('show');
 }
 function hideErr(){ document.getElementById('loginErr').classList.remove('show'); }
+
+function togglePassVisibility(){
+    var input = document.getElementById('loginPass');
+    var btn = document.querySelector('.tg-pass-toggle');
+    if(!input) return;
+    if(input.type === 'password'){
+        input.type = 'text';
+        if(btn) btn.textContent = '🙈';
+    } else {
+        input.type = 'password';
+        if(btn) btn.textContent = '👁️';
+    }
+}
 
 function friendlyErr(err){
     if (!err) return 'حدث خطأ أثناء تسجيل الدخول.';
@@ -168,6 +193,6 @@ if('serviceWorker' in navigator){
     });
 }
 </script>
-<script src="theme.js?v=1786952414"></script>
+<script src="theme.js?v=1787129535"></script>
 </body>
 </html>
