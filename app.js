@@ -111,7 +111,45 @@ window.tgAddPermCustomEmpRow = function() {
     inp.value = '';
 };
 
-window.tgSaveAndPrintPermSheet = function() {
+window.tgGetPermSheetEmployees = async function() {
+    var rawConfig = localStorage.getItem('tg_perm_sheet_config');
+    var finalEmps = [];
+    if (rawConfig) {
+        try {
+            var cfg = JSON.parse(rawConfig);
+            (cfg.checked || []).forEach(function(n) { finalEmps.push({ name: n }); });
+            (cfg.custom || []).forEach(function(n) { finalEmps.push({ name: n }); });
+        } catch(e) {}
+    }
+
+    if (finalEmps.length === 0) {
+        try {
+            if (window.db) {
+                var snap = await db.collection('users').get();
+                snap.forEach(function(doc) {
+                    var d = doc.data();
+                    var empName = d.name || d.displayName;
+                    var role = (d.role || '').toLowerCase();
+                    var jobTitle = (d.jobTitle || '').toLowerCase();
+                    var isManager = (role === 'admin' || role === 'exec' || role === 'tech_admin' || jobTitle.indexOf('مدير') !== -1 || jobTitle.indexOf('تنفذ') !== -1);
+                    var isTest = (empName && (empName.toLowerCase().indexOf('test') > -1 || empName.indexOf('تست') > -1));
+                    if (empName && !isManager && !isTest) {
+                        finalEmps.push({ name: empName });
+                    }
+                });
+            }
+        } catch(e) {}
+    }
+
+    if (finalEmps.length === 0) {
+        for (var i = 1; i <= 5; i++) {
+            finalEmps.push({ name: 'موظف ' + i });
+        }
+    }
+    return finalEmps;
+};
+
+window.tgSavePermSheetConfig = function(andPrint) {
     var checked = [];
     document.querySelectorAll('.tg-perm-emp-chk:checked').forEach(function(chk) {
         checked.push(chk.value);
@@ -129,18 +167,24 @@ window.tgSaveAndPrintPermSheet = function() {
     var modal = document.getElementById('tgPermSheetEmpModal');
     if (modal) modal.style.display = 'none';
 
-    window.tgPrintMonthlyPermissionSheet(true);
-};
-
-window.tgPrintMonthlyPermissionSheet = async function(direct) {
-    var rawConfig = localStorage.getItem('tg_perm_sheet_config');
-    if (!direct && !rawConfig) {
-        tgOpenPermSheetEmpModal();
-        return;
+    var c = document.getElementById('pg-permsheet');
+    if (c) {
+        window.loadPermSheetPage(c);
     }
 
-    var currentMonthStr = new Date().toLocaleDateString('ar-EG', { month: 'long', year: 'numeric' });
-    var docTitle = 'سجل متابعة أذونات الحضور والانصراف الورقي - ' + currentMonthStr;
+    if (andPrint) {
+        window.tgPrintMonthlyPermissionSheet(true);
+    }
+};
+
+window.tgSaveAndPrintPermSheet = function() {
+    window.tgSavePermSheetConfig(true);
+};
+
+window.tgGeneratePermSheetHTML = async function(monthDate, forPrint) {
+    var dateObj = monthDate ? new Date(monthDate) : new Date();
+    var currentMonthStr = dateObj.toLocaleDateString('ar-EG', { month: 'long', year: 'numeric' });
+    var finalEmps = await window.tgGetPermSheetEmployees();
 
     var h = H('سجل متابعة ورقي', 'سجل متابعة إذنات الحضور والانصراف الشهري (31 يوماً)', 'ATTENDANCE PERMISSION TRACKING SHEET', 'perm_sheet');
     
@@ -151,82 +195,51 @@ window.tgPrintMonthlyPermissionSheet = async function(direct) {
     h += '  <div>📊 <strong>الحد الأقصى للإذنات:</strong> 5 أيام شهرياً لكل موظف</div>';
     h += '  <div style="display:flex; align-items:center; gap:10px;">';
     h += '    <span>📄 <strong>رقم المستند:</strong> TG-HR-PM-31</span>';
-    h += '    <button type="button" onclick="tgOpenPermSheetEmpModal()" class="bt bt-o np" style="font-size:11px; padding:3px 10px; border-radius:6px; font-weight:bold;">⚙️ تخصيص / استبعاد موظفين</button>';
+    if (!forPrint) {
+        h += '    <button type="button" onclick="tgOpenPermSheetEmpModal()" class="bt bt-o np" style="font-size:11px; padding:3px 10px; border-radius:6px; font-weight:bold;">⚙️ تخصيص / استبعاد موظفين</button>';
+    }
     h += '  </div>';
     h += '</div>';
 
-    // Combine Selected System Emps & External Custom Emps
-    var finalEmps = [];
-    if (rawConfig) {
-        try {
-            var cfg = JSON.parse(rawConfig);
-            (cfg.checked || []).forEach(function(n) { finalEmps.push({ name: n }); });
-            (cfg.custom || []).forEach(function(n) { finalEmps.push({ name: n }); });
-        } catch(e) {}
-    }
-
-    // Fallback if empty config
-    if (finalEmps.length === 0) {
-        try {
-            if (window._lastUsersSnap && window._lastUsersSnap.size > 0) {
-                window._lastUsersSnap.forEach(function(doc) {
-                    var d = doc.data();
-                    var empName = d.name || d.displayName;
-                    var role = (d.role || '').toLowerCase();
-                    var isTest = (empName && (empName.toLowerCase().indexOf('test') > -1 || empName.indexOf('تست') > -1));
-                    if (empName && role === 'employee' && !isTest) {
-                        finalEmps.push({ name: empName });
-                    }
-                });
-            }
-        } catch(e) {}
-    }
-
-    if (finalEmps.length === 0) {
-        for (var i = 1; i <= 5; i++) {
-            finalEmps.push({ name: 'موظف ' + i });
-        }
-    }
-
     // Section 2: Transposed Matrix
     h += SC('٢', 'سجل التأشير الميداني اليومي (الأيام 1 — 31)');
-    h += '<div style="overflow-x:auto; margin-bottom:14px;">';
-    h += '<table class="tg-fin-matrix-table" style="width:100%; border-collapse:collapse; font-size:10.5px; text-align:center; direction:rtl; border:1.5px solid var(--bd); font-family:inherit;">';
+    h += '<div style="overflow-x:auto; margin-bottom:14px; border-radius:8px; border:1px solid var(--bd);">';
+    h += '<table class="tg-fin-matrix-table" style="width:100%; border-collapse:collapse; font-size:10.5px; text-align:center; direction:rtl; font-family:inherit;">';
     
     // Header Row
-    h += '<thead><tr style="background:var(--nv); color:#ffffff; font-size:10.5px;">';
-    h += '<th style="padding:10px 6px; width:75px; border:1px solid rgba(255,255,255,0.2);">اليوم / التاريخ</th>';
+    h += '<thead><tr style="background:var(--nv); color:#ffffff; font-size:11px;">';
+    h += '<th style="padding:10px 6px; width:80px; border:1px solid rgba(255,255,255,0.2);">اليوم / التاريخ</th>';
     finalEmps.forEach(function(emp) {
         h += '<th style="padding:10px 6px; border:1px solid rgba(255,255,255,0.2); text-align:center; font-weight:bold;">' + escH(emp.name) + '</th>';
     });
-    h += '<th style="padding:10px 6px; width:80px; border:1px solid rgba(255,255,255,0.2);">ملاحظات</th>';
+    h += '<th style="padding:10px 6px; width:90px; border:1px solid rgba(255,255,255,0.2);">ملاحظات</th>';
     h += '</tr></thead><tbody>';
 
     // Rows 1..31
     for (var day = 1; day <= 31; day++) {
         var rowBg = (day % 2 === 0) ? 'background:var(--bg2);' : 'background:var(--bg);';
         h += '<tr style="' + rowBg + ' border-bottom:1px solid var(--bd); height:32px;">';
-        h += '<td style="padding:8px 6px; font-weight:bold; border:1px solid var(--bd); background:var(--bg2); color:var(--tx);">يوم ' + day + '</td>';
+        h += '<td style="padding:6px 6px; font-weight:bold; border:1px solid var(--bd); background:var(--bg2); color:var(--tx);">يوم ' + day + '</td>';
         finalEmps.forEach(function(emp) {
-            h += '<td style="border:1px solid var(--bd); padding:8px 6px;"></td>';
+            h += '<td style="border:1px solid var(--bd); padding:4px 6px; min-width:65px;"></td>';
         });
-        h += '<td style="border:1px solid var(--bd); padding:8px 6px;"></td>';
+        h += '<td style="border:1px solid var(--bd); padding:4px 6px;"></td>';
         h += '</tr>';
     }
 
     // Summary Rows
     h += '<tr style="background:rgba(217,119,6,0.1); font-weight:bold; border-top:2px solid var(--bd); height:36px;">';
-    h += '<td style="padding:8px 6px; border:1px solid var(--bd); color:#d97706;">المستغرق (من 5)</td>';
+    h += '<td style="padding:8px 6px; border:1px solid var(--bd); color:#d97706; font-weight:900;">المستغرق (من 5)</td>';
     finalEmps.forEach(function(emp) {
-        h += '<td style="border:1px solid var(--bd); padding:8px 6px; color:#d97706;"></td>';
+        h += '<td style="border:1px solid var(--bd); padding:8px 6px; color:#d97706; font-weight:bold;">0</td>';
     });
     h += '<td style="border:1px solid var(--bd);"></td>';
     h += '</tr>';
 
     h += '<tr style="background:rgba(16,185,129,0.1); font-weight:bold; height:36px;">';
-    h += '<td style="padding:8px 6px; border:1px solid var(--bd); color:#10b981;">الرصيد المتبقي</td>';
+    h += '<td style="padding:8px 6px; border:1px solid var(--bd); color:#10b981; font-weight:900;">الرصيد المتبقي</td>';
     finalEmps.forEach(function(emp) {
-        h += '<td style="border:1px solid var(--bd); padding:8px 6px; color:#10b981;"></td>';
+        h += '<td style="border:1px solid var(--bd); padding:8px 6px; color:#10b981; font-weight:bold;">5</td>';
     });
     h += '<td style="border:1px solid var(--bd);"></td>';
     h += '</tr>';
@@ -234,11 +247,11 @@ window.tgPrintMonthlyPermissionSheet = async function(direct) {
     h += '</tbody></table></div>';
 
     // Legend
-    h += '<div style="background:var(--bg2); border:1px solid var(--bd); border-radius:8px; padding:10px 14px; margin-bottom:16px; display:flex; gap:20px; font-size:10.5px; font-weight:bold; color:var(--tx); flex-wrap:wrap;">';
+    h += '<div style="background:var(--bg2); border:1px solid var(--bd); border-radius:8px; padding:10px 14px; margin-bottom:16px; display:flex; gap:20px; font-size:11px; font-weight:bold; color:var(--tx); flex-wrap:wrap;">';
     h += '  <span>📌 <strong>رموز التأشير الورقي:</strong></span>';
-    h += '  <span>(ح) = حضور متأخر</span>';
-    h += '  <span>(ص) = انصراف مبكر</span>';
-    h += '  <span>(م) = إذن مؤقت أثناء العمل</span>';
+    h += '  <span style="color:var(--tx2);">(ح) = حضور متأخر</span>';
+    h += '  <span style="color:var(--tx2);">(ص) = انصراف مبكر</span>';
+    h += '  <span style="color:var(--tx2);">(م) = إذن مؤقت أثناء العمل</span>';
     h += '</div>';
 
     // Signatures
@@ -246,6 +259,66 @@ window.tgPrintMonthlyPermissionSheet = async function(direct) {
     h += SG3('مسؤول الموارد البشرية', '', 'المدير الإداري / المشروعات', 'الموافقة', 'المدير التنفيذي / الفرع', 'الاعتماد النهائي', null, 'admin', 'exec');
     h += FT(['نسخة للموارد البشرية', 'نسخة للمالية والإدارة']);
 
+    return h;
+};
+
+window.loadPermSheetPage = async function(container) {
+    if (!container) container = document.getElementById('pg-permsheet');
+    if (!container) return;
+
+    var now = new Date();
+    var yyyy = now.getFullYear();
+    var mm = ('0' + (now.getMonth() + 1)).slice(-2);
+    var defaultMonthVal = yyyy + '-' + mm;
+
+    var topBar = '<div class="np" style="background:var(--w); border:1px solid var(--bd); border-radius:12px; padding:14px 18px; margin-bottom:18px; display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:12px; box-shadow:var(--sh-sm);">';
+    topBar += '  <div style="display:flex; align-items:center; gap:12px; flex-wrap:wrap;">';
+    topBar += '    <div style="font-size:14px; font-weight:800; color:var(--nv); display:flex; align-items:center; gap:6px;"><span>🖨️</span> كشف متابعة الإذنات الورقي (31 يوماً)</div>';
+    topBar += '    <div style="display:flex; align-items:center; gap:6px;">';
+    topBar += '      <label style="font-size:11.5px; font-weight:700; color:var(--tx2);">تحديد الشهر:</label>';
+    topBar += '      <input type="month" id="tgPermSheetMonthPicker" value="' + defaultMonthVal + '" onchange="tgRefreshPermSheetView()" style="padding:5px 10px; border-radius:6px; border:1px solid var(--bd2); font-size:12px; font-weight:bold; background:var(--bg); color:var(--tx); cursor:pointer;">';
+    topBar += '    </div>';
+    topBar += '  </div>';
+    topBar += '  <div style="display:flex; align-items:center; gap:8px; flex-wrap:wrap;">';
+    topBar += '    <button type="button" onclick="tgOpenPermSheetEmpModal()" class="bt bt-o" style="padding:7px 14px; font-size:12px; font-weight:bold;">⚙️ تخصيص / استبعاد الموظفين</button>';
+    topBar += '    <button type="button" onclick="tgPrintMonthlyPermissionSheet(true)" class="bt bt-p" style="padding:7px 18px; font-size:12px; font-weight:800; background:linear-gradient(135deg, var(--nv), var(--nv2)); color:#fff; box-shadow:0 2px 8px rgba(15,23,42,0.25);">🖨️ طباعة الكشف A4</button>';
+    topBar += '  </div>';
+    topBar += '</div>';
+
+    container.innerHTML = topBar + '<div id="tgPermSheetInnerContainer" style="display:flex; justify-content:center;">' +
+                          '  <div style="width:100%; max-width:960px; background:var(--w); border:1px solid var(--bd); border-radius:12px; padding:20px; box-shadow:var(--sh-sm);">' +
+                          '    <div style="text-align:center; padding:30px; font-size:14px; color:var(--tx3);">⏳ جارٍ تجهيز الكشف...</div>' +
+                          '  </div>' +
+                          '</div>';
+
+    var sheetHtml = await window.tgGeneratePermSheetHTML(defaultMonthVal, false);
+    var inner = document.getElementById('tgPermSheetInnerContainer');
+    if (inner) {
+        inner.innerHTML = '<div style="width:100%; max-width:980px; background:var(--w); border:1px solid var(--bd); border-radius:12px; padding:24px; box-shadow:var(--sh-md);">' + sheetHtml + '</div>';
+    }
+};
+
+window.tgRefreshPermSheetView = async function() {
+    var picker = document.getElementById('tgPermSheetMonthPicker');
+    var monthVal = picker ? picker.value : null;
+    var inner = document.getElementById('tgPermSheetInnerContainer');
+    if (inner) {
+        inner.innerHTML = '<div style="width:100%; max-width:980px; background:var(--w); border:1px solid var(--bd); border-radius:12px; padding:24px; box-shadow:var(--sh-md);">' +
+                          '  <div style="text-align:center; padding:30px; font-size:14px; color:var(--tx3);">⏳ جارٍ تحديث بيانات الكشف...</div>' +
+                          '</div>';
+        var sheetHtml = await window.tgGeneratePermSheetHTML(monthVal, false);
+        inner.innerHTML = '<div style="width:100%; max-width:980px; background:var(--w); border:1px solid var(--bd); border-radius:12px; padding:24px; box-shadow:var(--sh-md);">' + sheetHtml + '</div>';
+    }
+};
+
+window.tgPrintMonthlyPermissionSheet = async function(direct) {
+    var picker = document.getElementById('tgPermSheetMonthPicker');
+    var monthVal = picker ? picker.value : null;
+    var dateObj = monthVal ? new Date(monthVal) : new Date();
+    var currentMonthStr = dateObj.toLocaleDateString('ar-EG', { month: 'long', year: 'numeric' });
+    var docTitle = 'سجل متابعة أذونات الحضور والانصراف الورقي - ' + currentMonthStr;
+
+    var h = await window.tgGeneratePermSheetHTML(monthVal, true);
     printDoc(h, docTitle);
 };
 
@@ -412,7 +485,8 @@ var T={
     allrequests:"مركز طلبات الموظفين",
     aiadvisor:"المستشار الذكي",
     wkr:"التقارير الأسبوعية والشهرية",
-    monthlyplans:"المستهدفات والخطط العامة"
+    monthlyplans:"المستهدفات والخطط العامة",
+    permsheet:"كشف متابعة الإذنات الورقي"
 };
 
 // ─── DOCUMENT NUMBERING ───────────────────────────────────────────────────
@@ -646,7 +720,7 @@ function go(id, nav, force){
     if(gf) { gf.value = ""; tgFilterVisibleTables(""); }
         // Show/Hide top bar tools
     var formIds = ['gen','notice','warn','deduction','term','inv','exp','clr','res','promo','raise','contract','task','proj','sal','salrec','emp','leave','perm','delay','sendform','mexp'];
-    var tableIds = ['la','lb','lc','ld','pmgmt','tasksmgmt','staff','wkr','allrequests','empdocs','att_live','att','archive','announcements','mexp','devres'];
+    var tableIds = ['la','lb','lc','ld','pmgmt','tasksmgmt','staff','wkr','allrequests','empdocs','att_live','att','archive','announcements','mexp','devres','permsheet'];
 
     var tgTableTools = document.getElementById('tgTableTools');
     var tgFormTools = document.getElementById('tgFormTools');
@@ -3954,6 +4028,10 @@ function load(id,c){
     }
     else if(id==="monthlyplans"){
         loadMonthlyPlansAdmin(c);
+        return;
+    }
+    else if(id==="permsheet" || id==="perm_sheet"){
+        loadPermSheetPage(c);
         return;
     }
     else if(id==="notice"){
