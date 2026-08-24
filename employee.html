@@ -67,7 +67,7 @@
     <link
         href="https://fonts.googleapis.com/css2?family=Alexandria:wght@300;400;500;600;700;800;900&family=Cairo:wght@400;600;700;800;900&family=Tajawal:wght@400;500;700;800&family=Inter:wght@400;500;600;700&display=swap"
         rel="stylesheet">
-    <link rel="stylesheet" href="styles.css?v=1787582948">
+    <link rel="stylesheet" href="styles.css?v=1787583209">
     <link rel="manifest" href="manifest.json">
     <link rel="icon" type="image/png" sizes="192x192" href="icon-192.png">
     <link rel="apple-touch-icon" href="icon-192.png">
@@ -75,10 +75,10 @@
     <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-storage-compat.js"></script>
-    <script src="firebase-config.js?v=1787582948"></script>
-    <script src="auth.js?v=1787582948"></script>
-    <script src="app.js?v=1787582948"></script>
-    <script src="formsend.js?v=1787582948"></script>
+    <script src="firebase-config.js?v=1787583209"></script>
+    <script src="auth.js?v=1787583209"></script>
+    <script src="app.js?v=1787583209"></script>
+    <script src="formsend.js?v=1787583209"></script>
     <script>
         (function () {
             const theme = localStorage.getItem('tg-theme') || 'light';
@@ -617,6 +617,9 @@
 
             <!-- قائمة المشاريع (تظهر افتراضياً) -->
             <div id="projListView">
+                <!-- بانر الأعياد والمناسبات الرسمية للموظفين -->
+                <div id="empHolidayAlertBannerContainer"></div>
+
                 <!-- لوحة الإعلانات -->
                 <div id="empAnnouncementsPanel"
                     style="background:linear-gradient(135deg, #1b2a4a, #2a3f6c); border-radius:12px; padding:20px; color:#fff; margin-bottom:20px; display:none; box-shadow:0 6px 16px rgba(27,42,74,.15);">
@@ -2494,6 +2497,8 @@
             if (typeof tgChatMount === 'function') tgChatMount();
             if (typeof tgChatWatch === 'function') tgChatWatch();
             if (typeof loadEmpAnnouncements === 'function') loadEmpAnnouncements();
+            // فحص إشعارات الأعياد والمناسبات الرسمية في بوابة الموظف
+            if (typeof tgCheckUpcomingHolidaysEmp === 'function') tgCheckUpcomingHolidaysEmp();
             // نماذج مطلوبة من الأدمن لملئها وإرسالها
             if (typeof loadMyFormRequests === 'function') loadMyFormRequests(u.uid);
             // تفعيل استقبال Push Notifications من Firestore
@@ -3040,7 +3045,7 @@
         تطوير وتصميم: أبانوب فايز</div>
     <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
-    <script src="theme.js?v=1787582948"></script>
+    <script src="theme.js?v=1787583209"></script>
 
 
     <!-- Incoming Meeting Call Modal -->
@@ -3286,6 +3291,113 @@
 
 
     <div id="tgToastContainer"></div>
+
+    <script>
+        // ── فحص وعرض إشعار الأعياد والمناسبات الرسمية في بوابة الموظف ──
+        function tgCheckUpcomingHolidaysEmp() {
+            var container = document.getElementById('empHolidayAlertBannerContainer');
+            if (!container) return;
+
+            var today = new Date();
+            today.setHours(0, 0, 0, 0);
+
+            var presets = window.TG_OFFICIAL_HOLIDAYS_PRESETS || [
+                { key: 'coptic_xmas', label: '✝️ عيد الميلاد المجيد', occasion: 'عيد الميلاد المجيد', date: '2026-01-07', durationDays: 1 },
+                { key: 'police_day', label: '👮 عيد الشرطة وثورة 25 يناير', occasion: 'عيد الشرطة وثورة 25 يناير', date: '2026-01-25', durationDays: 1 },
+                { key: 'eid_fitr', label: '🎉 عيد الفطر المبارك', occasion: 'عيد الفطر المبارك', date: '2026-03-20', durationDays: 3 },
+                { key: 'sinai_lib', label: '🦅 عيد تحرير سيناء', occasion: 'عيد تحرير سيناء', date: '2026-04-25', durationDays: 1 },
+                { key: 'labor_day', label: '👷 عيد العمال', occasion: 'عيد العمال', date: '2026-05-01', durationDays: 1 },
+                { key: 'sham_nessim', label: '🌸 شم النسيم', occasion: 'شم النسيم', date: '2026-05-11', durationDays: 1 },
+                { key: 'eid_adha', label: '🐑 عيد الأضحى المبارك', occasion: 'عيد الأضحى المبارك', date: '2026-05-27', durationDays: 4 },
+                { key: 'islamic_ny', label: '🌙 رأس السنة الهجرية', occasion: 'رأس السنة الهجرية', date: '2026-06-17', durationDays: 1 },
+                { key: 'rev_30_june', label: '🇪🇬 ثورة ٣٠ يونيو', occasion: 'ثورة 30 يونيو', date: '2026-06-30', durationDays: 1 },
+                { key: 'rev_23_july', label: '🇪🇬 ثورة ٢٣ يوليو', occasion: 'ثورة 23 يوليو', date: '2026-07-23', durationDays: 1 },
+                { key: 'prophet_bday', label: '🕌 المولد النبوي الشريف', occasion: 'المولد النبوي الشريف', date: '2026-08-26', durationDays: 1 },
+                { key: 'oct_6', label: '⚔️ عيد القوات المسلحة (٦ أكتوبر)', occasion: 'عيد القوات المسلحة (ذكرى نصر 6 أكتوبر)', date: '2026-10-06', durationDays: 1 }
+            ];
+
+            var allHolidays = [...presets];
+            try {
+                var localHols = JSON.parse(localStorage.getItem('officialHolidays') || '[]');
+                localHols.forEach(function(lh) {
+                    if (lh.date && !allHolidays.some(function(h){ return h.date === lh.date; })) {
+                        allHolidays.push({
+                            key: 'custom_' + lh.date,
+                            label: lh.label || 'إجازة رسمية',
+                            occasion: (lh.label || 'إجازة رسمية').replace(/^[^\w\u0600-\u06FF]+/g, ''),
+                            date: lh.date,
+                            durationDays: 1
+                        });
+                    }
+                });
+            } catch(e) {}
+
+            var upcoming = [];
+            allHolidays.forEach(function(h) {
+                if (!h.date) return;
+                var hDate = new Date(h.date + 'T00:00:00');
+                var diffMs = hDate.getTime() - today.getTime();
+                var diffDays = Math.round(diffMs / (1000 * 60 * 60 * 24));
+                if (diffDays >= 0 && diffDays <= 4) {
+                    upcoming.push(Object.assign({}, h, { diffDays: diffDays, holidayDateObj: hDate }));
+                }
+            });
+
+            if (!upcoming.length) {
+                container.innerHTML = '';
+                return;
+            }
+
+            upcoming.sort(function(a, b) { return a.diffDays - b.diffDays; });
+            var target = upcoming[0];
+
+            var daysLabel = '';
+            if (target.diffDays === 0) daysLabel = 'اليوم!';
+            else if (target.diffDays === 1) daysLabel = 'غداً';
+            else if (target.diffDays === 2) daysLabel = 'بعد يومين';
+            else daysLabel = 'بعد ' + target.diffDays + ' أيام';
+
+            var arabicDays = ['الأحد', 'الاثنين', 'الثلاثاء', 'الأربعاء', 'الخميس', 'الجمعة', 'السبت'];
+            var arabicMonths = ['يناير', 'فبراير', 'مارس', 'أبريل', 'مايو', 'يونيو', 'يوليو', 'أغسطس', 'سبتمبر', 'أكتوبر', 'نوفمبر', 'ديسمبر'];
+
+            function getDayName(d) { return arabicDays[d.getDay()] || ''; }
+            function formatDate(d) { return d.getDate() + ' ' + arabicMonths[d.getMonth()] + ' ' + d.getFullYear(); }
+
+            var hDayName = getDayName(target.holidayDateObj);
+            var hFormatted = formatDate(target.holidayDateObj);
+
+            var resumeObj = new Date(target.holidayDateObj.getTime());
+            resumeObj.setDate(resumeObj.getDate() + (target.durationDays || 1));
+            while (resumeObj.getDay() === 5 || resumeObj.getDay() === 6) {
+                resumeObj.setDate(resumeObj.getDate() + 1);
+            }
+            var rDayName = getDayName(resumeObj);
+            var rFormatted = formatDate(resumeObj);
+
+            var bannerHTML = 
+                '<div style="background:linear-gradient(135deg, rgba(16,185,129,0.15) 0%, rgba(5,150,105,0.2) 50%, rgba(245,158,11,0.15) 100%); border:1.5px solid rgba(16,185,129,0.4); border-radius:14px; padding:18px 22px; margin-bottom:20px; box-shadow:0 6px 20px rgba(16,185,129,0.12); position:relative; overflow:hidden; direction:rtl;">' +
+                '  <div style="position:absolute; top:0; right:0; width:6px; height:100%; background:linear-gradient(to bottom, #10b981, #f59e0b);"></div>' +
+                '  <div style="display:flex; align-items:center; gap:14px; margin-bottom:12px;">' +
+                '    <div style="width:44px; height:44px; border-radius:12px; background:linear-gradient(135deg, #10b981, #059669); color:#fff; display:flex; align-items:center; justify-content:center; font-size:22px; box-shadow:0 4px 12px rgba(16,185,129,0.35); flex-shrink:0;">🎉</div>' +
+                '    <div>' +
+                '      <div style="font-size:16px; font-weight:800; color:var(--tx); display:flex; align-items:center; gap:8px; flex-wrap:wrap;">' +
+                '        <span>إشعار إجازة رسمية | <strong>' + escH(target.occasion) + '</strong></span>' +
+                '        <span style="background:#f59e0b; color:#fff; padding:2px 10px; border-radius:12px; font-size:11px; font-weight:800;">' + daysLabel + '</span>' +
+                '      </div>' +
+                '      <div style="font-size:12px; color:var(--tx2); margin-top:2px;">اللائحة التنظيمية لشركة تيك - جو — المادة 129</div>' +
+                '    </div>' +
+                '  </div>' +
+                '  <div style="background:var(--bg); border:1px solid var(--bd); border-radius:10px; padding:14px 18px; font-size:13px; line-height:1.85; color:var(--tx);">' +
+                '    تُحيط إدارة الشركة جميع الموظفين الكرام بأن يوم <strong>' + hDayName + ' الموافق ' + hFormatted + '</strong> سيكون إجازة رسمية مدفوعة الأجر بمناسبة <strong>' + escH(target.occasion) + '</strong>.<br>' +
+                '    • تاريخ استئناف العمل: <strong>' + rDayName + ' ' + rFormatted + '</strong> الساعة 10:00 صباحًا.<br>' +
+                '    • يُرجى الالتزام بتسجيل الحضور عبر جهاز البصمة عند العودة.<br>' +
+                '    <div style="margin-top:6px; color:#10b981; font-weight:bold;">🌿 كل عام وحضراتكم بخير — إدارة شركة تيك - جو</div>' +
+                '  </div>' +
+                '</div>';
+
+            container.innerHTML = bannerHTML;
+        }
+    </script>
 
 </body>
 

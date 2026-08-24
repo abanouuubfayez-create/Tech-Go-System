@@ -15140,6 +15140,8 @@ window.tgCheckUpcomingHolidays = function() {
     var hDayName = tgGetArabicDayName(target.holidayDateObj);
     var hFormatted = tgFormatArabicDateFull(target.holidayDateObj);
 
+    window._currentUpcomingHoliday = target;
+
     var bannerHTML = 
         '<div class="tg-holiday-alert-card">' +
         '  <div class="tg-holiday-alert-content">' +
@@ -15155,7 +15157,7 @@ window.tgCheckUpcomingHolidays = function() {
         '    </div>' +
         '  </div>' +
         '  <div class="tg-holiday-alert-actions">' +
-        '    <button type="button" class="tg-holiday-btn-action" onclick="tgOpenHolidayNoticeModal(' + escH(JSON.stringify(target).replace(/"/g, '&quot;')) + ')">' +
+        '    <button type="button" class="tg-holiday-btn-action" onclick="tgOpenHolidayNoticeModal(\'' + escH(target.key || '') + '\')">' +
         '      <span>📢</span> تجهيز رسالة الواتساب للموظفين' +
         '    </button>' +
         '    <button type="button" class="bt bt-o" onclick="document.getElementById(\'tgHolidayAlertBannerContainer\').innerHTML=\'\'" style="padding:8px 14px; font-size:12px; color:var(--tx2);">' +
@@ -15180,10 +15182,24 @@ window.tgOpenHolidayNoticeModal = function(presetData) {
     var holidayDateObj = defaultDateObj;
     var durationDays = 1;
 
-    if (presetData && presetData.occasion) {
+    // إذا تم تمرير مفتاح نصي (string key)
+    if (typeof presetData === 'string' && presetData) {
+        var found = TG_OFFICIAL_HOLIDAYS_PRESETS.find(function(h){ return h.key === presetData; });
+        if (found) {
+            presetData = found;
+        } else if (window._currentUpcomingHoliday && window._currentUpcomingHoliday.key === presetData) {
+            presetData = window._currentUpcomingHoliday;
+        }
+    }
+
+    if (presetData && typeof presetData === 'object' && presetData.occasion) {
         occasion = presetData.occasion;
         if (presetData.date) holidayDateObj = new Date(presetData.date + 'T12:00:00');
         if (presetData.durationDays) durationDays = presetData.durationDays;
+    } else if (window._currentUpcomingHoliday && window._currentUpcomingHoliday.occasion) {
+        occasion = window._currentUpcomingHoliday.occasion;
+        if (window._currentUpcomingHoliday.date) holidayDateObj = new Date(window._currentUpcomingHoliday.date + 'T12:00:00');
+        if (window._currentUpcomingHoliday.durationDays) durationDays = window._currentUpcomingHoliday.durationDays;
     } else {
         // فحص تلقائي لأقرب مناسبة قادمة
         var allHols = [...TG_OFFICIAL_HOLIDAYS_PRESETS];
@@ -15228,6 +15244,7 @@ window.tgOpenHolidayNoticeModal = function(presetData) {
     tgRenderSavedHolidayList();
 
     modal.style.display = 'flex';
+    modal.style.zIndex = '99999999';
 };
 
 window.tgCloseHolidayNoticeModal = function() {
