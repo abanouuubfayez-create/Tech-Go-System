@@ -4152,3 +4152,390 @@ body.dark-mode .tg-expand-btn:hover {
   }
 }
 
+/* ==========================================================================
+   HOLIDAY ADVANCE ALERT & WHATSAPP NOTICE GENERATOR STYLES
+   ========================================================================== */
+.tg-holiday-alert-card {
+  background: linear-gradient(135deg, rgba(16, 185, 129, 0.12) 0%, rgba(5, 150, 105, 0.18) 50%, rgba(245, 158, 11, 0.14) 100%);
+  border: 1.5px solid rgba(16, 185, 129, 0.4);
+  border-radius: 14px;
+  padding: 16px 20px;
+  margin-bottom: 20px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  flex-wrap: wrap;
+  box-shadow: 0 6px 20px rgba(16, 185, 129, 0.12);
+  position: relative;
+  overflow: hidden;
+  animation: tgFadeInDown 0.35s ease-out;
+}
+
+.tg-holiday-alert-card::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  right: 0;
+  width: 6px;
+  height: 100%;
+  background: linear-gradient(to bottom, #10b981, #f59e0b);
+}
+
+.tg-holiday-alert-content {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  flex: 1;
+  min-width: 260px;
+}
+
+.tg-holiday-alert-icon-wrap {
+  width: 48px;
+  height: 48px;
+  border-radius: 12px;
+  background: linear-gradient(135deg, #10b981, #059669);
+  color: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 24px;
+  box-shadow: 0 4px 12px rgba(16, 185, 129, 0.35);
+  flex-shrink: 0;
+  animation: tgBellPulse 2s infinite ease-in-out;
+}
+
+@keyframes tgBellPulse {
+  0%, 100% { transform: scale(1) rotate(0deg); }
+  10% { transform: scale(1.1) rotate(-10deg); }
+  20% { transform: scale(1.1) rotate(10deg); }
+  30% { transform: scale(1.05) rotate(-5deg); }
+  40% { transform: scale(1) rotate(0deg); }
+}
+
+@keyframes tgFadeInDown {
+  from { opacity: 0; transform: translateY(-12px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.tg-holiday-alert-title {
+  font-size: 15px;
+  font-weight: 800;
+  color: var(--tx);
+  margin-bottom: 3px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.tg-holiday-alert-desc {
+  font-size: 12.5px;
+  color: var(--tx2);
+  line-height: 1.5;
+}
+
+.tg-holiday-badge-days {
+  background: #f59e0b;
+  color: #fff;
+  padding: 2px 9px;
+  border-radius: 12px;
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.2px;
+  box-shadow: 0 2px 6px rgba(245, 158, 11, 0.3);
+}
+
+.tg-holiday-alert-actions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.tg-holiday-btn-action {
+  background: linear-gradient(135deg, #10b981, #059669);
+  color: #ffffff !important;
+  border: none;
+  padding: 10px 20px;
+  border-radius: 10px;
+  font-size: 13.5px;
+  font-weight: 800;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  box-shadow: 0 4px 14px rgba(16, 185, 129, 0.35);
+  transition: all 0.2s ease;
+  font-family: inherit;
+}
+
+.tg-holiday-btn-action:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 18px rgba(16, 185, 129, 0.45);
+}
+
+/* Modal Dialog Styles */
+.tg-holiday-modal-backdrop {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(15, 23, 42, 0.7);
+  z-index: 999999;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 16px;
+  backdrop-filter: blur(6px);
+  direction: rtl;
+  font-family: inherit;
+}
+
+.tg-holiday-modal-card {
+  background: var(--bg);
+  border: 1px solid var(--bd);
+  border-radius: 16px;
+  width: 100%;
+  max-width: 720px;
+  max-height: 92vh;
+  overflow-y: auto;
+  box-shadow: 0 20px 50px rgba(0, 0, 0, 0.45);
+  display: flex;
+  flex-direction: column;
+}
+
+.tg-holiday-header {
+  background: linear-gradient(135deg, #059669 0%, #10b981 100%);
+  padding: 18px 24px;
+  border-top-left-radius: 16px;
+  border-top-right-radius: 16px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  color: #fff;
+}
+
+.tg-holiday-header-title {
+  font-size: 17px;
+  font-weight: 900;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.tg-holiday-header-sub {
+  font-size: 11.5px;
+  opacity: 0.9;
+  margin-top: 2px;
+}
+
+.tg-holiday-close-btn {
+  background: rgba(255, 255, 255, 0.2);
+  border: none;
+  color: #fff;
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  font-size: 16px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background 0.15s;
+}
+
+.tg-holiday-close-btn:hover {
+  background: rgba(255, 255, 255, 0.35);
+}
+
+.tg-holiday-body {
+  padding: 20px 24px;
+}
+
+.tg-holiday-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 14px;
+  margin-bottom: 18px;
+}
+
+.tg-holiday-field label {
+  display: block;
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--tx2);
+  margin-bottom: 5px;
+}
+
+.tg-holiday-field input, .tg-holiday-field select {
+  width: 100%;
+  padding: 9px 12px;
+  border: 1px solid var(--bd);
+  border-radius: 8px;
+  background: var(--bg2);
+  color: var(--tx);
+  font-size: 13.5px;
+  font-family: inherit;
+  outline: none;
+  transition: border-color 0.15s, box-shadow 0.15s;
+}
+
+.tg-holiday-field input:focus, .tg-holiday-field select:focus {
+  border-color: #10b981;
+  box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.15);
+}
+
+.tg-holiday-presets-bar {
+  display: flex;
+  gap: 6px;
+  align-items: center;
+  flex-wrap: wrap;
+  margin-bottom: 16px;
+  padding: 10px 14px;
+  background: var(--bg2);
+  border-radius: 10px;
+  border: 1px solid var(--bd);
+}
+
+.tg-holiday-preset-chip {
+  background: var(--bg);
+  border: 1px solid var(--bd);
+  padding: 5px 12px;
+  border-radius: 20px;
+  font-size: 11.5px;
+  font-weight: 700;
+  color: var(--tx);
+  cursor: pointer;
+  transition: all 0.15s;
+}
+
+.tg-holiday-preset-chip:hover {
+  background: #10b981;
+  color: #fff;
+  border-color: #10b981;
+}
+
+.tg-holiday-preview-wrap {
+  background: var(--bg2);
+  border: 1px solid var(--bd);
+  border-radius: 12px;
+  padding: 16px;
+  margin-bottom: 18px;
+  position: relative;
+}
+
+.tg-holiday-preview-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 10px;
+  font-size: 12.5px;
+  font-weight: 800;
+  color: var(--tx);
+}
+
+.tg-holiday-preview-text {
+  font-family: inherit;
+  font-size: 13.5px;
+  line-height: 1.85;
+  color: var(--tx);
+  white-space: pre-wrap;
+  background: var(--bg);
+  border: 1px solid var(--bd);
+  border-radius: 8px;
+  padding: 14px;
+  user-select: all;
+  direction: rtl;
+  max-height: 280px;
+  overflow-y: auto;
+}
+
+.tg-holiday-actions-footer {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  border-top: 1px solid var(--bd);
+  padding-top: 16px;
+}
+
+.tg-holiday-btn-whatsapp {
+  background: linear-gradient(135deg, #25d366, #128c7e);
+  color: #fff !important;
+  border: none;
+  padding: 9px 18px;
+  border-radius: 8px;
+  font-size: 13px;
+  font-weight: 800;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  box-shadow: 0 3px 10px rgba(37, 211, 102, 0.3);
+  transition: all 0.15s;
+}
+
+.tg-holiday-btn-whatsapp:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 5px 15px rgba(37, 211, 102, 0.4);
+}
+
+.tg-holiday-btn-copy {
+  background: linear-gradient(135deg, #3b82f6, #2563eb);
+  color: #fff !important;
+  border: none;
+  padding: 9px 18px;
+  border-radius: 8px;
+  font-size: 13px;
+  font-weight: 800;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  box-shadow: 0 3px 10px rgba(59, 130, 246, 0.3);
+  transition: all 0.15s;
+}
+
+.tg-holiday-btn-announce {
+  background: linear-gradient(135deg, #d97706, #b45309);
+  color: #fff !important;
+  border: none;
+  padding: 9px 18px;
+  border-radius: 8px;
+  font-size: 13px;
+  font-weight: 800;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  box-shadow: 0 3px 10px rgba(217, 119, 6, 0.3);
+  transition: all 0.15s;
+}
+
+.tg-holiday-saved-section {
+  margin-top: 18px;
+  border-top: 1px dashed var(--bd);
+  padding-top: 14px;
+}
+
+.tg-holiday-saved-item {
+  background: var(--bg2);
+  border: 1px solid var(--bd);
+  border-radius: 8px;
+  padding: 10px 14px;
+  margin-bottom: 8px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  cursor: pointer;
+  transition: background 0.15s, border-color 0.15s;
+}
+
+.tg-holiday-saved-item:hover {
+  background: var(--bg);
+  border-color: #10b981;
+}
+
+

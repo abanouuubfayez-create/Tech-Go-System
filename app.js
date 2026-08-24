@@ -1138,6 +1138,8 @@ function loadDashboardSummary(){
         }
 
     }).catch(function(err){ console.error(err); box.innerHTML=''; });
+    // فحص الأعياد والمناسبات القادمة للتنبيه قبلها بـ 4 أيام
+    tgCheckUpcomingHolidays();
     // بدء مراقبة إشعارات الأدمن من الموظفين
     startAdminNotifications();
     // إخفاء عناصر القائمة للأدمن المساعد
@@ -15014,4 +15016,446 @@ window.tgShowToast = function(message, type, duration) {
         }, 300);
     }, duration);
 };
+
+/* ==========================================================================
+   OFFICIAL HOLIDAYS ADVANCE ALERT (4-DAY NOTICE) & WHATSAPP GENERATOR
+   ========================================================================== */
+
+var TG_OFFICIAL_HOLIDAYS_PRESETS = [
+    // أعياد ومناسبات 2026 الرسمية
+    { key: 'coptic_xmas', label: '✝️ عيد الميلاد المجيد', occasion: 'عيد الميلاد المجيد', date: '2026-01-07', durationDays: 1 },
+    { key: 'police_day', label: '👮 عيد الشرطة وثورة 25 يناير', occasion: 'عيد الشرطة وثورة 25 يناير', date: '2026-01-25', durationDays: 1 },
+    { key: 'eid_fitr', label: '🎉 عيد الفطر المبارك', occasion: 'عيد الفطر المبارك', date: '2026-03-20', durationDays: 3 },
+    { key: 'sinai_lib', label: '🦅 عيد تحرير سيناء', occasion: 'عيد تحرير سيناء', date: '2026-04-25', durationDays: 1 },
+    { key: 'labor_day', label: '👷 عيد العمال', occasion: 'عيد العمال', date: '2026-05-01', durationDays: 1 },
+    { key: 'sham_nessim', label: '🌸 شم النسيم', occasion: 'شم النسيم', date: '2026-05-11', durationDays: 1 },
+    { key: 'eid_adha', label: '🐑 عيد الأضحى المبارك', occasion: 'عيد الأضحى المبارك', date: '2026-05-27', durationDays: 4 },
+    { key: 'islamic_ny', label: '🌙 رأس السنة الهجرية', occasion: 'رأس السنة الهجرية', date: '2026-06-17', durationDays: 1 },
+    { key: 'rev_30_june', label: '🇪🇬 ثورة ٣٠ يونيو', occasion: 'ثورة 30 يونيو', date: '2026-06-30', durationDays: 1 },
+    { key: 'rev_23_july', label: '🇪🇬 ثورة ٢٣ يوليو', occasion: 'ثورة 23 يوليو', date: '2026-07-23', durationDays: 1 },
+    { key: 'prophet_bday', label: '🕌 المولد النبوي الشريف', occasion: 'المولد النبوي الشريف', date: '2026-08-26', durationDays: 1 },
+    { key: 'oct_6', label: '⚔️ عيد القوات المسلحة (٦ أكتوبر)', occasion: 'عيد القوات المسلحة (ذكرى نصر 6 أكتوبر)', date: '2026-10-06', durationDays: 1 },
+
+    // أعياد ومناسبات 2027
+    { key: 'coptic_xmas_2027', label: '✝️ عيد الميلاد المجيد 2027', occasion: 'عيد الميلاد المجيد', date: '2027-01-07', durationDays: 1 },
+    { key: 'police_day_2027', label: '👮 عيد الشرطة 2027', occasion: 'عيد الشرطة وثورة 25 يناير', date: '2027-01-25', durationDays: 1 },
+    { key: 'eid_fitr_2027', label: '🎉 عيد الفطر المبارك 2027', occasion: 'عيد الفطر المبارك', date: '2027-03-10', durationDays: 3 },
+    { key: 'sinai_lib_2027', label: '🦅 عيد تحرير سيناء 2027', occasion: 'عيد تحرير سيناء', date: '2027-04-25', durationDays: 1 },
+    { key: 'labor_day_2027', label: '👷 عيد العمال 2027', occasion: 'عيد العمال', date: '2027-05-01', durationDays: 1 },
+    { key: 'sham_nessim_2027', label: '🌸 شم النسيم 2027', occasion: 'شم النسيم', date: '2027-05-03', durationDays: 1 },
+    { key: 'eid_adha_2027', label: '🐑 عيد الأضحى المبارك 2027', occasion: 'عيد الأضحى المبارك', date: '2027-05-17', durationDays: 4 },
+    { key: 'islamic_ny_2027', label: '🌙 رأس السنة الهجرية 2027', occasion: 'رأس السنة الهجرية', date: '2027-06-06', durationDays: 1 },
+    { key: 'rev_30_june_2027', label: '🇪🇬 ثورة ٣٠ يونيو 2027', occasion: 'ثورة 30 يونيو', date: '2027-06-30', durationDays: 1 },
+    { key: 'rev_23_july_2027', label: '🇪🇬 ثورة ٢٣ يوليو 2027', occasion: 'ثورة 23 يوليو', date: '2027-07-23', durationDays: 1 },
+    { key: 'prophet_bday_2027', label: '🕌 المولد النبوي الشريف 2027', occasion: 'المولد النبوي الشريف', date: '2027-08-16', durationDays: 1 },
+    { key: 'oct_6_2027', label: '⚔️ عيد القوات المسلحة 2027', occasion: 'عيد القوات المسلحة (ذكرى نصر 6 أكتوبر)', date: '2027-10-06', durationDays: 1 }
+];
+window.TG_OFFICIAL_HOLIDAYS_PRESETS = TG_OFFICIAL_HOLIDAYS_PRESETS;
+
+var TG_ARABIC_DAYS = ['الأحد', 'الاثنين', 'الثلاثاء', 'الأربعاء', 'الخميس', 'الجمعة', 'السبت'];
+window.TG_ARABIC_DAYS = TG_ARABIC_DAYS;
+
+var TG_ARABIC_MONTHS = ['يناير', 'فبراير', 'مارس', 'أبريل', 'مايو', 'يونيو', 'يوليو', 'أغسطس', 'سبتمبر', 'أكتوبر', 'نوفمبر', 'ديسمبر'];
+window.TG_ARABIC_MONTHS = TG_ARABIC_MONTHS;
+
+window.tgGetArabicDayName = function(d) {
+    if (!d) return '';
+    var dateObj = (typeof d === 'string') ? new Date(d + 'T12:00:00') : d;
+    return TG_ARABIC_DAYS[dateObj.getDay()] || '';
+};
+
+window.tgFormatArabicDateFull = function(d) {
+    if (!d) return '';
+    var dateObj = (typeof d === 'string') ? new Date(d + 'T12:00:00') : d;
+    var day = dateObj.getDate();
+    var month = TG_ARABIC_MONTHS[dateObj.getMonth()];
+    var year = dateObj.getFullYear();
+    return day + ' ' + month + ' ' + year;
+};
+
+window.tgGetResumeWorkingDateObj = function(startDateObj, durationDays) {
+    var dur = durationDays || 1;
+    var d = new Date(startDateObj.getTime());
+    // إضافة عدد أيام الإجازة
+    d.setDate(d.getDate() + dur);
+    // إذا وافق يوم عطلة نهاية الأسبوع (جمعة أو سبت)، ننتقل ليوم الأحد
+    while (d.getDay() === 5 || d.getDay() === 6) {
+        d.setDate(d.getDate() + 1);
+    }
+    return d;
+};
+
+// ── فحص المناسبات القادمة خلال الـ 4 أيام القادمة وتوليد البانر التنبيهي ──
+window.tgCheckUpcomingHolidays = function() {
+    var container = document.getElementById('tgHolidayAlertBannerContainer');
+    if (!container) return;
+
+    var today = new Date();
+    today.setHours(0, 0, 0, 0);
+
+    // جمع الأعياد من القائمة المسبقة ومن LocalStorage إن وجدت
+    var allHolidays = [...TG_OFFICIAL_HOLIDAYS_PRESETS];
+    try {
+        var localHols = JSON.parse(localStorage.getItem('officialHolidays') || '[]');
+        localHols.forEach(function(lh) {
+            if (lh.date && !allHolidays.some(function(h){ return h.date === lh.date; })) {
+                allHolidays.push({
+                    key: 'custom_' + lh.date,
+                    label: lh.label || 'إجازة رسمية',
+                    occasion: (lh.label || 'إجازة رسمية').replace(/^[^\w\u0600-\u06FF]+/g, ''),
+                    date: lh.date,
+                    durationDays: 1
+                });
+            }
+        });
+    } catch(e) {}
+
+    // البحث عن الأعياد في نطاق الـ 4 أيام القادمة (0 إلى 4 أيام)
+    var upcoming = [];
+    allHolidays.forEach(function(h) {
+        if (!h.date) return;
+        var hDate = new Date(h.date + 'T00:00:00');
+        var diffMs = hDate.getTime() - today.getTime();
+        var diffDays = Math.round(diffMs / (1000 * 60 * 60 * 24));
+        if (diffDays >= 0 && diffDays <= 4) {
+            upcoming.push(Object.assign({}, h, { diffDays: diffDays, holidayDateObj: hDate }));
+        }
+    });
+
+    if (!upcoming.length) {
+        container.innerHTML = '';
+        return;
+    }
+
+    // فرز المناسبات الأقرب فالأقرب
+    upcoming.sort(function(a, b) { return a.diffDays - b.diffDays; });
+    var target = upcoming[0];
+
+    var daysLabel = '';
+    if (target.diffDays === 0) daysLabel = 'اليوم!';
+    else if (target.diffDays === 1) daysLabel = 'غداً (بعد يوم واحد)';
+    else if (target.diffDays === 2) daysLabel = 'بعد يومين';
+    else daysLabel = 'بعد ' + target.diffDays + ' أيام';
+
+    var hDayName = tgGetArabicDayName(target.holidayDateObj);
+    var hFormatted = tgFormatArabicDateFull(target.holidayDateObj);
+
+    var bannerHTML = 
+        '<div class="tg-holiday-alert-card">' +
+        '  <div class="tg-holiday-alert-content">' +
+        '    <div class="tg-holiday-alert-icon-wrap">🎊</div>' +
+        '    <div>' +
+        '      <div class="tg-holiday-alert-title">' +
+        '        <span>🔔 تنبيه موعد مناسبة وإجازة رسمية: <strong>' + escH(target.occasion) + '</strong></span>' +
+        '        <span class="tg-holiday-badge-days">' + daysLabel + '</span>' +
+        '      </div>' +
+        '      <div class="tg-holiday-alert-desc">' +
+        '        يوم الإجازة: <strong>' + hDayName + ' ' + hFormatted + '</strong> — وفق المادة 129 من اللائحة التنظيمية. يرجى إخطار الموظفين برعاية الإدارة.' +
+        '      </div>' +
+        '    </div>' +
+        '  </div>' +
+        '  <div class="tg-holiday-alert-actions">' +
+        '    <button type="button" class="tg-holiday-btn-action" onclick="tgOpenHolidayNoticeModal(' + escH(JSON.stringify(target).replace(/"/g, '&quot;')) + ')">' +
+        '      <span>📢</span> تجهيز رسالة الواتساب للموظفين' +
+        '    </button>' +
+        '    <button type="button" class="bt bt-o" onclick="document.getElementById(\'tgHolidayAlertBannerContainer\').innerHTML=\'\'" style="padding:8px 14px; font-size:12px; color:var(--tx2);">' +
+        '      تجاهل مؤقت' +
+        '    </button>' +
+        '  </div>' +
+        '</div>';
+
+    container.innerHTML = bannerHTML;
+};
+
+// ── فتح نافذة مولّد الإشعارات وتجهيز البيانات ──
+window.tgOpenHolidayNoticeModal = function(presetData) {
+    var modal = document.getElementById('tgHolidayNoticeModal');
+    if (!modal) return;
+
+    var today = new Date();
+    var defaultDateObj = new Date();
+    defaultDateObj.setDate(defaultDateObj.getDate() + 4); // 4 أيام قدام كافتراضي إذا لم يُحدد
+
+    var occasion = 'عيد العمال';
+    var holidayDateObj = defaultDateObj;
+    var durationDays = 1;
+
+    if (presetData && presetData.occasion) {
+        occasion = presetData.occasion;
+        if (presetData.date) holidayDateObj = new Date(presetData.date + 'T12:00:00');
+        if (presetData.durationDays) durationDays = presetData.durationDays;
+    } else {
+        // فحص تلقائي لأقرب مناسبة قادمة
+        var allHols = [...TG_OFFICIAL_HOLIDAYS_PRESETS];
+        var upcoming = allHols.filter(function(h) {
+            var d = new Date(h.date + 'T12:00:00');
+            return d.getTime() >= (today.getTime() - 24*3600*1000);
+        }).sort(function(a,b){ return a.date.localeCompare(b.date); });
+
+        if (upcoming.length) {
+            occasion = upcoming[0].occasion;
+            holidayDateObj = new Date(upcoming[0].date + 'T12:00:00');
+            durationDays = upcoming[0].durationDays || 1;
+        }
+    }
+
+    var yyyy = holidayDateObj.getFullYear();
+    var mm = ('0' + (holidayDateObj.getMonth() + 1)).slice(-2);
+    var dd = ('0' + holidayDateObj.getDate()).slice(-2);
+    var dateIso = yyyy + '-' + mm + '-' + dd;
+
+    var resumeDateObj = tgGetResumeWorkingDateObj(holidayDateObj, durationDays);
+
+    var occInp = document.getElementById('tgHolOccasion');
+    var dateInp = document.getElementById('tgHolHolidayDateInput');
+    var hDayInp = document.getElementById('tgHolHolidayDay');
+    var hDateInp = document.getElementById('tgHolHolidayDateFormatted');
+    var rDayInp = document.getElementById('tgHolResumeDay');
+    var rDateInp = document.getElementById('tgHolResumeDate');
+    var workTimeInp = document.getElementById('tgHolWorkStartTime');
+    var issueDateInp = document.getElementById('tgHolIssueDate');
+
+    if (occInp) occInp.value = occasion;
+    if (dateInp) dateInp.value = dateIso;
+    if (hDayInp) hDayInp.value = tgGetArabicDayName(holidayDateObj);
+    if (hDateInp) hDateInp.value = tgFormatArabicDateFull(holidayDateObj);
+    if (rDayInp) rDayInp.value = tgGetArabicDayName(resumeDateObj);
+    if (rDateInp) rDateInp.value = tgFormatArabicDateFull(resumeDateObj);
+    if (workTimeInp && !workTimeInp.value) workTimeInp.value = 'الساعة 10:00 صباحًا';
+    if (issueDateInp) issueDateInp.value = tgFormatArabicDateFull(today);
+
+    tgUpdateHolidayLivePreview();
+    tgRenderSavedHolidayList();
+
+    modal.style.display = 'flex';
+};
+
+window.tgCloseHolidayNoticeModal = function() {
+    var modal = document.getElementById('tgHolidayNoticeModal');
+    if (modal) modal.style.display = 'none';
+};
+
+window.tgApplyHolidayPreset = function(key) {
+    var item = TG_OFFICIAL_HOLIDAYS_PRESETS.find(function(h){ return h.key === key; });
+    if (item) {
+        tgOpenHolidayNoticeModal(item);
+    }
+};
+
+window.tgOnHolidayDateChange = function(dateIso) {
+    if (!dateIso) return;
+    var d = new Date(dateIso + 'T12:00:00');
+    var hDayInp = document.getElementById('tgHolHolidayDay');
+    var hDateInp = document.getElementById('tgHolHolidayDateFormatted');
+    var rDayInp = document.getElementById('tgHolResumeDay');
+    var rDateInp = document.getElementById('tgHolResumeDate');
+
+    if (hDayInp) hDayInp.value = tgGetArabicDayName(d);
+    if (hDateInp) hDateInp.value = tgFormatArabicDateFull(d);
+
+    var resumeObj = tgGetResumeWorkingDateObj(d, 1);
+    if (rDayInp) rDayInp.value = tgGetArabicDayName(resumeObj);
+    if (rDateInp) rDateInp.value = tgFormatArabicDateFull(resumeObj);
+
+    tgUpdateHolidayLivePreview();
+};
+
+window.tgBuildHolidayMsg = function() {
+    var occ = (document.getElementById('tgHolOccasion') ? document.getElementById('tgHolOccasion').value : '').trim() || 'المناسبة الرسمية';
+    var hday = (document.getElementById('tgHolHolidayDay') ? document.getElementById('tgHolHolidayDay').value : '').trim() || 'الخميس';
+    var hdate = (document.getElementById('tgHolHolidayDateFormatted') ? document.getElementById('tgHolHolidayDateFormatted').value : '').trim() || '';
+    var rday = (document.getElementById('tgHolResumeDay') ? document.getElementById('tgHolResumeDay').value : '').trim() || 'الأحد';
+    var rdate = (document.getElementById('tgHolResumeDate') ? document.getElementById('tgHolResumeDate').value : '').trim() || '';
+    var workTime = (document.getElementById('tgHolWorkStartTime') ? document.getElementById('tgHolWorkStartTime').value : '').trim() || 'الساعة 10:00 صباحًا';
+    var idate = (document.getElementById('tgHolIssueDate') ? document.getElementById('tgHolIssueDate').value : '').trim() || tgFormatArabicDateFull(new Date());
+
+    return "🟢 *إشعار إجازة رسمية | شركة تيك - جو*\n\n" +
+           "تُحيط إدارة الشركة جميع الموظفين الكرام بأن يوم *" + hday + " الموافق " + hdate + "* سيكون إجازة رسمية مدفوعة الأجر بمناسبة " + occ + ".\n\n" +
+           "━━━━━━━━━━━━━━\n" +
+           "📅 *تفاصيل الإجازة*\n" +
+           "• المناسبة: " + occ + "\n" +
+           "• تاريخ الإجازة: " + hday + " " + hdate + "\n" +
+           "• استئناف العمل: " + rday + " " + rdate + "\n" +
+           "• موعد الحضور: " + workTime + "\n\n" +
+           "━━━━━━━━━━━━━━\n" +
+           "📋 *الأساس القانوني*\n" +
+           "وفقًا للمادة 129 من اللائحة التنظيمية للشركة، يحق للعامل إجازة بأجر في العطلات والأعياد والمناسبات الرسمية.\n\n" +
+           "━━━━━━━━━━━━━━\n" +
+           "⚠️ *تنبيهات هامة*\n" +
+           "• في حال اقتضت ظروف العمل الحضور، يستحق الموظف ضعف أجر اليوم أو يوم بديل وفق المادة 129\n" +
+           "• يُرجى الالتزام بتسجيل الحضور عبر جهاز البصمة عند العودة\n" +
+           "• أي استفسارات يُرجى التواصل مع المدير الإداري\n\n" +
+           "كل عام وأنتم بخير 🌿\n\n" +
+           "_إدارة شركة تيك - جو_\n" +
+           "_بتاريخ: " + idate + "_";
+};
+
+window.tgUpdateHolidayLivePreview = function() {
+    var el = document.getElementById('tgHolPreviewMsg');
+    if (el) {
+        el.textContent = tgBuildHolidayMsg();
+    }
+};
+
+window.tgCopyHolidayMsg = function() {
+    var msg = tgBuildHolidayMsg();
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(msg).then(function() {
+            tgShowToast('✅ تم نسخ رسالة إشعار الإجازة بنجاح — جاهزة للصق في الواتساب', 'success');
+        }).catch(function() {
+            tgFallbackCopy(msg);
+        });
+    } else {
+        tgFallbackCopy(msg);
+    }
+    tgSaveHolidayHistory(false);
+};
+
+function tgFallbackCopy(text) {
+    var ta = document.createElement('textarea');
+    ta.value = text;
+    ta.style.position = 'fixed';
+    ta.style.top = '-9999px';
+    document.body.appendChild(ta);
+    ta.focus();
+    ta.select();
+    try {
+        document.execCommand('copy');
+        tgShowToast('✅ تم نسخ رسالة إشعار الإجازة بنجاح — جاهزة للصق في الواتساب', 'success');
+    } catch (e) {
+        alert('يرجى تحديد النص ونسخه يدوياً');
+    }
+    document.body.removeChild(ta);
+}
+
+window.tgSendHolidayWhatsApp = function() {
+    var msg = tgBuildHolidayMsg();
+    var encoded = encodeURIComponent(msg);
+    window.open('https://api.whatsapp.com/send?text=' + encoded, '_blank');
+    tgSaveHolidayHistory(false);
+};
+
+window.tgPublishHolidayAnnouncement = async function() {
+    var occ = (document.getElementById('tgHolOccasion') ? document.getElementById('tgHolOccasion').value : '').trim() || 'مناسبة رسمية';
+    var msg = tgBuildHolidayMsg();
+
+    if (!confirm('هل تريد نشر هذا الإشعار كـ "إعلان رسمي" يظهر فوراً في بوابات جميع الموظفين وإرسال تنبيه لهم؟')) return;
+
+    try {
+        if (window.db) {
+            await db.collection('announcements').add({
+                title: '🎉 إشعار إجازة رسمية | ' + occ,
+                content: msg,
+                type: 'urgent',
+                audience: 'all',
+                authorName: (window.TG_USER ? TG_USER.name : 'الإدارة العامة'),
+                authorUid: (window.TG_USER ? TG_USER.uid : 'admin'),
+                createdAt: firebase.firestore.FieldValue.serverTimestamp(),
+                pinned: true
+            });
+
+            // إرسال Push Notification لجميع الموظفين
+            var usersSnap = await db.collection('users').where('role', '==', 'employee').get();
+            var batch = db.batch();
+            usersSnap.forEach(function(doc) {
+                var notifRef = db.collection('notifications').doc();
+                batch.set(notifRef, {
+                    toUid: doc.id,
+                    title: '🎉 إشعار إجازة رسمية: ' + occ,
+                    body: 'أصدرت الإدارة إشعار إجازة رسمية بمناسبة ' + occ + '. اضغط للاطلاع.',
+                    tag: 'announcement-new',
+                    read: false,
+                    seen: false,
+                    createdAt: firebase.firestore.FieldValue.serverTimestamp()
+                });
+            });
+            await batch.commit();
+
+            tgShowToast('✅ تم نشر إشعار الإجازة كإعلان رسمي وتنبيه جميع الموظفين بنجاح!', 'success');
+        } else {
+            tgShowToast('⚠️ تعذر الاتصال بقاعدة البيانات', 'danger');
+        }
+    } catch(e) {
+        console.error('Publish holiday announcement error:', e);
+        tgShowToast('❌ حدث خطأ أثناء النشر: ' + e.message, 'danger');
+    }
+};
+
+window.tgSaveHolidayHistory = function(showAlert) {
+    var entry = {
+        occasion: (document.getElementById('tgHolOccasion') ? document.getElementById('tgHolOccasion').value : '').trim(),
+        dateIso: (document.getElementById('tgHolHolidayDateInput') ? document.getElementById('tgHolHolidayDateInput').value : '').trim(),
+        holidayDay: (document.getElementById('tgHolHolidayDay') ? document.getElementById('tgHolHolidayDay').value : '').trim(),
+        holidayDateFormatted: (document.getElementById('tgHolHolidayDateFormatted') ? document.getElementById('tgHolHolidayDateFormatted').value : '').trim(),
+        resumeDay: (document.getElementById('tgHolResumeDay') ? document.getElementById('tgHolResumeDay').value : '').trim(),
+        resumeDate: (document.getElementById('tgHolResumeDate') ? document.getElementById('tgHolResumeDate').value : '').trim(),
+        workTime: (document.getElementById('tgHolWorkStartTime') ? document.getElementById('tgHolWorkStartTime').value : '').trim(),
+        issueDate: (document.getElementById('tgHolIssueDate') ? document.getElementById('tgHolIssueDate').value : '').trim(),
+        savedAt: tgFormatArabicDateFull(new Date())
+    };
+
+    var list = [];
+    try { list = JSON.parse(localStorage.getItem('tg_holiday_notices_history') || '[]'); } catch(e){}
+    list = list.filter(function(i){ return i.holidayDateFormatted !== entry.holidayDateFormatted || i.occasion !== entry.occasion; });
+    list.unshift(entry);
+    if (list.length > 20) list = list.slice(0, 20);
+    localStorage.setItem('tg_holiday_notices_history', JSON.stringify(list));
+
+    tgRenderSavedHolidayList();
+    if (showAlert) tgShowToast('💾 تم حفظ بيانات الإشعار في السجل بنجاح', 'success');
+};
+
+window.tgRenderSavedHolidayList = function() {
+    var sec = document.getElementById('tgHolSavedSection');
+    var listEl = document.getElementById('tgHolSavedList');
+    if (!sec || !listEl) return;
+
+    var list = [];
+    try { list = JSON.parse(localStorage.getItem('tg_holiday_notices_history') || '[]'); } catch(e){}
+
+    if (!list.length) {
+        sec.style.display = 'none';
+        return;
+    }
+
+    sec.style.display = 'block';
+    var h = '';
+    list.forEach(function(item, idx) {
+        h += '<div class="tg-holiday-saved-item" onclick="tgLoadSavedHolidayEntry(' + idx + ')">' +
+             '  <div>' +
+             '    <div style="font-size:13px; font-weight:bold; color:var(--tx);">' + escH(item.occasion) + '</div>' +
+             '    <div style="font-size:11.5px; color:var(--tx2); margin-top:2px;">' + escH(item.holidayDay) + ' ' + escH(item.holidayDateFormatted) + ' (الاستئناف: ' + escH(item.resumeDay) + ' ' + escH(item.resumeDate) + ')</div>' +
+             '  </div>' +
+             '  <div style="font-size:10.5px; color:var(--tx3);">' + escH(item.savedAt) + ' ↗</div>' +
+             '</div>';
+    });
+    listEl.innerHTML = h;
+};
+
+window.tgLoadSavedHolidayEntry = function(idx) {
+    var list = [];
+    try { list = JSON.parse(localStorage.getItem('tg_holiday_notices_history') || '[]'); } catch(e){}
+    var item = list[idx];
+    if (!item) return;
+
+    if (document.getElementById('tgHolOccasion')) document.getElementById('tgHolOccasion').value = item.occasion || '';
+    if (document.getElementById('tgHolHolidayDateInput')) document.getElementById('tgHolHolidayDateInput').value = item.dateIso || '';
+    if (document.getElementById('tgHolHolidayDay')) document.getElementById('tgHolHolidayDay').value = item.holidayDay || '';
+    if (document.getElementById('tgHolHolidayDateFormatted')) document.getElementById('tgHolHolidayDateFormatted').value = item.holidayDateFormatted || '';
+    if (document.getElementById('tgHolResumeDay')) document.getElementById('tgHolResumeDay').value = item.resumeDay || '';
+    if (document.getElementById('tgHolResumeDate')) document.getElementById('tgHolResumeDate').value = item.resumeDate || '';
+    if (document.getElementById('tgHolWorkStartTime')) document.getElementById('tgHolWorkStartTime').value = item.workTime || 'الساعة 10:00 صباحًا';
+    if (document.getElementById('tgHolIssueDate')) document.getElementById('tgHolIssueDate').value = item.issueDate || tgFormatArabicDateFull(new Date());
+
+    tgUpdateHolidayLivePreview();
+    tgShowToast('📂 تم استرجاع بيانات إشعار: ' + item.occasion, 'info');
+};
+
+window.tgClearHolidayHistory = function() {
+    if (!confirm('هل تريد مسح كل الإشعارات المحفوظة في السجل؟')) return;
+    localStorage.removeItem('tg_holiday_notices_history');
+    tgRenderSavedHolidayList();
+    tgShowToast('🗑 تم مسح السجل بنجاح', 'info');
+};
+
 

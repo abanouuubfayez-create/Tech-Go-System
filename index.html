@@ -68,7 +68,7 @@
     <link
         href="https://fonts.googleapis.com/css2?family=Alexandria:wght@300;400;500;600;700;800;900&family=Cairo:wght@400;600;700;800;900&family=Tajawal:wght@400;500;700;800&family=Inter:wght@400;500;600;700&display=swap"
         rel="stylesheet">
-    <link rel="stylesheet" href="styles.css?v=1787135576">
+    <link rel="stylesheet" href="styles.css?v=1787582948">
     <link rel="manifest" href="manifest.json">
     <link rel="icon" type="image/png" sizes="192x192" href="icon-192.png">
     <link rel="apple-touch-icon" href="icon-192.png">
@@ -76,8 +76,8 @@
     <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-storage-compat.js"></script>
-    <script src="firebase-config.js?v=1787135576"></script>
-    <script src="auth.js?v=1787135576"></script>
+    <script src="firebase-config.js?v=1787582948"></script>
+    <script src="auth.js?v=1787582948"></script>
     <script>
         (function () {
             const theme = localStorage.getItem('tg-theme') || 'light';
@@ -214,6 +214,7 @@
                     <div class="S-i" onclick="go('la',this)"><span class="ic">📅</span> سجل الإجازة السنوية</div>
                     <div class="S-i" onclick="go('lb',this)"><span class="ic">⚡</span> سجل الإجازة العارضة</div>
                     <div class="S-i" onclick="go('lc',this)"><span class="ic">🎉</span> سجل الأعياد</div>
+                    <div class="S-i" onclick="tgOpenHolidayNoticeModal()" style="border-right:2px solid var(--gd)"><span class="ic">🎊</span> مولّد إشعار الإجازة والواتساب <span class="S-b" style="background:linear-gradient(135deg, #10b981, #059669); color:#fff;">جديد</span></div>
                     <div class="S-i" onclick="go('ld',this)"><span class="ic">❌</span> سجل الغياب بالخصم</div>
 
                     <div class="S-i" onclick="go('emp',this)"><span class="ic">👤</span> ملف بيانات الموظف</div>
@@ -364,6 +365,7 @@
         </div>
         <div class="CT">
             <div class="pg a" id="pg-dash">
+                <div id="tgHolidayAlertBannerContainer"></div>
                 <div class="DG" id="dashSummary" style="margin-bottom:16px"></div>
 
                 <div class="dash-group"
@@ -826,9 +828,9 @@
 
     <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
     <script>if (window.pdfjsLib) { pdfjsLib.GlobalWorkerOptions.workerSrc = "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js"; }</script>
-    <script src="app.js?v=1787135576"></script>
-    <script src="livetrack.js?v=1787135576"></script>
-    <script src="formsend.js?v=1787135576"></script>
+    <script src="app.js?v=1787582948"></script>
+    <script src="livetrack.js?v=1787582948"></script>
+    <script src="formsend.js?v=1787582948"></script>
 
 
     <script>
@@ -1075,7 +1077,7 @@
                             }
                         }
                     }
-                    var fullHtml = '<!DOCTYPE html><html lang="ar" dir="rtl"><head><meta charset="UTF-8"><link rel="stylesheet" href="styles.css?v=1787135576"></head><body style="background:#fff;padding:20px;">' + clone.innerHTML + '</body></html>';
+                    var fullHtml = '<!DOCTYPE html><html lang="ar" dir="rtl"><head><meta charset="UTF-8"><link rel="stylesheet" href="styles.css?v=1787582948"></head><body style="background:#fff;padding:20px;">' + clone.innerHTML + '</body></html>';
                     db.collection('docArchive').add({
                         docTitle: docTitle,
                         employeeName: empName,
@@ -1225,7 +1227,7 @@
         style="position:fixed;bottom:4px;left:50%;transform:translateX(-50%);font-size:9px;color:rgba(255,255,255,0.25);z-index:9999;pointer-events:none;white-space:nowrap;font-family:inherit">
         تطوير وتصميم: أبانوب فايز</div>
     <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
-    <script src="theme.js?v=1787135576"></script>
+    <script src="theme.js?v=1787582948"></script>
 
     <!-- Incoming Meeting Call Modal -->
     <div id="incomingMeetingModal"
@@ -1655,6 +1657,109 @@
 
 
     <div id="tgToastContainer"></div>
+
+    <!-- Holiday Notice & WhatsApp Generator Modal -->
+    <div id="tgHolidayNoticeModal" class="tg-holiday-modal-backdrop" style="display:none;">
+        <div class="tg-holiday-modal-card">
+            <div class="tg-holiday-header">
+                <div>
+                    <div class="tg-holiday-header-title">
+                        <span>🎊</span> مولّد إشعار الإجازات الرسمية — شركة تيك - جو
+                    </div>
+                    <div class="tg-holiday-header-sub">اللائحة التنظيمية للشركة — المادة 129</div>
+                </div>
+                <button type="button" class="tg-holiday-close-btn" onclick="tgCloseHolidayNoticeModal()" title="إغلاق">✕</button>
+            </div>
+
+            <div class="tg-holiday-body">
+                <!-- Preset Quick Buttons -->
+                <div class="tg-holiday-presets-bar">
+                    <span style="font-size:11.5px; font-weight:bold; color:var(--tx2); margin-left:6px;">⚡ مناسبات سريعة:</span>
+                    <button type="button" class="tg-holiday-preset-chip" onclick="tgApplyHolidayPreset('eid_fitr')">🎉 عيد الفطر</button>
+                    <button type="button" class="tg-holiday-preset-chip" onclick="tgApplyHolidayPreset('eid_adha')">🐑 عيد الأضحى</button>
+                    <button type="button" class="tg-holiday-preset-chip" onclick="tgApplyHolidayPreset('labor_day')">👷 عيد العمال</button>
+                    <button type="button" class="tg-holiday-preset-chip" onclick="tgApplyHolidayPreset('sinai_lib')">🦅 تحرير سيناء</button>
+                    <button type="button" class="tg-holiday-preset-chip" onclick="tgApplyHolidayPreset('sham_nessim')">🌸 شم النسيم</button>
+                    <button type="button" class="tg-holiday-preset-chip" onclick="tgApplyHolidayPreset('oct_6')">⚔️ ٦ أكتوبر</button>
+                    <button type="button" class="tg-holiday-preset-chip" onclick="tgApplyHolidayPreset('coptic_xmas')">✝️ عيد الميلاد</button>
+                    <button type="button" class="tg-holiday-preset-chip" onclick="tgApplyHolidayPreset('rev_30_june')">🇪🇬 ٣٠ يونيو</button>
+                    <button type="button" class="tg-holiday-preset-chip" onclick="tgApplyHolidayPreset('prophet_bday')">🕌 المولد النبوي</button>
+                </div>
+
+                <div class="tg-holiday-grid">
+                    <div class="tg-holiday-field">
+                        <label>المناسبة الرسمية</label>
+                        <input type="text" id="tgHolOccasion" placeholder="مثال: عيد العمال" oninput="tgUpdateHolidayLivePreview()" />
+                    </div>
+                    <div class="tg-holiday-field">
+                        <label>تاريخ الإجازة (اختيار تقويم)</label>
+                        <input type="date" id="tgHolHolidayDateInput" onchange="tgOnHolidayDateChange(this.value)" />
+                    </div>
+                    <div class="tg-holiday-field">
+                        <label>يوم الإجازة (المسمى بالعربي)</label>
+                        <input type="text" id="tgHolHolidayDay" placeholder="الخميس" oninput="tgUpdateHolidayLivePreview()" />
+                    </div>
+                    <div class="tg-holiday-field">
+                        <label>تاريخ الإجازة المنسق</label>
+                        <input type="text" id="tgHolHolidayDateFormatted" placeholder="7 مايو 2026" oninput="tgUpdateHolidayLivePreview()" />
+                    </div>
+                    <div class="tg-holiday-field">
+                        <label>يوم استئناف العمل</label>
+                        <input type="text" id="tgHolResumeDay" placeholder="الأحد" oninput="tgUpdateHolidayLivePreview()" />
+                    </div>
+                    <div class="tg-holiday-field">
+                        <label>تاريخ استئناف العمل</label>
+                        <input type="text" id="tgHolResumeDate" placeholder="10 مايو 2026" oninput="tgUpdateHolidayLivePreview()" />
+                    </div>
+                    <div class="tg-holiday-field">
+                        <label>موعد الحضور عند العودة</label>
+                        <input type="text" id="tgHolWorkStartTime" value="الساعة 10:00 صباحًا" oninput="tgUpdateHolidayLivePreview()" />
+                    </div>
+                    <div class="tg-holiday-field">
+                        <label>تاريخ إصدار الإشعار</label>
+                        <input type="text" id="tgHolIssueDate" oninput="tgUpdateHolidayLivePreview()" />
+                    </div>
+                </div>
+
+                <!-- Preview Area -->
+                <div class="tg-holiday-preview-wrap">
+                    <div class="tg-holiday-preview-header">
+                        <span>💬 معاينة رسالة الواتساب الرسمية:</span>
+                        <span style="font-size:11px; color:#10b981; font-weight:bold;">✓ جاهزة للإرسال والمشاركة</span>
+                    </div>
+                    <pre class="tg-holiday-preview-text" id="tgHolPreviewMsg"></pre>
+                </div>
+
+                <!-- Action Buttons -->
+                <div class="tg-holiday-actions-footer">
+                    <button type="button" class="tg-holiday-btn-whatsapp" onclick="tgSendHolidayWhatsApp()">
+                        <span>💬</span> إرسال عبر الواتساب للموظفين
+                    </button>
+                    <button type="button" class="tg-holiday-btn-copy" onclick="tgCopyHolidayMsg()">
+                        <span>📋</span> نسخ الرسالة
+                    </button>
+                    <button type="button" class="tg-holiday-btn-announce" onclick="tgPublishHolidayAnnouncement()">
+                        <span>📢</span> نشر كإعلان رسمي بالنظام
+                    </button>
+                    <button type="button" class="bt bt-o" onclick="tgSaveHolidayHistory(true)" style="padding:9px 16px; font-size:13px;">
+                        <span>💾</span> حفظ في السجل
+                    </button>
+                    <button type="button" class="bt bt-o" onclick="tgCloseHolidayNoticeModal()" style="padding:9px 16px; font-size:13px;">
+                        إغلاق
+                    </button>
+                </div>
+
+                <!-- Saved History -->
+                <div class="tg-holiday-saved-section" id="tgHolSavedSection" style="display:none;">
+                    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
+                        <span style="font-size:12px; font-weight:800; color:var(--tx2);">📂 إشعارات محفوظة مسبقاً:</span>
+                        <button type="button" onclick="tgClearHolidayHistory()" style="background:none; border:none; color:#ef4444; font-size:11px; cursor:pointer; font-weight:bold;">🗑 مسح السجل</button>
+                    </div>
+                    <div id="tgHolSavedList"></div>
+                </div>
+            </div>
+        </div>
+    </div>
 
 </body>
 
