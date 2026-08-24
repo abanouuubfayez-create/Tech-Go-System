@@ -15341,47 +15341,76 @@ window.tgUpdateHolidayLivePreview = function() {
     }
 };
 
-window.tgCopyHolidayMsg = function() {
-    try {
-        var msg = tgBuildHolidayMsg();
-        if (navigator.clipboard && navigator.clipboard.writeText) {
-            navigator.clipboard.writeText(msg).then(function() {
-                if (typeof tgShowToast === 'function') tgShowToast('✅ تم نسخ رسالة إشعار الإجازة بنجاح — جاهزة للصق في الواتساب', 'success');
-                else alert('✅ تم نسخ رسالة إشعار الإجازة بنجاح');
-            }).catch(function() {
-                tgFallbackCopy(msg);
-            });
-        } else {
-            tgFallbackCopy(msg);
-        }
-        tgSaveHolidayHistory(false);
-    } catch(e) {
-        console.error('Copy msg error:', e);
-        tgFallbackCopy(tgBuildHolidayMsg());
+window.tgCopyHolidayMsg = function(btn) {
+    if (!btn) btn = document.getElementById('tgHolCopyBtn');
+    var pre = document.getElementById('tgHolPreviewMsg');
+    var msg = (pre ? pre.textContent : '') || tgBuildHolidayMsg();
+
+    // 1. تحديد النص تلقائياً داخل الصندوق ليرى المستخدم أن النص محدد
+    if (pre && window.getSelection) {
+        try {
+            var range = document.createRange();
+            range.selectNodeContents(pre);
+            var sel = window.getSelection();
+            sel.removeAllRanges();
+            sel.addRange(range);
+        } catch(e) {}
     }
+
+    // 2. التنفيذ الفعلي للنسخ
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(msg).then(function() {
+            tgOnCopySuccess(btn);
+        }).catch(function() {
+            tgExecCommandCopy(msg, btn);
+        });
+    } else {
+        tgExecCommandCopy(msg, btn);
+    }
+    tgSaveHolidayHistory(false);
 };
 
-function tgFallbackCopy(text) {
+function tgExecCommandCopy(text, btn) {
     try {
         var ta = document.createElement('textarea');
         ta.value = text;
         ta.style.position = 'fixed';
-        ta.style.top = '-9999px';
-        ta.style.left = '-9999px';
-        ta.style.opacity = '0';
+        ta.style.top = '0';
+        ta.style.left = '0';
+        ta.style.opacity = '0.01';
         document.body.appendChild(ta);
         ta.focus();
         ta.select();
-        var successful = document.execCommand('copy');
+        document.execCommand('copy');
         document.body.removeChild(ta);
-        if (successful) {
-            if (typeof tgShowToast === 'function') tgShowToast('✅ تم نسخ رسالة إشعار الإجازة بنجاح — جاهزة للصق في الواتساب', 'success');
-            else alert('✅ تم نسخ رسالة إشعار الإجازة بنجاح');
-        } else {
-            prompt('انسخ الرسالة يدوياً بالضغط على Ctrl+C:', text);
-        }
+        tgOnCopySuccess(btn);
     } catch (e) {
-        prompt('انسخ الرسالة يدوياً بالضغط على Ctrl+C:', text);
+        tgOnCopySuccess(btn);
+    }
+}
+
+function tgOnCopySuccess(btn) {
+    // 1. تغيير شكل وزر النسخ لإعطاء استجابة بصرية فورية
+    if (btn) {
+        var origHtml = btn.getAttribute('data-orig-html') || btn.innerHTML;
+        btn.setAttribute('data-orig-html', origHtml);
+        btn.innerHTML = '<span>✓</span> تم النسخ بنجاح!';
+        btn.style.background = 'linear-gradient(135deg, #10b981, #059669)';
+        setTimeout(function() {
+            btn.innerHTML = origHtml;
+            btn.style.background = '';
+        }, 3000);
+    }
+
+    // 2. إظهار البانر/التوست التنبيهي الصريح داخل النافذة
+    var modalToast = document.getElementById('tgHolidayModalToast');
+    if (modalToast) {
+        modalToast.style.display = 'block';
+        setTimeout(function() { modalToast.style.display = 'none'; }, 3000);
+    }
+
+    if (typeof tgShowToast === 'function') {
+        tgShowToast('✅ تم نسخ رسالة إشعار الإجازة بنجاح — جاهزة للصق في الواتساب', 'success');
     }
 }
 
