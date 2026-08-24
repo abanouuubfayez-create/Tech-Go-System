@@ -15342,41 +15342,66 @@ window.tgUpdateHolidayLivePreview = function() {
 };
 
 window.tgCopyHolidayMsg = function() {
-    var msg = tgBuildHolidayMsg();
-    if (navigator.clipboard && navigator.clipboard.writeText) {
-        navigator.clipboard.writeText(msg).then(function() {
-            tgShowToast('✅ تم نسخ رسالة إشعار الإجازة بنجاح — جاهزة للصق في الواتساب', 'success');
-        }).catch(function() {
+    try {
+        var msg = tgBuildHolidayMsg();
+        if (navigator.clipboard && navigator.clipboard.writeText) {
+            navigator.clipboard.writeText(msg).then(function() {
+                if (typeof tgShowToast === 'function') tgShowToast('✅ تم نسخ رسالة إشعار الإجازة بنجاح — جاهزة للصق في الواتساب', 'success');
+                else alert('✅ تم نسخ رسالة إشعار الإجازة بنجاح');
+            }).catch(function() {
+                tgFallbackCopy(msg);
+            });
+        } else {
             tgFallbackCopy(msg);
-        });
-    } else {
-        tgFallbackCopy(msg);
+        }
+        tgSaveHolidayHistory(false);
+    } catch(e) {
+        console.error('Copy msg error:', e);
+        tgFallbackCopy(tgBuildHolidayMsg());
     }
-    tgSaveHolidayHistory(false);
 };
 
 function tgFallbackCopy(text) {
-    var ta = document.createElement('textarea');
-    ta.value = text;
-    ta.style.position = 'fixed';
-    ta.style.top = '-9999px';
-    document.body.appendChild(ta);
-    ta.focus();
-    ta.select();
     try {
-        document.execCommand('copy');
-        tgShowToast('✅ تم نسخ رسالة إشعار الإجازة بنجاح — جاهزة للصق في الواتساب', 'success');
+        var ta = document.createElement('textarea');
+        ta.value = text;
+        ta.style.position = 'fixed';
+        ta.style.top = '-9999px';
+        ta.style.left = '-9999px';
+        ta.style.opacity = '0';
+        document.body.appendChild(ta);
+        ta.focus();
+        ta.select();
+        var successful = document.execCommand('copy');
+        document.body.removeChild(ta);
+        if (successful) {
+            if (typeof tgShowToast === 'function') tgShowToast('✅ تم نسخ رسالة إشعار الإجازة بنجاح — جاهزة للصق في الواتساب', 'success');
+            else alert('✅ تم نسخ رسالة إشعار الإجازة بنجاح');
+        } else {
+            prompt('انسخ الرسالة يدوياً بالضغط على Ctrl+C:', text);
+        }
     } catch (e) {
-        alert('يرجى تحديد النص ونسخه يدوياً');
+        prompt('انسخ الرسالة يدوياً بالضغط على Ctrl+C:', text);
     }
-    document.body.removeChild(ta);
 }
 
 window.tgSendHolidayWhatsApp = function() {
-    var msg = tgBuildHolidayMsg();
-    var encoded = encodeURIComponent(msg);
-    window.open('https://api.whatsapp.com/send?text=' + encoded, '_blank');
-    tgSaveHolidayHistory(false);
+    try {
+        var msg = tgBuildHolidayMsg();
+        var url = 'https://api.whatsapp.com/send?text=' + encodeURIComponent(msg);
+        var a = document.createElement('a');
+        a.href = url;
+        a.target = '_blank';
+        a.rel = 'noopener noreferrer';
+        document.body.appendChild(a);
+        a.click();
+        setTimeout(function(){ if (a.parentNode) a.parentNode.removeChild(a); }, 100);
+        tgSaveHolidayHistory(false);
+        if (typeof tgShowToast === 'function') tgShowToast('💬 جاري فتح الواتساب...', 'success');
+    } catch(e) {
+        console.error('WhatsApp send error:', e);
+        window.open('https://api.whatsapp.com/send?text=' + encodeURIComponent(tgBuildHolidayMsg()), '_blank');
+    }
 };
 
 window.tgPublishHolidayAnnouncement = async function() {
@@ -15386,6 +15411,8 @@ window.tgPublishHolidayAnnouncement = async function() {
     if (!confirm('هل تريد نشر هذا الإشعار كـ "إعلان رسمي" يظهر فوراً في بوابات جميع الموظفين وإرسال تنبيه لهم؟')) return;
 
     try {
+        if (typeof tgShowToast === 'function') tgShowToast('⏳ جاري النشر وإرسال الإشعارات للموظفين...', 'info');
+
         if (window.db) {
             await db.collection('announcements').add({
                 title: '🎉 إشعار إجازة رسمية | ' + occ,
@@ -15399,29 +15426,36 @@ window.tgPublishHolidayAnnouncement = async function() {
             });
 
             // إرسال Push Notification لجميع الموظفين
-            var usersSnap = await db.collection('users').where('role', '==', 'employee').get();
-            var batch = db.batch();
-            usersSnap.forEach(function(doc) {
-                var notifRef = db.collection('notifications').doc();
-                batch.set(notifRef, {
-                    toUid: doc.id,
-                    title: '🎉 إشعار إجازة رسمية: ' + occ,
-                    body: 'أصدرت الإدارة إشعار إجازة رسمية بمناسبة ' + occ + '. اضغط للاطلاع.',
-                    tag: 'announcement-new',
-                    read: false,
-                    seen: false,
-                    createdAt: firebase.firestore.FieldValue.serverTimestamp()
+            try {
+                var usersSnap = await db.collection('users').where('role', '==', 'employee').get();
+                var batch = db.batch();
+                usersSnap.forEach(function(doc) {
+                    var notifRef = db.collection('notifications').doc();
+                    batch.set(notifRef, {
+                        toUid: doc.id,
+                        title: '🎉 إشعار إجازة رسمية: ' + occ,
+                        body: 'أصدرت الإدارة إشعار إجازة رسمية بمناسبة ' + occ + '. اضغط للاطلاع.',
+                        tag: 'announcement-new',
+                        read: false,
+                        seen: false,
+                        createdAt: firebase.firestore.FieldValue.serverTimestamp()
+                    });
                 });
-            });
-            await batch.commit();
+                await batch.commit();
+            } catch(nErr) {
+                console.warn('Batch notification send warning:', nErr);
+            }
 
-            tgShowToast('✅ تم نشر إشعار الإجازة كإعلان رسمي وتنبيه جميع الموظفين بنجاح!', 'success');
+            if (typeof tgShowToast === 'function') tgShowToast('✅ تم نشر إشعار الإجازة كإعلان رسمي وتنبيه جميع الموظفين بنجاح!', 'success');
+            else alert('✅ تم نشر إشعار الإجازة كإعلان رسمي وتنبيه جميع الموظفين بنجاح!');
         } else {
-            tgShowToast('⚠️ تعذر الاتصال بقاعدة البيانات', 'danger');
+            if (typeof tgShowToast === 'function') tgShowToast('⚠️ تعذر الاتصال بقاعدة البيانات', 'danger');
+            else alert('⚠️ تعذر الاتصال بقاعدة البيانات');
         }
     } catch(e) {
         console.error('Publish holiday announcement error:', e);
-        tgShowToast('❌ حدث خطأ أثناء النشر: ' + e.message, 'danger');
+        if (typeof tgShowToast === 'function') tgShowToast('❌ حدث خطأ أثناء النشر: ' + e.message, 'danger');
+        else alert('❌ حدث خطأ أثناء النشر: ' + e.message);
     }
 };
 
