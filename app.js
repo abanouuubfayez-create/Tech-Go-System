@@ -15022,33 +15022,33 @@ window.tgShowToast = function(message, type, duration) {
    ========================================================================== */
 
 var TG_OFFICIAL_HOLIDAYS_PRESETS = [
-    // أعياد ومناسبات 2026 الرسمية
-    { key: 'coptic_xmas', label: '✝️ عيد الميلاد المجيد', occasion: 'عيد الميلاد المجيد', date: '2026-01-07', durationDays: 1 },
-    { key: 'police_day', label: '👮 عيد الشرطة وثورة 25 يناير', occasion: 'عيد الشرطة وثورة 25 يناير', date: '2026-01-25', durationDays: 1 },
-    { key: 'eid_fitr', label: '🎉 عيد الفطر المبارك', occasion: 'عيد الفطر المبارك', date: '2026-03-20', durationDays: 3 },
-    { key: 'sinai_lib', label: '🦅 عيد تحرير سيناء', occasion: 'عيد تحرير سيناء', date: '2026-04-25', durationDays: 1 },
-    { key: 'labor_day', label: '👷 عيد العمال', occasion: 'عيد العمال', date: '2026-05-01', durationDays: 1 },
-    { key: 'sham_nessim', label: '🌸 شم النسيم', occasion: 'شم النسيم', date: '2026-05-11', durationDays: 1 },
-    { key: 'eid_adha', label: '🐑 عيد الأضحى المبارك', occasion: 'عيد الأضحى المبارك', date: '2026-05-27', durationDays: 4 },
-    { key: 'islamic_ny', label: '🌙 رأس السنة الهجرية', occasion: 'رأس السنة الهجرية', date: '2026-06-17', durationDays: 1 },
-    { key: 'rev_30_june', label: '🇪🇬 ثورة ٣٠ يونيو', occasion: 'ثورة 30 يونيو', date: '2026-06-30', durationDays: 1 },
-    { key: 'rev_23_july', label: '🇪🇬 ثورة ٢٣ يوليو', occasion: 'ثورة 23 يوليو', date: '2026-07-23', durationDays: 1 },
-    { key: 'prophet_bday', label: '🕌 المولد النبوي الشريف', occasion: 'المولد النبوي الشريف', date: '2026-08-26', durationDays: 1 },
-    { key: 'oct_6', label: '⚔️ عيد القوات المسلحة (٦ أكتوبر)', occasion: 'عيد القوات المسلحة (ذكرى نصر 6 أكتوبر)', date: '2026-10-06', durationDays: 1 },
+    // 🇪🇬 مواعيد الإجازات الرسمية الدقيقة لعام 2026 بجمهورية مصر العربية (بعد تطبيق قرارات مجلس الوزراء بالترحيل للخميس)
+    { key: 'coptic_xmas', label: '✝️ عيد الميلاد المجيد', occasion: 'عيد الميلاد المجيد', date: '2026-01-07', durationDays: 1, note: 'الأربعاء 7 يناير' },
+    { key: 'police_day', label: '👮 ثورة 25 يناير وعيد الشرطة', occasion: 'عيد الشرطة وثورة 25 يناير', date: '2026-01-29', durationDays: 1, note: 'الخميس 29 يناير (مُرحّل بقرار مجلس الوزراء بدلاً من الأحد 25 يناير)' },
+    { key: 'eid_fitr', label: '🎉 عيد الفطر المبارك', occasion: 'عيد الفطر المبارك', date: '2026-03-19', durationDays: 5, note: 'من الخميس 19 مارس حتى الإثنين 23 مارس (استئناف الثلاثاء 24 مارس)' },
+    { key: 'sham_nessim', label: '🌸 عيد شم النسيم', occasion: 'شم النسيم', date: '2026-04-13', durationDays: 1, note: 'الإثنين 13 أبريل' },
+    { key: 'sinai_lib', label: '🦅 عيد تحرير سيناء', occasion: 'عيد تحرير سيناء', date: '2026-04-25', durationDays: 1, note: 'السبت 25 أبريل' },
+    { key: 'labor_day', label: '👷 عيد العمال', occasion: 'عيد العمال', date: '2026-05-07', durationDays: 1, note: 'الخميس 7 مايو (مُرحّل بقرار مجلس الوزراء بدلاً من الجمعة 1 مايو)' },
+    { key: 'eid_adha', label: '🐑 وقفة وعيد الأضحى المبارك', occasion: 'عيد الأضحى المبارك', date: '2026-05-26', durationDays: 6, note: 'من الثلاثاء 26 مايو حتى الأحد 31 مايو (استئناف الإثنين 1 يونيو)' },
+    { key: 'islamic_ny', label: '🌙 رأس السنة الهجرية', occasion: 'رأس السنة الهجرية', date: '2026-06-18', durationDays: 1, note: 'الخميس 18 يونيو (مُرحّل بقرار مجلس الوزراء بدلاً من الأربعاء 17 يونيو)' },
+    { key: 'rev_30_june', label: '🇪🇬 ثورة ٣٠ يونيو', occasion: 'ثورة 30 يونيو', date: '2026-07-02', durationDays: 1, note: 'الخميس 2 يوليو (مُرحّل بقرار مجلس الوزراء بدلاً من الثلاثاء 30 يونيو)' },
+    { key: 'rev_23_july', label: '🇪🇬 ثورة ٢٣ يوليو', occasion: 'ثورة 23 يوليو', date: '2026-07-23', durationDays: 1, note: 'الخميس 23 يوليو' },
+    { key: 'prophet_bday', label: '🕌 المولد النبوي الشريف', occasion: 'المولد النبوي الشريف', date: '2026-08-27', durationDays: 1, note: 'الخميس 27 أغسطس (مُرحّل بقرار مجلس الوزراء بدلاً من الثلاثاء 25 أغسطس)' },
+    { key: 'oct_6', label: '⚔️ عيد القوات المسلحة (٦ أكتوبر)', occasion: 'عيد القوات المسلحة (ذكرى نصر 6 أكتوبر)', date: '2026-10-08', durationDays: 1, note: 'الخميس 8 أكتوبر (مُرحّل بقرار مجلس الوزراء بدلاً من الثلاثاء 6 أكتوبر)' },
 
-    // أعياد ومناسبات 2027
+    // 🇪🇬 مواعيد الإجازات الرسمية لعام 2027
     { key: 'coptic_xmas_2027', label: '✝️ عيد الميلاد المجيد 2027', occasion: 'عيد الميلاد المجيد', date: '2027-01-07', durationDays: 1 },
-    { key: 'police_day_2027', label: '👮 عيد الشرطة 2027', occasion: 'عيد الشرطة وثورة 25 يناير', date: '2027-01-25', durationDays: 1 },
-    { key: 'eid_fitr_2027', label: '🎉 عيد الفطر المبارك 2027', occasion: 'عيد الفطر المبارك', date: '2027-03-10', durationDays: 3 },
-    { key: 'sinai_lib_2027', label: '🦅 عيد تحرير سيناء 2027', occasion: 'عيد تحرير سيناء', date: '2027-04-25', durationDays: 1 },
-    { key: 'labor_day_2027', label: '👷 عيد العمال 2027', occasion: 'عيد العمال', date: '2027-05-01', durationDays: 1 },
+    { key: 'police_day_2027', label: '👮 عيد الشرطة 2027', occasion: 'عيد الشرطة وثورة 25 يناير', date: '2027-01-28', durationDays: 1 },
+    { key: 'eid_fitr_2027', label: '🎉 عيد الفطر المبارك 2027', occasion: 'عيد الفطر المبارك', date: '2027-03-09', durationDays: 5 },
     { key: 'sham_nessim_2027', label: '🌸 شم النسيم 2027', occasion: 'شم النسيم', date: '2027-05-03', durationDays: 1 },
-    { key: 'eid_adha_2027', label: '🐑 عيد الأضحى المبارك 2027', occasion: 'عيد الأضحى المبارك', date: '2027-05-17', durationDays: 4 },
-    { key: 'islamic_ny_2027', label: '🌙 رأس السنة الهجرية 2027', occasion: 'رأس السنة الهجرية', date: '2027-06-06', durationDays: 1 },
-    { key: 'rev_30_june_2027', label: '🇪🇬 ثورة ٣٠ يونيو 2027', occasion: 'ثورة 30 يونيو', date: '2027-06-30', durationDays: 1 },
-    { key: 'rev_23_july_2027', label: '🇪🇬 ثورة ٢٣ يوليو 2027', occasion: 'ثورة 23 يوليو', date: '2027-07-23', durationDays: 1 },
-    { key: 'prophet_bday_2027', label: '🕌 المولد النبوي الشريف 2027', occasion: 'المولد النبوي الشريف', date: '2027-08-16', durationDays: 1 },
-    { key: 'oct_6_2027', label: '⚔️ عيد القوات المسلحة 2027', occasion: 'عيد القوات المسلحة (ذكرى نصر 6 أكتوبر)', date: '2027-10-06', durationDays: 1 }
+    { key: 'sinai_lib_2027', label: '🦅 عيد تحرير سيناء 2027', occasion: 'عيد تحرير سيناء', date: '2027-04-29', durationDays: 1 },
+    { key: 'labor_day_2027', label: '👷 عيد العمال 2027', occasion: 'عيد العمال', date: '2027-05-06', durationDays: 1 },
+    { key: 'eid_adha_2027', label: '🐑 عيد الأضحى المبارك 2027', occasion: 'عيد الأضحى المبارك', date: '2027-05-16', durationDays: 5 },
+    { key: 'islamic_ny_2027', label: '🌙 رأس السنة الهجرية 2027', occasion: 'رأس السنة الهجرية', date: '2027-06-10', durationDays: 1 },
+    { key: 'rev_30_june_2027', label: '🇪🇬 ثورة ٣٠ يونيو 2027', occasion: 'ثورة 30 يونيو', date: '2027-07-01', durationDays: 1 },
+    { key: 'rev_23_july_2027', label: '🇪🇬 ثورة ٢٣ يوليو 2027', occasion: 'ثورة 23 يوليو', date: '2027-07-29', durationDays: 1 },
+    { key: 'prophet_bday_2027', label: '🕌 المولد النبوي الشريف 2027', occasion: 'المولد النبوي الشريف', date: '2027-08-19', durationDays: 1 },
+    { key: 'oct_6_2027', label: '⚔️ عيد القوات المسلحة 2027', occasion: 'عيد القوات المسلحة (ذكرى نصر 6 أكتوبر)', date: '2027-10-07', durationDays: 1 }
 ];
 window.TG_OFFICIAL_HOLIDAYS_PRESETS = TG_OFFICIAL_HOLIDAYS_PRESETS;
 
@@ -15275,6 +15275,33 @@ window.tgOnHolidayDateChange = function(dateIso) {
     if (rDateInp) rDateInp.value = tgFormatArabicDateFull(resumeObj);
 
     tgUpdateHolidayLivePreview();
+};
+
+window.tgShiftCurrentHolidayToThursday = function() {
+    var dateInp = document.getElementById('tgHolHolidayDateInput');
+    if (!dateInp || !dateInp.value) {
+        alert('الرجاء اختيار تاريخ أولاً');
+        return;
+    }
+    var d = new Date(dateInp.value + 'T12:00:00');
+    var dayOfWeek = d.getDay(); // 0=Sun, 1=Mon, 2=Tue, 3=Wed, 4=Thu, 5=Fri, 6=Sat
+    if (dayOfWeek === 4) {
+        tgShowToast('ℹ️ التاريخ يوافق يوم الخميس بالفعل', 'info');
+        return;
+    }
+    // ترحيل إلى يوم الخميس من نفس الأسبوع أو الأسبوع التالي
+    var diffToThu = (4 - dayOfWeek + 7) % 7;
+    if (diffToThu === 0) diffToThu = 7;
+    d.setDate(d.getDate() + diffToThu);
+
+    var yyyy = d.getFullYear();
+    var mm = ('0' + (d.getMonth() + 1)).slice(-2);
+    var dd = ('0' + d.getDate()).slice(-2);
+    var shiftedIso = yyyy + '-' + mm + '-' + dd;
+
+    dateInp.value = shiftedIso;
+    tgOnHolidayDateChange(shiftedIso);
+    tgShowToast('⚡ تم ترحيل الإجازة ليوم الخميس (' + tgFormatArabicDateFull(d) + ') بقرار مجلس الوزراء', 'success');
 };
 
 window.tgBuildHolidayMsg = function() {
