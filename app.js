@@ -3847,12 +3847,12 @@ function saveMyPassword(){
 window.tgPrintAdminLeavesReport = function () {
     var baseline = [
         { empId: '3',  name: 'ابتهال', job: 'UI/UX Designer', entitlement: 15, usedAnnual: 0, usedCasual: 1, usedOfficial: 1 },
-        { empId: '8',  name: 'م/ مرقس مدحت', job: 'Backend Developer', entitlement: 15, usedAnnual: 1, usedCasual: 0, usedOfficial: 0 },
+        { empId: '8',  name: 'م/ مرقس مدحت', job: 'Senior Backend Developer', entitlement: 15, usedAnnual: 1, usedCasual: 0, usedOfficial: 0 },
         { empId: '7',  name: 'باسل', job: 'Frontend Developer', entitlement: 15, usedAnnual: 4, usedCasual: 1, usedOfficial: 0 },
         { empId: '4',  name: 'أبانوب فايز', job: 'Tech Lead / Admin', entitlement: 15, usedAnnual: 0, usedCasual: 0, usedOfficial: 0 },
-        { empId: '5',  name: 'إبراهيم', job: 'Flutter Developer', entitlement: 15, usedAnnual: 1, usedCasual: 2, usedOfficial: 0 },
+        { empId: '5',  name: 'إبراهيم', job: 'Mobile App Developer', entitlement: 15, usedAnnual: 1, usedCasual: 2, usedOfficial: 0 },
         { empId: '6',  name: 'يوستينا', job: 'Graphic Designer', entitlement: 15, usedAnnual: 6, usedCasual: 4, usedOfficial: 0 },
-        { empId: '10', name: 'كيرلس مجدي', job: 'Backend Developer', entitlement: 15, usedAnnual: 0, usedCasual: 0, usedOfficial: 0 }
+        { empId: '10', name: 'كيرلس', job: 'Software Developer', entitlement: 15, usedAnnual: 0, usedCasual: 0, usedOfficial: 0 }
     ];
 
     var leavesStore = null;
@@ -3960,12 +3960,12 @@ function renderAdminLeavesRecordPage(c) {
 
     var baseline = [
         { empId: '3',  name: 'ابتهال', job: 'UI/UX Designer', entitlement: 15, usedAnnual: 0, usedCasual: 1, usedOfficial: 1 },
-        { empId: '8',  name: 'م/ مرقس مدحت', job: 'Backend Developer', entitlement: 15, usedAnnual: 1, usedCasual: 0, usedOfficial: 0 },
+        { empId: '8',  name: 'م/ مرقس مدحت', job: 'Senior Backend Developer', entitlement: 15, usedAnnual: 1, usedCasual: 0, usedOfficial: 0 },
         { empId: '7',  name: 'باسل', job: 'Frontend Developer', entitlement: 15, usedAnnual: 4, usedCasual: 1, usedOfficial: 0 },
         { empId: '4',  name: 'أبانوب فايز', job: 'Tech Lead / Admin', entitlement: 15, usedAnnual: 0, usedCasual: 0, usedOfficial: 0 },
-        { empId: '5',  name: 'إبراهيم', job: 'Flutter Developer', entitlement: 15, usedAnnual: 1, usedCasual: 2, usedOfficial: 0 },
+        { empId: '5',  name: 'إبراهيم', job: 'Mobile App Developer', entitlement: 15, usedAnnual: 1, usedCasual: 2, usedOfficial: 0 },
         { empId: '6',  name: 'يوستينا', job: 'Graphic Designer', entitlement: 15, usedAnnual: 6, usedCasual: 4, usedOfficial: 0 },
-        { empId: '10', name: 'كيرلس مجدي', job: 'Backend Developer', entitlement: 15, usedAnnual: 0, usedCasual: 0, usedOfficial: 0 }
+        { empId: '10', name: 'كيرلس', job: 'Software Developer', entitlement: 15, usedAnnual: 0, usedCasual: 0, usedOfficial: 0 }
     ];
 
     // Check attendance.html leavesStore
