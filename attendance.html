@@ -574,6 +574,36 @@
         </div>
     </header>
 
+    <!-- Archive & Month Selector Bar -->
+    <div class="archive-bar" id="archiveBar" style="max-width: 1400px; margin: 0.8rem auto 1rem auto; background: var(--surface); border: 1px solid var(--border); border-radius: 14px; padding: 10px 18px; display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; box-shadow: var(--shadow-sm);">
+        <div style="display: flex; align-items: center; gap: 10px; flex-wrap: wrap;">
+            <div style="display: flex; align-items: center; gap: 6px; font-weight: 800; font-size: 0.9rem; color: var(--text);">
+                <span style="font-size: 1.1rem;">📅</span>
+                <span>أرشيف الشهور السابقة:</span>
+            </div>
+            <select id="archiveMonthSelect" onchange="onArchiveMonthChanged(this.value)" style="padding: 6px 14px; border-radius: 8px; border: 1.5px solid var(--primary); background: var(--surface-2); color: var(--text); font-weight: 700; font-size: 0.88rem; cursor: pointer; min-width: 190px;">
+                <option value="">-- اختر الشهر المطلوب --</option>
+            </select>
+            <span id="currentLoadedMonthBadge" style="background: rgba(16,185,129,0.12); color: #059669; border: 1px solid rgba(16,185,129,0.3); padding: 3px 10px; border-radius: 12px; font-size: 0.78rem; font-weight: 800; display: none;">
+                ✓ الشهر المعروض حالياً
+            </span>
+        </div>
+        <div style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
+            <button class="btn-action btn-ghost" onclick="saveCurrentMonthToArchive(true)" id="btnSaveArchive" style="padding: 6px 12px; font-size: 0.82rem;" title="حفظ بيانات الشهر الحالية في الأرشيف الدائم">
+                💾 حفظ الشهر في الأرشيف
+            </button>
+            <button class="btn-action btn-ghost" onclick="downloadCurrentMonthDatFile()" id="btnDownloadDat" style="padding: 6px 12px; font-size: 0.82rem;" title="تحميل ملف البصمة الأصلي لهذا الشهر (.dat)">
+                📥 تحميل ملف البصمة (.dat)
+            </button>
+            <button class="btn-action btn-ghost" onclick="deleteSelectedArchiveMonth()" id="btnDeleteArchive" style="padding: 6px 10px; font-size: 0.82rem; color: #dc2626;" title="حذف هذا الشهر من الأرشيف">
+                🗑️
+            </button>
+            <button class="btn-action btn-primary-action" onclick="showUploadSection()" style="padding: 6px 14px; font-size: 0.82rem;" title="رفع ملف بصمة لشهر جديد">
+                ➕ رفع شهر جديد
+            </button>
+        </div>
+    </div>
+
     <!-- Upload Section -->
     <div id="uploadSection">
         <div class="upload-card" id="dropZone"
@@ -846,6 +876,14 @@
         let workConfig = { start: '10:00', end: '18:00', grace: 30, workDays: [0,1,2,3,4] };
         let stats = null;
 
+        // ══════════════════════════════════════════
+        //  MONTHLY ARCHIVE & RETENTION SYSTEM
+        // ══════════════════════════════════════════
+        let attendanceArchive = {};
+        let currentLoadedMonthKey = '';
+        let currentRawContent = '';
+        let currentRecords = [];
+
         try {
             const sn = localStorage.getItem('empNames');
             if (sn) Object.assign(employeeNames, JSON.parse(sn));
@@ -853,7 +891,188 @@
             if (sp) Object.assign(employeePermissions, JSON.parse(sp));
             const sw = localStorage.getItem('techgo_work_config');
             if (sw) Object.assign(workConfig, JSON.parse(sw));
+            const sa = localStorage.getItem('techgo_attendance_archive');
+            if (sa) attendanceArchive = JSON.parse(sa);
         } catch(e){}
+
+        function getMonthKeyAndName(dateStr) {
+            if (!dateStr) return { key: '2026-08', name: 'أغسطس 2026' };
+            const parts = dateStr.split('-');
+            if (parts.length >= 2) {
+                const y = parts[0];
+                const mIdx = parseInt(parts[1], 10) - 1;
+                const mName = _MONTH_NAMES_AR[mIdx] || parts[1];
+                return { key: `${y}-${parts[1].padStart(2, '0')}`, name: `${mName} ${y}` };
+            }
+            return { key: '2026-08', name: 'أغسطس 2026' };
+        }
+
+        function saveMonthDataToArchive(monthKey, monthName, rawContent, records, currentStats, permissions, fileName) {
+            if (!monthKey) return;
+            attendanceArchive[monthKey] = {
+                monthKey: monthKey,
+                monthName: monthName,
+                fileName: fileName || `attlog_${monthKey.replace('-', '_')}.dat`,
+                updatedAt: new Date().toISOString(),
+                rawContent: rawContent || '',
+                records: records || [],
+                stats: currentStats || null,
+                permissions: permissions || Object.assign({}, employeePermissions)
+            };
+
+            try {
+                localStorage.setItem('techgo_attendance_archive', JSON.stringify(attendanceArchive));
+            } catch(e){}
+
+            renderArchiveDropdown(monthKey);
+        }
+
+        function renderArchiveDropdown(selectedKey) {
+            const sel = document.getElementById('archiveMonthSelect');
+            if (!sel) return;
+            sel.innerHTML = '<option value="">-- اختر الشهر المطلوب --</option>';
+
+            const keys = Object.keys(attendanceArchive).sort().reverse();
+            keys.forEach(k => {
+                const item = attendanceArchive[k];
+                const opt = document.createElement('option');
+                opt.value = k;
+                opt.textContent = `📅 ${item.monthName || k} (${(item.records||[]).length} حركة)`;
+                if (k === selectedKey || (!selectedKey && k === currentLoadedMonthKey)) {
+                    opt.selected = true;
+                }
+                sel.appendChild(opt);
+            });
+
+            const badge = document.getElementById('currentLoadedMonthBadge');
+            if (badge) {
+                if (currentLoadedMonthKey && attendanceArchive[currentLoadedMonthKey]) {
+                    badge.style.display = 'inline-block';
+                    badge.textContent = `✓ المعروض: ${attendanceArchive[currentLoadedMonthKey].monthName}`;
+                } else {
+                    badge.style.display = 'none';
+                }
+            }
+        }
+
+        function onArchiveMonthChanged(monthKey) {
+            if (!monthKey) return;
+            loadArchivedMonth(monthKey);
+        }
+
+        function loadArchivedMonth(monthKey) {
+            const data = attendanceArchive[monthKey];
+            if (!data) return;
+
+            currentLoadedMonthKey = monthKey;
+            currentRawContent = data.rawContent || '';
+            currentRecords = data.records || [];
+
+            if (data.permissions) {
+                employeePermissions = Object.assign({}, data.permissions);
+                savePermissionsToStorage();
+            }
+
+            if (data.records && data.records.length > 0) {
+                calculateAndRenderStats(data.records, false);
+            } else if (data.stats) {
+                stats = data.stats;
+                renderExecutiveOverview();
+                renderTimesheets();
+                renderPermissionsTable();
+                document.getElementById('uploadSection').classList.add('hidden');
+                document.getElementById('resultsSection').classList.remove('hidden');
+            }
+
+            renderArchiveDropdown(monthKey);
+        }
+
+        function saveCurrentMonthToArchive(manualNotice) {
+            if (!currentRecords.length && !stats) {
+                alert('⚠️ لا توجد بيانات شهر معروضة حالياً لحفظها.');
+                return;
+            }
+
+            let sampleDate = '';
+            if (currentRecords.length && currentRecords[0].date) sampleDate = currentRecords[0].date;
+            else if (stats && stats.employeeDetails && stats.employeeDetails[0] && stats.employeeDetails[0].dates[0]) {
+                sampleDate = stats.employeeDetails[0].dates[0];
+            }
+
+            const { key, name } = getMonthKeyAndName(sampleDate);
+            saveMonthDataToArchive(key, name, currentRawContent, currentRecords, stats, employeePermissions);
+
+            if (manualNotice) {
+                alert(`✓ تم حفظ وأرشفة بيانات شهر (${name}) بنجاح في الأرشيف الدائم!`);
+            }
+        }
+
+        function downloadCurrentMonthDatFile() {
+            if (!currentLoadedMonthKey || !attendanceArchive[currentLoadedMonthKey]) {
+                if (!currentRawContent && !currentRecords.length) {
+                    alert('⚠️ يرجى اختيار أو رفع شهر أولاً لتحميل ملف البصمة.');
+                    return;
+                }
+            }
+
+            const item = attendanceArchive[currentLoadedMonthKey] || {};
+            let content = item.rawContent || currentRawContent;
+
+            if (!content && (item.records || currentRecords).length) {
+                const recs = item.records || currentRecords;
+                content = recs.map(r => `${r.employeeId}\t${r.date}\t${r.time}`).join('\n');
+            }
+
+            if (!content) {
+                alert('⚠️ لا يوجد محتوى ملف بصمة متاح لهذا الشهر.');
+                return;
+            }
+
+            const fileName = item.fileName || `attlog_${currentLoadedMonthKey || 'month'}.dat`;
+            const blob = new Blob([content], { type: 'text/plain;charset=utf-8' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = fileName;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+        }
+
+        function deleteSelectedArchiveMonth() {
+            const sel = document.getElementById('archiveMonthSelect');
+            const k = sel ? sel.value : currentLoadedMonthKey;
+            if (!k || !attendanceArchive[k]) {
+                alert('⚠️ يرجى تحديد الشهر المراد حذفه من القائمة.');
+                return;
+            }
+
+            const mName = attendanceArchive[k].monthName || k;
+            if (!confirm(`هل أنت متأكد من رغبتك في حذف بيانات وأرشيف شهر (${mName})؟`)) return;
+
+            delete attendanceArchive[k];
+            try {
+                localStorage.setItem('techgo_attendance_archive', JSON.stringify(attendanceArchive));
+            } catch(e){}
+
+            renderArchiveDropdown();
+
+            const keys = Object.keys(attendanceArchive).sort().reverse();
+            if (keys.length > 0) {
+                loadArchivedMonth(keys[0]);
+            } else {
+                currentLoadedMonthKey = '';
+                stats = null;
+                showUploadSection();
+            }
+            alert(`✓ تم حذف أرشيف شهر (${mName}) بنجاح.`);
+        }
+
+        function showUploadSection() {
+            document.getElementById('uploadSection').classList.remove('hidden');
+            document.getElementById('resultsSection').classList.add('hidden');
+        }
 
         function updatePolicyLabels() {
             const lblHours = document.getElementById('lblPolicyHours');
@@ -1053,6 +1272,9 @@
                     return;
                 }
 
+                currentRawContent = content;
+                currentRecords = records;
+
                 // Group by employee and day
                 var employeeDays = new Map();
                 records.forEach(function(r) {
@@ -1075,12 +1297,13 @@
                     }
                 });
 
-                calculateAndRenderStats(records);
+                calculateAndRenderStats(records, true, file.name);
             };
             reader.readAsText(file);
         }
 
-        function calculateAndRenderStats(records) {
+        function calculateAndRenderStats(records, autoArchive, fileName) {
+            currentRecords = records;
             var employeeMap = new Map();
             records.forEach(function(r) {
                 if (!employeeMap.has(r.employeeId)) {
@@ -1135,6 +1358,13 @@
             renderExecutiveOverview();
             renderTimesheets();
             renderPermissionsTable();
+
+            if (autoArchive) {
+                let sampleDate = records[0] ? records[0].date : '';
+                const { key, name } = getMonthKeyAndName(sampleDate);
+                currentLoadedMonthKey = key;
+                saveMonthDataToArchive(key, name, currentRawContent, records, stats, employeePermissions, fileName);
+            }
         }
 
         // ══════════════════════════════════════════
@@ -1909,32 +2139,51 @@
 </html>
             `;
 
-            // Open in dedicated print popup window
-            const printWin = window.open('', '_blank');
-            if (printWin) {
-                printWin.document.open();
-                printWin.document.write(htmlContent);
-                printWin.document.close();
+            // Print using dedicated hidden iframe (100% bypasses popup blocker)
+            try {
+                let iframe = document.getElementById('_techgo_print_iframe');
+                if (!iframe) {
+                    iframe = document.createElement('iframe');
+                    iframe.id = '_techgo_print_iframe';
+                    iframe.style.position = 'fixed';
+                    iframe.style.right = '-9999px';
+                    iframe.style.bottom = '-9999px';
+                    iframe.style.width = '0';
+                    iframe.style.height = '0';
+                    iframe.style.border = 'none';
+                    document.body.appendChild(iframe);
+                }
+                const doc = iframe.contentWindow.document;
+                doc.open();
+                doc.write(htmlContent);
+                doc.close();
                 setTimeout(() => {
-                    printWin.focus();
-                    printWin.print();
-                }, 300);
-            } else {
-                alert('⚠️ يرجى السماح بالنوافذ المنبثقة (Popups) في المتصفح لفتح تقرير الطباعة.');
+                    iframe.contentWindow.focus();
+                    iframe.contentWindow.print();
+                }, 350);
+            } catch(e) {
+                const printWin = window.open('', '_blank');
+                if (printWin) {
+                    printWin.document.open();
+                    printWin.document.write(htmlContent);
+                    printWin.document.close();
+                    setTimeout(() => {
+                        printWin.focus();
+                        printWin.print();
+                    }, 350);
+                }
             }
         }
 
         document.getElementById('exportPdfBtn').addEventListener('click', buildOfficialPrintReport);
 
         document.getElementById('resetBtn').addEventListener('click', () => {
-            stats = null;
-            document.getElementById('uploadSection').classList.remove('hidden');
-            document.getElementById('resultsSection').classList.add('hidden');
-            updatePolicyLabels();
+            showUploadSection();
         });
 
-        // Initialize UI on load
+        // Initialize UI & Monthly Archive on load
         updatePolicyLabels();
+        initAttendanceArchive();
     </script>
 </body>
 </html>
