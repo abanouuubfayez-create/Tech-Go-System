@@ -1126,10 +1126,11 @@
             document.getElementById('uploadSection').classList.add('hidden');
             document.getElementById('resultsSection').classList.remove('hidden');
 
+            const avgDaily = (stats.totalHoursSum / (stats.totalEmployees * (stats.uniqueDates || 1))).toFixed(2);
             document.getElementById('kpiEmployees').textContent = stats.totalEmployees;
             document.getElementById('kpiWorkDays').textContent = stats.uniqueDates;
             document.getElementById('kpiPermsUsed').textContent = stats.totalPermsUsed;
-            document.getElementById('kpiTotalHours').textContent = fmtHoursAndMins(stats.totalHoursSum);
+            document.getElementById('kpiTotalHours').innerHTML = `${avgDaily} <small style="font-size:0.9rem; color:var(--text-muted);">س/يوم</small>`;
 
             renderExecutiveOverview();
             renderTimesheets();
@@ -1145,7 +1146,7 @@
 
             stats.employeeDetails.forEach((emp, idx) => {
                 const name = getDisplayName(emp.employeeId);
-                let ok = 0, lateNoPerm = 0, latePerm = 0, early = 0, singlePunch = 0, totalHours = 0, completeDays = 0;
+                let ok = 0, lateNoPerm = 0, latePerm = 0, singlePunch = 0, totalHours = 0, completeDays = 0;
 
                 emp.dates.forEach(date => {
                     const entry = emp.entries.find(e => e.date === date);
@@ -1178,7 +1179,7 @@
                     <td style="text-align:center;">${latePerm > 0 ? `<span class="status-badge badge-perm">🎫 ${latePerm} بإذن</span>` : '<span style="color:var(--text-muted);">0</span>'}</td>
                     <td style="text-align:center;">${singlePunch > 0 ? `<span class="status-badge badge-warning">⚠️ ${singlePunch} بصمة فردية</span>` : '<span style="color:var(--text-muted);">—</span>'}</td>
                     <td style="text-align:center;"><span class="status-badge badge-perm">${permsCount} إذن</span></td>
-                    <td style="font-weight:bold; color:var(--primary-light); text-align:center;">${fmtHoursAndMins(totalHours)} <small style="display:block; font-size:10px; color:var(--text-muted);">(${completeDays} يوم مكتمل)</small></td>
+                    <td style="font-weight:bold; color:var(--primary-light); text-align:center;">${(totalHours).toFixed(2)} س <small style="display:block; font-size:10px; color:var(--text-muted);">(${fmtHoursAndMins(totalHours)})</small></td>
                     <td class="col-action" style="text-align:center;">
                         <button class="btn-action btn-perm-action" onclick="openNewPermForEmp('${emp.employeeId}')" style="padding:2px 8px;font-size:0.75rem;">+ إذن</button>
                     </td>
@@ -1216,7 +1217,7 @@
                     } else if (entry && exit) {
                         const hCalc = calcDayWorkHours(entry.time, exit.time);
                         if (hCalc.hours) { totalHours += hCalc.hours; completeDays++; }
-                        hoursFormatted = `<strong>${hCalc.formatted}</strong>`;
+                        hoursFormatted = `<strong>${(hCalc.hours).toFixed(2)} س</strong> <small style="color:var(--text-muted);">(${hCalc.formatted})</small>`;
 
                         if (p === 'late') {
                             lateCount++;
@@ -1254,7 +1255,7 @@
                             <div class="emp-avatar">${name.charAt(0)}</div>
                             <div>
                                 <div class="emp-title-text">${name}</div>
-                                <div class="emp-sub-text">كود: ${emp.employeeId} · ${completeDays} يوم دوام مكتمل · إجمالي: ${fmtHoursAndMins(totalHours)} · متوسط: ${avgPerDay}</div>
+                                <div class="emp-sub-text">كود: ${emp.employeeId} · ${completeDays} يوم دوام مكتمل · إجمالي: ${(totalHours).toFixed(2)} س · متوسط: ${avgPerDay}</div>
                             </div>
                         </div>
                         <div style="display:flex;align-items:center;gap:8px;">
@@ -1399,6 +1400,38 @@
         const _MONTH_NAMES_AR = ['يناير','فبراير','مارس','أبريل','مايو','يونيو','يوليو','أغسطس','سبتمبر','أكتوبر','نوفمبر','ديسمبر'];
         const _DAY_NAMES_AR = ['الأحد','الاثنين','الثلاثاء','الأربعاء','الخميس','الجمعة','السبت'];
 
+        const _OFFICIAL_HOLIDAYS_LIST = [
+            { id: 1, date: '2026-04-05', day: 'الأحد', occasion: 'احد الشعانين', details: '٥ أبريل ٢٠٢٦' },
+            { id: 2, date: '2026-04-09', day: 'الخميس', occasion: 'خميس العهد', details: '٩ أبريل ٢٠٢٦' },
+            { id: 3, date: '2026-04-12', day: 'الأحد', occasion: 'عيد القيامة', details: '١٢ أبريل ٢٠٢٦' },
+            { id: 4, date: '2026-04-13', day: 'الإثنين', occasion: 'شم النسيم', details: '١٣ أبريل ٢٠٢٦' },
+            { id: 5, date: '2026-05-07', day: 'الخميس', occasion: 'عيد العمال', details: '٧ مايو ٢٠٢٦' },
+            { id: 6, date: '2026-05-26', day: 'الثلاثاء', occasion: 'عيد الأضحي', details: '٢٦ مايو ٢٠٢٦' },
+            { id: 7, date: '2026-05-27', day: 'الأربعاء', occasion: 'أضحي', details: '٢٧ مايو ٢٠٢٦' },
+            { id: 8, date: '2026-05-28', day: 'الخميس', occasion: 'أضحي', details: '٢٨ مايو ٢٠٢٦' },
+            { id: 9, date: '2026-05-29', day: 'الجمعة', occasion: 'أضحي', details: '٢٩ مايو ٢٠٢٦' },
+            { id: 10, date: '2026-05-30', day: 'السبت', occasion: 'أضحي', details: '٣٠ مايو ٢٠٢٦' },
+            { id: 11, date: '2026-05-31', day: 'الأحد', occasion: 'أضحي', details: '٣١ مايو ٢٠٢٦' },
+            { id: 12, date: '2026-06-18', day: 'الخميس', occasion: 'رأس السنة الهجرية', details: '١٨ يونيو ٢٠٢٦' },
+            { id: 13, date: '2026-07-02', day: 'الخميس', occasion: '30 يونيو', details: '٢ يوليو ٢٠٢٦' },
+            { id: 14, date: '2026-07-23', day: 'الخميس', occasion: '23 يوليو', details: '٢٣ يوليو ٢٠٢٦' }
+        ];
+
+        const _EXTRA_DAYS_LIST = [
+            { id: 1, date: '2026-04-25', day: 'السبت', desc: 'تسليم الريان - أبو عبد الله' }
+        ];
+
+        // Employee Metadata for Leave Balances
+        const _EMP_LEAVE_META = {
+            '3': { name: 'Ebthal', balance: 14, total: 15, used: 1, casual: 1, wfh: 10, leaves: [{ type: 'إجازة عارضة (1 يوم)', date: '9 يوليو 2026 (1ي)' }, { type: 'إجازة رسمية (1 يوم)', date: '16 يوليو 2026 (1ي) - من الإدارة' }] },
+            '8': { name: 'Markos', balance: 15, total: 15, used: 0, casual: 0, wfh: 10, leaves: [] },
+            '7': { name: 'Basel', balance: 10, total: 15, used: 5, casual: 1, wfh: 0, leaves: [{ type: 'إجازة سنوية (4 يوم)', date: '19 يوليو 2026 ← 22 يوليو 2026 (4ي) - سفر' }, { type: 'إجازة عارضة (1 يوم)', date: '16 يوليو 2026 (1ي) - سفر' }] },
+            '4': { name: 'Abanob', balance: 15, total: 15, used: 0, casual: 0, wfh: 10, leaves: [] },
+            '5': { name: 'Ibrahim', balance: 12, total: 15, used: 3, casual: 2, wfh: 10, leaves: [{ type: 'إجازة سنوية (1 يوم)', date: '16 أبريل 2026 (1ي)' }, { type: 'إجازة عارضة (2 يوم)', date: '14 يوليو 2026 (1ي)' }] },
+            '6': { name: 'Yostina', balance: 5, total: 15, used: 10, casual: 4, wfh: 10, leaves: [{ type: 'إجازة سنوية (10 يوم إجمالي)', date: '19 يوليو 2026 ← 27 يوليو 2026 (7ي) - سفر' }] },
+            '10': { name: 'Kirlos', balance: 15, total: 15, used: 0, casual: 0, wfh: 0, leaves: [] }
+        };
+
         function buildOfficialPrintReport() {
             if (!stats || !stats.employeeDetails || !stats.employeeDetails.length) {
                 alert('يرجى رفع ملف البصمة أولاً');
@@ -1407,103 +1440,118 @@
 
             const allDates = Array.from(new Set(stats.employeeDetails.flatMap(e => e.dates))).sort();
             const minDate = allDates[0] || '';
-            const maxDate = allDates[allDates.length - 1] || '';
             
-            let monthLabel = 'تقرير الحضور والانصراف';
-            if (minDate) {
-                const parts = minDate.split('-');
-                const y = parts[0];
-                const m = parseInt(parts[1], 10);
-                const mName = _MONTH_NAMES_AR[m - 1] || ('شهر ' + m);
-                monthLabel = `تقرير شهر ${mName} ${y} (من ${minDate} إلى ${maxDate})`;
-            }
-
             const totalEmployees = stats.totalEmployees;
             const uniqueDates = stats.uniqueDates;
             const totalHoursSum = stats.totalHoursSum;
+            const avgDailyHours = (totalHoursSum / (totalEmployees * (uniqueDates || 1))).toFixed(2);
+            const totalRecordsCount = stats.employeeDetails.reduce((acc, e) => acc + e.entries.length + e.exits.length, 0);
 
             // Build Executive Overview Table Rows
             let overviewRows = '';
             stats.employeeDetails.forEach((emp, idx) => {
                 const name = getDisplayName(emp.employeeId);
-                let ok = 0, lateNoPerm = 0, latePerm = 0, singlePunch = 0, totalHours = 0, completeDays = 0;
+                const meta = _EMP_LEAVE_META[emp.employeeId] || { balance: 15, total: 15, used: 0, casual: 0, wfh: 0, leaves: [] };
+                let ok = 0, late = 0, early = 0;
 
                 emp.dates.forEach(date => {
                     const entry = emp.entries.find(e => e.date === date);
                     const exit  = emp.exits.find(e => e.date === date);
                     const p = getDayPunctuality(emp.employeeId, date, entry ? entry.time : null, exit ? exit.time : null);
-                    const perm = getPermissionForDate(emp.employeeId, date);
 
                     if (entry && exit) {
-                        const h = calcDayWorkHours(entry.time, exit.time).hours;
-                        if (h > 0) { totalHours += h; completeDays++; }
-                        if (p === 'late') {
-                            if (perm && (perm.type === 'late' || perm.type === 'temp')) latePerm++;
-                            else lateNoPerm++;
-                        } else {
-                            ok++;
-                        }
-                    } else {
-                        singlePunch++;
+                        if (p === 'late') late++;
+                        else ok++;
+                    } else if (entry && !exit) {
+                        if (p === 'late') late++;
+                        else ok++;
+                    } else if (!entry && exit) {
+                        early++;
                     }
                 });
 
-                const permsCount = (employeePermissions[emp.employeeId] || []).length;
+                const leavesCount = meta.used > 0 ? meta.used : '—';
+                const wfhStr = meta.wfh > 0 ? `${meta.wfh} يوم` : '—';
+                const balStr = `${meta.balance} / ${meta.total} يوم<br><small style="color:#64748b; font-size:7pt;">مستخدم ${meta.used} - عارضة ${meta.casual}/7</small>`;
+
                 overviewRows += `
                     <tr>
                         <td style="text-align:center; font-weight:bold; color:#64748b;">${idx + 1}</td>
                         <td style="font-weight:bold; color:#0f172a; text-align:right;">${name}</td>
-                        <td style="text-align:center; font-weight:bold; color:#0284c7;">${emp.employeeId}</td>
-                        <td style="text-align:center;"><span class="badge-ok">✅ ${ok} يوم</span></td>
-                        <td style="text-align:center;">${lateNoPerm > 0 ? `<span class="badge-danger">⚠️ ${lateNoPerm}</span>` : '<span style="color:#94a3b8;">0</span>'}</td>
-                        <td style="text-align:center;">${latePerm > 0 ? `<span class="badge-perm">🎫 ${latePerm}</span>` : '<span style="color:#94a3b8;">0</span>'}</td>
-                        <td style="text-align:center;">${singlePunch > 0 ? `<span class="badge-early">⚠️ ${singlePunch}</span>` : '<span style="color:#94a3b8;">0</span>'}</td>
-                        <td style="text-align:center; color:#94a3b8;">—</td>
-                        <td style="text-align:center;"><span class="badge-perm">${permsCount} إذن</span></td>
-                        <td style="text-align:center; font-weight:bold; color:#0f6e64;">${fmtHoursAndMins(totalHours)} <small style="display:block; font-size:7pt; color:#64748b;">(${completeDays} يوم مكتمل)</small></td>
+                        <td style="text-align:center; font-weight:700; color:#15803d;">${ok}</td>
+                        <td style="text-align:center; font-weight:700; color:${late > 0 ? '#b91c1c' : '#64748b'};">${late}</td>
+                        <td style="text-align:center; color:#64748b;">${early}</td>
+                        <td style="text-align:center; color:#64748b;">—</td>
+                        <td style="text-align:center; font-weight:600; color:#0369a1;">${leavesCount}</td>
+                        <td style="text-align:center; color:#64748b;">—</td>
+                        <td style="text-align:center; color:#64748b;">—</td>
+                        <td style="text-align:center; font-weight:600; color:#0f766e;">${wfhStr}</td>
+                        <td style="text-align:center; font-weight:700; font-size:8pt;">${balStr}</td>
                     </tr>
                 `;
             });
+
+            // Holidays Table Rows
+            let holidaysRows = _OFFICIAL_HOLIDAYS_LIST.map(h => `
+                <tr>
+                    <td style="text-align:center; color:#64748b;">${h.id}</td>
+                    <td style="font-weight:600; text-align:center;">${h.date}</td>
+                    <td style="text-align:center;">${h.day}</td>
+                    <td style="text-align:center; font-weight:bold; color:#0f172a;">${h.occasion}</td>
+                    <td style="text-align:center; color:#64748b;">${h.details}</td>
+                </tr>
+            `).join('');
+
+            // Extra Days Table Rows
+            let extraDaysRows = _EXTRA_DAYS_LIST.map(x => `
+                <tr>
+                    <td style="text-align:center; color:#64748b;">${x.id}</td>
+                    <td style="font-weight:600; text-align:center;">${x.date}</td>
+                    <td style="text-align:center;">${x.day}</td>
+                    <td style="text-align:right; font-weight:bold; color:#0f172a;">${x.desc}</td>
+                </tr>
+            `).join('');
 
             // Build Per-Employee Detailed Sections
             let empDetailsHtml = '';
             stats.employeeDetails.forEach((emp, idx) => {
                 const name = getDisplayName(emp.employeeId);
-                let empTotalHours = 0, okCount = 0, lateCount = 0, completeDays = 0, singleCount = 0;
+                const meta = _EMP_LEAVE_META[emp.employeeId] || { balance: 15, total: 15, used: 0, casual: 0, wfh: 0, leaves: [] };
+                let okCount = 0, lateCount = 0, earlyCount = 0;
 
                 let dailyRows = '';
                 emp.dates.forEach(date => {
-                    const dObj = new Date(date + 'T12:00:00');
-                    const dName = _DAY_NAMES_AR[dObj.getDay()];
                     const entry = emp.entries.find(e => e.date === date);
                     const exit  = emp.exits.find(e => e.date === date);
                     const p = getDayPunctuality(emp.employeeId, date, entry ? entry.time : null, exit ? exit.time : null);
-                    const perm = getPermissionForDate(emp.employeeId, date);
 
                     let statusBadge = '';
-                    let hoursCell = '—';
+                    let hoursDecimal = '—';
 
                     if (!entry && exit) {
-                        singleCount++;
-                        statusBadge = '<span class="badge-danger">⚠️ خروج فقط (دخول مفقود)</span>';
+                        earlyCount++;
+                        statusBadge = '<span class="badge-danger">⚠️ خروج فقط</span>';
                     } else if (entry && !exit) {
-                        singleCount++;
-                        statusBadge = '<span class="badge-danger">⚠️ دخول فقط (خروج مفقود)</span>';
+                        if (p === 'late') {
+                            lateCount++;
+                            const startMins = timeToMins(workConfig.start);
+                            const graceMins = parseInt(workConfig.grace || 30);
+                            const lateMin = timeToMins(entry.time) - (startMins + graceMins);
+                            statusBadge = `<span class="badge-danger">⏰ متأخر +${lateMin > 0 ? lateMin : ''}د</span>`;
+                        } else {
+                            okCount++;
+                            statusBadge = '<span class="badge-ok">✅ في معاده</span>';
+                        }
                     } else if (entry && exit) {
                         const hCalc = calcDayWorkHours(entry.time, exit.time);
-                        if (hCalc.hours) { empTotalHours += hCalc.hours; completeDays++; }
-                        hoursCell = `<strong>${hCalc.formatted}</strong>`;
+                        hoursDecimal = `${(hCalc.hours).toFixed(2)} س`;
 
                         if (p === 'late') {
                             lateCount++;
                             const startMins = timeToMins(workConfig.start);
                             const graceMins = parseInt(workConfig.grace || 30);
                             const lateMin = timeToMins(entry.time) - (startMins + graceMins);
-                            if (perm && (perm.type === 'late' || perm.type === 'temp')) {
-                                statusBadge = `<span class="badge-perm">⏰ متأخر +${lateMin > 0 ? lateMin : ''}د (بإذن)</span>`;
-                            } else {
-                                statusBadge = `<span class="badge-danger">⚠️ متأخر +${lateMin > 0 ? lateMin : ''}د (بدون إذن)</span>`;
-                            }
+                            statusBadge = `<span class="badge-danger">⏰ متأخر +${lateMin > 0 ? lateMin : ''}د</span>`;
                         } else {
                             okCount++;
                             statusBadge = '<span class="badge-ok">✅ في معاده</span>';
@@ -1512,48 +1560,54 @@
 
                     dailyRows += `
                         <tr>
-                            <td style="font-weight:600;">${date} <span style="color:#64748b; font-size:7.5pt;">(${dName})</span></td>
+                            <td style="font-weight:600; text-align:center;">${date}</td>
                             <td style="text-align:center;">${statusBadge}</td>
                             <td style="text-align:center; color:#166534; font-weight:600;">${entry ? entry.time : '—'}</td>
                             <td style="text-align:center; color:#991b1b; font-weight:600;">${exit ? exit.time : '—'}</td>
-                            <td style="text-align:center; font-weight:bold; color:#0f172a;">${hoursCell}</td>
-                            <td style="font-size:7.5pt; color:#475569;">${perm ? '🎫 ' + (perm.note || perm.type) : '—'}</td>
+                            <td style="text-align:center; color:#64748b;">—</td>
+                            <td style="text-align:center; font-weight:bold; color:#0f172a;">${hoursDecimal}</td>
                         </tr>
                     `;
                 });
 
-                const empPerms = employeePermissions[emp.employeeId] || [];
-                let permsSummaryHtml = empPerms.length ? 
-                    empPerms.map(p => `• 📅 ${p.date}: ${p.type === 'late' ? 'إذن تأخير' : 'انصراف مبكر'} (${p.note || 'معتمد'})`).join('<br>') : 
-                    'لا توجد أذونات مسجلة هذا الشهر';
+                let leavesBoxesHtml = meta.leaves.length ? meta.leaves.map(l => `
+                    <div style="background:#eff6ff; border:1px solid #bfdbfe; border-radius:6px; padding:4px 8px; margin-bottom:4px; font-size:7.5pt; color:#1e40af;">
+                        📌 <strong>${l.type}:</strong> ${l.date}
+                    </div>
+                `).join('') : '';
+
+                let wfhBoxHtml = meta.wfh > 0 ? `
+                    <div style="background:#f0fdf4; border:1px solid #bbf7d0; border-radius:6px; padding:4px 8px; margin-top:4px; font-size:7.5pt; color:#166534;">
+                        🏠 <strong>أيام العمل من المنزل — WFH (${meta.wfh} يوم):</strong> من 12 مايو 2026 ← 25 مايو 2026 (10ي)
+                    </div>
+                ` : '';
 
                 empDetailsHtml += `
-                    <div class="emp-print-section">
-                        <div class="emp-print-header">
+                    <div class="emp-print-section" style="margin-top:14px; page-break-inside:avoid;">
+                        <div class="emp-print-banner">
                             <div style="display:flex; align-items:center; gap:10px;">
-                                <span class="emp-num-badge">${idx + 1}</span>
+                                <span class="emp-num-pill">${idx + 1}</span>
                                 <div>
-                                    <div style="font-size:11pt; font-weight:800; color:#0f172a;">${name}</div>
-                                    <div style="font-size:8pt; color:#64748b;">كود: ${emp.employeeId} · الدوام الرسمي: 10:00 ص → 18:00 م</div>
+                                    <div style="font-size:12pt; font-weight:900; color:#ffffff;">${name}</div>
+                                    <div style="font-size:7.5pt; color:#cbd5e1;">رقم: ${emp.employeeId} — دوام: 10:00 → 18:00 (سماح 30 د)</div>
                                 </div>
                             </div>
                             <div style="display:flex; gap:6px;">
-                                <span class="badge-ok">✅ ${okCount} في معاده</span>
-                                <span class="badge-danger">⏰ ${lateCount} تأخير</span>
-                                <span class="badge-early">🚪 ${earlyCount} مبكر</span>
-                                <span class="badge-perm" style="font-weight:bold;">⏱ الساعات: ${fmtHoursAndMins(empTotalHours)}</span>
+                                <span class="badge-pill badge-pill-ok">✅ ${okCount} في معاده</span>
+                                <span class="badge-pill badge-pill-danger">⏰ ${lateCount} متأخر</span>
+                                <span class="badge-pill badge-pill-early">🚪 ${earlyCount} بدري</span>
                             </div>
                         </div>
 
-                        <table class="print-table" style="margin-bottom:8px;">
+                        <table class="print-table" style="margin-bottom:6px;">
                             <thead>
                                 <tr>
-                                    <th style="width:20%;">التاريخ واليوم</th>
-                                    <th style="width:24%;">الانضباط والحالة</th>
-                                    <th style="width:14%;">وقت الدخول</th>
-                                    <th style="width:14%;">وقت الخروج</th>
-                                    <th style="width:14%;">ساعات العمل</th>
-                                    <th style="width:14%;">ملاحظات الأذونات</th>
+                                    <th style="width:18%;">التاريخ</th>
+                                    <th style="width:22%;">الانضباط</th>
+                                    <th style="width:15%;">الدخول</th>
+                                    <th style="width:15%;">الخروج</th>
+                                    <th style="width:15%;">حركات</th>
+                                    <th style="width:15%;">ساعات العمل</th>
                                 </tr>
                             </thead>
                             <tbody>
@@ -1561,9 +1615,19 @@
                             </tbody>
                         </table>
 
-                        <div class="emp-print-footer-box">
-                            <div style="font-weight:bold; color:#0284c7; margin-bottom:2px;">🎫 سجل الأذونات المعتمدة للموظف:</div>
-                            <div style="font-size:8pt; color:#334155; line-height:1.4;">${permsSummaryHtml}</div>
+                        <div style="display:grid; grid-template-columns: 1fr 1fr; gap:8px; margin-top:4px;">
+                            <div style="background:#f8fafc; border:1px solid #cbd5e1; border-radius:6px; padding:6px 10px;">
+                                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:2px;">
+                                    <span style="font-size:8pt; font-weight:800; color:#334155;">📑 رصيد الإجازة السنوية (م. 124)</span>
+                                    <span style="font-size:11pt; font-weight:900; color:#0f766e;">${meta.balance} <small style="font-size:7pt;">يوم متبقي</small></span>
+                                </div>
+                                <div style="font-size:7pt; color:#64748b;">الاستحقاق: ${meta.total} يوم | مستخدم: ${meta.used} يوم</div>
+                            </div>
+                            <div style="background:#f8fafc; border:1px solid #cbd5e1; border-radius:6px; padding:6px 10px;">
+                                <div style="font-size:8pt; font-weight:800; color:#334155; margin-bottom:4px;">الإجازات المسجلة و WFH</div>
+                                ${leavesBoxesHtml}
+                                ${wfhBoxHtml}
+                            </div>
                         </div>
                     </div>
                 `;
@@ -1575,7 +1639,7 @@
 <html lang="ar" dir="rtl">
 <head>
     <meta charset="UTF-8">
-    <title>${monthLabel}</title>
+    <title>تقرير الحضور والانصراف</title>
     <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;800;900&display=swap" rel="stylesheet">
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
@@ -1583,38 +1647,37 @@
             font-family: 'Cairo', sans-serif;
             color: #0f172a;
             background: #fff;
-            padding: 12mm 15mm;
-            font-size: 9pt;
+            padding: 8mm 12mm;
+            font-size: 8.5pt;
             direction: rtl;
         }
         @page {
             size: A4 portrait;
-            margin: 10mm 12mm;
+            margin: 8mm 10mm;
         }
         @media print {
             * { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
         }
 
         /* Top Header */
-        .report-header {
+        .hdr-box {
+            background: #0f6e64;
+            color: #ffffff;
+            border-radius: 12px;
+            padding: 12px 18px;
             display: flex;
             justify-content: space-between;
             align-items: center;
-            border-bottom: 2.5px solid #0f6e64;
-            padding-bottom: 12px;
-            margin-bottom: 14px;
+            margin-bottom: 12px;
         }
-        .hdr-brand { font-size: 15pt; font-weight: 900; color: #0f6e64; margin-bottom: 2px; }
-        .hdr-title { font-size: 12pt; font-weight: 800; color: #1e293b; margin-bottom: 4px; }
-        .hdr-period { font-size: 9.5pt; font-weight: 700; color: #0284c7; }
-        .hdr-meta {
-            background: #f0fdfa;
-            border: 1px solid #99f6e4;
-            border-radius: 10px;
-            padding: 8px 14px;
+        .hdr-title { font-size: 15pt; font-weight: 900; }
+        .hdr-sub { font-size: 8pt; color: #99f6e4; font-weight: 600; }
+        .hdr-badge-wrap {
+            background: rgba(0,0,0,0.25);
+            border-radius: 8px;
+            padding: 6px 12px;
             text-align: right;
-            font-size: 8pt;
-            color: #0f766e;
+            font-size: 7.5pt;
             line-height: 1.5;
         }
 
@@ -1622,164 +1685,166 @@
         .kpi-grid {
             display: grid;
             grid-template-columns: repeat(4, 1fr);
-            gap: 10px;
-            margin-bottom: 16px;
+            gap: 8px;
+            margin-bottom: 12px;
         }
         .kpi-card {
-            background: #f8fafc;
-            border: 1px solid #cbd5e1;
             border-radius: 10px;
-            padding: 10px 12px;
+            padding: 8px 10px;
             text-align: center;
+            border: 1.5px solid transparent;
         }
-        .kpi-val { font-size: 14pt; font-weight: 900; color: #0f172a; margin-bottom: 2px; }
-        .kpi-lbl { font-size: 8pt; color: #64748b; font-weight: 700; }
+        .kpi-val { font-size: 15pt; font-weight: 900; margin-bottom: 2px; }
+        .kpi-lbl { font-size: 7.5pt; font-weight: 700; color: #475569; }
 
-        /* Section Titles */
-        .sec-title {
-            font-size: 11pt;
+        .kpi-blue   { background: #eff6ff; border-color: #bfdbfe; color: #1e40af; }
+        .kpi-green  { background: #f0fdf4; border-color: #bbf7d0; color: #166534; }
+        .kpi-yellow { background: #fefce8; border-color: #fef08a; color: #854d0e; }
+        .kpi-purple { background: #faf5ff; border-color: #e9d5ff; color: #6b21a8; }
+
+        /* Tables */
+        .table-hdr-title {
+            font-size: 10pt;
             font-weight: 800;
             color: #0f172a;
-            margin-bottom: 8px;
-            padding-bottom: 4px;
-            border-bottom: 1.5px solid #e2e8f0;
+            margin-bottom: 6px;
             display: flex;
             align-items: center;
             gap: 6px;
         }
-
-        /* Tables */
         .print-table {
             width: 100%;
             border-collapse: collapse;
-            margin-bottom: 18px;
-            font-size: 8.5pt;
+            margin-bottom: 12px;
+            font-size: 8pt;
         }
         .print-table th {
-            background: #f1f5f9;
-            color: #334155;
-            border: 1px solid #cbd5e1;
-            padding: 6px 8px;
+            background: #0f6e64;
+            color: #ffffff;
+            border: 1px solid #0d5c54;
+            padding: 5px 6px;
             font-weight: 800;
             text-align: center;
         }
         .print-table td {
             border: 1px solid #e2e8f0;
-            padding: 5px 8px;
+            padding: 4px 6px;
             vertical-align: middle;
         }
         .print-table tbody tr:nth-child(even) {
             background: #f8fafc;
         }
 
-        /* Status Badges */
-        .badge-ok      { display: inline-block; padding: 2px 7px; border-radius: 12px; font-size: 7.5pt; font-weight: 700; background: #dcfce7; color: #15803d; border: 1px solid #86efac; }
-        .badge-danger  { display: inline-block; padding: 2px 7px; border-radius: 12px; font-size: 7.5pt; font-weight: 700; background: #fee2e2; color: #b91c1c; border: 1px solid #fca5a5; }
-        .badge-perm    { display: inline-block; padding: 2px 7px; border-radius: 12px; font-size: 7.5pt; font-weight: 700; background: #e0f2fe; color: #0369a1; border: 1px solid #7dd3fc; }
-        .badge-early   { display: inline-block; padding: 2px 7px; border-radius: 12px; font-size: 7.5pt; font-weight: 700; background: #fef3c7; color: #b45309; border: 1px solid #fde68a; }
-
-        /* Per Employee Sections */
-        .emp-print-section {
-            border: 1px solid #cbd5e1;
-            border-radius: 10px;
-            padding: 10px 12px;
-            margin-bottom: 14px;
-            page-break-inside: avoid;
-            background: #ffffff;
+        /* Golden Table Header for Holidays */
+        .table-gold th {
+            background: #92400e !important;
+            border-color: #78350f !important;
         }
-        .emp-print-header {
+
+        /* Employee Banners */
+        .emp-print-banner {
+            background: #0f6e64;
+            border-radius: 8px 8px 0 0;
+            padding: 8px 12px;
             display: flex;
             justify-content: space-between;
             align-items: center;
-            margin-bottom: 8px;
-            padding-bottom: 6px;
-            border-bottom: 1px solid #f1f5f9;
         }
-        .emp-num-badge {
-            width: 24px; height: 24px;
-            background: #0f6e64; color: #fff;
+        .emp-num-pill {
+            background: #ffffff;
+            color: #0f6e64;
+            width: 22px;
+            height: 22px;
             border-radius: 50%;
-            display: inline-flex; align-items: center; justify-content: center;
-            font-weight: 800; font-size: 8pt;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 900;
+            font-size: 8pt;
         }
-        .emp-print-footer-box {
-            background: #f8fafc;
-            border: 1px dashed #cbd5e1;
-            border-radius: 6px;
-            padding: 6px 10px;
-            margin-top: 4px;
+        .badge-pill {
+            padding: 3px 8px;
+            border-radius: 12px;
+            font-size: 7.5pt;
+            font-weight: 800;
         }
+        .badge-pill-ok      { background: #dcfce7; color: #15803d; }
+        .badge-pill-danger  { background: #fee2e2; color: #b91c1c; }
+        .badge-pill-early   { background: #fef3c7; color: #b45309; }
+
+        .badge-ok      { display: inline-block; padding: 1px 6px; border-radius: 10px; font-size: 7pt; font-weight: 700; background: #dcfce7; color: #15803d; border: 1px solid #86efac; }
+        .badge-danger  { display: inline-block; padding: 1px 6px; border-radius: 10px; font-size: 7pt; font-weight: 700; background: #fee2e2; color: #b91c1c; border: 1px solid #fca5a5; }
 
         /* Signatures */
         .sig-grid {
             display: grid;
             grid-template-columns: 1fr 1fr 1fr;
-            gap: 15px;
-            margin-top: 25px;
-            padding-top: 15px;
+            gap: 12px;
+            margin-top: 18px;
+            padding-top: 12px;
             border-top: 1.5px solid #cbd5e1;
             page-break-inside: avoid;
         }
         .sig-card {
             border: 1px dashed #94a3b8;
-            border-radius: 8px;
-            padding: 10px;
+            border-radius: 6px;
+            padding: 8px;
             text-align: center;
             background: #f8fafc;
         }
-        .sig-hdr { font-size: 9pt; font-weight: 800; color: #334155; margin-bottom: 25px; }
-        .sig-sub { font-size: 7.5pt; color: #64748b; border-top: 1px dotted #94a3b8; padding-top: 4px; }
+        .sig-hdr { font-size: 8pt; font-weight: 800; color: #334155; margin-bottom: 22px; }
+        .sig-sub { font-size: 7pt; color: #64748b; border-top: 1px dotted #94a3b8; padding-top: 3px; }
     </style>
 </head>
 <body>
-    <div class="report-header">
+    <div class="hdr-box">
         <div>
-            <div class="hdr-brand">🏢 شركة تيك - جو للحلول التقنية المتطورة (TECH GO)</div>
-            <div class="hdr-title">📋 تقرير الحضور والانصراف وتدقيق الأذونات الرسمي</div>
-            <div class="hdr-period">📅 ${monthLabel}</div>
+            <div class="hdr-title">📋 تقرير الحضور والانصراف</div>
+            <div class="hdr-sub">نظام تحليل الحضور والانصراف — شركة تيك جو للحلول التقنية المتطورة</div>
         </div>
-        <div class="hdr-meta">
-            <div><strong>مواعيد الدوام:</strong> ${workConfig.start} ص → ${workConfig.end} م</div>
-            <div><strong>فترة السماح:</strong> ${workConfig.grace} دقيقة</div>
-            <div><strong>تاريخ الطباعة:</strong> ${todayStr}</div>
+        <div class="hdr-badge-wrap">
+            <div>📅 <strong>تاريخ الإصدار:</strong> ${minDate ? minDate.replace(/-/g, '/') : '2026/07/30'}</div>
+            <div>⏰ <strong>الدوام:</strong> ${workConfig.start} → ${workConfig.end} (هامش ${workConfig.grace} د)</div>
+            <div>👥 <strong>${totalEmployees} موظف</strong> — <strong>${uniqueDates} يوم</strong> — <strong>${totalRecordsCount} سجل</strong></div>
         </div>
     </div>
 
-    <!-- KPI Summary -->
+    <!-- KPI Grid -->
     <div class="kpi-grid">
-        <div class="kpi-card">
+        <div class="kpi-card kpi-purple">
             <div class="kpi-val">${totalEmployees}</div>
-            <div class="kpi-lbl">👥 إجمالي الموظفين</div>
+            <div class="kpi-lbl">الموظفين</div>
         </div>
-        <div class="kpi-card">
+        <div class="kpi-card kpi-green">
+            <div class="kpi-val">${totalRecordsCount}</div>
+            <div class="kpi-lbl">إجمالي السجلات</div>
+        </div>
+        <div class="kpi-card kpi-yellow">
             <div class="kpi-val">${uniqueDates}</div>
-            <div class="kpi-lbl">📅 أيام الدوام الفعلية</div>
+            <div class="kpi-lbl">أيام العمل</div>
         </div>
-        <div class="kpi-card">
-            <div class="kpi-val">${stats.totalPermsUsed}</div>
-            <div class="kpi-lbl">🎫 أذونات معتمدة مستخدمة</div>
-        </div>
-        <div class="kpi-card">
-            <div class="kpi-val">${fmtHoursAndMins(totalHoursSum)}</div>
-            <div class="kpi-lbl">⏱ إجمالي الساعات الفعلية</div>
+        <div class="kpi-card kpi-blue">
+            <div class="kpi-val">${avgDailyHours}</div>
+            <div class="kpi-lbl">متوسط الساعات</div>
         </div>
     </div>
 
-    <!-- Section 1: Executive Overview -->
-    <div class="sec-title">📊 1. الملخص التنفيذي وكشف انضباط الموظفين والأذونات</div>
+    <!-- Summary Table -->
+    <div class="table-hdr-title">📊 ملخص الانضباط</div>
     <table class="print-table">
         <thead>
             <tr>
-                <th style="width:4%;">#</th>
-                <th style="width:24%;">اسم الموظف</th>
-                <th style="width:8%;">الكود</th>
-                <th style="width:13%;">✅ في معاده</th>
-                <th style="width:14%;">⏰ تأخير (بدون إذن)</th>
-                <th style="width:14%;">🎫 تأخير (بإذن)</th>
-                <th style="width:9%;">🚪 مبكر</th>
+                <th style="width:3%;">#</th>
+                <th style="width:18%;">الموظف</th>
+                <th style="width:8%;">✅ في معاده</th>
+                <th style="width:8%;">⏰ متأخر</th>
+                <th style="width:7%;">🚪 بدري</th>
                 <th style="width:6%;">🚫 غياب</th>
-                <th style="width:8%;">🎫 الأذونات</th>
-                <th style="width:14%;">⏱ الساعات الفعلية</th>
+                <th style="width:7%;">🏖️ إجازة</th>
+                <th style="width:6%;">✨ إضافي</th>
+                <th style="width:8%;">⏱ ساعات إضافي</th>
+                <th style="width:9%;">🏠 WFH</th>
+                <th style="width:20%;">📑 رصيد إجازة متبقي</th>
             </tr>
         </thead>
         <tbody>
@@ -1787,19 +1852,52 @@
         </tbody>
     </table>
 
-    <!-- Section 2: Detailed Employee Timesheets -->
+    <!-- Official Holidays Table -->
+    <div class="table-hdr-title" style="margin-top:10px;">📅 العطلات الرسمية (14)</div>
+    <table class="print-table table-gold">
+        <thead>
+            <tr>
+                <th style="width:4%;">#</th>
+                <th style="width:20%;">التاريخ</th>
+                <th style="width:18%;">اليوم</th>
+                <th style="width:34%;">المناسبة</th>
+                <th style="width:24%;">التاريخ بالتفصيل</th>
+            </tr>
+        </thead>
+        <tbody>
+            ${holidaysRows}
+        </tbody>
+    </table>
+
+    <!-- Extra Days Table -->
+    <div class="table-hdr-title" style="margin-top:10px;">⭐ أيام العمل الإضافية المعلنة (1)</div>
+    <table class="print-table table-gold">
+        <thead>
+            <tr>
+                <th style="width:4%;">#</th>
+                <th style="width:22%;">التاريخ</th>
+                <th style="width:20%;">اليوم</th>
+                <th style="width:54%;">الوصف</th>
+            </tr>
+        </thead>
+        <tbody>
+            ${extraDaysRows}
+        </tbody>
+    </table>
+
+    <!-- Detailed Employee Sections -->
     <div style="page-break-before: always;"></div>
-    <div class="sec-title">👤 2. السجلات التفصيلية اليومية للموظفين</div>
+    <div class="table-hdr-title" style="font-size:12pt; margin-top:10px; margin-bottom:8px;">👥 تفاصيل الموظفين وسجلات البصمة اليومية</div>
     ${empDetailsHtml}
 
     <!-- Signatures -->
     <div class="sig-grid">
         <div class="sig-card">
-            <div class="sig-hdr">إعداد ومراجعة الموارد البشرية (HR)</div>
+            <div class="sig-hdr">مسؤول الموارد البشرية (HR)</div>
             <div class="sig-sub">الاسم والتوقيع: ............................</div>
         </div>
         <div class="sig-card">
-            <div class="sig-hdr">تدقيق المدير الإداري</div>
+            <div class="sig-hdr">المدير الإداري</div>
             <div class="sig-sub">الاسم والتوقيع: ............................</div>
         </div>
         <div class="sig-card">
@@ -1811,29 +1909,19 @@
 </html>
             `;
 
-            // Open in dedicated print iframe or window
-            let printFrame = document.getElementById('reportPrintFrame');
-            if (!printFrame) {
-                printFrame = document.createElement('iframe');
-                printFrame.id = 'reportPrintFrame';
-                printFrame.style.position = 'fixed';
-                printFrame.style.top = '-9999px';
-                printFrame.style.left = '-9999px';
-                printFrame.style.width = '0';
-                printFrame.style.height = '0';
-                printFrame.style.border = '0';
-                document.body.appendChild(printFrame);
+            // Open in dedicated print popup window
+            const printWin = window.open('', '_blank');
+            if (printWin) {
+                printWin.document.open();
+                printWin.document.write(htmlContent);
+                printWin.document.close();
+                setTimeout(() => {
+                    printWin.focus();
+                    printWin.print();
+                }, 300);
+            } else {
+                alert('⚠️ يرجى السماح بالنوافذ المنبثقة (Popups) في المتصفح لفتح تقرير الطباعة.');
             }
-
-            const frameDoc = printFrame.contentDocument || printFrame.contentWindow.document;
-            frameDoc.open();
-            frameDoc.write(htmlContent);
-            frameDoc.close();
-
-            setTimeout(() => {
-                printFrame.contentWindow.focus();
-                printFrame.contentWindow.print();
-            }, 350);
         }
 
         document.getElementById('exportPdfBtn').addEventListener('click', buildOfficialPrintReport);
