@@ -712,7 +712,8 @@ function go(id, nav, force){
     }
 
     document.getElementById("pT").innerText=T[id]||id;
-    if(window.innerWidth<=900)document.getElementById("sb").classList.remove("opn");
+    if(typeof tgToggleSidebar === 'function') tgToggleSidebar(false);
+    else if(window.innerWidth<=900) { var _s=document.getElementById("sb"); if(_s) _s.classList.remove("opn"); }
     var c=document.getElementById("pg-"+id);
     if(id!=="dash" && (c.innerHTML.trim()==="" || id==="wkr")){load(id,c);upCN();setD(c)}
     // Reset global table filter
@@ -811,7 +812,30 @@ function tgFilterByEmployee(empName, rowClass) {
 }
 function ts(b){var p=b.parentNode;p.querySelectorAll(".stb").forEach(function(x){x.classList.remove("a")});b.classList.add("a")}
 function sct(c){c.parentNode.querySelectorAll(".ctc").forEach(function(x){x.classList.remove("sel")});c.classList.add("sel")}
-function spr(p){p.parentNode.querySelectorAll(".ppl").forEach(function(x){x.classList.remove("a")});p.classList.add("a")}
+// ─── Sidebar Drawer & Mobile Navigation ──────────────────────────────────
+window.tgToggleSidebar = function(force) {
+    var sb = document.getElementById('sb');
+    var ov = document.getElementById('sbOverlay');
+    if (!sb) return;
+    var willOpen = force !== undefined ? !!force : !sb.classList.contains('opn');
+    if (willOpen) {
+        sb.classList.add('opn');
+        if (ov) ov.classList.add('opn');
+        if (window.innerWidth <= 900) {
+            document.body.style.overflow = 'hidden';
+        }
+    } else {
+        sb.classList.remove('opn');
+        if (ov) ov.classList.remove('opn');
+        document.body.style.overflow = '';
+    }
+};
+
+document.addEventListener('keydown', function(e) {
+    if (e.key === 'Escape' || e.keyCode === 27) {
+        if (typeof tgToggleSidebar === 'function') tgToggleSidebar(false);
+    }
+});
 
 // ─── Sidebar Search & Quick Nav ──────────────────────────────────────────
 function tgToggleNavGroup(el) {

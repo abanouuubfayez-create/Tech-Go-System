@@ -68,7 +68,7 @@
     <link
         href="https://fonts.googleapis.com/css2?family=Alexandria:wght@300;400;500;600;700;800;900&family=Cairo:wght@400;600;700;800;900&family=Tajawal:wght@400;500;700;800&family=Inter:wght@400;500;600;700&display=swap"
         rel="stylesheet">
-    <link rel="stylesheet" href="styles.css?v=1787668548">
+    <link rel="stylesheet" href="styles.css?v=1787693240">
     <link rel="manifest" href="manifest.json">
     <link rel="icon" type="image/png" sizes="192x192" href="icon-192.png">
     <link rel="apple-touch-icon" href="icon-192.png">
@@ -76,17 +76,29 @@
     <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-storage-compat.js"></script>
-    <script src="firebase-config.js?v=1787668548"></script>
-    <script src="auth.js?v=1787668548"></script>
+    <script src="firebase-config.js?v=1787693240"></script>
+    <script src="auth.js?v=1787693240"></script>
     <script>
         (function () {
             const theme = localStorage.getItem('tg-theme') || 'light';
             document.documentElement.setAttribute('data-theme', theme);
         })();
+        window.tgToggleSidebar = function(force) {
+            var sb = document.getElementById('sb');
+            var ov = document.getElementById('sbOverlay');
+            if (!sb) return;
+            var willOpen = force !== undefined ? !!force : !sb.classList.contains('opn');
+            if (willOpen) {
+                sb.classList.add('opn');
+                if (ov) ov.classList.add('opn');
+                if (window.innerWidth <= 900) { document.body.style.overflow = 'hidden'; }
+            } else {
+                sb.classList.remove('opn');
+                if (ov) ov.classList.remove('opn');
+                document.body.style.overflow = '';
+            }
+        };
     </script>
-
-
-
 </head>
 
 <body>
@@ -130,7 +142,8 @@
     </script>
     <iframe id="tgPrintFrame" style="position:fixed;top:-9999px;left:-9999px;width:0;height:0;border:0"
         title="طباعة"></iframe>
-    <button class="mtg" onclick="document.getElementById('sb').classList.toggle('opn')">☰</button>
+    <button class="mtg" id="tgSidebarToggleBtn" onclick="tgToggleSidebar()" aria-label="فتح القائمة">☰</button>
+    <div class="sb-overlay" id="sbOverlay" onclick="tgToggleSidebar(false)"></div>
 
     <!-- ترويسة وتذييل الطباعة (مخفية على الشاشة) -->
     <div class="print-header" aria-hidden="true">
@@ -143,6 +156,7 @@
     </div>
     <aside class="S" id="sb">
         <div class="S-h">
+            <button class="sb-close-btn" onclick="tgToggleSidebar(false)" title="إغلاق القائمة" aria-label="إغلاق">✕</button>
             <div class="logo"><span>TECH - GO</span><small>تيك – جو</small></div>
             <div class="sub">نظام الإدارة الشامل</div>
         </div>
@@ -612,9 +626,9 @@
 
     <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
     <script>if (window.pdfjsLib) { pdfjsLib.GlobalWorkerOptions.workerSrc = "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js"; }</script>
-    <script src="app.js?v=1787668548"></script>
-    <script src="livetrack.js?v=1787668548"></script>
-    <script src="formsend.js?v=1787668548"></script>
+    <script src="app.js?v=1787693240"></script>
+    <script src="livetrack.js?v=1787693240"></script>
+    <script src="formsend.js?v=1787693240"></script>
 
 
     <script>
@@ -861,7 +875,7 @@
                             }
                         }
                     }
-                    var fullHtml = '<!DOCTYPE html><html lang="ar" dir="rtl"><head><meta charset="UTF-8"><link rel="stylesheet" href="styles.css?v=1787668548"></head><body style="background:#fff;padding:20px;">' + clone.innerHTML + '</body></html>';
+                    var fullHtml = '<!DOCTYPE html><html lang="ar" dir="rtl"><head><meta charset="UTF-8"><link rel="stylesheet" href="styles.css?v=1787693240"></head><body style="background:#fff;padding:20px;">' + clone.innerHTML + '</body></html>';
                     db.collection('docArchive').add({
                         docTitle: docTitle,
                         employeeName: empName,
@@ -1011,8 +1025,8 @@
         style="position:fixed;bottom:4px;left:50%;transform:translateX(-50%);font-size:9px;color:rgba(255,255,255,0.25);z-index:9999;pointer-events:none;white-space:nowrap;font-family:inherit">
         تطوير وتصميم: أبانوب فايز</div>
     <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
-    <script src="theme.js?v=1787668548"></script>
-    <script src="pwa-install.js?v=1787668548"></script>
+    <script src="theme.js?v=1787693240"></script>
+    <script src="pwa-install.js?v=1787693240"></script>
 
     <!-- Incoming Meeting Call Modal -->
     <div id="incomingMeetingModal"
