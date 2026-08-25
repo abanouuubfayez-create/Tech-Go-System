@@ -67,7 +67,7 @@
     <link
         href="https://fonts.googleapis.com/css2?family=Alexandria:wght@300;400;500;600;700;800;900&family=Cairo:wght@400;600;700;800;900&family=Tajawal:wght@400;500;700;800&family=Inter:wght@400;500;600;700&display=swap"
         rel="stylesheet">
-    <link rel="stylesheet" href="styles.css?v=1787651035">
+    <link rel="stylesheet" href="styles.css?v=1787651268">
     <link rel="manifest" href="manifest.json">
     <link rel="icon" type="image/png" sizes="192x192" href="icon-192.png">
     <link rel="apple-touch-icon" href="icon-192.png">
@@ -75,10 +75,10 @@
     <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-storage-compat.js"></script>
-    <script src="firebase-config.js?v=1787651035"></script>
-    <script src="auth.js?v=1787651035"></script>
-    <script src="app.js?v=1787651035"></script>
-    <script src="formsend.js?v=1787651035"></script>
+    <script src="firebase-config.js?v=1787651268"></script>
+    <script src="auth.js?v=1787651268"></script>
+    <script src="app.js?v=1787651268"></script>
+    <script src="formsend.js?v=1787651268"></script>
     <script>
         (function () {
             const theme = localStorage.getItem('tg-theme') || 'light';
@@ -2167,20 +2167,6 @@
                 }
             }
 
-            // Also check approved requests in cache that might have been approved
-            if (window._reqCache) {
-                var cYr = new Date().getFullYear();
-                window._reqCache.forEach(function (r) {
-                    if (r.status === 'approved' && (r.formTemplateId === 'leave' || (r.type && r.type.indexOf('إجازة') !== -1))) {
-                        var rDate = r.createdAt && r.createdAt.toDate ? r.createdAt.toDate() : (r.createdAt && r.createdAt.seconds ? new Date(r.createdAt.seconds * 1000) : null);
-                        if (rDate && rDate.getFullYear() === cYr && r.dynamicData && r.dynamicData.days && r.dynamicData._counted) {
-                            var d = parseInt(r.dynamicData.days) || 0;
-                            usedAnnual += d;
-                        }
-                    }
-                });
-            }
-
             var totalUsed = usedAnnual + usedCasual;
             var remainAnnual = Math.max(0, entitlement - totalUsed);
             var remainCasual = Math.max(0, 7 - usedCasual);
@@ -2227,7 +2213,7 @@
                 var currentYear = now.getFullYear();
                 var currentMonth = now.getMonth();
 
-                if (window._reqCache) {
+                if (Array.isArray(window._reqCache)) {
                     window._reqCache.forEach(function (r) {
                         if (r.formTemplateId === 'perm' || r.templateKey === 'perm' || (r.type && r.type.indexOf('إذن') !== -1)) {
                             var rDate = r.createdAt && r.createdAt.toDate ? r.createdAt.toDate() : (r.createdAt && r.createdAt.seconds ? new Date(r.createdAt.seconds * 1000) : null);
@@ -2297,19 +2283,19 @@
             // Auto-restore saved draft / last submitted data for this template
             setTimeout(function () {
                 tgRestoreFormDraft(val);
-                // Bind auto-save and leave auto-calculator
-                dynWrap.querySelectorAll('input, select, textarea').forEach(function (el) {
-                    el.addEventListener('input', function () { 
+                var wrap = document.getElementById('reqDynamicFormWrap');
+                if (wrap) {
+                    wrap.oninput = function () {
                         tgAutoSaveFormDraft(val);
                         if (val === 'leave') tgUpdateLeaveLiveCalculator();
-                    });
-                    el.addEventListener('change', function () { 
+                    };
+                    wrap.onchange = function () {
                         tgAutoSaveFormDraft(val);
                         if (val === 'leave') tgUpdateLeaveLiveCalculator();
-                    });
-                });
+                    };
+                }
                 if (val === 'leave') tgUpdateLeaveLiveCalculator();
-            }, 50);
+            }, 30);
         }
 
         var _tgCalcLock = false;
@@ -3238,7 +3224,7 @@
         تطوير وتصميم: أبانوب فايز</div>
     <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
-    <script src="theme.js?v=1787651035"></script>
+    <script src="theme.js?v=1787651268"></script>
 
 
     <!-- Incoming Meeting Call Modal -->
