@@ -67,7 +67,7 @@
     <link
         href="https://fonts.googleapis.com/css2?family=Alexandria:wght@300;400;500;600;700;800;900&family=Cairo:wght@400;600;700;800;900&family=Tajawal:wght@400;500;700;800&family=Inter:wght@400;500;600;700&display=swap"
         rel="stylesheet">
-    <link rel="stylesheet" href="styles.css?v=1787658811">
+    <link rel="stylesheet" href="styles.css?v=1787659002">
     <link rel="manifest" href="manifest.json">
     <link rel="icon" type="image/png" sizes="192x192" href="icon-192.png">
     <link rel="apple-touch-icon" href="icon-192.png">
@@ -75,10 +75,10 @@
     <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-storage-compat.js"></script>
-    <script src="firebase-config.js?v=1787658811"></script>
-    <script src="auth.js?v=1787658811"></script>
-    <script src="app.js?v=1787658811"></script>
-    <script src="formsend.js?v=1787658811"></script>
+    <script src="firebase-config.js?v=1787659002"></script>
+    <script src="auth.js?v=1787659002"></script>
+    <script src="app.js?v=1787659002"></script>
+    <script src="formsend.js?v=1787659002"></script>
     <script>
         (function () {
             const theme = localStorage.getItem('tg-theme') || 'light';
@@ -3227,7 +3227,7 @@
         تطوير وتصميم: أبانوب فايز</div>
     <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
-    <script src="theme.js?v=1787658811"></script>
+    <script src="theme.js?v=1787659002"></script>
 
 
     <!-- Incoming Meeting Call Modal -->
@@ -3587,6 +3587,19 @@
             if (!box || !panel) return;
             var myUid = (typeof TG_USER !== 'undefined' && TG_USER) ? TG_USER.uid : '';
 
+            var baselineAnnouncements = [
+                {
+                    id: 'admin_ann_delay_2026_08_26',
+                    title: 'تأخير موعد الحضور',
+                    content: 'الحضور الاربعاء 2026-8-26 الساعة 12:00 ظهرا',
+                    audience: 'all',
+                    createdBy: 'ابانوب',
+                    createdByRole: 'أدمن',
+                    date: '2026-08-25',
+                    createdAt: new Date('2026-08-25T14:30:00')
+                }
+            ];
+
             function annCard(data, isPrivate) {
                 var borderColor = isPrivate ? 'var(--gd)' : '#10b981';
                 var audienceBadge = isPrivate 
@@ -3598,7 +3611,7 @@
                 h += '  <div style="font-size:16px;font-weight:900;color:var(--tx)">'+esc(data.title)+'</div>';
                 h += '  <div>'+audienceBadge+'</div>';
                 h += '</div>';
-                h += '<div style="font-size:13.5px;line-height:1.75;color:var(--tx);white-space:pre-wrap;">'+esc(data.content)+'</div>';
+                h += '<div style="font-size:13.5px;line-height:1.75;color:var(--tx);white-space:pre-wrap;font-weight:600;">'+esc(data.content)+'</div>';
                 h += '<div style="display:flex;gap:12px;margin-top:10px;border-top:1px dashed var(--bd);padding-top:8px;font-size:11.5px;color:var(--tx2);font-weight:700;">';
                 if(data.createdBy) h += '<div>👤 '+esc(data.createdBy)+(data.createdByRole?' <span style="opacity:.8">('+esc(data.createdByRole)+')</span>':'')+'</div>';
                 if(data.date) h += '<div>📅 '+esc(data.date)+'</div>';
@@ -3609,9 +3622,7 @@
 
             function renderAnnList(allList) {
                 if (!allList || !allList.length) {
-                    panel.style.display = 'none';
-                    box.innerHTML = '';
-                    return;
+                    allList = baselineAnnouncements;
                 }
 
                 allList.sort(function(a, b) {
@@ -3649,25 +3660,33 @@
                 box.innerHTML = h;
             }
 
-            // 1. Initial fast render from cached storage
+            // 1. Initial fast render from cache or baseline
             try {
                 var cached = JSON.parse(localStorage.getItem('techgo_shared_announcements') || '[]');
-                if (cached && cached.length) renderAnnList(cached);
-            } catch(e){}
+                if (cached && cached.length) {
+                    renderAnnList(cached);
+                } else {
+                    renderAnnList(baselineAnnouncements);
+                }
+            } catch(e){
+                renderAnnList(baselineAnnouncements);
+            }
 
             // 2. Real-time sync with Firestore
             if (typeof db !== 'undefined' && db && db.collection) {
                 db.collection('announcements').limit(50).onSnapshot(function(snap) {
-                    if (!snap || snap.empty) {
-                        renderAnnList([]);
-                        return;
-                    }
                     var list = [];
-                    snap.forEach(function(d) {
-                        var data = Object.assign({ id: d.id }, d.data());
-                        if (data.isHidden) return;
-                        list.push(data);
-                    });
+                    if (snap && !snap.empty) {
+                        snap.forEach(function(d) {
+                            var data = Object.assign({ id: d.id }, d.data());
+                            if (data.isHidden) return;
+                            list.push(data);
+                        });
+                    }
+
+                    if (!list.length) {
+                        list = baselineAnnouncements;
+                    }
 
                     try {
                         localStorage.setItem('techgo_shared_announcements', JSON.stringify(list));
@@ -3675,9 +3694,20 @@
 
                     renderAnnList(list);
                 }, function(err) {
-                    console.warn('Firestore announcements listener notice:', err);
+                    console.warn('Firestore announcements listener notice (using local):', err);
+                    renderAnnList(baselineAnnouncements);
                 });
             }
+
+            // 3. Listen to cross-tab storage updates
+            window.addEventListener('storage', function(e) {
+                if (e.key === 'techgo_shared_announcements' && e.newValue) {
+                    try {
+                        var updated = JSON.parse(e.newValue);
+                        if (updated && updated.length) renderAnnList(updated);
+                    } catch(err){}
+                }
+            });
         }
 
         // Run immediately
