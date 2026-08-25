@@ -3844,6 +3844,114 @@ function saveMyPassword(){
 }
 
 // ─── سجل وأرصدة الإجازات السنوية للموظفين (Admin HR Leaves Overview) ───────────
+window.tgPrintAdminLeavesReport = function () {
+    var baseline = [
+        { empId: '3',  name: 'ابتهال', job: 'UI/UX Designer', entitlement: 15, usedAnnual: 0, usedCasual: 1, usedOfficial: 1 },
+        { empId: '8',  name: 'م/ مرقس مدحت', job: 'Backend Developer', entitlement: 15, usedAnnual: 1, usedCasual: 0, usedOfficial: 0 },
+        { empId: '7',  name: 'باسل', job: 'Frontend Developer', entitlement: 15, usedAnnual: 4, usedCasual: 1, usedOfficial: 0 },
+        { empId: '4',  name: 'أبانوب فايز', job: 'Tech Lead / Admin', entitlement: 15, usedAnnual: 0, usedCasual: 0, usedOfficial: 0 },
+        { empId: '5',  name: 'إبراهيم', job: 'Flutter Developer', entitlement: 15, usedAnnual: 1, usedCasual: 2, usedOfficial: 0 },
+        { empId: '6',  name: 'يوستينا', job: 'Graphic Designer', entitlement: 15, usedAnnual: 6, usedCasual: 4, usedOfficial: 0 },
+        { empId: '10', name: 'كيرلس مجدي', job: 'Backend Developer', entitlement: 15, usedAnnual: 0, usedCasual: 0, usedOfficial: 0 }
+    ];
+
+    var leavesStore = null;
+    try {
+        var raw = localStorage.getItem('attendance_sys_techgo_employee_leaves') || localStorage.getItem('techgo_employee_leaves');
+        if (raw) leavesStore = JSON.parse(raw);
+    } catch (e) { }
+
+    var totalEnt = 0, totalUsedAll = 0, totalRemAll = 0;
+    var rowsHtml = '';
+
+    baseline.forEach(function (emp, idx) {
+        var usedAnn = emp.usedAnnual;
+        var usedCas = emp.usedCasual;
+
+        if (leavesStore && leavesStore[emp.empId]) {
+            var cYr = String(new Date().getFullYear());
+            var yrData = leavesStore[emp.empId][cYr];
+            if (yrData) {
+                usedAnn = (yrData.annual || []).reduce(function (s, r) { return s + (r.days || 0); }, 0);
+                usedCas = (yrData.casual || []).reduce(function (s, r) { return s + (r.days || 0); }, 0);
+            }
+        }
+
+        var usedTotal = usedAnn + usedCas;
+        var remAnn = Math.max(0, emp.entitlement - usedTotal);
+        var pct = Math.min(100, Math.round((usedTotal / emp.entitlement) * 100));
+
+        totalEnt += emp.entitlement;
+        totalUsedAll += usedTotal;
+        totalRemAll += remAnn;
+
+        rowsHtml += '<tr style="border-bottom:1px solid #cbd5e1; height:32px;">' +
+            '<td style="text-align:center; font-weight:bold; padding:6px 8px;">' + (idx + 1) + '</td>' +
+            '<td style="font-weight:bold; color:#0f172a; padding:6px 8px;">' + escH(emp.name) + ' <span style="font-size:10px; color:#64748b; font-weight:normal;">(' + escH(emp.job) + ')</span></td>' +
+            '<td style="text-align:center; font-weight:bold; color:#0284c7; padding:6px 8px;">' + emp.empId + '</td>' +
+            '<td style="text-align:center; font-weight:bold; padding:6px 8px;">' + emp.entitlement + ' يوم</td>' +
+            '<td style="text-align:center; color:#0284c7; font-weight:bold; padding:6px 8px;">' + usedAnn + ' يوم</td>' +
+            '<td style="text-align:center; color:#d97706; font-weight:bold; padding:6px 8px;">' + usedCas + ' يوم</td>' +
+            '<td style="text-align:center; font-weight:bold; color:#d97706; padding:6px 8px;">' + usedTotal + ' يوم</td>' +
+            '<td style="text-align:center; font-weight:900; font-size:13px; color:#10b981; padding:6px 8px;">' + remAnn + ' يوم</td>' +
+            '<td style="text-align:center; font-weight:bold; color:#64748b; padding:6px 8px;">' + pct + '%</td>' +
+            '</tr>';
+    });
+
+    var todayStr = new Date().toLocaleDateString('ar-EG', { day: 'numeric', month: 'long', year: 'numeric' });
+    var curYr = new Date().getFullYear();
+
+    var h = '<div style="direction:rtl; font-family:Cairo, sans-serif; color:#0f172a; padding:15px 20px;">' +
+        '<div style="display:flex; justify-content:space-between; align-items:center; border-bottom:2px solid #0f172a; padding-bottom:12px; margin-bottom:16px;">' +
+        '  <div>' +
+        '    <h2 style="margin:0; font-size:18px; font-weight:900; color:#0f172a;">🏢 شركة تيك - جو للأنظمة البرمجية (Tech Go System)</h2>' +
+        '    <div style="font-size:12px; color:#475569; margin-top:3px;">كشف وسجل أرصدة الإجازات السنوية لعام ' + curYr + ' (المادة ١٢٤ من اللائحة التنظيمية)</div>' +
+        '  </div>' +
+        '  <div style="text-align:left; font-size:11px; color:#64748b;">' +
+        '    <div>📅 تاريخ الاستخراج: <strong>' + todayStr + '</strong></div>' +
+        '    <div>📋 تصنيف الوثيقة: <strong>تقرير إداري معتمد</strong></div>' +
+        '  </div>' +
+        '</div>' +
+
+        '<div style="display:grid; grid-template-columns:repeat(4, 1fr); gap:10px; margin-bottom:16px; text-align:center;">' +
+        '  <div style="background:#f8fafc; border:1px solid #cbd5e1; border-radius:8px; padding:8px 10px;"><div style="font-size:11px; color:#64748b; font-weight:bold;">👥 إجمالي الموظفين</div><div style="font-size:18px; font-weight:900; color:#0f172a; margin-top:2px;">' + baseline.length + ' موظف</div></div>' +
+        '  <div style="background:#f0f9ff; border:1px solid #bae6fd; border-radius:8px; padding:8px 10px;"><div style="font-size:11px; color:#0369a1; font-weight:bold;">🏖️ الاستحقاق السنوي</div><div style="font-size:18px; font-weight:900; color:#0284c7; margin-top:2px;">' + totalEnt + ' يوم</div></div>' +
+        '  <div style="background:#fffbeb; border:1px solid #fde68a; border-radius:8px; padding:8px 10px;"><div style="font-size:11px; color:#b45309; font-weight:bold;">⏳ الإجازات المستهلكة</div><div style="font-size:18px; font-weight:900; color:#d97706; margin-top:2px;">' + totalUsedAll + ' يوم</div></div>' +
+        '  <div style="background:#f0fdf4; border:1px solid #bbf7d0; border-radius:8px; padding:8px 10px;"><div style="font-size:11px; color:#15803d; font-weight:bold;">🟢 الأرصدة المتبقية</div><div style="font-size:18px; font-weight:900; color:#16a34a; margin-top:2px;">' + totalRemAll + ' يوم</div></div>' +
+        '</div>' +
+
+        '<table style="width:100%; border-collapse:collapse; font-size:11px; margin-bottom:20px;">' +
+        '  <thead>' +
+        '    <tr style="background:#0f172a; color:#fff;">' +
+        '      <th style="padding:7px 8px; text-align:center; width:30px;">م</th>' +
+        '      <th style="padding:7px 8px; text-align:right;">اسم الموظف</th>' +
+        '      <th style="padding:7px 8px; text-align:center; width:55px;">الكود</th>' +
+        '      <th style="padding:7px 8px; text-align:center; width:75px;">الاستحقاق</th>' +
+        '      <th style="padding:7px 8px; text-align:center; width:70px;">سنوية</th>' +
+        '      <th style="padding:7px 8px; text-align:center; width:70px;">عارضة</th>' +
+        '      <th style="padding:7px 8px; text-align:center; width:75px;">المستهلك</th>' +
+        '      <th style="padding:7px 8px; text-align:center; width:75px;">المتبقي</th>' +
+        '      <th style="padding:7px 8px; text-align:center; width:65px;">الاستهلاك</th>' +
+        '    </tr>' +
+        '  </thead>' +
+        '  <tbody>' + rowsHtml + '</tbody>' +
+        '</table>' +
+
+        '<div style="border-top:1px dashed #94a3b8; padding-top:10px; font-size:10.5px; color:#475569; margin-bottom:30px;">' +
+        '  <strong>ملاحظة تنظيمية:</strong> الإجازة السنوية استحقاق قانوني (م.١٢٤) تُخصم منها الإجازات العارضة (م.١٢٨ بحد أقصى ٧ أيام سنوياً). في حالة انتهاء عقد العمل يُصرف للموظف مقابل رصيد إجازاته المتبقية نقداً وفقاً للأجر الأساسي.' +
+        '</div>' +
+
+        '<div style="display:grid; grid-template-columns:1fr 1fr 1fr; gap:20px; text-align:center; margin-top:20px;">' +
+        '  <div><div style="font-weight:bold; font-size:12px; margin-bottom:35px;">إعداد وتدقيق الموارد البشرية (HR):</div><div style="border-top:1px solid #000; width:80%; margin:0 auto; padding-top:4px; font-size:11px;">التوقيع: .....................</div></div>' +
+        '  <div><div style="font-weight:bold; font-size:12px; margin-bottom:35px;">المدير الإداري:</div><div style="border-top:1px solid #000; width:80%; margin:0 auto; padding-top:4px; font-size:11px;">التوقيع: .....................</div></div>' +
+        '  <div><div style="font-weight:bold; font-size:12px; margin-bottom:35px;">اعتماد المدير التنفيذي:</div><div style="border-top:1px solid #000; width:80%; margin:0 auto; padding-top:4px; font-size:11px;">التوقيع والخاتم: .....................</div></div>' +
+        '</div>' +
+        '</div>';
+
+    var docTitle = 'كشف وسجل أرصدة الإجازات السنوية لعام ' + curYr;
+    printDoc(h, docTitle);
+};
+
 function renderAdminLeavesRecordPage(c) {
     if (!c) c = document.getElementById('pg-la');
     if (!c) return;
@@ -3945,7 +4053,7 @@ function renderAdminLeavesRecordPage(c) {
         '</div>' +
         '<div style="display:flex;gap:8px;">' +
         '  <button type="button" class="bt bt-p" style="font-size:11.5px;padding:6px 14px;" onclick="go(\'att\')">⏱ فتح نظام الحضور والبصمة</button>' +
-        '  <button type="button" class="bt bt-o" style="font-size:11.5px;padding:6px 14px;" onclick="window.print()">🖨️ طباعة الكشف</button>' +
+        '  <button type="button" class="bt bt-o" style="font-size:11.5px;padding:6px 14px;" onclick="tgPrintAdminLeavesReport()">🖨️ طباعة الكشف</button>' +
         '</div>' +
         '</div>';
 
