@@ -559,6 +559,9 @@
             </div>
         </div>
         <div class="nav-actions">
+            <button class="btn-action btn-ghost" onclick="openWorkSettingsModal()" title="إعدادات مواعيد وسماح الدوام">
+                ⚙️ إعدادات الدوام
+            </button>
             <button class="btn-action btn-pdf-action" id="exportPdfBtn" title="تصدير كشف رسمي A4">
                 🖨️ طباعة / تصدير PDF
             </button>
@@ -586,6 +589,14 @@
             <label for="attlogInput" class="btn-action btn-primary-action" style="padding: 0.8rem 2.5rem; font-size: 1rem; cursor:pointer;">
                 📂 اختيار ملف البصمة
             </label>
+        </div>
+
+        <!-- Persistent Current Policy Banner -->
+        <div style="margin-top: 15px; background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 12px 18px; display: flex; align-items: center; justify-content: space-between; max-width: 550px; margin-left: auto; margin-right: auto; box-shadow: var(--shadow-sm);">
+            <div style="font-size: 0.88rem; color: var(--text);">
+                ⏰ <strong>السياسة الحالية:</strong> <span id="lblPolicyHours">10:00 ص → 18:00 م</span> (سماح <span id="lblPolicyGrace">30</span> دقيقة)
+            </div>
+            <button class="btn-action btn-ghost" onclick="openWorkSettingsModal()" style="padding: 4px 10px; font-size: 0.8rem; border-color: var(--border);">⚙️ تعديل السياسة</button>
         </div>
     </div>
 
@@ -751,6 +762,32 @@
         </section>
     </main>
 
+    <!-- Work Settings Modal (Available at all times) -->
+    <div id="workSettingsModal" class="modal-overlay hidden" onclick="if(event.target===this)closeWorkSettingsModal()">
+        <div class="modal-box">
+            <h3 style="font-size: 1.2rem; font-weight: 800; color: var(--primary-light); margin-bottom: 1rem;">⚙️ مواعيد الدوام الرسمي وسياسات السماح</h3>
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 12px;">
+                <div>
+                    <label style="font-size: 0.82rem; color: var(--text-muted); display: block; margin-bottom: 4px;">بداية الدوام الرسمي:</label>
+                    <input type="time" id="modalCfgStart" value="10:00" style="width: 100%; padding: 8px; border-radius: 8px; background: var(--surface-2); color: var(--text); border: 1px solid var(--border);">
+                </div>
+                <div>
+                    <label style="font-size: 0.82rem; color: var(--text-muted); display: block; margin-bottom: 4px;">نهاية الدوام الرسمي:</label>
+                    <input type="time" id="modalCfgEnd" value="18:00" style="width: 100%; padding: 8px; border-radius: 8px; background: var(--surface-2); color: var(--text); border: 1px solid var(--border);">
+                </div>
+            </div>
+            <div style="margin-bottom: 16px;">
+                <label style="font-size: 0.82rem; color: var(--text-muted); display: block; margin-bottom: 4px;">سماح التأخير المعتمد (بالدقائق):</label>
+                <input type="number" id="modalCfgGrace" value="30" style="width: 100%; padding: 8px; border-radius: 8px; background: var(--surface-2); color: var(--text); border: 1px solid var(--border);">
+                <small style="color: var(--text-muted); font-size: 0.75rem; margin-top: 4px; display: block;">💡 مثال: 30 دقيقة تعني أن الوصول حتى 10:30 صباحاً يعتبر في الميعاد المحدد.</small>
+            </div>
+            <div style="display: flex; justify-content: flex-end; gap: 8px;">
+                <button class="btn-action btn-ghost" onclick="closeWorkSettingsModal()">إلغاء</button>
+                <button class="btn-action btn-primary-action" onclick="saveWorkSettingsFromModal()">✓ حفظ وتطبيق السياسات</button>
+            </div>
+        </div>
+    </div>
+
     <!-- Permission Modal -->
     <div id="permModal" class="modal-overlay hidden" onclick="if(event.target===this)closePermModal()">
         <div class="modal-box">
@@ -814,7 +851,77 @@
             if (sn) Object.assign(employeeNames, JSON.parse(sn));
             const sp = localStorage.getItem('techgo_employee_permissions');
             if (sp) Object.assign(employeePermissions, JSON.parse(sp));
+            const sw = localStorage.getItem('techgo_work_config');
+            if (sw) Object.assign(workConfig, JSON.parse(sw));
         } catch(e){}
+
+        function updatePolicyLabels() {
+            const lblHours = document.getElementById('lblPolicyHours');
+            const lblGrace = document.getElementById('lblPolicyGrace');
+            if (lblHours) lblHours.textContent = `${workConfig.start} → ${workConfig.end}`;
+            if (lblGrace) lblGrace.textContent = workConfig.grace;
+            if (document.getElementById('cfgStart')) document.getElementById('cfgStart').value = workConfig.start;
+            if (document.getElementById('cfgEnd')) document.getElementById('cfgEnd').value = workConfig.end;
+            if (document.getElementById('cfgGrace')) document.getElementById('cfgGrace').value = workConfig.grace;
+        }
+
+        function openWorkSettingsModal() {
+            document.getElementById('modalCfgStart').value = workConfig.start || '10:00';
+            document.getElementById('modalCfgEnd').value = workConfig.end || '18:00';
+            document.getElementById('modalCfgGrace').value = workConfig.grace !== undefined ? workConfig.grace : 30;
+            document.getElementById('workSettingsModal').classList.remove('hidden');
+        }
+
+        function closeWorkSettingsModal() {
+            document.getElementById('workSettingsModal').classList.add('hidden');
+        }
+
+        function saveWorkSettingsFromModal() {
+            const s = document.getElementById('modalCfgStart').value || '10:00';
+            const e = document.getElementById('modalCfgEnd').value || '18:00';
+            const g = parseInt(document.getElementById('modalCfgGrace').value, 10);
+
+            workConfig.start = s;
+            workConfig.end = e;
+            workConfig.grace = isNaN(g) ? 30 : g;
+
+            try {
+                localStorage.setItem('techgo_work_config', JSON.stringify(workConfig));
+            } catch(err){}
+
+            updatePolicyLabels();
+            closeWorkSettingsModal();
+
+            if (stats) {
+                renderExecutiveOverview();
+                renderTimesheets();
+            }
+
+            alert('✓ تم حفظ وتطبيق مواعيد وسياسات الدوام بنجاح!');
+        }
+
+        function saveWorkSettings() {
+            const s = document.getElementById('cfgStart').value || '10:00';
+            const e = document.getElementById('cfgEnd').value || '18:00';
+            const g = parseInt(document.getElementById('cfgGrace').value, 10);
+
+            workConfig.start = s;
+            workConfig.end = e;
+            workConfig.grace = isNaN(g) ? 30 : g;
+
+            try {
+                localStorage.setItem('techgo_work_config', JSON.stringify(workConfig));
+            } catch(err){}
+
+            updatePolicyLabels();
+
+            if (stats) {
+                renderExecutiveOverview();
+                renderTimesheets();
+            }
+
+            alert('✓ تم حفظ وتطبيق مواعيد وسياسات الدوام بنجاح!');
+        }
 
         function savePermissionsToStorage() {
             try { localStorage.setItem('techgo_employee_permissions', JSON.stringify(employeePermissions)); } catch(e){}
@@ -1632,8 +1739,8 @@
             <div class="hdr-period">📅 ${monthLabel}</div>
         </div>
         <div class="hdr-meta">
-            <div><strong>مواعيد الدوام:</strong> 10:00 ص → 18:00 م</div>
-            <div><strong>فترة السماح:</strong> 15 دقيقة</div>
+            <div><strong>مواعيد الدوام:</strong> ${workConfig.start} ص → ${workConfig.end} م</div>
+            <div><strong>فترة السماح:</strong> ${workConfig.grace} دقيقة</div>
             <div><strong>تاريخ الطباعة:</strong> ${todayStr}</div>
         </div>
     </div>
@@ -1735,7 +1842,11 @@
             stats = null;
             document.getElementById('uploadSection').classList.remove('hidden');
             document.getElementById('resultsSection').classList.add('hidden');
+            updatePolicyLabels();
         });
+
+        // Initialize UI on load
+        updatePolicyLabels();
     </script>
 </body>
 </html>
