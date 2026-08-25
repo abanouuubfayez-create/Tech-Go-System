@@ -6636,11 +6636,28 @@ function loadEmpAnnouncements() {
     if(!box || !panel) return;
     var myUid = TG_USER ? TG_USER.uid : '';
 
+    var defaultAnnouncements = [
+        {
+            id: 'default_att_delay_policy',
+            title: '⏰ تعميم إداري: تنظيم مواعيد الحضور والانصراف وسماح التأخير (30 دقيقة)',
+            content: 'تُحيط إدارة الشركة جميع الزملاء الكرام بالضوابط التنظيمية لمواعيد الدوام الرسمي وفقاً للائحة العمل:\n' +
+                     '• مواعيد العمل الرسمية: تبدأ من الساعة 10:00 صباحاً وحتى الساعة 06:00 مساءً.\n' +
+                     '• فترة السماح الصباحية: تمنح الشركة فترة سماح قدرها 30 دقيقة (من 10:00 حتى 10:30 ص) ويُعد الحضور خلالها في الميعاد الرسمي.\n' +
+                     '• بعد 10:30 صباحاً: يُحتسب التأخير بدقة ويُرجى تقديم طلب إذن تأخير مسبق عبر بوابة الموظف.\n' +
+                     '• يُرجى الالتزام بالبصمة اليومية عند الدخول والانصراف لضمان دقة احتساب ساعات العمل وسجلات الانضباط.',
+            audience: 'all',
+            createdBy: 'إدارة الموارد البشرية (HR)',
+            createdByRole: 'HR / الإدارة',
+            date: '2026-08-25',
+            createdAt: new Date('2026-08-25T10:00:00')
+        }
+    ];
+
     function annCard(data, isPrivate) {
         var borderColor = isPrivate ? 'var(--gd)' : 'var(--nv)';
         var h = '<div style="background:var(--w);padding:16px 20px;border-radius:14px;border-right:5px solid '+borderColor+';border:1px solid var(--bd);margin-bottom:12px;box-shadow:0 4px 15px rgba(0,0,0,0.03);">';
         h += '<div style="font-size:16px;font-weight:900;margin-bottom:6px;color:var(--tx)">'+esc(data.title)+'</div>';
-        h += '<div style="font-size:13px;line-height:1.6;color:var(--tx)">'+tgFormatAnnouncementContent(data.content)+'</div>';
+        h += '<div style="font-size:13px;line-height:1.75;color:var(--tx)">'+tgFormatAnnouncementContent(data.content)+'</div>';
         h += '<div style="display:flex;gap:12px;margin-top:10px;border-top:1px dashed var(--bd);padding-top:8px;font-size:11px;color:var(--tx2);font-weight:700;">';
         if(data.createdBy) h += '<div>👤 '+esc(data.createdBy)+(data.createdByRole?' <span style="opacity:.8">('+esc(data.createdByRole)+')</span>':'')+'</div>';
         if(data.date) h += '<div>📅 '+esc(data.date)+'</div>';
@@ -6649,22 +6666,7 @@ function loadEmpAnnouncements() {
         return h;
     }
 
-    // نجيب أحدث 30 إعلان ونقسمهم على العميل — بيغطي الإعلانات القديمة اللي مفيهاش حقل audience (بتتعامل كـ "عام")
-    db.collection('announcements').limit(50).onSnapshot(function(snap) {
-        if(snap.empty) {
-            panel.style.display = 'none';
-            return;
-        }
-        var allList = [];
-        snap.forEach(function(d) {
-            var data = d.data();
-            if(data.isHidden) return;
-            var t = (data.title || '').toLowerCase();
-            var c = (data.content || '').toLowerCase();
-            if (t.indexOf('اجتماع') !== -1 || c.indexOf('اجتماع') !== -1 || t.indexOf('مكالمة') !== -1 || c.indexOf('مكالمة') !== -1) return;
-            allList.push(data);
-        });
-
+    function renderList(allList) {
         allList.sort(function(a, b) {
             var tA = a.createdAt && a.createdAt.seconds ? a.createdAt.seconds*1000 : (a.createdAt ? new Date(a.createdAt).getTime() : 0);
             var tB = b.createdAt && b.createdAt.seconds ? b.createdAt.seconds*1000 : (b.createdAt ? new Date(b.createdAt).getTime() : 0);
@@ -6680,8 +6682,6 @@ function loadEmpAnnouncements() {
                 publicOnes.push(data);
             }
         });
-        publicOnes = publicOnes.slice(0, 5);
-        privateOnes = privateOnes.slice(0, 5);
 
         if(!publicOnes.length && !privateOnes.length) {
             panel.style.display = 'none';
@@ -6699,7 +6699,47 @@ function loadEmpAnnouncements() {
             publicOnes.forEach(function(data){ h += annCard(data, false); });
         }
         box.innerHTML = h;
-    });
+    }
+
+    // Initial render from defaults or cache
+    var localCached = [];
+    try {
+        var raw = localStorage.getItem('techgo_cached_announcements');
+        if (raw) localCached = JSON.parse(raw);
+    } catch(e){}
+    var initialList = (localCached && localCached.length) ? localCached : defaultAnnouncements;
+    renderList(initialList);
+
+    // Live sync from Firestore
+    if (typeof db !== 'undefined' && db && db.collection) {
+        db.collection('announcements').limit(50).onSnapshot(function(snap) {
+            var allList = [];
+            if (snap && !snap.empty) {
+                snap.forEach(function(d) {
+                    var data = Object.assign({ id: d.id }, d.data());
+                    if(data.isHidden) return;
+                    var t = (data.title || '').toLowerCase();
+                    var c = (data.content || '').toLowerCase();
+                    if (t.indexOf('اجتماع') !== -1 || c.indexOf('اجتماع') !== -1 || t.indexOf('مكالمة') !== -1 || c.indexOf('مكالمة') !== -1) return;
+                    allList.push(data);
+                });
+            }
+
+            // Always ensure the attendance delay notice is present if not already added
+            if (!allList.some(function(a){ return (a.title||'').indexOf('تأخير') !== -1 || (a.title||'').indexOf('الحضور والانصراف') !== -1; })) {
+                allList.push(defaultAnnouncements[0]);
+            }
+
+            try {
+                localStorage.setItem('techgo_cached_announcements', JSON.stringify(allList));
+            } catch(e){}
+
+            renderList(allList);
+        }, function(err) {
+            console.warn('Announcements snapshot notice:', err);
+            renderList(defaultAnnouncements);
+        });
+    }
 }
 
 // ═══════════════════════════════════════════════════════════════
