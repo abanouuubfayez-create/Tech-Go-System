@@ -68,7 +68,7 @@
     <link
         href="https://fonts.googleapis.com/css2?family=Alexandria:wght@300;400;500;600;700;800;900&family=Cairo:wght@400;600;700;800;900&family=Tajawal:wght@400;500;700;800&family=Inter:wght@400;500;600;700&display=swap"
         rel="stylesheet">
-    <link rel="stylesheet" href="styles.css?v=1787653606">
+    <link rel="stylesheet" href="styles.css?v=1787654013">
     <link rel="manifest" href="manifest.json">
     <link rel="icon" type="image/png" sizes="192x192" href="icon-192.png">
     <link rel="apple-touch-icon" href="icon-192.png">
@@ -76,8 +76,8 @@
     <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-storage-compat.js"></script>
-    <script src="firebase-config.js?v=1787653606"></script>
-    <script src="auth.js?v=1787653606"></script>
+    <script src="firebase-config.js?v=1787654013"></script>
+    <script src="auth.js?v=1787654013"></script>
     <script>
         (function () {
             const theme = localStorage.getItem('tg-theme') || 'light';
@@ -152,6 +152,13 @@
                     oninput="sbFilterNav(this.value)" autocomplete="off">
             </div>
             <div class="sb-no-results" id="sbNoResults">لا توجد نتائج</div>
+
+            <!-- Featured: Attendance & Fingerprint System Button -->
+            <div style="padding: 10px 14px 8px;">
+                <a href="attendance.html" target="_blank" style="display:flex; align-items:center; justify-content:center; gap:8px; background:linear-gradient(135deg, #0f6e64, #0b4f49); border:1.5px solid #3fa79a; color:#ffffff !important; padding:11px 14px; border-radius:12px; font-weight:800; font-size:13px; text-decoration:none; box-shadow:0 4px 15px rgba(15,110,100,0.35); transition:transform 0.2s ease;">
+                    <span style="font-size:16px;">⏱️</span> نظام الحضور والبصمة <span class="S-b" style="background:#f59e0b; color:#0f172a !important; margin-right:auto;">جديد</span>
+                </a>
+            </div>
 
             <!-- 1. الرئيسية والمستشار -->
             <div class="sb-group open">
@@ -272,6 +279,9 @@
                 </div>
 
                 <div style="display:flex; align-items:center; gap:8px;">
+                    <a href="attendance.html" target="_blank" class="bt"
+                        style="background:linear-gradient(135deg, #0f6e64, #0b4f49) !important; color:#fff !important; font-weight:bold; font-size:12px; border:none; padding:6px 15px; border-radius:20px; box-shadow:0 3px 10px rgba(15,110,100,0.3); display:flex; align-items:center; gap:6px; text-decoration:none; cursor:pointer;"
+                        title="فتح نظام الحضور والبصمة"><span style="font-size:14px;">⏱️</span> فتح نظام الحضور والبصمة</a>
                     <button class="bt" onclick="tgJoinCompanyMeeting(false)"
                         style="background:linear-gradient(135deg, #10b981, #059669) !important; color:#fff !important; font-weight:bold; font-size:12px; border:none; padding:6px 15px; border-radius:20px; box-shadow:0 3px 10px rgba(16,185,129,0.3); display:flex; align-items:center; gap:6px; cursor:pointer;"
                         title="الانضمام لغرفة الاجتماعات المباشرة"><span style="font-size:14px;">🎥</span> غرفة
@@ -329,6 +339,11 @@
                             <span style="font-size:11px; font-weight:700; background:rgba(201,162,39,0.15); color:var(--gd2); padding:3px 10px; border-radius:20px;">HR Hub</span>
                         </div>
                         <div style="padding:14px; display:flex; flex-direction:column; gap:8px;">
+                            <div class="DC" onclick="window.open('attendance.html', '_blank')" style="margin:0; padding:10px 14px; border-radius:10px; border:1px solid rgba(15,110,100,0.35); background:rgba(15,110,100,0.06);">
+                                <div class="di-wrap"><div class="di">⏱️</div><span class="badge-new" style="background:#0f6e64; color:#fff;">تحليل البصمة</span></div>
+                                <div class="dt2">نظام الحضور والبصمة المعتمد</div>
+                                <div class="dd">تحليل ملف البصمة attlog.dat، احتساب الساعات، والأذونات الرسمية</div>
+                            </div>
                             <div class="DC" onclick="go('allrequests')" style="margin:0; padding:10px 14px; border-radius:10px;">
                                 <div class="di-wrap"><div class="di">📥</div><span class="badge-new" style="background:var(--no); color:#fff;">طلبات معلقة</span></div>
                                 <div class="dt2">مركز طلبات الموظفين</div>
@@ -346,8 +361,8 @@
                             </div>
                             <div class="DC" onclick="go('permsheet')" style="margin:0; padding:10px 14px; border-radius:10px;">
                                 <div class="di-wrap"><div class="di">🕐</div></div>
-                                <div class="dt2">كشف متابعة الأذونات والبصمة</div>
-                                <div class="dd">سجل الأذونات الميداني الشهري وتقارير الحضور</div>
+                                <div class="dt2">كشف متابعة الأذونات الميداني</div>
+                                <div class="dd">سجل الأذونات الشهري وتقارير الحضور</div>
                             </div>
                         </div>
                     </div>
@@ -597,9 +612,9 @@
 
     <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
     <script>if (window.pdfjsLib) { pdfjsLib.GlobalWorkerOptions.workerSrc = "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js"; }</script>
-    <script src="app.js?v=1787653606"></script>
-    <script src="livetrack.js?v=1787653606"></script>
-    <script src="formsend.js?v=1787653606"></script>
+    <script src="app.js?v=1787654013"></script>
+    <script src="livetrack.js?v=1787654013"></script>
+    <script src="formsend.js?v=1787654013"></script>
 
 
     <script>
@@ -846,7 +861,7 @@
                             }
                         }
                     }
-                    var fullHtml = '<!DOCTYPE html><html lang="ar" dir="rtl"><head><meta charset="UTF-8"><link rel="stylesheet" href="styles.css?v=1787653606"></head><body style="background:#fff;padding:20px;">' + clone.innerHTML + '</body></html>';
+                    var fullHtml = '<!DOCTYPE html><html lang="ar" dir="rtl"><head><meta charset="UTF-8"><link rel="stylesheet" href="styles.css?v=1787654013"></head><body style="background:#fff;padding:20px;">' + clone.innerHTML + '</body></html>';
                     db.collection('docArchive').add({
                         docTitle: docTitle,
                         employeeName: empName,
@@ -996,7 +1011,7 @@
         style="position:fixed;bottom:4px;left:50%;transform:translateX(-50%);font-size:9px;color:rgba(255,255,255,0.25);z-index:9999;pointer-events:none;white-space:nowrap;font-family:inherit">
         تطوير وتصميم: أبانوب فايز</div>
     <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
-    <script src="theme.js?v=1787653606"></script>
+    <script src="theme.js?v=1787654013"></script>
 
     <!-- Incoming Meeting Call Modal -->
     <div id="incomingMeetingModal"
