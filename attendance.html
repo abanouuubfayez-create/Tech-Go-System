@@ -2291,13 +2291,44 @@
         // أسماء الموظفين (in-memory)
         // ── Embedded saved data (updated when you save the file) ──
         const _SAVED_DATA = {
-            empNames: {},
+            empNames: { '3': 'Ebthal', '8': 'Markos', '7': 'Basel', '4': 'Abanob', '5': 'Ibrahim', '6': 'Yostina', '10': 'Kirlos' },
             deletedEmps: [],
-            officialHolidays: [],
-            extraWorkDays: [],
-            workConfig: null,
-            employeeLeaves: {},
-            wfhRecords: {}
+            officialHolidays: [
+                { date: '2026-04-05', label: 'احد السعانين' },
+                { date: '2026-04-09', label: 'خميس العهد' },
+                { date: '2026-04-12', label: 'عيد القيامة' },
+                { date: '2026-04-13', label: 'شم النسيم' },
+                { date: '2026-05-07', label: 'عيد العمال' },
+                { date: '2026-05-26', label: 'عيد الاضحى' },
+                { date: '2026-05-27', label: 'اضحي' },
+                { date: '2026-05-28', label: 'اضحي' },
+                { date: '2026-05-29', label: 'اضحي' },
+                { date: '2026-05-30', label: 'اضحي' },
+                { date: '2026-05-31', label: 'اضحي' },
+                { date: '2026-06-18', label: 'رأس السنة الهجرية' },
+                { date: '2026-07-02', label: '30 يونيو' },
+                { date: '2026-07-23', label: '23 يوليو' }
+            ],
+            extraWorkDays: [
+                { date: '2026-04-25', label: 'تسليم الريان - ابو عبد الله' }
+            ],
+            workConfig: { start: '10:00', end: '18:00', grace: 30, workDays: [0, 1, 2, 3, 4] },
+            employeeLeaves: {
+                '3': { '2026': { annual: [], casual: [{ from: '2026-07-09', to: '2026-07-09', days: 1, note: 'إجازة عارضة' }], official: [{ from: '2026-07-16', to: '2026-07-16', days: 1, note: 'من الإدارة' }] } },
+                '8': { '2026': { annual: [], casual: [], official: [] } },
+                '7': { '2026': { annual: [{ from: '2026-07-19', to: '2026-07-22', days: 4, note: 'سفر' }], casual: [{ from: '2026-07-16', to: '2026-07-16', days: 1, note: 'سفر' }], official: [] } },
+                '4': { '2026': { annual: [], casual: [], official: [] } },
+                '5': { '2026': { annual: [{ from: '2026-04-16', to: '2026-04-16', days: 1, note: '' }], casual: [{ from: '2026-07-14', to: '2026-07-14', days: 1, note: 'تعب' }, { from: '2026-07-22', to: '2026-07-22', days: 1, note: 'تلقائي' }], official: [] } },
+                '6': { '2026': { annual: [{ from: '2026-04-16', to: '2026-04-16', days: 1, note: '' }, { from: '2026-07-19', to: '2026-07-27', days: 5, note: 'سفر' }], casual: [{ from: '2026-07-06', to: '2026-07-06', days: 1, note: 'تلقائي' }, { from: '2026-07-13', to: '2026-07-13', days: 1, note: 'تلقائي' }, { from: '2026-07-28', to: '2026-07-28', days: 1, note: 'تلقائي' }, { from: '2026-07-29', to: '2026-07-29', days: 1, note: 'تلقائي' }], official: [] } },
+                '10': { '2026': { annual: [], casual: [], official: [] } }
+            },
+            wfhRecords: {
+                '3': [{ from: '2026-05-12', to: '2026-05-25', days: 10, note: 'WFH' }],
+                '8': [{ from: '2026-05-12', to: '2026-05-25', days: 10, note: 'WFH' }],
+                '4': [{ from: '2026-05-12', to: '2026-05-25', days: 10, note: 'WFH' }],
+                '5': [{ from: '2026-05-12', to: '2026-05-25', days: 10, note: 'WFH' }],
+                '6': [{ from: '2026-05-12', to: '2026-05-25', days: 10, note: 'WFH' }]
+            }
         };
         // Override with any embedded data
         try { if(window._EMBED_empNames) Object.assign(_SAVED_DATA.empNames, window._EMBED_empNames); } catch(e){}
@@ -5669,6 +5700,6 @@ ${empBlocks}
     }
     </script>
     <div id="tgToastContainer"></div>
-    <script src="theme.js?v=1787647502"></script>
+    <script src="theme.js?v=1787649229"></script>
 </body>
 </html>

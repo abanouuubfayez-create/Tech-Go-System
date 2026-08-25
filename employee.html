@@ -67,7 +67,7 @@
     <link
         href="https://fonts.googleapis.com/css2?family=Alexandria:wght@300;400;500;600;700;800;900&family=Cairo:wght@400;600;700;800;900&family=Tajawal:wght@400;500;700;800&family=Inter:wght@400;500;600;700&display=swap"
         rel="stylesheet">
-    <link rel="stylesheet" href="styles.css?v=1787647502">
+    <link rel="stylesheet" href="styles.css?v=1787649229">
     <link rel="manifest" href="manifest.json">
     <link rel="icon" type="image/png" sizes="192x192" href="icon-192.png">
     <link rel="apple-touch-icon" href="icon-192.png">
@@ -75,10 +75,10 @@
     <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-storage-compat.js"></script>
-    <script src="firebase-config.js?v=1787647502"></script>
-    <script src="auth.js?v=1787647502"></script>
-    <script src="app.js?v=1787647502"></script>
-    <script src="formsend.js?v=1787647502"></script>
+    <script src="firebase-config.js?v=1787649229"></script>
+    <script src="auth.js?v=1787649229"></script>
+    <script src="app.js?v=1787649229"></script>
+    <script src="formsend.js?v=1787649229"></script>
     <script>
         (function () {
             const theme = localStorage.getItem('tg-theme') || 'light';
@@ -2112,6 +2112,86 @@
         }
         setTimeout(initEmployeeReqForm, 500);
 
+        function tgGetEmployeeLeaveData() {
+            var empName = (window.TG_USER && TG_USER.name) ? TG_USER.name : (localStorage.getItem('tg_user_name') || '');
+            var empId = (window.TG_USER && TG_USER.empId) ? String(TG_USER.empId) : '';
+            var normName = empName.trim().toLowerCase();
+
+            // Baseline data from monthly fingerprint report (2026)
+            var baseline = {
+                'ebthal':  { empId: '3',  entitlement: 15, usedAnnual: 0, usedCasual: 1, usedOfficial: 1, nameAr: 'ابتهال' },
+                'markos':  { empId: '8',  entitlement: 15, usedAnnual: 0, usedCasual: 0, usedOfficial: 0, nameAr: 'ماركوس' },
+                'basel':   { empId: '7',  entitlement: 15, usedAnnual: 4, usedCasual: 1, usedOfficial: 0, nameAr: 'باسل' },
+                'abanob':  { empId: '4',  entitlement: 15, usedAnnual: 0, usedCasual: 0, usedOfficial: 0, nameAr: 'أبانوب' },
+                'ibrahim': { empId: '5',  entitlement: 15, usedAnnual: 1, usedCasual: 2, usedOfficial: 0, nameAr: 'إبراهيم' },
+                'yostina': { empId: '6',  entitlement: 15, usedAnnual: 6, usedCasual: 4, usedOfficial: 0, nameAr: 'يوستينا' },
+                'kirlos':  { empId: '10', entitlement: 15, usedAnnual: 0, usedCasual: 0, usedOfficial: 0, nameAr: 'كيرلس' }
+            };
+
+            // Read live data from attendance.html storage if available
+            var leavesStore = null;
+            try {
+                var raw = localStorage.getItem('attendance_sys_techgo_employee_leaves') || localStorage.getItem('techgo_employee_leaves');
+                if (raw) leavesStore = JSON.parse(raw);
+            } catch (e) {}
+
+            var matchedKey = null;
+            for (var k in baseline) {
+                if (normName.indexOf(k) !== -1 || normName.indexOf(baseline[k].nameAr) !== -1 || (empId && baseline[k].empId === empId)) {
+                    matchedKey = k;
+                    break;
+                }
+            }
+
+            var baseInfo = matchedKey ? baseline[matchedKey] : { empId: empId || '1', entitlement: 15, usedAnnual: 0, usedCasual: 0, usedOfficial: 0 };
+            var activeEmpId = baseInfo.empId;
+
+            var usedAnnual = baseInfo.usedAnnual;
+            var usedCasual = baseInfo.usedCasual;
+            var usedOfficial = baseInfo.usedOfficial;
+            var entitlement = baseInfo.entitlement;
+
+            // If attendance.html leavesStore has updated data for this employee
+            if (leavesStore && leavesStore[activeEmpId]) {
+                var currentYear = String(new Date().getFullYear());
+                var yrData = leavesStore[activeEmpId][currentYear];
+                if (yrData) {
+                    usedAnnual = (yrData.annual || []).reduce(function (s, r) { return s + (r.days || 0); }, 0);
+                    usedCasual = (yrData.casual || []).reduce(function (s, r) { return s + (r.days || 0); }, 0);
+                    usedOfficial = (yrData.official || []).reduce(function (s, r) { return s + (r.days || 0); }, 0);
+                }
+            }
+
+            // Also check approved requests in cache that might have been approved
+            if (window._reqCache) {
+                var cYr = new Date().getFullYear();
+                window._reqCache.forEach(function (r) {
+                    if (r.status === 'approved' && (r.formTemplateId === 'leave' || (r.type && r.type.indexOf('إجازة') !== -1))) {
+                        var rDate = r.createdAt && r.createdAt.toDate ? r.createdAt.toDate() : (r.createdAt && r.createdAt.seconds ? new Date(r.createdAt.seconds * 1000) : null);
+                        if (rDate && rDate.getFullYear() === cYr && r.dynamicData && r.dynamicData.days && r.dynamicData._counted) {
+                            var d = parseInt(r.dynamicData.days) || 0;
+                            usedAnnual += d;
+                        }
+                    }
+                });
+            }
+
+            var totalUsed = usedAnnual + usedCasual;
+            var remainAnnual = Math.max(0, entitlement - totalUsed);
+            var remainCasual = Math.max(0, 7 - usedCasual);
+
+            return {
+                empName: empName,
+                empId: activeEmpId,
+                entitlement: entitlement,
+                usedAnnual: usedAnnual,
+                usedCasual: usedCasual,
+                totalUsed: totalUsed,
+                remainAnnual: remainAnnual,
+                remainCasual: remainCasual
+            };
+        }
+
         function tgOnReqTypeChange(val) {
             var dynWrap = document.getElementById('reqDynamicFormWrap');
             var extWrap = document.getElementById('reqExtraFields');
@@ -2170,6 +2250,23 @@
                 }
             }
 
+            if (val === 'leave') {
+                var lStats = tgGetEmployeeLeaveData();
+                h += '<div style="background:var(--bg2); border:1px solid var(--bd); border-radius:12px; padding:14px 18px; margin-bottom:14px;">';
+                h += '  <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px; margin-bottom:10px;">';
+                h += '    <div style="font-size:13px; font-weight:800; color:var(--tx); display:flex; align-items:center; gap:6px;">📊 رصيد الإجازات السنوية لعام ' + new Date().getFullYear() + ' (م.١٢٤)</div>';
+                h += '    <div style="font-size:11.5px; color:var(--tx2);">الموظف: <strong style="color:var(--tx)">' + escH(lStats.empName || 'موظف') + '</strong> (رقم: ' + lStats.empId + ')</div>';
+                h += '  </div>';
+                h += '  <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(130px, 1fr)); gap:8px; text-align:center;">';
+                h += '    <div style="background:var(--bg); padding:8px 10px; border-radius:10px; border:1px solid var(--bd);"><div style="font-size:11px; color:var(--tx2);">إجمالي الاستحقاق</div><div style="font-size:16px; font-weight:900; color:#0284c7;">' + lStats.entitlement + ' يوم</div></div>';
+                h += '    <div style="background:var(--bg); padding:8px 10px; border-radius:10px; border:1px solid var(--bd);"><div style="font-size:11px; color:var(--tx2);">المستهلك (سنوي + عارض)</div><div style="font-size:16px; font-weight:900; color:#d97706;">' + lStats.totalUsed + ' يوم</div></div>';
+                h += '    <div style="background:var(--bg); padding:8px 10px; border-radius:10px; border:1px solid var(--bd);"><div style="font-size:11px; color:var(--tx2);">الرصيد المتبقي الفعلي</div><div style="font-size:16px; font-weight:900; color:#10b981;" id="tgLeaveRemDisplay">' + lStats.remainAnnual + ' يوم</div></div>';
+                h += '    <div style="background:var(--bg); padding:8px 10px; border-radius:10px; border:1px solid var(--bd);"><div style="font-size:11px; color:var(--tx2);">الرصيد بعد هذا الطلب</div><div style="font-size:16px; font-weight:900; color:#8b5cf6;" id="tgLeaveAfterDisplay">' + lStats.remainAnnual + ' يوم</div></div>';
+                h += '  </div>';
+                h += '  <div id="tgLeaveWarnBox" style="display:none; margin-top:10px; padding:10px 14px; background:rgba(239,68,68,0.12); border:1px solid #ef4444; border-radius:8px; font-size:12px; color:#ef4444; font-weight:bold; text-align:center;"></div>';
+                h += '</div>';
+            }
+
             if (off && typeof off.fill === 'function') {
                 h += off.fill();
             } else if (tpl && typeof tpl.fill === 'function') {
@@ -2195,12 +2292,69 @@
             // Auto-restore saved draft / last submitted data for this template
             setTimeout(function () {
                 tgRestoreFormDraft(val);
-                // Bind auto-save on input change
+                // Bind auto-save and leave auto-calculator
                 dynWrap.querySelectorAll('input, select, textarea').forEach(function (el) {
-                    el.addEventListener('input', function () { tgAutoSaveFormDraft(val); });
-                    el.addEventListener('change', function () { tgAutoSaveFormDraft(val); });
+                    el.addEventListener('input', function () { 
+                        tgAutoSaveFormDraft(val);
+                        if (val === 'leave') tgUpdateLeaveLiveCalculator();
+                    });
+                    el.addEventListener('change', function () { 
+                        tgAutoSaveFormDraft(val);
+                        if (val === 'leave') tgUpdateLeaveLiveCalculator();
+                    });
                 });
+                if (val === 'leave') tgUpdateLeaveLiveCalculator();
             }, 50);
+        }
+
+        function tgUpdateLeaveLiveCalculator() {
+            var dynWrap = document.getElementById('reqDynamicFormWrap');
+            if (!dynWrap) return;
+            var fromEl = dynWrap.querySelector('[data-fid="fromDate"]');
+            var toEl = dynWrap.querySelector('[data-fid="toDate"]');
+            var daysEl = dynWrap.querySelector('[data-fid="days"]');
+            var lStats = tgGetEmployeeLeaveData();
+
+            var fromVal = fromEl ? fromEl.value : '';
+            var toVal = toEl ? toEl.value : '';
+
+            var calculatedDays = 0;
+            if (fromVal && toVal) {
+                var dFrom = new Date(fromVal + 'T12:00:00');
+                var dTo = new Date(toVal + 'T12:00:00');
+                if (dTo >= dFrom) {
+                    calculatedDays = Math.round((dTo - dFrom) / (1000 * 60 * 60 * 24)) + 1;
+                    if (daysEl && (!daysEl.value || parseInt(daysEl.value) !== calculatedDays)) {
+                        daysEl.value = calculatedDays;
+                    }
+                }
+            } else if (daysEl && daysEl.value) {
+                calculatedDays = parseInt(daysEl.value) || 0;
+            }
+
+            var afterDisplay = document.getElementById('tgLeaveAfterDisplay');
+            var warnBox = document.getElementById('tgLeaveWarnBox');
+            var remAfter = Math.max(0, lStats.remainAnnual - calculatedDays);
+
+            if (afterDisplay) {
+                afterDisplay.textContent = remAfter + ' يوم';
+                afterDisplay.style.color = (calculatedDays > lStats.remainAnnual) ? '#ef4444' : '#8b5cf6';
+            }
+
+            if (warnBox) {
+                if (calculatedDays > lStats.remainAnnual) {
+                    warnBox.style.display = 'block';
+                    warnBox.innerHTML = '⚠️ <strong>تنبيه تجاوز الرصيد:</strong> عدد الأيام المطلوبة (' + calculatedDays + ' يوم) يتجاوز رصيد إجازاتك السنوية المتبقي (' + lStats.remainAnnual + ' يوم).';
+                } else if (lStats.remainAnnual <= 3) {
+                    warnBox.style.display = 'block';
+                    warnBox.style.background = 'rgba(217,119,6,0.12)';
+                    warnBox.style.borderColor = '#d97706';
+                    warnBox.style.color = '#d97706';
+                    warnBox.innerHTML = 'ℹ️ <strong>ملاحظة:</strong> رصيد إجازاتك المتبقي منخفض (' + lStats.remainAnnual + ' يوم).';
+                } else {
+                    warnBox.style.display = 'none';
+                }
+            }
         }
 
         function tgAutoSaveFormDraft(val) {
@@ -2300,6 +2454,18 @@
                     if (usedCount >= 5) {
                         msg.style.color = 'var(--no)';
                         msg.textContent = '❌ عفواً: لقد استنفذت الحد الأقصى للإذنات هذا الشهر (5/5 أيام). يرجى مراجعة الإدارة.';
+                        return;
+                    }
+                }
+
+                if (type === 'leave') {
+                    var lStats = tgGetEmployeeLeaveData();
+                    var daysReq = 0;
+                    var daysEl = dynWrap.querySelector('[data-fid="days"]');
+                    if (daysEl && daysEl.value) daysReq = parseInt(daysEl.value) || 0;
+                    if (daysReq > lStats.remainAnnual) {
+                        msg.style.color = 'var(--no)';
+                        msg.textContent = '❌ عفواً: عدد الأيام المطلوبة (' + daysReq + ' يوم) يتجاوز رصيدك السنوي المتبقي (' + lStats.remainAnnual + ' يوم).';
                         return;
                     }
                 }
@@ -3058,7 +3224,7 @@
         تطوير وتصميم: أبانوب فايز</div>
     <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
-    <script src="theme.js?v=1787647502"></script>
+    <script src="theme.js?v=1787649229"></script>
 
 
     <!-- Incoming Meeting Call Modal -->
