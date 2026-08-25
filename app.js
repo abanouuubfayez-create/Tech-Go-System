@@ -3843,6 +3843,135 @@ function saveMyPassword(){
     });
 }
 
+// ─── سجل وأرصدة الإجازات السنوية للموظفين (Admin HR Leaves Overview) ───────────
+function renderAdminLeavesRecordPage(c) {
+    if (!c) c = document.getElementById('pg-la');
+    if (!c) return;
+
+    var baseline = [
+        { empId: '3',  name: 'ابتهال', job: 'UI/UX Designer', entitlement: 15, usedAnnual: 0, usedCasual: 1, usedOfficial: 1 },
+        { empId: '8',  name: 'م/ مرقس مدحت', job: 'Backend Developer', entitlement: 15, usedAnnual: 1, usedCasual: 0, usedOfficial: 0 },
+        { empId: '7',  name: 'باسل', job: 'Frontend Developer', entitlement: 15, usedAnnual: 4, usedCasual: 1, usedOfficial: 0 },
+        { empId: '4',  name: 'أبانوب فايز', job: 'Tech Lead / Admin', entitlement: 15, usedAnnual: 0, usedCasual: 0, usedOfficial: 0 },
+        { empId: '5',  name: 'إبراهيم', job: 'Flutter Developer', entitlement: 15, usedAnnual: 1, usedCasual: 2, usedOfficial: 0 },
+        { empId: '6',  name: 'يوستينا', job: 'Graphic Designer', entitlement: 15, usedAnnual: 6, usedCasual: 4, usedOfficial: 0 },
+        { empId: '10', name: 'كيرلس مجدي', job: 'Backend Developer', entitlement: 15, usedAnnual: 0, usedCasual: 0, usedOfficial: 0 }
+    ];
+
+    // Check attendance.html leavesStore
+    var leavesStore = null;
+    try {
+        var raw = localStorage.getItem('attendance_sys_techgo_employee_leaves') || localStorage.getItem('techgo_employee_leaves');
+        if (raw) leavesStore = JSON.parse(raw);
+    } catch(e){}
+
+    var totalEnt = 0, totalUsedAll = 0, totalRemAll = 0;
+    var rowsHtml = '';
+
+    baseline.forEach(function(emp, idx) {
+        var usedAnn = emp.usedAnnual;
+        var usedCas = emp.usedCasual;
+        var usedOff = emp.usedOfficial;
+
+        if (leavesStore && leavesStore[emp.empId]) {
+            var cYr = String(new Date().getFullYear());
+            var yrData = leavesStore[emp.empId][cYr];
+            if (yrData) {
+                usedAnn = (yrData.annual || []).reduce(function(s,r){ return s + (r.days||0); }, 0);
+                usedCas = (yrData.casual || []).reduce(function(s,r){ return s + (r.days||0); }, 0);
+                usedOff = (yrData.official || []).reduce(function(s,r){ return s + (r.days||0); }, 0);
+            }
+        }
+
+        var usedTotal = usedAnn + usedCas;
+        var remAnn = Math.max(0, emp.entitlement - usedTotal);
+        var pct = Math.min(100, Math.round((usedTotal / emp.entitlement) * 100));
+        var remColor = remAnn <= 3 ? '#ef4444' : (remAnn <= 7 ? '#d97706' : '#10b981');
+        var barColor = remAnn <= 3 ? '#ef4444' : (remAnn <= 7 ? '#d97706' : '#0284c7');
+
+        totalEnt += emp.entitlement;
+        totalUsedAll += usedTotal;
+        totalRemAll += remAnn;
+
+        rowsHtml += '<tr>' +
+            '<td style="font-weight:bold;text-align:center;">' + (idx + 1) + '</td>' +
+            '<td style="font-weight:bold;color:var(--tx);">' + escH(emp.name) + '<div style="font-size:10px;color:var(--tx3);font-weight:normal;">' + escH(emp.job) + '</div></td>' +
+            '<td style="text-align:center;font-weight:bold;color:#0284c7;">' + emp.empId + '</td>' +
+            '<td style="text-align:center;font-weight:bold;">' + emp.entitlement + ' يوم</td>' +
+            '<td style="text-align:center;color:#0284c7;font-weight:bold;">' + usedAnn + ' يوم</td>' +
+            '<td style="text-align:center;color:#d97706;font-weight:bold;">' + usedCas + ' / 7 يوم</td>' +
+            '<td style="text-align:center;font-weight:bold;color:#d97706;">' + usedTotal + ' يوم</td>' +
+            '<td style="text-align:center;font-weight:900;font-size:13px;color:' + remColor + ';">' + remAnn + ' يوم</td>' +
+            '<td>' +
+                '<div style="background:var(--bg3,#e2e8f0);height:8px;border-radius:4px;overflow:hidden;margin-bottom:2px;">' +
+                '<div style="background:' + barColor + ';width:' + pct + '%;height:100%;border-radius:4px;"></div>' +
+                '</div>' +
+                '<div style="font-size:9.5px;color:var(--tx3);text-align:center;">استهلاك ' + pct + '%</div>' +
+            '</td>' +
+            '<td style="text-align:center;" class="np">' +
+                '<button type="button" class="bt bt-o" style="padding:3px 8px;font-size:10px;" onclick="go(\'att\')">⏱ تفاصيل البصمة</button>' +
+            '</td>' +
+            '</tr>';
+    });
+
+    var h = '<div class="SP"><h3>🏖️ سجل وأرصدة الإجازات السنوية لعام ' + new Date().getFullYear() + '</h3>';
+    h += '<div class="set-hint">استناداً للمادة (١٢٤) من اللائحة التنظيمية — كشف مركزي يوضح الاستحقاق السنوي، الأيام المستهلكة، والرصيد المتبقي لجميع الموظفين.</div>';
+
+    // Top KPI Cards
+    h += '<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:12px;margin:16px 0;">' +
+        '<div style="background:var(--bg2);border:1px solid var(--bd);border-radius:12px;padding:12px 16px;text-align:center;">' +
+        '  <div style="font-size:11px;color:var(--tx3);font-weight:bold;">👥 إجمالي الموظفين</div>' +
+        '  <div style="font-size:22px;font-weight:900;color:var(--tx);margin-top:2px;">' + baseline.length + ' موظف</div>' +
+        '</div>' +
+        '<div style="background:var(--bg2);border:1px solid var(--bd);border-radius:12px;padding:12px 16px;text-align:center;">' +
+        '  <div style="font-size:11px;color:var(--tx3);font-weight:bold;">🏖️ إجمالي الاستحقاق السنوي</div>' +
+        '  <div style="font-size:22px;font-weight:900;color:#0284c7;margin-top:2px;">' + totalEnt + ' يوم</div>' +
+        '</div>' +
+        '<div style="background:var(--bg2);border:1px solid var(--bd);border-radius:12px;padding:12px 16px;text-align:center;">' +
+        '  <div style="font-size:11px;color:var(--tx3);font-weight:bold;">⏳ إجمالي الإجازات المستهلكة</div>' +
+        '  <div style="font-size:22px;font-weight:900;color:#d97706;margin-top:2px;">' + totalUsedAll + ' يوم</div>' +
+        '</div>' +
+        '<div style="background:var(--bg2);border:1px solid var(--bd);border-radius:12px;padding:12px 16px;text-align:center;">' +
+        '  <div style="font-size:11px;color:var(--tx3);font-weight:bold;">🟢 إجمالي الأرصدة المتبقية</div>' +
+        '  <div style="font-size:22px;font-weight:900;color:#10b981;margin-top:2px;">' + totalRemAll + ' يوم</div>' +
+        '</div>' +
+        '</div>';
+
+    // Explanatory Banner
+    h += '<div style="background:rgba(2,132,199,0.08);border:1px solid rgba(2,132,199,0.3);border-radius:10px;padding:12px 16px;margin-bottom:16px;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px;">' +
+        '<div>' +
+        '  <div style="font-size:12.5px;font-weight:bold;color:#0284c7;">💡 التزامن اللحظي مع نظام الحضور وبوابة الموظف:</div>' +
+        '  <div style="font-size:11.5px;color:var(--tx2);margin-top:2px;">يتم خصم الإجازات واحتساب الأرصدة تلقائياً بمجرد رفع ملف البصمة الشهري في شاشة <strong>«⏱ الحضور والانصراف»</strong> أو اعتماد طلبات الإجازات الإلكترونية.</div>' +
+        '</div>' +
+        '<div style="display:flex;gap:8px;">' +
+        '  <button type="button" class="bt bt-p" style="font-size:11.5px;padding:6px 14px;" onclick="go(\'att\')">⏱ فتح نظام الحضور والبصمة</button>' +
+        '  <button type="button" class="bt bt-o" style="font-size:11.5px;padding:6px 14px;" onclick="window.print()">🖨️ طباعة الكشف</button>' +
+        '</div>' +
+        '</div>';
+
+    // Table
+    h += '<div style="overflow-x:auto;">' +
+        '<table class="dt" style="width:100%;border-collapse:collapse;">' +
+        '<thead><tr>' +
+        '<th style="width:36px;text-align:center;">م</th>' +
+        '<th style="width:22%;">اسم الموظف</th>' +
+        '<th style="width:70px;text-align:center;">الكود</th>' +
+        '<th style="width:90px;text-align:center;">الاستحقاق</th>' +
+        '<th style="width:85px;text-align:center;">سنوية</th>' +
+        '<th style="width:85px;text-align:center;">عارضة</th>' +
+        '<th style="width:95px;text-align:center;">إجمالي المستهلك</th>' +
+        '<th style="width:100px;text-align:center;">الرصيد المتبقي</th>' +
+        '<th style="width:120px;text-align:center;">نسبة الاستهلاك</th>' +
+        '<th class="np" style="width:110px;text-align:center;">إجراء</th>' +
+        '</tr></thead>' +
+        '<tbody>' + rowsHtml + '</tbody>' +
+        '</table>' +
+        '</div>';
+
+    h += '</div>';
+    c.innerHTML = h;
+}
+
 function logTbl(title,app,ref,cols,rows,docId){
     var h=H(title+' — ملحق '+app,ref,'',docId);
     h+=SC('١','بيانات الموظف');
@@ -4233,8 +4362,10 @@ function load(id,c){
         h+=FGA('السبب',2);
         h+=SC('٤','التوقيعات');
         h+=SG3('توقيع الموظف','','المدير الإداري','الموافقة','المدير التنفيذي','',null,'admin','exec');
-        h+='<div style="text-align:center;font-size:8px;color:var(--tx3);margin-top:6px">المغادرة أو التأخر بدون إذن موقع يعد مخالفة تأديبية م. ١٢٤</div>';
-        h+=FT();
+    // ── سجل الإجازة السنوية (كشف أرصدة الموظفين) ───────────────────────────
+    else if(id==="la"){
+        renderAdminLeavesRecordPage(c);
+        return;
     }
 
     // ── التماس تعديل موعد الحضور ──────────────────────────────────────
