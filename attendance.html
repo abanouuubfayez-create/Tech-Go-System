@@ -416,6 +416,54 @@
 
         .hidden { display: none !important; }
 
+        /* ── Mobile Responsive Optimizations ── */
+        @media (max-width: 768px) {
+            body { padding: 0.75rem 0.5rem; }
+            .admin-nav {
+                padding: 0.9rem;
+                flex-direction: column;
+                align-items: stretch;
+                gap: 12px;
+            }
+            .nav-brand {
+                justify-content: flex-start;
+            }
+            .nav-actions {
+                justify-content: flex-start;
+                width: 100%;
+                overflow-x: auto;
+                flex-wrap: nowrap;
+                padding-bottom: 4px;
+            }
+            .archive-bar {
+                flex-direction: column;
+                align-items: stretch;
+                gap: 10px;
+                padding: 10px 12px !important;
+            }
+            .archive-bar select {
+                width: 100% !important;
+            }
+            .exec-tabs-bar {
+                grid-template-columns: 1fr 1fr;
+                gap: 6px;
+            }
+            .kpi-grid {
+                grid-template-columns: 1fr 1fr;
+                gap: 8px;
+            }
+            .kpi-box {
+                padding: 0.8rem;
+                gap: 8px;
+            }
+            .kpi-val { font-size: 1.3rem; }
+            .card-table-hdr {
+                flex-direction: column;
+                align-items: stretch;
+            }
+            .search-box { width: 100%; }
+        }
+
         /* ══════════════════════════════════════════
            PRINT AESTHETICS (EXACT FRONTEND BEAUTY)
            ══════════════════════════════════════════ */

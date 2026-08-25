@@ -67,7 +67,7 @@
     <link
         href="https://fonts.googleapis.com/css2?family=Alexandria:wght@300;400;500;600;700;800;900&family=Cairo:wght@400;600;700;800;900&family=Tajawal:wght@400;500;700;800&family=Inter:wght@400;500;600;700&display=swap"
         rel="stylesheet">
-    <link rel="stylesheet" href="styles.css?v=1787666303">
+    <link rel="stylesheet" href="styles.css?v=1787666597">
     <link rel="manifest" href="manifest.json">
     <link rel="icon" type="image/png" sizes="192x192" href="icon-192.png">
     <link rel="apple-touch-icon" href="icon-192.png">
@@ -75,10 +75,10 @@
     <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-storage-compat.js"></script>
-    <script src="firebase-config.js?v=1787666303"></script>
-    <script src="auth.js?v=1787666303"></script>
-    <script src="app.js?v=1787666303"></script>
-    <script src="formsend.js?v=1787666303"></script>
+    <script src="firebase-config.js?v=1787666597"></script>
+    <script src="auth.js?v=1787666597"></script>
+    <script src="app.js?v=1787666597"></script>
+    <script src="formsend.js?v=1787666597"></script>
     <script>
         (function () {
             const theme = localStorage.getItem('tg-theme') || 'light';
@@ -174,7 +174,47 @@
         .emp-ct {
             padding: 22px 24px;
             max-width: 960px;
-            margin: 0 auto
+            margin: 0 auto;
+        }
+
+        /* ── Mobile Responsive Optimizations ── */
+        @media (max-width: 768px) {
+            .emp-topbar {
+                padding: 0 12px;
+                height: 52px;
+            }
+
+            .emp-topbar .who {
+                font-size: 12.5px;
+            }
+
+            .emp-topbar .who small {
+                display: none;
+            }
+
+            .emp-nav {
+                overflow-x: auto;
+                flex-wrap: nowrap;
+                padding: 6px 10px;
+                gap: 6px;
+                -webkit-overflow-scrolling: touch;
+                scrollbar-width: none;
+            }
+
+            .emp-nav::-webkit-scrollbar {
+                display: none;
+            }
+
+            .emp-tab {
+                padding: 8px 12px;
+                font-size: 11.5px;
+                flex-shrink: 0;
+                white-space: nowrap;
+            }
+
+            .emp-ct {
+                padding: 12px 10px;
+            }
         }
 
         .emp-pg {
@@ -3263,7 +3303,7 @@
         تطوير وتصميم: أبانوب فايز</div>
     <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
-    <script src="theme.js?v=1787666303"></script>
+    <script src="theme.js?v=1787666597"></script>
 
 
     <!-- Incoming Meeting Call Modal -->
