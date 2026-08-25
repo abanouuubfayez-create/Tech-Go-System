@@ -1259,23 +1259,438 @@
             });
         }
 
-        function saveWorkSettings() {
-            workConfig.start = document.getElementById('cfgStart').value;
-            workConfig.end   = document.getElementById('cfgEnd').value;
-            workConfig.grace = parseInt(document.getElementById('cfgGrace').value) || 0;
-            alert('✓ تم حفظ وتطبيق مواعيد الدوام بنجاح');
-            if (stats) {
-                renderExecutiveOverview();
-                renderTimesheets();
+        // ══════════════════════════════════════════
+        //  OFFICIAL FULL PRINT REPORT BUILDER
+        // ══════════════════════════════════════════
+        const _MONTH_NAMES_AR = ['يناير','فبراير','مارس','أبريل','مايو','يونيو','يوليو','أغسطس','سبتمبر','أكتوبر','نوفمبر','ديسمبر'];
+        const _DAY_NAMES_AR = ['الأحد','الاثنين','الثلاثاء','الأربعاء','الخميس','الجمعة','السبت'];
+
+        function buildOfficialPrintReport() {
+            if (!stats || !stats.employeeDetails || !stats.employeeDetails.length) {
+                alert('يرجى رفع ملف البصمة أولاً');
+                return;
             }
+
+            const allDates = Array.from(new Set(stats.employeeDetails.flatMap(e => e.dates))).sort();
+            const minDate = allDates[0] || '';
+            const maxDate = allDates[allDates.length - 1] || '';
+            
+            let monthLabel = 'تقرير الحضور والانصراف';
+            if (minDate) {
+                const parts = minDate.split('-');
+                const y = parts[0];
+                const m = parseInt(parts[1], 10);
+                const mName = _MONTH_NAMES_AR[m - 1] || ('شهر ' + m);
+                monthLabel = `تقرير شهر ${mName} ${y} (من ${minDate} إلى ${maxDate})`;
+            }
+
+            const todayStr = new Date().toLocaleDateString('ar-EG', { year: 'numeric', month: 'long', day: 'numeric' });
+            const totalEmployees = stats.totalEmployees;
+            const uniqueDates = stats.uniqueDates;
+            const totalHoursSum = stats.totalHoursSum;
+            const avgDailyHours = (totalHoursSum / (totalEmployees * (uniqueDates || 1))).toFixed(2);
+
+            // Build Executive Overview Table Rows
+            let overviewRows = '';
+            stats.employeeDetails.forEach((emp, idx) => {
+                const name = getDisplayName(emp.employeeId);
+                let ok = 0, lateNoPerm = 0, latePerm = 0, early = 0, totalHours = 0;
+
+                emp.dates.forEach(date => {
+                    const entry = emp.entries.find(e => e.date === date);
+                    const exit  = emp.exits.find(e => e.date === date);
+                    if (entry && exit) totalHours += calcDayWorkHours(entry.time, exit.time).hours;
+
+                    const p = getDayPunctuality(emp.employeeId, date, entry ? entry.time : null);
+                    const perm = getPermissionForDate(emp.employeeId, date);
+                    if (p === 'late') {
+                        if (perm && (perm.type === 'late' || perm.type === 'temp')) latePerm++;
+                        else lateNoPerm++;
+                    } else if (p === 'early') {
+                        early++;
+                    } else if (p === 'ok') {
+                        ok++;
+                    }
+                });
+
+                const permsCount = (employeePermissions[emp.employeeId] || []).length;
+                overviewRows += `
+                    <tr>
+                        <td style="text-align:center; font-weight:bold; color:#64748b;">${idx + 1}</td>
+                        <td style="font-weight:bold; color:#0f172a; text-align:right;">${name}</td>
+                        <td style="text-align:center; font-weight:bold; color:#0284c7;">${emp.employeeId}</td>
+                        <td style="text-align:center;"><span class="badge-ok">✅ ${ok}</span></td>
+                        <td style="text-align:center;">${lateNoPerm > 0 ? `<span class="badge-danger">⚠️ ${lateNoPerm}</span>` : '<span style="color:#94a3b8;">0</span>'}</td>
+                        <td style="text-align:center;">${latePerm > 0 ? `<span class="badge-perm">🎫 ${latePerm}</span>` : '<span style="color:#94a3b8;">0</span>'}</td>
+                        <td style="text-align:center;">${early > 0 ? `<span class="badge-early">🚪 ${early}</span>` : '<span style="color:#94a3b8;">0</span>'}</td>
+                        <td style="text-align:center; color:#94a3b8;">—</td>
+                        <td style="text-align:center;"><span class="badge-perm">${permsCount} إذن</span></td>
+                        <td style="text-align:center; font-weight:bold; color:#0f6e64;">${fmtHoursAndMins(totalHours)}</td>
+                    </tr>
+                `;
+            });
+
+            // Build Per-Employee Detailed Sections
+            let empDetailsHtml = '';
+            stats.employeeDetails.forEach((emp, idx) => {
+                const name = getDisplayName(emp.employeeId);
+                let empTotalHours = 0, okCount = 0, lateCount = 0, earlyCount = 0;
+
+                let dailyRows = '';
+                emp.dates.forEach(date => {
+                    const dObj = new Date(date + 'T12:00:00');
+                    const dName = _DAY_NAMES_AR[dObj.getDay()];
+                    const entry = emp.entries.find(e => e.date === date);
+                    const exit  = emp.exits.find(e => e.date === date);
+                    const hCalc = calcDayWorkHours(entry ? entry.time : null, exit ? exit.time : null);
+                    if (hCalc.hours) empTotalHours += hCalc.hours;
+
+                    const p = getDayPunctuality(emp.employeeId, date, entry ? entry.time : null);
+                    const perm = getPermissionForDate(emp.employeeId, date);
+
+                    let statusBadge = '<span class="badge-ok">✅ في معاده</span>';
+                    if (p === 'late') {
+                        lateCount++;
+                        const lateMin = timeToMins(entry.time) - timeToMins(workConfig.start);
+                        if (perm && (perm.type === 'late' || perm.type === 'temp')) {
+                            statusBadge = `<span class="badge-perm">⏰ متأخر ${lateMin}د (بإذن)</span>`;
+                        } else {
+                            statusBadge = `<span class="badge-danger">⚠️ متأخر ${lateMin}د (بدون إذن)</span>`;
+                        }
+                    } else if (p === 'early') {
+                        earlyCount++;
+                        statusBadge = `<span class="badge-early">🚪 انصراف مبكر</span>`;
+                    } else {
+                        okCount++;
+                    }
+
+                    dailyRows += `
+                        <tr>
+                            <td style="font-weight:600;">${date} <span style="color:#64748b; font-size:8pt;">(${dName})</span></td>
+                            <td style="text-align:center;">${statusBadge}</td>
+                            <td style="text-align:center; color:#166534; font-weight:600;">${entry ? entry.time : '—'}</td>
+                            <td style="text-align:center; color:#991b1b; font-weight:600;">${exit ? exit.time : '—'}</td>
+                            <td style="text-align:center; font-weight:bold; color:#0f172a;">${hCalc.formatted}</td>
+                            <td style="font-size:8pt; color:#475569;">${perm ? '🎫 ' + (perm.note || perm.type) : '—'}</td>
+                        </tr>
+                    `;
+                });
+
+                const empPerms = employeePermissions[emp.employeeId] || [];
+                let permsSummaryHtml = empPerms.length ? 
+                    empPerms.map(p => `• 📅 ${p.date}: ${p.type === 'late' ? 'إذن تأخير' : 'انصراف مبكر'} (${p.note || 'معتمد'})`).join('<br>') : 
+                    'لا توجد أذونات مسجلة هذا الشهر';
+
+                empDetailsHtml += `
+                    <div class="emp-print-section">
+                        <div class="emp-print-header">
+                            <div style="display:flex; align-items:center; gap:10px;">
+                                <span class="emp-num-badge">${idx + 1}</span>
+                                <div>
+                                    <div style="font-size:11pt; font-weight:800; color:#0f172a;">${name}</div>
+                                    <div style="font-size:8pt; color:#64748b;">كود: ${emp.employeeId} · الدوام الرسمي: 10:00 ص → 18:00 م</div>
+                                </div>
+                            </div>
+                            <div style="display:flex; gap:6px;">
+                                <span class="badge-ok">✅ ${okCount} في معاده</span>
+                                <span class="badge-danger">⏰ ${lateCount} تأخير</span>
+                                <span class="badge-early">🚪 ${earlyCount} مبكر</span>
+                                <span class="badge-perm" style="font-weight:bold;">⏱ الساعات: ${fmtHoursAndMins(empTotalHours)}</span>
+                            </div>
+                        </div>
+
+                        <table class="print-table" style="margin-bottom:8px;">
+                            <thead>
+                                <tr>
+                                    <th style="width:20%;">التاريخ واليوم</th>
+                                    <th style="width:24%;">الانضباط والحالة</th>
+                                    <th style="width:14%;">وقت الدخول</th>
+                                    <th style="width:14%;">وقت الخروج</th>
+                                    <th style="width:14%;">ساعات العمل</th>
+                                    <th style="width:14%;">ملاحظات الأذونات</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                ${dailyRows}
+                            </tbody>
+                        </table>
+
+                        <div class="emp-print-footer-box">
+                            <div style="font-weight:bold; color:#0284c7; margin-bottom:2px;">🎫 سجل الأذونات المعتمدة للموظف:</div>
+                            <div style="font-size:8pt; color:#334155; line-height:1.4;">${permsSummaryHtml}</div>
+                        </div>
+                    </div>
+                `;
+            });
+
+            // Full Printable HTML Document
+            const htmlContent = `
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <title>${monthLabel}</title>
+    <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;800;900&display=swap" rel="stylesheet">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: 'Cairo', sans-serif;
+            color: #0f172a;
+            background: #fff;
+            padding: 12mm 15mm;
+            font-size: 9pt;
+            direction: rtl;
+        }
+        @page {
+            size: A4 portrait;
+            margin: 10mm 12mm;
+        }
+        @media print {
+            * { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
         }
 
-        document.getElementById('exportPdfBtn').addEventListener('click', () => {
-            if (!stats) { alert('يرجى رفع ملف البصمة أولاً'); return; }
-            const span = document.getElementById('printDateSpan');
-            if (span) span.textContent = new Date().toLocaleDateString('ar-EG', { year: 'numeric', month: 'long', day: 'numeric' });
-            window.print();
-        });
+        /* Top Header */
+        .report-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 2.5px solid #0f6e64;
+            padding-bottom: 12px;
+            margin-bottom: 14px;
+        }
+        .hdr-brand { font-size: 15pt; font-weight: 900; color: #0f6e64; margin-bottom: 2px; }
+        .hdr-title { font-size: 12pt; font-weight: 800; color: #1e293b; margin-bottom: 4px; }
+        .hdr-period { font-size: 9.5pt; font-weight: 700; color: #0284c7; }
+        .hdr-meta {
+            background: #f0fdfa;
+            border: 1px solid #99f6e4;
+            border-radius: 10px;
+            padding: 8px 14px;
+            text-align: right;
+            font-size: 8pt;
+            color: #0f766e;
+            line-height: 1.5;
+        }
+
+        /* KPI Grid */
+        .kpi-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 10px;
+            margin-bottom: 16px;
+        }
+        .kpi-card {
+            background: #f8fafc;
+            border: 1px solid #cbd5e1;
+            border-radius: 10px;
+            padding: 10px 12px;
+            text-align: center;
+        }
+        .kpi-val { font-size: 14pt; font-weight: 900; color: #0f172a; margin-bottom: 2px; }
+        .kpi-lbl { font-size: 8pt; color: #64748b; font-weight: 700; }
+
+        /* Section Titles */
+        .sec-title {
+            font-size: 11pt;
+            font-weight: 800;
+            color: #0f172a;
+            margin-bottom: 8px;
+            padding-bottom: 4px;
+            border-bottom: 1.5px solid #e2e8f0;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        /* Tables */
+        .print-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 18px;
+            font-size: 8.5pt;
+        }
+        .print-table th {
+            background: #f1f5f9;
+            color: #334155;
+            border: 1px solid #cbd5e1;
+            padding: 6px 8px;
+            font-weight: 800;
+            text-align: center;
+        }
+        .print-table td {
+            border: 1px solid #e2e8f0;
+            padding: 5px 8px;
+            vertical-align: middle;
+        }
+        .print-table tbody tr:nth-child(even) {
+            background: #f8fafc;
+        }
+
+        /* Status Badges */
+        .badge-ok      { display: inline-block; padding: 2px 7px; border-radius: 12px; font-size: 7.5pt; font-weight: 700; background: #dcfce7; color: #15803d; border: 1px solid #86efac; }
+        .badge-danger  { display: inline-block; padding: 2px 7px; border-radius: 12px; font-size: 7.5pt; font-weight: 700; background: #fee2e2; color: #b91c1c; border: 1px solid #fca5a5; }
+        .badge-perm    { display: inline-block; padding: 2px 7px; border-radius: 12px; font-size: 7.5pt; font-weight: 700; background: #e0f2fe; color: #0369a1; border: 1px solid #7dd3fc; }
+        .badge-early   { display: inline-block; padding: 2px 7px; border-radius: 12px; font-size: 7.5pt; font-weight: 700; background: #fef3c7; color: #b45309; border: 1px solid #fde68a; }
+
+        /* Per Employee Sections */
+        .emp-print-section {
+            border: 1px solid #cbd5e1;
+            border-radius: 10px;
+            padding: 10px 12px;
+            margin-bottom: 14px;
+            page-break-inside: avoid;
+            background: #ffffff;
+        }
+        .emp-print-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 8px;
+            padding-bottom: 6px;
+            border-bottom: 1px solid #f1f5f9;
+        }
+        .emp-num-badge {
+            width: 24px; height: 24px;
+            background: #0f6e64; color: #fff;
+            border-radius: 50%;
+            display: inline-flex; align-items: center; justify-content: center;
+            font-weight: 800; font-size: 8pt;
+        }
+        .emp-print-footer-box {
+            background: #f8fafc;
+            border: 1px dashed #cbd5e1;
+            border-radius: 6px;
+            padding: 6px 10px;
+            margin-top: 4px;
+        }
+
+        /* Signatures */
+        .sig-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr 1fr;
+            gap: 15px;
+            margin-top: 25px;
+            padding-top: 15px;
+            border-top: 1.5px solid #cbd5e1;
+            page-break-inside: avoid;
+        }
+        .sig-card {
+            border: 1px dashed #94a3b8;
+            border-radius: 8px;
+            padding: 10px;
+            text-align: center;
+            background: #f8fafc;
+        }
+        .sig-hdr { font-size: 9pt; font-weight: 800; color: #334155; margin-bottom: 25px; }
+        .sig-sub { font-size: 7.5pt; color: #64748b; border-top: 1px dotted #94a3b8; padding-top: 4px; }
+    </style>
+</head>
+<body>
+    <div class="report-header">
+        <div>
+            <div class="hdr-brand">🏢 شركة تيك - جو للحلول التقنية المتطورة (TECH GO)</div>
+            <div class="hdr-title">📋 تقرير الحضور والانصراف وتدقيق الأذونات الرسمي</div>
+            <div class="hdr-period">📅 ${monthLabel}</div>
+        </div>
+        <div class="hdr-meta">
+            <div><strong>مواعيد الدوام:</strong> 10:00 ص → 18:00 م</div>
+            <div><strong>فترة السماح:</strong> 15 دقيقة</div>
+            <div><strong>تاريخ الطباعة:</strong> ${todayStr}</div>
+        </div>
+    </div>
+
+    <!-- KPI Summary -->
+    <div class="kpi-grid">
+        <div class="kpi-card">
+            <div class="kpi-val">${totalEmployees}</div>
+            <div class="kpi-lbl">👥 إجمالي الموظفين</div>
+        </div>
+        <div class="kpi-card">
+            <div class="kpi-val">${uniqueDates}</div>
+            <div class="kpi-lbl">📅 أيام الدوام الفعلية</div>
+        </div>
+        <div class="kpi-card">
+            <div class="kpi-val">${stats.totalPermsUsed}</div>
+            <div class="kpi-lbl">🎫 أذونات معتمدة مستخدمة</div>
+        </div>
+        <div class="kpi-card">
+            <div class="kpi-val">${fmtHoursAndMins(totalHoursSum)}</div>
+            <div class="kpi-lbl">⏱ إجمالي الساعات الفعلية</div>
+        </div>
+    </div>
+
+    <!-- Section 1: Executive Overview -->
+    <div class="sec-title">📊 1. الملخص التنفيذي وكشف انضباط الموظفين والأذونات</div>
+    <table class="print-table">
+        <thead>
+            <tr>
+                <th style="width:4%;">#</th>
+                <th style="width:24%;">اسم الموظف</th>
+                <th style="width:8%;">الكود</th>
+                <th style="width:13%;">✅ في معاده</th>
+                <th style="width:14%;">⏰ تأخير (بدون إذن)</th>
+                <th style="width:14%;">🎫 تأخير (بإذن)</th>
+                <th style="width:9%;">🚪 مبكر</th>
+                <th style="width:6%;">🚫 غياب</th>
+                <th style="width:8%;">🎫 الأذونات</th>
+                <th style="width:14%;">⏱ الساعات الفعلية</th>
+            </tr>
+        </thead>
+        <tbody>
+            ${overviewRows}
+        </tbody>
+    </table>
+
+    <!-- Section 2: Detailed Employee Timesheets -->
+    <div style="page-break-before: always;"></div>
+    <div class="sec-title">👤 2. السجلات التفصيلية اليومية للموظفين</div>
+    ${empDetailsHtml}
+
+    <!-- Signatures -->
+    <div class="sig-grid">
+        <div class="sig-card">
+            <div class="sig-hdr">إعداد ومراجعة الموارد البشرية (HR)</div>
+            <div class="sig-sub">الاسم والتوقيع: ............................</div>
+        </div>
+        <div class="sig-card">
+            <div class="sig-hdr">تدقيق المدير الإداري</div>
+            <div class="sig-sub">الاسم والتوقيع: ............................</div>
+        </div>
+        <div class="sig-card">
+            <div class="sig-hdr">اعتماد المدير التنفيذي وخاتم الشركة</div>
+            <div class="sig-sub">الاعتماد الرسمي: ............................</div>
+        </div>
+    </div>
+</body>
+</html>
+            `;
+
+            // Open in dedicated print iframe or window
+            let printFrame = document.getElementById('reportPrintFrame');
+            if (!printFrame) {
+                printFrame = document.createElement('iframe');
+                printFrame.id = 'reportPrintFrame';
+                printFrame.style.position = 'fixed';
+                printFrame.style.top = '-9999px';
+                printFrame.style.left = '-9999px';
+                printFrame.style.width = '0';
+                printFrame.style.height = '0';
+                printFrame.style.border = '0';
+                document.body.appendChild(printFrame);
+            }
+
+            const frameDoc = printFrame.contentDocument || printFrame.contentWindow.document;
+            frameDoc.open();
+            frameDoc.write(htmlContent);
+            frameDoc.close();
+
+            setTimeout(() => {
+                printFrame.contentWindow.focus();
+                printFrame.contentWindow.print();
+            }, 350);
+        }
+
+        document.getElementById('exportPdfBtn').addEventListener('click', buildOfficialPrintReport);
 
         document.getElementById('resetBtn').addEventListener('click', () => {
             stats = null;
