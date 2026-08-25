@@ -418,14 +418,17 @@
 
     <!-- Upload Section -->
     <div id="uploadSection">
-        <div class="upload-card">
+        <div class="upload-card" id="dropZone"
+             ondragover="event.preventDefault(); this.style.borderColor='var(--primary-light)';"
+             ondragleave="event.preventDefault(); this.style.borderColor='var(--primary)';"
+             ondrop="handleFileDrop(event)">
             <div style="font-size: 50px; margin-bottom: 1rem;">📂</div>
             <h2 style="font-size: 1.5rem; font-weight: 800; margin-bottom: 0.5rem;">رفع ملف بصمة الدوام (attlog.dat)</h2>
             <p style="color: var(--text-muted); font-size: 0.95rem; margin-bottom: 1.5rem;">
                 اسحب ملف البصمة هنا أو اضغط لاختياره لتحليل الحضور وساعات العمل والأذونات تلقائياً
             </p>
-            <input type="file" id="attlogInput" accept=".dat" style="display:none;" onchange="onFileSelected(event)">
-            <label for="attlogInput" class="btn-action btn-primary-action" style="padding: 0.8rem 2.5rem; font-size: 1rem;">
+            <input type="file" id="attlogInput" accept=".dat,.txt,*" style="display:none;" onchange="onFileSelected(event)">
+            <label for="attlogInput" class="btn-action btn-primary-action" style="padding: 0.8rem 2.5rem; font-size: 1rem; cursor:pointer;">
                 📂 اختيار ملف البصمة
             </label>
         </div>
@@ -678,37 +681,104 @@
         }
 
         // ══════════════════════════════════════════
-        //  FILE PARSING
+        //  BULLETPROOF FILE PARSING & DRAG-DROP
         // ══════════════════════════════════════════
-        function onFileSelected(e) {
-            const file = e.target.files[0];
-            if (!file) return;
-            const reader = new FileReader();
-            reader.onload = (evt) => {
-                const lines = evt.target.result.split('\n').filter(l => l.trim());
-                const records = lines.map((line, idx) => {
-                    const parts = line.split(/\t+/).map(p => p.trim()).filter(Boolean);
-                    if (parts.length >= 2) {
-                        const [datePart, timePart] = parts[1].split(' ');
-                        return { id: idx+1, employeeId: parts[0], date: datePart, time: timePart, datetime: new Date(parts[1]), type: '' };
-                    }
-                    return null;
-                }).filter(Boolean);
+        function handleFileDrop(e) {
+            e.preventDefault();
+            var dz = document.getElementById('dropZone');
+            if (dz) dz.style.borderColor = 'var(--primary)';
+            if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
+                processAttendanceFile(e.dataTransfer.files[0]);
+            }
+        }
 
-                const employeeDays = new Map();
-                records.forEach(r => {
-                    const k = `${r.employeeId}-${r.date}`;
+        function onFileSelected(e) {
+            if (e.target.files && e.target.files.length > 0) {
+                processAttendanceFile(e.target.files[0]);
+            }
+        }
+
+        function parseAttlogContent(content) {
+            var lines = content.split(/\r?\n/).map(function(l){ return l.trim(); }).filter(Boolean);
+            var records = [];
+            
+            for (var idx = 0; idx < lines.length; idx++) {
+                var line = lines[idx];
+                // Match regex for: ID Date Time
+                var match = line.match(/^(\d+)\s+(\d{4}[-/]\d{1,2}[-/]\d{1,2})\s+(\d{1,2}:\d{2}(?::\d{2})?)/);
+                if (match) {
+                    var empId = String(parseInt(match[1], 10));
+                    var datePart = match[2].replace(/\//g, '-');
+                    var timePart = match[3];
+                    if (timePart.length === 5) timePart += ':00';
+                    var dt = new Date(datePart + 'T' + timePart);
+                    var validDt = isNaN(dt.getTime()) ? new Date() : dt;
+
+                    records.push({
+                        id: idx + 1,
+                        employeeId: empId,
+                        date: datePart,
+                        time: timePart,
+                        datetime: validDt,
+                        type: ''
+                    });
+                } else {
+                    // Fallback split by any whitespace or tabs
+                    var parts = line.split(/\s+/);
+                    if (parts.length >= 3) {
+                        var empId2 = String(parseInt(parts[0], 10));
+                        var datePart2 = parts[1].replace(/\//g, '-');
+                        var timePart2 = parts[2];
+                        if (timePart2.length === 5) timePart2 += ':00';
+                        if (datePart2.indexOf('-') !== -1 && timePart2.indexOf(':') !== -1) {
+                            var dt2 = new Date(datePart2 + 'T' + timePart2);
+                            var validDt2 = isNaN(dt2.getTime()) ? new Date() : dt2;
+                            records.push({
+                                id: idx + 1,
+                                employeeId: empId2,
+                                date: datePart2,
+                                time: timePart2,
+                                datetime: validDt2,
+                                type: ''
+                            });
+                        }
+                    }
+                }
+            }
+            return records;
+        }
+
+        function processAttendanceFile(file) {
+            if (!file) return;
+            var reader = new FileReader();
+            reader.onload = function(evt) {
+                var content = evt.target.result;
+                var records = parseAttlogContent(content);
+
+                if (!records.length) {
+                    alert('⚠️ لم يتم العثور على سجلات صالحة في الملف المرفوع. يرجى التأكد من اختيار ملف attlog.dat');
+                    return;
+                }
+
+                // Group by employee and day
+                var employeeDays = new Map();
+                records.forEach(function(r) {
+                    var k = r.employeeId + '-' + r.date;
                     if (!employeeDays.has(k)) employeeDays.set(k, []);
                     employeeDays.get(k).push(r);
                 });
-                employeeDays.forEach(dayRecords => {
-                    dayRecords.sort((a,b) => a.datetime - b.datetime);
+
+                employeeDays.forEach(function(dayRecords) {
+                    dayRecords.sort(function(a,b){ return a.datetime - b.datetime; });
                     if (dayRecords.length === 1) {
-                        dayRecords[0].type = dayRecords[0].datetime.getHours() < 14 ? 'دخول' : 'خروج';
+                        var h = dayRecords[0].datetime.getHours();
+                        dayRecords[0].type = h < 14 ? 'دخول' : 'خروج';
                     } else {
                         dayRecords[0].type = 'دخول';
-                        dayRecords[dayRecords.length-1].type = 'خروج';
-                        for (let i=1; i<dayRecords.length-1; i++) dayRecords[i].type = 'حركة';
+                        dayRecords[dayRecords.length - 1].type = 'خروج';
+                        for (var i = 1; i < dayRecords.length - 1; i++) {
+                            dayRecords[i].type = 'حركة';
+                        }
                     }
                 });
 
@@ -718,42 +788,46 @@
         }
 
         function calculateAndRenderStats(records) {
-            const employeeMap = new Map();
-            records.forEach(r => {
+            var employeeMap = new Map();
+            records.forEach(function(r) {
                 if (!employeeMap.has(r.employeeId)) {
                     employeeMap.set(r.employeeId, { entries: [], exits: [], dates: new Set() });
                 }
-                const emp = employeeMap.get(r.employeeId);
+                var emp = employeeMap.get(r.employeeId);
                 emp.dates.add(r.date);
                 if (r.type === 'دخول') emp.entries.push({ date: r.date, time: r.time });
                 else if (r.type === 'خروج') emp.exits.push({ date: r.date, time: r.time });
             });
 
-            let totalHours = 0;
-            employeeMap.forEach(emp => {
-                emp.entries.forEach(entry => {
-                    const exit = emp.exits.find(ex => ex.date === entry.date);
+            var totalHours = 0;
+            employeeMap.forEach(function(emp) {
+                emp.entries.forEach(function(entry) {
+                    var exit = emp.exits.find(function(ex){ return ex.date === entry.date; });
                     if (exit) {
-                        const h = calcDayWorkHours(entry.time, exit.time).hours;
+                        var h = calcDayWorkHours(entry.time, exit.time).hours;
                         if (h > 0 && h < 24) totalHours += h;
                     }
                 });
             });
 
-            let totalPerms = 0;
-            Object.keys(employeePermissions).forEach(k => { totalPerms += (employeePermissions[k] || []).length; });
+            var totalPerms = 0;
+            Object.keys(employeePermissions).forEach(function(k) {
+                totalPerms += (employeePermissions[k] || []).length;
+            });
 
             stats = {
                 totalEmployees: employeeMap.size,
-                uniqueDates: new Set(records.map(r => r.date)).size,
+                uniqueDates: new Set(records.map(function(r){ return r.date; })).size,
                 totalHoursSum: totalHours,
                 totalPermsUsed: totalPerms,
-                employeeDetails: Array.from(employeeMap.entries()).map(([id, emp]) => ({
-                    employeeId: id,
-                    entries: emp.entries,
-                    exits: emp.exits,
-                    dates: Array.from(emp.dates).sort()
-                }))
+                employeeDetails: Array.from(employeeMap.entries()).map(function(item) {
+                    return {
+                        employeeId: item[0],
+                        entries: item[1].entries,
+                        exits: item[1].exits,
+                        dates: Array.from(item[1].dates).sort()
+                    };
+                })
             };
 
             document.getElementById('uploadSection').classList.add('hidden');
