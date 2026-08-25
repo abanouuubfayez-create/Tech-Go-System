@@ -3872,8 +3872,10 @@ window.tgPrintAdminLeavesReport = function () {
             var cYr = String(new Date().getFullYear());
             var yrData = leavesStore[emp.empId][cYr];
             if (yrData) {
-                usedAnn = (yrData.annual || []).reduce(function (s, r) { return s + (r.days || 0); }, 0);
-                usedCas = (yrData.casual || []).reduce(function (s, r) { return s + (r.days || 0); }, 0);
+                var dAnn = (yrData.annual || []).reduce(function (s, r) { return s + (r.days || 0); }, 0);
+                var dCas = (yrData.casual || []).reduce(function (s, r) { return s + (r.days || 0); }, 0);
+                usedAnn = Math.max(usedAnn, dAnn);
+                usedCas = Math.max(usedCas, dCas);
             }
         }
 
@@ -3985,9 +3987,12 @@ function renderAdminLeavesRecordPage(c) {
             var cYr = String(new Date().getFullYear());
             var yrData = leavesStore[emp.empId][cYr];
             if (yrData) {
-                usedAnn = (yrData.annual || []).reduce(function(s,r){ return s + (r.days||0); }, 0);
-                usedCas = (yrData.casual || []).reduce(function(s,r){ return s + (r.days||0); }, 0);
-                usedOff = (yrData.official || []).reduce(function(s,r){ return s + (r.days||0); }, 0);
+                var dAnn = (yrData.annual || []).reduce(function (s, r) { return s + (r.days || 0); }, 0);
+                var dCas = (yrData.casual || []).reduce(function (s, r) { return s + (r.days || 0); }, 0);
+                var dOff = (yrData.official || []).reduce(function (s, r) { return s + (r.days || 0); }, 0);
+                usedAnn = Math.max(usedAnn, dAnn);
+                usedCas = Math.max(usedCas, dCas);
+                usedOff = Math.max(usedOff, dOff);
             }
         }
 
