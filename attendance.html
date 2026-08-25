@@ -87,6 +87,36 @@
             padding: 1.5rem;
         }
 
+        .hidden { display: none !important; }
+
+        .modal-overlay {
+            position: fixed;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background: rgba(15, 23, 42, 0.6);
+            backdrop-filter: blur(4px);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 9999;
+            padding: 1rem;
+        }
+
+        .modal-box {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 16px;
+            padding: 1.8rem;
+            max-width: 500px;
+            width: 100%;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.3);
+            animation: modalPop 0.2s ease-out;
+        }
+
+        @keyframes modalPop {
+            from { opacity: 0; transform: scale(0.95); }
+            to { opacity: 1; transform: scale(1); }
+        }
+
         /* Top Navbar */
         .admin-nav {
             max-width: 1400px;
@@ -1037,7 +1067,10 @@
 
         function loadArchivedMonth(monthKey) {
             const data = attendanceArchive[monthKey];
-            if (!data) return;
+            if (!data) {
+                showUploadSection();
+                return;
+            }
 
             currentLoadedMonthKey = monthKey;
             currentRawContent = data.rawContent || '';
@@ -1048,8 +1081,38 @@
                 savePermissionsToStorage();
             }
 
-            if (data.records && data.records.length > 0) {
-                calculateAndRenderStats(data.records, false);
+            if (!currentRecords.length && currentRawContent) {
+                currentRecords = parseAttlogContent(currentRawContent);
+            }
+
+            if (currentRecords && currentRecords.length > 0) {
+                // Ensure proper entry/exit grouping
+                var employeeDays = new Map();
+                currentRecords.forEach(function(r) {
+                    var k = r.employeeId + '-' + r.date;
+                    if (!employeeDays.has(k)) employeeDays.set(k, []);
+                    employeeDays.get(k).push(r);
+                });
+
+                employeeDays.forEach(function(dayRecords) {
+                    dayRecords.sort(function(a,b){
+                        var tA = a.datetime ? new Date(a.datetime).getTime() : new Date(a.date+'T'+a.time).getTime();
+                        var tB = b.datetime ? new Date(b.datetime).getTime() : new Date(b.date+'T'+b.time).getTime();
+                        return tA - tB;
+                    });
+                    if (dayRecords.length === 1) {
+                        var h = parseInt(dayRecords[0].time.split(':')[0], 10);
+                        dayRecords[0].type = h < 14 ? 'دخول' : 'خروج';
+                    } else {
+                        dayRecords[0].type = 'دخول';
+                        dayRecords[dayRecords.length - 1].type = 'خروج';
+                        for (var i = 1; i < dayRecords.length - 1; i++) {
+                            dayRecords[i].type = 'حركة';
+                        }
+                    }
+                });
+
+                calculateAndRenderStats(currentRecords, false);
             } else if (data.stats) {
                 stats = data.stats;
                 renderExecutiveOverview();
@@ -1057,6 +1120,8 @@
                 renderPermissionsTable();
                 document.getElementById('uploadSection').classList.add('hidden');
                 document.getElementById('resultsSection').classList.remove('hidden');
+            } else {
+                showUploadSection();
             }
 
             renderArchiveDropdown(monthKey);
