@@ -495,15 +495,20 @@
         .mtc-perm .mini-table thead tr { background: #0284c7; }
 
         @media print {
-            @page { size: A4; margin: 15mm 12mm; }
-            body { background: #ffffff !important; color: #1c2422 !important; padding: 0 !important; font-size: 11pt; }
-            .header, #uploadSection, #namingSection, .results-toolbar, #resetBtnWrap, .alert, .theme-toggle, .settings-drawer { display: none !important; }
+            @page { size: A4 portrait; margin: 12mm 10mm; }
+            body { background: #ffffff !important; color: #0f172a !important; padding: 0 !important; font-size: 10.5pt; }
+            .header, #uploadSection, #namingSection, .results-toolbar, #resetBtnWrap, .alert, .theme-toggle, .settings-drawer, #periodBar, .decision-grid, .sec-hdr, #employeeNotesWrap, .notes-hint { display: none !important; }
             #resultsSection { display: block !important; }
-            #printHeader { display: block !important; text-align: center; margin-bottom: 20px; padding-bottom: 12px; border-bottom: 2px solid var(--primary); }
-            #printHeader h1 { font-size: 1.5rem; font-weight: 900; color: var(--primary-dark); }
-            .emp-card-v2 { background: #ffffff !important; border: 1px solid #ded7c8 !important; page-break-inside: avoid; break-inside: avoid; margin-bottom: 14px !important; }
+            #printHeader { display: block !important; text-align: center; margin-bottom: 16px; padding-bottom: 10px; border-bottom: 2px solid #0f172a; }
+            #printHeader h1 { font-size: 1.4rem; font-weight: 900; color: #0f172a; }
+            .stats-compact { margin-bottom: 16px !important; }
+            .sc-card { border: 1px solid #cbd5e1 !important; background: #f8fafc !important; }
+            .emp-card-v2 { background: #ffffff !important; border: 1.5px solid #0f172a !important; page-break-inside: avoid; break-inside: avoid; margin-bottom: 16px !important; }
+            .ecv2-hdr { background: #f1f5f9 !important; border-bottom: 1px solid #cbd5e1 !important; }
             .ecv2-body { display: block !important; }
             .ecv2-chevron, .btn-emp-leaves, .btn-emp-wfh, .btn-emp-perms { display: none !important; }
+            .day-log th { background: #0f172a !important; color: #fff !important; }
+            .day-log td { border-bottom: 1px solid #cbd5e1 !important; }
         }
     </style>
 </head>
@@ -1008,26 +1013,77 @@
             });
         }
 
+        // ══════════════════════════════════════════
+        //  HOURS CALCULATION & FORMATTING
+        // ══════════════════════════════════════════
+        function fmtHoursAndMins(decimalHours) {
+            if (decimalHours === null || decimalHours === undefined || isNaN(decimalHours)) return '—';
+            var totalMin = Math.round(decimalHours * 60);
+            if (totalMin <= 0) return '0 د';
+            var h = Math.floor(totalMin / 60);
+            var m = totalMin % 60;
+            if (h === 0) return m + ' دقيقة';
+            if (m === 0) return h + ' ساعة';
+            return h + ' س و ' + m + ' د';
+        }
+
+        function fmtDurationShort(decimalHours) {
+            if (!decimalHours || isNaN(decimalHours)) return '—';
+            var totalMin = Math.round(decimalHours * 60);
+            var h = Math.floor(totalMin / 60);
+            var m = totalMin % 60;
+            return (h > 0 ? h + 'س ' : '') + (m > 0 ? m + 'د' : (h === 0 ? '0د' : ''));
+        }
+
+        function calcDayWorkHours(entryTime, exitTime, isExtraDay) {
+            if (!entryTime && !exitTime) return { hours: 0, formatted: '—', overtime: 0, deficit: 0, incomplete: true };
+            if (!entryTime || !exitTime) return { hours: null, formatted: (entryTime ? '⚠️ دخول فقط' : '⚠️ خروج فقط'), overtime: 0, deficit: 0, incomplete: true };
+            
+            var entryMin = timeToMins(entryTime);
+            var exitMin  = timeToMins(exitTime);
+            var diffMin  = Math.max(0, exitMin - entryMin);
+            var hours    = diffMin / 60;
+
+            var officialStartMin = timeToMins(workConfig.start);
+            var officialEndMin   = timeToMins(workConfig.end);
+            var targetDailyMin   = Math.max(0, officialEndMin - officialStartMin); // 8 hours (480 mins)
+
+            var overtimeMin = isExtraDay ? diffMin : Math.max(0, exitMin - officialEndMin);
+            var deficitMin  = isExtraDay ? 0 : Math.max(0, targetDailyMin - diffMin);
+
+            return {
+                hours: hours,
+                formatted: fmtHoursAndMins(hours),
+                shortText: fmtDurationShort(hours),
+                overtimeHours: overtimeMin / 60,
+                deficitHours: deficitMin / 60,
+                incomplete: false
+            };
+        }
+
         function calculateStats(data) {
-            const employeeMap = new Map();
-            data.forEach(record => {
+            var employeeMap = new Map();
+            data.forEach(function(record) {
                 if (!employeeMap.has(record.employeeId)) {
                     employeeMap.set(record.employeeId, { entries: [], exits: [], movements: [], dates: new Set() });
                 }
-                const emp = employeeMap.get(record.employeeId);
+                var emp = employeeMap.get(record.employeeId);
                 emp.dates.add(record.date);
                 if (record.type === 'دخول') emp.entries.push({ date: record.date, time: record.time });
                 else if (record.type === 'خروج') emp.exits.push({ date: record.date, time: record.time });
                 else if (record.type === 'حركة') emp.movements.push({ date: record.date, time: record.time });
             });
 
-            let totalHours = 0, workDaysCount = 0;
-            employeeMap.forEach((emp) => {
-                emp.entries.forEach(entry => {
-                    const matchingExit = emp.exits.find(exit => exit.date === entry.date);
+            var totalHours = 0, validDaysCount = 0;
+            employeeMap.forEach(function(emp) {
+                emp.entries.forEach(function(entry) {
+                    var matchingExit = emp.exits.find(function(exit) { return exit.date === entry.date; });
                     if (matchingExit) {
-                        const h = (new Date(`2000-01-01T${matchingExit.time}`) - new Date(`2000-01-01T${entry.time}`)) / 3600000;
-                        if (h > 0 && h < 24) { totalHours += h; workDaysCount++; }
+                        var res = calcDayWorkHours(entry.time, matchingExit.time, false);
+                        if (res.hours > 0 && res.hours < 24) {
+                            totalHours += res.hours;
+                            validDaysCount++;
+                        }
                     }
                 });
             });
@@ -1035,18 +1091,24 @@
             return {
                 totalEmployees: employeeMap.size,
                 totalRecords: data.length,
-                uniqueDates: new Set(data.map(r => r.date)).size,
-                avgWorkHours: workDaysCount > 0 ? (totalHours / workDaysCount).toFixed(2) : 0,
-                employeeDetails: Array.from(employeeMap.entries()).map(([id, emp]) => ({
-                    employeeId: id,
-                    totalDays: emp.dates.size,
-                    totalEntries: emp.entries.length,
-                    totalExits: emp.exits.length,
-                    totalMovements: emp.movements.length,
-                    entries: emp.entries,
-                    exits: emp.exits,
-                    movements: emp.movements
-                }))
+                uniqueDates: new Set(data.map(function(r) { return r.date; })).size,
+                totalHoursSum: totalHours,
+                avgWorkHours: validDaysCount > 0 ? (totalHours / validDaysCount).toFixed(2) : 0,
+                avgFormatted: validDaysCount > 0 ? fmtHoursAndMins(totalHours / validDaysCount) : '—',
+                employeeDetails: Array.from(employeeMap.entries()).map(function(item) {
+                    var id = item[0];
+                    var emp = item[1];
+                    return {
+                        employeeId: id,
+                        totalDays: emp.dates.size,
+                        totalEntries: emp.entries.length,
+                        totalExits: emp.exits.length,
+                        totalMovements: emp.movements.length,
+                        entries: emp.entries,
+                        exits: emp.exits,
+                        movements: emp.movements
+                    };
+                })
             };
         }
 
@@ -1055,17 +1117,16 @@
             document.getElementById('totalEmployees').textContent = stats.totalEmployees;
             document.getElementById('totalRecords').textContent = stats.totalRecords;
             document.getElementById('uniqueDates').textContent = stats.uniqueDates;
-            document.getElementById('avgWorkHours').textContent = stats.avgWorkHours;
+            document.getElementById('avgWorkHours').textContent = stats.avgWorkHours + ' س';
             
-            // Total permissions used count
-            let totalPerms = 0;
-            stats.employeeDetails.forEach(e => {
+            var totalPerms = 0;
+            stats.employeeDetails.forEach(function(e) {
                 totalPerms += getEmpPermissionsTotal(e.employeeId);
             });
-            const permVal = document.getElementById('totalPermsUsed');
+            var permVal = document.getElementById('totalPermsUsed');
             if (permVal) permVal.textContent = totalPerms;
 
-            document.getElementById('printDate').textContent = `تاريخ التقرير: ${new Date().toLocaleString('ar-EG')}`;
+            document.getElementById('printDate').textContent = 'تاريخ التقرير: ' + new Date().toLocaleString('ar-EG');
             buildPeriodSelectors();
             renderDecisionGrid();
             renderEmployeeNotes();
@@ -1074,57 +1135,58 @@
 
         function displayEmpCards() {
             if (!stats) return;
-            const employeesList = document.getElementById('employeesList');
+            var employeesList = document.getElementById('employeesList');
             employeesList.innerHTML = '';
-            const activeEmps = stats.employeeDetails.filter(e => !deletedEmployees.has(e.employeeId));
+            var activeEmps = stats.employeeDetails.filter(function(e){ return !deletedEmployees.has(e.employeeId); });
             _renderEmpCards(activeEmps, employeesList);
         }
 
         function _renderEmpCards(empList, container) {
-            const dayNames = ['الأحد','الاثنين','الثلاثاء','الأربعاء','الخميس','الجمعة','السبت'];
+            var dayNames = ['الأحد','الاثنين','الثلاثاء','الأربعاء','الخميس','الجمعة','السبت'];
 
-            empList.forEach((emp, idx) => {
-                const allDatesSet = new Set([
-                    ...emp.entries.map(e=>e.date),
-                    ...emp.exits.map(e=>e.date),
-                    ...emp.movements.map(e=>e.date)
+            empList.forEach(function(emp, idx) {
+                var allDatesSet = new Set([
+                    ...emp.entries.map(function(e){ return e.date; }),
+                    ...emp.exits.map(function(e){ return e.date; }),
+                    ...emp.movements.map(function(e){ return e.date; })
                 ]);
-                const sortedDates = Array.from(allDatesSet).sort();
+                var sortedDates = Array.from(allDatesSet).sort();
 
-                let totalPresent=0, totalAbsent=0, totalLateNoPerm=0, totalLatePerm=0, totalEarly=0, totalOk=0, totalLeave=0;
-                let totalHoursSum=0, hoursCount=0;
-                const dayData = [];
+                var totalPresent=0, totalAbsent=0, totalLateNoPerm=0, totalLatePerm=0, totalEarly=0, totalOk=0, totalLeave=0;
+                var totalHoursSum=0, hoursCount=0, totalOvertimeHours=0;
+                var dayData = [];
 
-                sortedDates.forEach(date => {
-                    const entries = emp.entries.filter(e=>e.date===date);
-                    const exits   = emp.exits.filter(e=>e.date===date);
-                    const isOffHol = isHoliday(date);
-                    const dateObj2 = new Date(date + 'T12:00:00');
-                    const isNonWorkDay = !workConfig.workDays.includes(dateObj2.getDay());
+                sortedDates.forEach(function(date) {
+                    var entries = emp.entries.filter(function(e){ return e.date===date; });
+                    var exits   = emp.exits.filter(function(e){ return e.date===date; });
+                    var isOffHol = isHoliday(date);
+                    var dateObj2 = new Date(date + 'T12:00:00');
+                    var isNonWorkDay = !workConfig.workDays.includes(dateObj2.getDay());
 
-                    let hours = null;
-                    if (entries.length && exits.length) {
-                        const h = (new Date('2000-01-01T'+exits[0].time) - new Date('2000-01-01T'+entries[0].time)) / 3600000;
-                        if (h > 0 && h < 24) { hours = h; totalHoursSum += h; hoursCount++; }
+                    var hoursCalc = calcDayWorkHours(entries.length ? entries[0].time : null, exits.length ? exits[0].time : null, isNonWorkDay || isOffHol);
+                    if (hoursCalc.hours && hoursCalc.hours > 0 && hoursCalc.hours < 24) {
+                        totalHoursSum += hoursCalc.hours;
+                        totalOvertimeHours += hoursCalc.overtimeHours;
+                        hoursCount++;
                     }
 
                     if ((isNonWorkDay || isOffHol) && entries.length > 0) {
-                        dayData.push({ date, entries, exits, hours, status:'extra', lateMin:0, isOffHol });
+                        dayData.push({ date: date, entries: entries, exits: exits, hoursCalc: hoursCalc, status: 'extra', lateMin: 0, isOffHol: isOffHol });
                         return;
                     }
 
                     if (isOffHol) {
-                        dayData.push({ date, entries, exits, hours, status:'holiday', lateMin:0, isOffHol:true });
+                        dayData.push({ date: date, entries: entries, exits: exits, hoursCalc: hoursCalc, status: 'holiday', lateMin: 0, isOffHol: true });
                         return;
                     }
 
-                    let status = 'none';
-                    let lateMin = 0;
-                    let hasPermission = false;
-                    const perm = getPermissionForDate(emp.employeeId, date);
+                    var status = 'none';
+                    var lateMin = 0;
+                    var hasPermission = false;
+                    var perm = getPermissionForDate(emp.employeeId, date);
 
                     if (entries.length) {
-                        const p = getDayPunctuality(emp.employeeId, date, entries[0].time);
+                        var p = getDayPunctuality(emp.employeeId, date, entries[0].time);
                         if (p === 'late') {
                             lateMin = timeToMins(entries[0].time) - timeToMins(workConfig.start);
                             if (perm && (perm.type === 'late' || perm.type === 'temp')) {
@@ -1145,43 +1207,44 @@
                         totalPresent++;
                     }
 
-                    let earlyExit = 0;
-                    let earlyExitPerm = false;
+                    var earlyExit = 0;
+                    var earlyExitPerm = false;
                     if (exits.length) {
-                        const diff = timeToMins(workConfig.end) - timeToMins(exits[0].time);
+                        var diff = timeToMins(workConfig.end) - timeToMins(exits[0].time);
                         if (diff > 0) {
                             earlyExit = diff;
                             if (perm && (perm.type === 'early' || perm.type === 'temp')) earlyExitPerm = true;
                         }
                     }
 
-                    dayData.push({ date, entries, exits, hours, status, lateMin, earlyExit, earlyExitPerm, hasPermission, permObj: perm });
+                    dayData.push({ date: date, entries: entries, exits: exits, hoursCalc: hoursCalc, status: status, lateMin: lateMin, earlyExit: earlyExit, earlyExitPerm: earlyExitPerm, hasPermission: hasPermission, permObj: perm });
                 });
 
-                const allWorkDaysInRange = getWorkDaysInRange(sortedDates[0], sortedDates[sortedDates.length-1]);
-                const missedDates = allWorkDaysInRange.filter(d => !allDatesSet.has(d));
-                missedDates.forEach(d => {
-                    const leaveInfo = (typeof getLeaveInfo === 'function') ? getLeaveInfo(emp.employeeId, d) : null;
+                var allWorkDaysInRange = getWorkDaysInRange(sortedDates[0], sortedDates[sortedDates.length-1]);
+                var missedDates = allWorkDaysInRange.filter(function(d){ return !allDatesSet.has(d); });
+                missedDates.forEach(function(d) {
+                    var leaveInfo = (typeof getLeaveInfo === 'function') ? getLeaveInfo(emp.employeeId, d) : null;
                     if (leaveInfo) {
                         totalLeave++;
-                        dayData.push({ date:d, entries:[], exits:[], hours:null, status:'leave', leaveType: leaveInfo.type });
+                        dayData.push({ date: d, entries: [], exits: [], hoursCalc: { formatted: '—', shortText: '—' }, status: 'leave', leaveType: leaveInfo.type });
                     } else {
                         totalAbsent++;
-                        dayData.push({ date:d, entries:[], exits:[], hours:null, status:'absent' });
+                        dayData.push({ date: d, entries: [], exits: [], hoursCalc: { formatted: '—', shortText: '—' }, status: 'absent' });
                     }
                 });
-                dayData.sort((a,b) => a.date.localeCompare(b.date));
+                dayData.sort(function(a,b){ return a.date.localeCompare(b.date); });
 
-                const displayName = getDisplayName(emp.employeeId);
-                const avgHours = hoursCount > 0 ? (totalHoursSum/hoursCount).toFixed(1) : '—';
-                const totalPerms = getEmpPermissionsTotal(emp.employeeId);
+                var displayName = getDisplayName(emp.employeeId);
+                var avgHoursFormatted = hoursCount > 0 ? fmtHoursAndMins(totalHoursSum / hoursCount) : '—';
+                var totalHoursFormatted = fmtHoursAndMins(totalHoursSum);
+                var totalPerms = getEmpPermissionsTotal(emp.employeeId);
 
-                const logRows = dayData.map(d => {
-                    const dateObj = new Date(d.date + 'T12:00:00');
-                    const dayName = dayNames[dateObj.getDay()];
-                    const dateDisp = dateObj.toLocaleDateString('ar-EG',{day:'numeric',month:'short'});
+                var logRows = dayData.map(function(d) {
+                    var dateObj = new Date(d.date + 'T12:00:00');
+                    var dayName = dayNames[dateObj.getDay()];
+                    var dateDisp = dateObj.toLocaleDateString('ar-EG', { day: 'numeric', month: 'short' });
 
-                    let stripeClass='stripe-none', pillClass='pill-none', pillLabel='—';
+                    var stripeClass='stripe-none', pillClass='pill-none', pillLabel='—';
                     if (d.status === 'extra') {
                         stripeClass='stripe-extra'; pillClass='pill-extra'; pillLabel='⭐ عمل إضافي';
                     } else if (d.status === 'holiday') {
@@ -1191,118 +1254,91 @@
                     } else if (d.status === 'absent') {
                         stripeClass='stripe-absent'; pillClass='pill-absent'; pillLabel='🚫 غياب بالخصم';
                     } else if (d.status === 'late-perm') {
-                        stripeClass='stripe-perm'; pillClass='pill-perm'; pillLabel=`⏰ متأخر ${d.lateMin}د (بإذن معتمد)`;
+                        stripeClass='stripe-perm'; pillClass='pill-perm'; pillLabel='⏰ متأخر ' + d.lateMin + 'د (بإذن)';
                     } else if (d.status === 'late-no-perm') {
-                        stripeClass='stripe-late'; pillClass='pill-late'; pillLabel=`⏰ متأخر ${d.lateMin}د (بدون إذن)`;
+                        stripeClass='stripe-late'; pillClass='pill-late'; pillLabel='⏰ متأخر ' + d.lateMin + 'د (بدون إذن)';
                     } else if (d.status === 'early') {
                         stripeClass='stripe-early'; pillClass='pill-early'; pillLabel='🌅 بدري';
                     } else if (d.status === 'ok') {
                         stripeClass='stripe-ok'; pillClass='pill-ok'; pillLabel='✅ في معاده';
                     }
 
-                    const timeIn  = d.entries.length ? d.entries[0].time : '—';
-                    const timeOut = d.exits.length   ? d.exits[0].time   : '—';
-                    const hoursDisp = d.hours ? `${d.hours.toFixed(1)} س` : '—';
+                    var timeIn  = d.entries.length ? d.entries[0].time : '—';
+                    var timeOut = d.exits.length   ? d.exits[0].time   : '—';
+                    var hoursDisp = d.hoursCalc ? d.hoursCalc.formatted : '—';
                     
-                    let earlyExitNote = '';
+                    var earlyExitNote = '';
                     if (d.earlyExit > 0) {
                         earlyExitNote = d.earlyExitPerm 
-                            ? `<div class="dl-note" style="color:var(--perm-light);">🚪 انصرف بدري -${d.earlyExit}د (بإذن)</div>`
-                            : `<div class="dl-note" style="color:var(--danger);">🚪 انصرف بدري -${d.earlyExit}د (بدون إذن)</div>`;
+                            ? '<div class="dl-note" style="color:var(--perm-light);">🚪 انصرف بدري -' + d.earlyExit + 'د (بإذن)</div>'
+                            : '<div class="dl-note" style="color:var(--danger);">🚪 انصرف بدري -' + d.earlyExit + 'د (بدون إذن)</div>';
                     }
 
-                    return `<tr>
-                        <td class="dl-stripe"><span class="${stripeClass}"></span></td>
-                        <td class="dl-date">${dateDisp} <span class="dl-dayname">${dayName}</span></td>
-                        <td><span class="dl-pill ${pillClass}">${pillLabel}</span></td>
-                        <td class="dl-time-in">${timeIn}</td>
-                        <td class="dl-time-out">${timeOut}${earlyExitNote}</td>
-                        <td class="dl-hours">${hoursDisp}</td>
-                    </tr>`;
+                    return '<tr>' +
+                        '<td class="dl-stripe"><span class="' + stripeClass + '"></span></td>' +
+                        '<td class="dl-date">' + dateDisp + ' <span class="dl-dayname">' + dayName + '</span></td>' +
+                        '<td><span class="dl-pill ' + pillClass + '">' + pillLabel + '</span></td>' +
+                        '<td class="dl-time-in">' + timeIn + '</td>' +
+                        '<td class="dl-time-out">' + timeOut + earlyExitNote + '</td>' +
+                        '<td class="dl-hours" style="font-weight:bold;color:var(--tx);">' + hoursDisp + '</td>' +
+                    '</tr>';
                 }).join('');
 
-                const card = document.createElement('div');
+                var card = document.createElement('div');
                 card.className = 'emp-card-v2';
                 card.dataset.empid = emp.employeeId;
 
-                card.innerHTML = `
-                <div class="ecv2-hdr" onclick="toggleEmpAcc2('${emp.employeeId}')">
-                    <div class="ecv2-num">${idx+1}</div>
-                    <div class="ecv2-nameblock">
-                        <div class="ecv2-name">
-                            <span class="emp-name-display">${displayName}</span>
-                        </div>
-                        <div class="ecv2-id">رقم: ${emp.employeeId} · أذونات مسجلة: ${totalPerms}</div>
-                    </div>
-                    <span class="ecv2-chevron" id="accChev-${emp.employeeId}">▾</span>
-                </div>
-
-                <div class="ecv2-scores">
-                    <div class="ecv2-score">
-                        <span class="ecv2-score-val sv-present">${totalPresent}</span>
-                        <span class="ecv2-score-lbl">حضور</span>
-                    </div>
-                    <div class="ecv2-score">
-                        <span class="ecv2-score-val sv-late">${totalLateNoPerm}</span>
-                        <span class="ecv2-score-lbl">تأخير بدون إذن</span>
-                    </div>
-                    <div class="ecv2-score">
-                        <span class="ecv2-score-val sv-perm">${totalLatePerm}</span>
-                        <span class="ecv2-score-lbl">تأخير بإذن</span>
-                    </div>
-                    <div class="ecv2-score">
-                        <span class="ecv2-score-val sv-absent">${totalAbsent}</span>
-                        <span class="ecv2-score-lbl">غياب</span>
-                    </div>
-                    <div class="ecv2-score">
-                        <span class="ecv2-score-val sv-perm">${totalPerms}</span>
-                        <span class="ecv2-score-lbl">إجمالي الأذونات</span>
-                    </div>
-                    <div class="ecv2-score">
-                        <span class="ecv2-score-val sv-hours">${avgHours}</span>
-                        <span class="ecv2-score-lbl">متوسط الساعات</span>
-                    </div>
-                </div>
-
-                <div style="display:flex;align-items:center;gap:8px;padding:8px 16px;background:var(--surface-2);border-top:1px solid var(--border);flex-wrap:wrap;">
-                    <button class="btn-emp-perms" onclick="event.stopPropagation();openPermModal('${emp.employeeId}','${displayName.replace(/'/g,"\\'")}')">
-                        🎫 أذونات (${totalPerms})
-                    </button>
-                    <button class="btn-emp-leaves" onclick="event.stopPropagation();openLeaveModal('${emp.employeeId}','${displayName.replace(/'/g,"\\'")}')">
-                        🏖️ إجازات
-                    </button>
-                    <button class="btn-emp-wfh" onclick="event.stopPropagation();openWfhModal('${emp.employeeId}','${displayName.replace(/'/g,"\\'")}')">
-                        🏠 WFH
-                    </button>
-                    <span class="perm-chip">🎫 ${totalLatePerm} تأخير بإذن</span>
-                    ${totalLateNoPerm > 0 ? `<span style="background:rgba(192,57,43,0.15);color:var(--danger-light);padding:2px 8px;border-radius:12px;font-size:11px;font-weight:bold;">⚠️ ${totalLateNoPerm} تأخير غير مبرر</span>` : ''}
-                </div>
-
-                <div class="ecv2-body" id="accBody-${emp.employeeId}">
-                    <div class="dl-scroll-wrap" style="overflow-x:auto;">
-                        <table class="day-log">
-                            <thead>
-                                <tr>
-                                    <th style="width:3px;padding:0;"></th>
-                                    <th>التاريخ</th>
-                                    <th>حالة الانضباط والأذونات</th>
-                                    <th>دخول</th>
-                                    <th>خروج</th>
-                                    <th>ساعات العمل</th>
-                                </tr>
-                            </thead>
-                            <tbody>${logRows}</tbody>
-                        </table>
-                    </div>
-                </div>`;
+                card.innerHTML = 
+                '<div class="ecv2-hdr" onclick="toggleEmpAcc2(\'' + emp.employeeId + '\')">' +
+                '    <div class="ecv2-num">' + (idx+1) + '</div>' +
+                '    <div class="ecv2-nameblock">' +
+                '        <div class="ecv2-name">' +
+                '            <span class="emp-name-display">' + displayName + '</span>' +
+                '        </div>' +
+                '        <div class="ecv2-id">كود: ' + emp.employeeId + ' · إجمالي الساعات الفعلية: <strong>' + totalHoursFormatted + '</strong> · أذونات مسجلة: ' + totalPerms + '</div>' +
+                '    </div>' +
+                '    <span class="ecv2-chevron" id="accChev-' + emp.employeeId + '">▾</span>' +
+                '</div>' +
+                '<div class="ecv2-scores">' +
+                '    <div class="ecv2-score"><span class="ecv2-score-val sv-present">' + totalPresent + '</span><span class="ecv2-score-lbl">أيام الحضور</span></div>' +
+                '    <div class="ecv2-score"><span class="ecv2-score-val sv-late">' + totalLateNoPerm + '</span><span class="ecv2-score-lbl">تأخير بدون إذن</span></div>' +
+                '    <div class="ecv2-score"><span class="ecv2-score-val sv-perm">' + totalLatePerm + '</span><span class="ecv2-score-lbl">تأخير بإذن</span></div>' +
+                '    <div class="ecv2-score"><span class="ecv2-score-val sv-absent">' + totalAbsent + '</span><span class="ecv2-score-lbl">غياب</span></div>' +
+                '    <div class="ecv2-score"><span class="ecv2-score-val sv-hours" style="font-size:1.1rem;margin-top:4px;">' + totalHoursFormatted + '</span><span class="ecv2-score-lbl">إجمالي الساعات</span></div>' +
+                '    <div class="ecv2-score"><span class="ecv2-score-val sv-hours" style="font-size:1.1rem;margin-top:4px;">' + avgHoursFormatted + '</span><span class="ecv2-score-lbl">متوسط الساعات</span></div>' +
+                '</div>' +
+                '<div style="display:flex;align-items:center;gap:8px;padding:8px 16px;background:var(--surface-2);border-top:1px solid var(--border);flex-wrap:wrap;">' +
+                '    <button class="btn-emp-perms" onclick="event.stopPropagation();openPermModal(\'' + emp.employeeId + '\',\'' + displayName.replace(/'/g,"\\'") + '\')">🎫 أذونات (' + totalPerms + ')</button>' +
+                '    <button class="btn-emp-leaves" onclick="event.stopPropagation();openLeaveModal(\'' + emp.employeeId + '\',\'' + displayName.replace(/'/g,"\\'") + '\')">🏖️ إجازات</button>' +
+                '    <button class="btn-emp-wfh" onclick="event.stopPropagation();openWfhModal(\'' + emp.employeeId + '\',\'' + displayName.replace(/'/g,"\\'") + '\')">🏠 WFH</button>' +
+                '    <span class="perm-chip">🎫 ' + totalLatePerm + ' تأخير بإذن</span>' +
+                '    ' + (totalLateNoPerm > 0 ? '<span style="background:rgba(192,57,43,0.15);color:var(--danger-light);padding:2px 8px;border-radius:12px;font-size:11px;font-weight:bold;">⚠️ ' + totalLateNoPerm + ' تأخير غير مبرر</span>' : '') +
+                '</div>' +
+                '<div class="ecv2-body" id="accBody-' + emp.employeeId + '">' +
+                '    <div class="dl-scroll-wrap" style="overflow-x:auto;">' +
+                '        <table class="day-log">' +
+                '            <thead>' +
+                '                <tr>' +
+                '                    <th style="width:3px;padding:0;"></th>' +
+                '                    <th>التاريخ</th>' +
+                '                    <th>حالة الانضباط والأذونات</th>' +
+                '                    <th>دخول</th>' +
+                '                    <th>خروج</th>' +
+                '                    <th>ساعات العمل الفعلية</th>' +
+                '                </tr>' +
+                '            </thead>' +
+                '            <tbody>' + logRows + '</tbody>' +
+                '        </table>' +
+                '    </div>' +
+                '</div>';
 
                 container.appendChild(card);
             });
         }
 
         function toggleEmpAcc2(id) {
-            const body = document.getElementById('accBody-' + id);
-            const chev = document.getElementById('accChev-' + id);
+            var body = document.getElementById('accBody-' + id);
+            var chev = document.getElementById('accChev-' + id);
             if (!body) return;
             body.classList.toggle('open');
             if (chev) chev.classList.toggle('open');
@@ -1311,14 +1347,14 @@
         // ══════════════════════════════════════════
         //  PERMISSION MODAL FUNCTIONS
         // ══════════════════════════════════════════
-        let _currentPermEmpId = null;
+        var _currentPermEmpId = null;
 
         function openPermModal(empId, empName) {
             _currentPermEmpId = empId;
-            document.getElementById('pm-emp-name').textContent = empName || `موظف ${empId}`;
-            document.getElementById('pm-emp-id').textContent = `كود الموظف: ${empId}`;
+            document.getElementById('pm-emp-name').textContent = empName || ('موظف ' + empId);
+            document.getElementById('pm-emp-id').textContent = 'كود الموظف: ' + empId;
             
-            const today = new Date().toISOString().slice(0, 10);
+            var today = new Date().toISOString().slice(0, 10);
             document.getElementById('pm-date').value = today;
             document.getElementById('pm-note').value = '';
             
@@ -1333,42 +1369,42 @@
 
         function renderPermModalRecords() {
             if (!_currentPermEmpId) return;
-            const list = document.getElementById('pm-records-list');
-            const records = employeePermissions[_currentPermEmpId] || [];
+            var list = document.getElementById('pm-records-list');
+            var records = employeePermissions[_currentPermEmpId] || [];
 
             if (!records.length) {
                 list.innerHTML = '<div style="text-align:center;color:var(--text-faint);font-size:12px;padding:15px;">لا توجد أذونات مسجلة لهذا الموظف</div>';
                 return;
             }
 
-            const typeMap = {
+            var typeMap = {
                 late: '⏰ إذن تأخير في الحضور',
                 early: '🚪 إذن انصراف مبكر',
                 temp: '🔄 إذن خروج مؤقت'
             };
 
-            list.innerHTML = records.map((r, idx) => `
-                <div style="display:flex;justify-content:space-between;align-items:center;background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:6px 10px;font-size:12px;">
-                    <div>
-                        <span style="font-weight:bold;color:var(--perm-light);">${typeMap[r.type] || 'إذن'}</span>
-                        <span style="color:var(--text);margin:0 6px;">📅 ${r.date}</span>
-                        ${r.note ? `<span style="color:var(--text-faint);font-size:11px;">(${r.note})</span>` : ''}
-                    </div>
-                    <button type="button" style="background:none;border:none;color:var(--danger-light);cursor:pointer;font-weight:bold;" onclick="deletePermissionRecord(${idx})">✕</button>
-                </div>
-            `).join('');
+            list.innerHTML = records.map(function(r, idx) {
+                return '<div style="display:flex;justify-content:space-between;align-items:center;background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:6px 10px;font-size:12px;">' +
+                    '<div>' +
+                    '    <span style="font-weight:bold;color:var(--perm-light);">' + (typeMap[r.type] || 'إذن') + '</span>' +
+                    '    <span style="color:var(--text);margin:0 6px;">📅 ' + r.date + '</span>' +
+                    (r.note ? '<span style="color:var(--text-faint);font-size:11px;">(' + r.note + ')</span>' : '') +
+                    '</div>' +
+                    '<button type="button" style="background:none;border:none;color:var(--danger-light);cursor:pointer;font-weight:bold;" onclick="deletePermissionRecord(' + idx + ')">✕</button>' +
+                '</div>';
+            }).join('');
         }
 
         function addPermissionRecord() {
             if (!_currentPermEmpId) return;
-            const date = document.getElementById('pm-date').value;
-            const type = document.getElementById('pm-type').value;
-            const note = document.getElementById('pm-note').value.trim();
+            var date = document.getElementById('pm-date').value;
+            var type = document.getElementById('pm-type').value;
+            var note = document.getElementById('pm-note').value.trim();
 
             if (!date) { alert('يرجى تحديد التاريخ'); return; }
 
             if (!employeePermissions[_currentPermEmpId]) employeePermissions[_currentPermEmpId] = [];
-            employeePermissions[_currentPermEmpId].push({ date, type, note });
+            employeePermissions[_currentPermEmpId].push({ date: date, type: type, note: note });
             savePermissions();
 
             renderPermModalRecords();
@@ -1386,224 +1422,201 @@
         }
 
         // ══════════════════════════════════════════
-        //  PDF & PRINT WITH PERMISSIONS
+        //  OFFICIAL A4 PRINT REPORT BUILDER
         // ══════════════════════════════════════════
-        function buildPdfHTML() {
-            const reportDate = new Date().toLocaleString('ar-EG');
-            const reportPeriodLabel = getReportPeriodLabel('');
+        function buildOfficialPrintReport() {
+            var reportDate = new Date().toLocaleDateString('ar-EG', { day: 'numeric', month: 'long', year: 'numeric' });
+            var curPeriod = getReportPeriodLabel('📆 ');
 
-            let summaryRows = '';
+            var summaryRows = '';
+            var detailedBlocks = '';
+
             stats.employeeDetails
-              .filter(emp => !deletedEmployees.has(emp.employeeId))
-              .forEach((emp, idx) => {
-                const name = getDisplayName(emp.employeeId);
-                let ok=0, lateNoPerm=0, latePerm=0, early=0;
-                const presentDates = new Set([...emp.entries.map(e=>e.date),...emp.exits.map(e=>e.date)]);
+              .filter(function(emp){ return !deletedEmployees.has(emp.employeeId); })
+              .forEach(function(emp, idx) {
+                var name = getDisplayName(emp.employeeId);
+                var ok=0, lateNoPerm=0, latePerm=0, early=0, totalHours=0, validDays=0;
+                var presentDates = new Set([...emp.entries.map(function(e){return e.date;}),...emp.exits.map(function(e){return e.date;})]);
                 
-                presentDates.forEach(date => {
+                presentDates.forEach(function(date) {
                     if (isHoliday(date)) return;
-                    const entry = emp.entries.find(e=>e.date===date);
-                    const p = getDayPunctuality(emp.employeeId, date, entry?.time);
-                    const perm = getPermissionForDate(emp.employeeId, date);
-                    if (p==='late') {
+                    var entry = emp.entries.find(function(e){ return e.date===date; });
+                    var exit = emp.exits.find(function(e){ return e.date===date; });
+                    if (entry && exit) {
+                        var hCalc = calcDayWorkHours(entry.time, exit.time, false);
+                        if (hCalc.hours) { totalHours += hCalc.hours; validDays++; }
+                    }
+                    var p = getDayPunctuality(emp.employeeId, date, entry ? entry.time : null);
+                    var perm = getPermissionForDate(emp.employeeId, date);
+                    if (p === 'late') {
                         if (perm && (perm.type === 'late' || perm.type === 'temp')) latePerm++;
                         else lateNoPerm++;
-                    } else if (p==='early') {
+                    } else if (p === 'early') {
                         early++;
-                    } else if (p==='ok') {
+                    } else if (p === 'ok') {
                         ok++;
                     }
                 });
 
-                const allWorkDaysPdf = getWorkDaysInRange(
+                var allWorkDaysPdf = getWorkDaysInRange(
                     Array.from(presentDates).sort()[0],
                     Array.from(presentDates).sort()[presentDates.size-1]
                 );
-                const missedPdf = allWorkDaysPdf.filter(d => !presentDates.has(d));
-                let absent = missedPdf.length;
-                const totalPerms = getEmpPermissionsTotal(emp.employeeId);
+                var missedPdf = allWorkDaysPdf.filter(function(d){ return !presentDates.has(d); });
+                var absent = missedPdf.length;
+                var totalPerms = getEmpPermissionsTotal(emp.employeeId);
 
-                summaryRows += `<tr>
-                    <td>${idx+1}</td>
-                    <td style="font-weight:bold;text-align:right;">${name}</td>
-                    <td style="color:#1f6b41;font-weight:bold;">${ok}</td>
-                    <td style="color:#c0392b;font-weight:bold;">${lateNoPerm > 0 ? lateNoPerm + ' يوم (غير مبرر)' : '0'}</td>
-                    <td style="color:#0284c7;font-weight:bold;">${latePerm > 0 ? latePerm + ' يوم (بإذن)' : '0'}</td>
-                    <td style="color:#c0392b;">${absent || '—'}</td>
-                    <td style="color:#0284c7;font-weight:bold;">${totalPerms} إذن</td>
-                </tr>`;
+                summaryRows += '<tr style="border-bottom:1px solid #cbd5e1; height:32px;">' +
+                    '<td style="text-align:center; font-weight:bold;">' + (idx+1) + '</td>' +
+                    '<td style="font-weight:bold; text-align:right; color:#0f172a;">' + name + '</td>' +
+                    '<td style="text-align:center; color:#0284c7; font-weight:bold;">' + emp.employeeId + '</td>' +
+                    '<td style="text-align:center; color:#10b981; font-weight:bold;">' + ok + ' يوم</td>' +
+                    '<td style="text-align:center; color:#ef4444; font-weight:bold;">' + (lateNoPerm > 0 ? lateNoPerm + ' يوم (غير مبرر)' : '0') + '</td>' +
+                    '<td style="text-align:center; color:#0284c7; font-weight:bold;">' + (latePerm > 0 ? latePerm + ' يوم (بإذن)' : '0') + '</td>' +
+                    '<td style="text-align:center; color:#d97706;">' + (absent > 0 ? absent + ' يوم' : '0') + '</td>' +
+                    '<td style="text-align:center; font-weight:bold; color:#0284c7;">' + totalPerms + ' إذن</td>' +
+                    '<td style="text-align:center; font-weight:900; color:#0f172a;">' + fmtHoursAndMins(totalHours) + '</td>' +
+                    '</tr>';
+
+                // Per-employee detailed table
+                var dayRows = '';
+                var sortedDates = Array.from(presentDates).sort();
+                var dayNames = ['الأحد','الاثنين','الثلاثاء','الأربعاء','الخميس','الجمعة','السبت'];
+                
+                sortedDates.forEach(function(dStr) {
+                    var dateObj = new Date(dStr + 'T12:00:00');
+                    var dayName = dayNames[dateObj.getDay()];
+                    var entry = emp.entries.find(function(e){ return e.date===dStr; });
+                    var exit  = emp.exits.find(function(e){ return e.date===dStr; });
+                    var hCalc = calcDayWorkHours(entry ? entry.time : null, exit ? exit.time : null, false);
+                    var p = getDayPunctuality(emp.employeeId, dStr, entry ? entry.time : null);
+                    var perm = getPermissionForDate(emp.employeeId, dStr);
+
+                    var statusText = '✅ في معاده';
+                    var statusColor = '#10b981';
+                    if (p === 'late') {
+                        var lateMin = timeToMins(entry.time) - timeToMins(workConfig.start);
+                        if (perm && (perm.type === 'late' || perm.type === 'temp')) {
+                            statusText = '⏰ متأخر ' + lateMin + 'د (بإذن معتمد)';
+                            statusColor = '#0284c7';
+                        } else {
+                            statusText = '⏰ متأخر ' + lateMin + 'د (بدون إذن)';
+                            statusColor = '#ef4444';
+                        }
+                    }
+
+                    dayRows += '<tr>' +
+                        '<td style="text-align:center;">' + dStr + ' (' + dayName + ')</td>' +
+                        '<td style="text-align:center; color:' + statusColor + '; font-weight:bold;">' + statusText + '</td>' +
+                        '<td style="text-align:center; color:#10b981;">' + (entry ? entry.time : '—') + '</td>' +
+                        '<td style="text-align:center; color:#ef4444;">' + (exit ? exit.time : '—') + '</td>' +
+                        '<td style="text-align:center; font-weight:bold;">' + hCalc.formatted + '</td>' +
+                        '<td style="font-size:10px; color:#475569;">' + (perm ? 'إذن: ' + (perm.note || perm.type) : '') + '</td>' +
+                    '</tr>';
+                });
+
+                detailedBlocks += '<div style="page-break-inside:avoid; break-inside:avoid; border:1px solid #cbd5e1; border-radius:8px; margin-bottom:16px; overflow:hidden;">' +
+                    '<div style="background:#f1f5f9; padding:8px 12px; font-weight:bold; display:flex; justify-content:space-between; align-items:center; border-bottom:1px solid #cbd5e1;">' +
+                    '  <div style="font-size:12px; color:#0f172a;">👤 ' + name + ' (كود: ' + emp.employeeId + ')</div>' +
+                    '  <div style="font-size:11px; color:#0284c7;">إجمالي الساعات: <strong>' + fmtHoursAndMins(totalHours) + '</strong> | أذونات: <strong>' + totalPerms + '</strong></div>' +
+                    '</div>' +
+                    '<table class="tbl" style="margin-bottom:0;">' +
+                    '  <thead><tr><th>التاريخ واليوم</th><th>حالة الانضباط</th><th>دخول</th><th>خروج</th><th>الساعات الفعلية</th><th>ملاحظات الأذونات</th></tr></thead>' +
+                    '  <tbody>' + dayRows + '</tbody>' +
+                    '</table>' +
+                    '</div>';
             });
 
-            return `<!DOCTYPE html>
-<html lang="ar" dir="rtl">
-<head>
-<meta charset="UTF-8">
-<link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;900&display=swap" rel="stylesheet">
-<style>
-* { margin:0; padding:0; box-sizing:border-box; }
-body { font-family:'Cairo',Arial,sans-serif; direction:rtl; background:#fff; color:#0f172a; padding:18px 22px; font-size:11px; width:794px; }
-.pdf-hdr { background:#0f172a; border-radius:10px; padding:14px 18px; margin-bottom:14px; display:flex; justify-content:space-between; align-items:center; color:#fff; }
-.sum-table { width:100%; border-collapse:collapse; font-size:11px; margin-bottom:20px; }
-.sum-table th { background:#0f172a; color:#fff; padding:7px 8px; text-align:center; }
-.sum-table td { padding:7px 8px; border-bottom:1px solid #cbd5e1; text-align:center; }
-</style>
-</head>
-<body>
-<div class="pdf-hdr">
-  <div>
-    <h2 style="margin:0;font-size:16px;">🏢 شركة تيك - جو للحلول التقنية (Tech Go System)</h2>
-    <div style="font-size:11px;opacity:0.8;margin-top:2px;">تقرير تحليل الحضور والانصراف ومتابعة الأذونات المعتمدة</div>
-  </div>
-  <div style="text-align:left;font-size:10px;opacity:0.85;">
-    <div>📅 تاريخ التقرير: ${reportDate}</div>
-    <div>📋 الدوام: ${workConfig.start} ← ${workConfig.end}</div>
-  </div>
-</div>
+            var h = '<!DOCTYPE html><html lang="ar" dir="rtl"><head><meta charset="UTF-8">' +
+                '<link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;900&display=swap" rel="stylesheet">' +
+                '<style>' +
+                '* { box-sizing: border-box; margin: 0; padding: 0; }' +
+                'body { font-family: "Cairo", sans-serif; direction: rtl; background: #fff; color: #0f172a; padding: 20px 24px; font-size: 11px; }' +
+                '@page { size: A4 portrait; margin: 10mm 10mm; }' +
+                '.tbl { width: 100%; border-collapse: collapse; margin-bottom: 20px; font-size: 11px; }' +
+                '.tbl th { background: #0f172a; color: #fff; padding: 7px 8px; text-align: center; }' +
+                '.tbl td { padding: 6px 8px; border-bottom: 1px solid #cbd5e1; }' +
+                '</style></head><body>' +
 
-<h3 style="margin-bottom:8px;font-size:13px;">📊 ملخص الانضباط وتأكيدات الأذونات للموظفين:</h3>
-<table class="sum-table">
-  <thead>
-    <tr>
-      <th>#</th>
-      <th style="text-align:right;">الموظف</th>
-      <th>✅ في معاده</th>
-      <th>⏰ تأخير بدون إذن</th>
-      <th>🎫 تأخير بإذن</th>
-      <th>🚫 غياب</th>
-      <th>🎫 إجمالي الأذونات</th>
-    </tr>
-  </thead>
-  <tbody>${summaryRows}</tbody>
-</table>
+                // Official Header
+                '<div style="display:flex; justify-content:space-between; align-items:center; border-bottom:2px solid #0f172a; padding-bottom:12px; margin-bottom:14px;">' +
+                '  <div>' +
+                '    <h2 style="font-size:17px; font-weight:900; color:#0f172a; margin:0;">🏢 شركة تيك - جو للحلول التقنية (Tech Go System)</h2>' +
+                '    <div style="font-size:12px; color:#475569; margin-top:2px;">كشف تقرير الحضور والانصراف، ساعات العمل، ومتابعة الأذونات المعتمدة</div>' +
+                '  </div>' +
+                '  <div style="text-align:left; font-size:11px; color:#64748b;">' +
+                '    <div>📅 تاريخ الاستخراج: <strong>' + reportDate + '</strong></div>' +
+                '    <div>⏰ مواعيد الدوام: <strong>' + workConfig.start + ' ← ' + workConfig.end + '</strong></div>' +
+                '  </div>' +
+                '</div>' +
 
-<div style="border-top:1px dashed #94a3b8;padding-top:10px;font-size:10px;color:#475569;margin-top:20px;">
-  <strong>ملاحظة إدارية:</strong> يوضح هذا التقرير بوضوح ما إذا كان التأخير في الحضور أو الانصراف المبكر تم بموجب إذن رسمي معتمد من الإدارة أو تم بدون إذن لاتخاذ الإجراءات اللائحية.
-</div>
-</body></html>`;
-        }
+                // Summary KPIs
+                '<div style="display:grid; grid-template-columns:repeat(4,1fr); gap:10px; margin-bottom:16px; text-align:center;">' +
+                '  <div style="background:#f8fafc; border:1px solid #cbd5e1; border-radius:8px; padding:8px;"><div style="font-size:10.5px; color:#64748b; font-weight:bold;">👥 إجمالي الموظفين</div><div style="font-size:18px; font-weight:900; color:#0f172a;">' + stats.totalEmployees + ' موظف</div></div>' +
+                '  <div style="background:#f0fdf4; border:1px solid #bbf7d0; border-radius:8px; padding:8px;"><div style="font-size:10.5px; color:#16a34a; font-weight:bold;">📅 أيام العمل الفعلية</div><div style="font-size:18px; font-weight:900; color:#16a34a;">' + stats.uniqueDates + ' يوم</div></div>' +
+                '  <div style="background:#f0f9ff; border:1px solid #bae6fd; border-radius:8px; padding:8px;"><div style="font-size:10.5px; color:#0369a1; font-weight:bold;">🎫 إجمالي الأذونات المعتمدة</div><div style="font-size:18px; font-weight:900; color:#0284c7;">' + (document.getElementById('totalPermsUsed') ? document.getElementById('totalPermsUsed').textContent : '0') + ' إذن</div></div>' +
+                '  <div style="background:#faf5ff; border:1px solid #e9d5ff; border-radius:8px; padding:8px;"><div style="font-size:10.5px; color:#7c3aed; font-weight:bold;">⏱ إجمالي الساعات الفعلية</div><div style="font-size:16px; font-weight:900; color:#7c3aed;">' + fmtHoursAndMins(stats.totalHoursSum) + '</div></div>' +
+                '</div>' +
 
-        // ══════════════════════════════════════════
-        //  UI LISTENERS
-        // ══════════════════════════════════════════
-        function onDrag(e, enter, zoneId) {
-            e.preventDefault();
-            document.getElementById(zoneId).classList.toggle('dragging', enter);
-        }
-        function onDrop(e, type) {
-            e.preventDefault();
-            document.getElementById('dropZone1').classList.remove('dragging');
-            const file = e.dataTransfer.files[0];
-            if (file) processFile(file, type);
-        }
-        function onFileChange(e, type) {
-            const file = e.target.files[0];
-            if (file) processFile(file, type);
-        }
-        async function processFile(file, type) {
-            if (!file.name.endsWith('.dat')) { alert('الرجاء اختيار ملف .dat'); return; }
-            attlogFile = file;
-            const records = await parseAttendanceFile(attlogFile);
-            attendanceData = records;
-            stats = calculateStats(records);
-            document.getElementById('uploadSection').classList.add('hidden');
-            displayResults();
+                // Summary Matrix
+                '<div style="font-size:12.5px; font-weight:900; color:#0f172a; margin-bottom:6px;">📊 كشف ملخص الانضباط وتدقيق الأذونات لجميع الموظفين:</div>' +
+                '<table class="tbl">' +
+                '  <thead><tr>' +
+                '    <th>م</th><th style="text-align:right;">اسم الموظف</th><th>الكود</th>' +
+                '    <th>✅ في معاده</th><th>⏰ تأخير بدون إذن</th><th>🎫 تأخير بإذن</th><th>🚫 غياب</th><th>🎫 الأذونات</th><th>⏱ الساعات الفعلية</th>' +
+                '  </tr></thead>' +
+                '  <tbody>' + summaryRows + '</tbody>' +
+                '</table>' +
+
+                // Detailed per-employee logs
+                '<div style="font-size:12.5px; font-weight:900; color:#0f172a; margin:20px 0 10px 0;">👤 السجلات التفصيلية لكل موظف:</div>' +
+                detailedBlocks +
+
+                // Signatures Footer
+                '<div style="border-top:1px dashed #94a3b8; padding-top:8px; font-size:10px; color:#475569; margin-bottom:24px;">' +
+                '  <strong>ضوابط تنظيمية:</strong> يتم احتساب التأخير بموجب إذن معتمد بحد أقصى 5 أذونات شهرياً وفق اللائحة المنظمة لشركة تيك جو. التأخيرات غير المبررة تخضع للائحة الجزاءات والخصم من الأجر.' +
+                '</div>' +
+                '<div style="display:grid; grid-template-columns:1fr 1fr 1fr; gap:20px; text-align:center; margin-top:20px;">' +
+                '  <div><div style="font-weight:bold; font-size:11.5px; margin-bottom:30px;">إعداد وتدقيق الموارد البشرية HR:</div><div style="border-top:1px solid #000; width:75%; margin:0 auto; padding-top:3px; font-size:10px;">التوقيع: .....................</div></div>' +
+                '  <div><div style="font-weight:bold; font-size:11.5px; margin-bottom:30px;">المدير الإداري:</div><div style="border-top:1px solid #000; width:75%; margin:0 auto; padding-top:3px; font-size:10px;">التوقيع: .....................</div></div>' +
+                '  <div><div style="font-weight:bold; font-size:11.5px; margin-bottom:30px;">اعتماد المدير التنفيذي:</div><div style="border-top:1px solid #000; width:75%; margin:0 auto; padding-top:3px; font-size:10px;">التوقيع والخاتم: .....................</div></div>' +
+                '</div>' +
+                '</body></html>';
+
+            return h;
         }
 
-        function toggleAppTheme() {
-            const html = document.documentElement;
-            const next = html.getAttribute('data-theme') === 'light' ? 'dark' : 'light';
-            html.setAttribute('data-theme', next);
-            _localStorage.setItem('techgo_theme', next);
-            _updateThemeToggleIcon();
-        }
-        function _updateThemeToggleIcon() {
-            const btn = document.getElementById('themeToggleBtn');
-            if (!btn) return;
-            const isLight = document.documentElement.getAttribute('data-theme') === 'light';
-            btn.textContent = isLight ? '🌙' : '☀️';
-        }
-
-        function toggleSettingsDrawer() {
-            const body = document.getElementById('settingsDrawerBody');
-            const chev = document.getElementById('settingsChevron');
-            body.classList.toggle('open');
-            chev.classList.toggle('open');
-        }
-        function switchSettingsTab(tab, btn) {
-            document.querySelectorAll('.settings-tab').forEach(b => b.classList.remove('active'));
-            document.querySelectorAll('.settings-tab-content').forEach(c => c.classList.remove('active'));
-            btn.classList.add('active');
-            document.getElementById('stab-' + tab).classList.add('active');
-        }
-        function toggleEmpManager() {
-            alert('إدارة الموظفين جاهزة');
-        }
-        function exportDataAsJson() {
-            const data = { employeeNames, employeePermissions };
-            const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
-            const url = URL.createObjectURL(blob);
-            const a = document.createElement('a');
-            a.href = url; a.download = 'attendance_permissions_data.json'; a.click();
-        }
-        function saveFileWithData() {
-            alert('تم حفظ البيانات محلياً');
-        }
-        function renderEmployeeNotes() {}
-        function renderDecisionGrid() {}
-        function buildPeriodSelectors() {}
-        function setPeriod() {}
-        function applyWorkSettings() {
-            workConfig.start = document.getElementById('wsStart').value;
-            workConfig.end = document.getElementById('wsEnd').value;
-            workConfig.grace = parseInt(document.getElementById('wsGrace').value) || 0;
-            if (stats) displayResults();
-        }
-        function addHoliday() {}
-        function addExtraWorkDay() {}
-        function addGlobalWfh() {}
-        function applyNamesAndShow() {
-            document.getElementById('namingSection').classList.add('hidden');
-            displayResults();
-        }
-        function onHireDateOrDisabilityChange() {}
-        function addLeaveRecord() {}
-        function closeLeaveModal() { document.getElementById('leaveModalOverlay').style.display='none'; }
-        function openLeaveModal(empId, empName) {
-            document.getElementById('lm-emp-name').textContent = empName;
-            document.getElementById('leaveModalOverlay').style.display='flex';
-        }
-        function addWfhRecord() {}
-        function closeWfhModal() { document.getElementById('wfhModalOverlay').style.display='none'; }
-        function openWfhModal(empId, empName) {
-            document.getElementById('wfh-emp-name').textContent = empName;
-            document.getElementById('wfhModalOverlay').style.display='flex';
-        }
-        function importSavedHtml() {}
-
-        document.getElementById('exportPdfBtn').addEventListener('click', () => {
-            if (!stats) { window.print(); return; }
-            const html = buildPdfHTML();
-            const w = window.open('', '_blank');
-            w.document.open();
-            w.document.write(html);
-            w.document.close();
-            setTimeout(() => { w.focus(); w.print(); }, 500);
+        document.getElementById('exportPdfBtn').addEventListener('click', function() {
+            if (!stats) { alert('يرجى رفع ملف الحضور أولاً'); return; }
+            var html = buildOfficialPrintReport();
+            var w = window.open('', '_blank');
+            if (w) {
+                w.document.open();
+                w.document.write(html);
+                w.document.close();
+                setTimeout(function() {
+                    w.focus();
+                    w.print();
+                }, 500);
+            }
         });
 
-        document.getElementById('exportTxtBtn').addEventListener('click', () => {
+        document.getElementById('exportTxtBtn').addEventListener('click', function() {
             if (!stats) return;
-            let txt = '=== تقرير الحضور والانصراف والأذونات ===\n\n';
-            stats.employeeDetails.forEach(emp => {
-                const name = getDisplayName(emp.employeeId);
-                const perms = employeePermissions[emp.employeeId] || [];
-                txt += `الموظف: ${name} (كود: ${emp.employeeId})\n`;
-                txt += `عدد الأذونات المسجلة: ${perms.length}\n`;
-                perms.forEach(p => { txt += `  - إذن بتاريخ ${p.date} (${p.type}): ${p.note || ''}\n`; });
+            var txt = '=== تقرير الحضور والانصراف والأذونات المعتمدة — شركة تيك جو ===\n\n';
+            txt += 'تاريخ التقرير: ' + new Date().toLocaleString('ar-EG') + '\n';
+            txt += 'مواعيد الدوام الرسمي: ' + workConfig.start + ' ← ' + workConfig.end + '\n\n';
+            stats.employeeDetails.forEach(function(emp) {
+                var name = getDisplayName(emp.employeeId);
+                var perms = employeePermissions[emp.employeeId] || [];
+                txt += 'الموظف: ' + name + ' (كود: ' + emp.employeeId + ')\n';
+                txt += 'عدد الأذونات المسجلة: ' + perms.length + '\n';
+                perms.forEach(function(p) { txt += '  - إذن بتاريخ ' + p.date + ' (' + p.type + '): ' + (p.note || '') + '\n'; });
                 txt += '--------------------------------------------------\n';
             });
-            const blob = new Blob([txt], { type: 'text/plain;charset=utf-8' });
-            const url = URL.createObjectURL(blob);
-            const a = document.createElement('a'); a.href = url; a.download = 'attendance_report.txt'; a.click();
+            var blob = new Blob([txt], { type: 'text/plain;charset=utf-8' });
+            var url = URL.createObjectURL(blob);
+            var a = document.createElement('a'); a.href = url; a.download = 'attendance_report.txt'; a.click();
         });
 
         document.getElementById('resetBtn').addEventListener('click', () => {
