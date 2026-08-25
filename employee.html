@@ -67,7 +67,7 @@
     <link
         href="https://fonts.googleapis.com/css2?family=Alexandria:wght@300;400;500;600;700;800;900&family=Cairo:wght@400;600;700;800;900&family=Tajawal:wght@400;500;700;800&family=Inter:wght@400;500;600;700&display=swap"
         rel="stylesheet">
-    <link rel="stylesheet" href="styles.css?v=1787649229">
+    <link rel="stylesheet" href="styles.css?v=1787649847">
     <link rel="manifest" href="manifest.json">
     <link rel="icon" type="image/png" sizes="192x192" href="icon-192.png">
     <link rel="apple-touch-icon" href="icon-192.png">
@@ -75,10 +75,10 @@
     <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-storage-compat.js"></script>
-    <script src="firebase-config.js?v=1787649229"></script>
-    <script src="auth.js?v=1787649229"></script>
-    <script src="app.js?v=1787649229"></script>
-    <script src="formsend.js?v=1787649229"></script>
+    <script src="firebase-config.js?v=1787649847"></script>
+    <script src="auth.js?v=1787649847"></script>
+    <script src="app.js?v=1787649847"></script>
+    <script src="formsend.js?v=1787649847"></script>
     <script>
         (function () {
             const theme = localStorage.getItem('tg-theme') || 'light';
@@ -2114,18 +2114,19 @@
 
         function tgGetEmployeeLeaveData() {
             var empName = (window.TG_USER && TG_USER.name) ? TG_USER.name : (localStorage.getItem('tg_user_name') || '');
+            var empEmail = (window.TG_USER && TG_USER.email) ? TG_USER.email : (localStorage.getItem('tg_user_email') || '');
             var empId = (window.TG_USER && TG_USER.empId) ? String(TG_USER.empId) : '';
-            var normName = empName.trim().toLowerCase();
+            var searchStr = (empName + ' ' + empEmail + ' ' + empId).trim().toLowerCase();
 
-            // Baseline data from monthly fingerprint report (2026)
+            // Baseline data from monthly fingerprint report (2026) with full aliases
             var baseline = {
-                'ebthal':  { empId: '3',  entitlement: 15, usedAnnual: 0, usedCasual: 1, usedOfficial: 1, nameAr: 'ابتهال' },
-                'markos':  { empId: '8',  entitlement: 15, usedAnnual: 0, usedCasual: 0, usedOfficial: 0, nameAr: 'ماركوس' },
-                'basel':   { empId: '7',  entitlement: 15, usedAnnual: 4, usedCasual: 1, usedOfficial: 0, nameAr: 'باسل' },
-                'abanob':  { empId: '4',  entitlement: 15, usedAnnual: 0, usedCasual: 0, usedOfficial: 0, nameAr: 'أبانوب' },
-                'ibrahim': { empId: '5',  entitlement: 15, usedAnnual: 1, usedCasual: 2, usedOfficial: 0, nameAr: 'إبراهيم' },
-                'yostina': { empId: '6',  entitlement: 15, usedAnnual: 6, usedCasual: 4, usedOfficial: 0, nameAr: 'يوستينا' },
-                'kirlos':  { empId: '10', entitlement: 15, usedAnnual: 0, usedCasual: 0, usedOfficial: 0, nameAr: 'كيرلس' }
+                'ebthal':  { empId: '3',  entitlement: 15, usedAnnual: 0, usedCasual: 1, usedOfficial: 1, aliases: ['ebthal', 'ebtehal', 'ابتهال', 'إبتهال', '3'] },
+                'markos':  { empId: '8',  entitlement: 15, usedAnnual: 1, usedCasual: 0, usedOfficial: 0, aliases: ['markos', 'mark', 'مرقس', 'ماركوس', 'مدحت', '8'] },
+                'basel':   { empId: '7',  entitlement: 15, usedAnnual: 4, usedCasual: 1, usedOfficial: 0, aliases: ['basel', 'bassil', 'باسل', '7'] },
+                'abanob':  { empId: '4',  entitlement: 15, usedAnnual: 0, usedCasual: 0, usedOfficial: 0, aliases: ['abanob', 'abanoub', 'أبانوب', 'ابانوب', 'فايز', '4'] },
+                'ibrahim': { empId: '5',  entitlement: 15, usedAnnual: 1, usedCasual: 2, usedOfficial: 0, aliases: ['ibrahim', 'إبراهيم', 'ابراهيم', 'hema', '5'] },
+                'yostina': { empId: '6',  entitlement: 15, usedAnnual: 6, usedCasual: 4, usedOfficial: 0, aliases: ['yostina', 'yustina', 'يوستينا', 'يوسطينا', '6'] },
+                'kirlos':  { empId: '10', entitlement: 15, usedAnnual: 0, usedCasual: 0, usedOfficial: 0, aliases: ['kirlos', 'kyrollos', 'كيرلس', 'كيرلوس', '10'] }
             };
 
             // Read live data from attendance.html storage if available
@@ -2137,10 +2138,14 @@
 
             var matchedKey = null;
             for (var k in baseline) {
-                if (normName.indexOf(k) !== -1 || normName.indexOf(baseline[k].nameAr) !== -1 || (empId && baseline[k].empId === empId)) {
-                    matchedKey = k;
-                    break;
+                var aliases = baseline[k].aliases || [k];
+                for (var ai = 0; ai < aliases.length; ai++) {
+                    if (searchStr.indexOf(aliases[ai].toLowerCase()) !== -1) {
+                        matchedKey = k;
+                        break;
+                    }
                 }
+                if (matchedKey) break;
             }
 
             var baseInfo = matchedKey ? baseline[matchedKey] : { empId: empId || '1', entitlement: 15, usedAnnual: 0, usedCasual: 0, usedOfficial: 0 };
@@ -3224,7 +3229,7 @@
         تطوير وتصميم: أبانوب فايز</div>
     <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
-    <script src="theme.js?v=1787649229"></script>
+    <script src="theme.js?v=1787649847"></script>
 
 
     <!-- Incoming Meeting Call Modal -->
