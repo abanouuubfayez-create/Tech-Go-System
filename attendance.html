@@ -3679,6 +3679,8 @@
                 </div>`;
 
                 container.appendChild(card);
+                if (typeof injectLeaveButton === 'function') injectLeaveButton(card);
+                if (typeof injectWfhButton === 'function') injectWfhButton(card);
             });
         }
 
@@ -5244,24 +5246,9 @@ ${empBlocks}
     // حقن زر الإجازات في بطاقة كل موظف بعد الرسم
     const _origRenderEmpCards = typeof _renderEmpCards !== 'undefined' ? _renderEmpCards : null;
 
-    // Override بعد تحميل الصفحة
+    // Load persisted data on ready
     window.addEventListener('DOMContentLoaded', () => {
-        // تحميل البيانات المحفوظة
         _loadPersistedData();
-        // Observer لاكتشاف إضافة بطاقات جديدة
-        const empListEl = document.getElementById('employeesList');
-        if (empListEl) {
-            const observer = new MutationObserver(mutations => {
-                mutations.forEach(m => {
-                    m.addedNodes.forEach(node => {
-                        if (node.nodeType === 1 && node.classList.contains('emp-card-v2')) {
-                            injectLeaveButton(node);
-                        }
-                    });
-                });
-            });
-            observer.observe(empListEl, { childList: true });
-        }
     });
 
     function injectLeaveButton(card) {
@@ -5505,24 +5492,6 @@ ${empBlocks}
             leaveRow.appendChild(wfhSummary);
         }
     }
-
-    // Observer لاكتشاف بطاقات الموظفين الجديدة وإضافة زر WFH
-    window.addEventListener('DOMContentLoaded', () => {
-        const empListEl = document.getElementById('employeesList');
-        if (empListEl) {
-            const wfhObserver = new MutationObserver(mutations => {
-                mutations.forEach(m => {
-                    m.addedNodes.forEach(node => {
-                        if (node.nodeType === 1 && node.classList.contains('emp-card-v2')) {
-                            // انتظر قليلاً حتى يُضاف زر الإجازات أولاً
-                            setTimeout(() => injectWfhButton(node), 100);
-                        }
-                    });
-                });
-            });
-            wfhObserver.observe(empListEl, { childList: true });
-        }
-    });
     // ══════════════════════════════════════════
     //  WFH جماعي — يطبق على كل الموظفين
     // ══════════════════════════════════════════
@@ -5700,6 +5669,6 @@ ${empBlocks}
     }
     </script>
     <div id="tgToastContainer"></div>
-    <script src="theme.js?v=1787650132"></script>
+    <script src="theme.js?v=1787651035"></script>
 </body>
 </html>

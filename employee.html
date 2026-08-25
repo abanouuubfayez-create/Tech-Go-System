@@ -67,7 +67,7 @@
     <link
         href="https://fonts.googleapis.com/css2?family=Alexandria:wght@300;400;500;600;700;800;900&family=Cairo:wght@400;600;700;800;900&family=Tajawal:wght@400;500;700;800&family=Inter:wght@400;500;600;700&display=swap"
         rel="stylesheet">
-    <link rel="stylesheet" href="styles.css?v=1787650132">
+    <link rel="stylesheet" href="styles.css?v=1787651035">
     <link rel="manifest" href="manifest.json">
     <link rel="icon" type="image/png" sizes="192x192" href="icon-192.png">
     <link rel="apple-touch-icon" href="icon-192.png">
@@ -75,10 +75,10 @@
     <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-storage-compat.js"></script>
-    <script src="firebase-config.js?v=1787650132"></script>
-    <script src="auth.js?v=1787650132"></script>
-    <script src="app.js?v=1787650132"></script>
-    <script src="formsend.js?v=1787650132"></script>
+    <script src="firebase-config.js?v=1787651035"></script>
+    <script src="auth.js?v=1787651035"></script>
+    <script src="app.js?v=1787651035"></script>
+    <script src="formsend.js?v=1787651035"></script>
     <script>
         (function () {
             const theme = localStorage.getItem('tg-theme') || 'light';
@@ -2312,53 +2312,62 @@
             }, 50);
         }
 
+        var _tgCalcLock = false;
         function tgUpdateLeaveLiveCalculator() {
-            var dynWrap = document.getElementById('reqDynamicFormWrap');
-            if (!dynWrap) return;
-            var fromEl = dynWrap.querySelector('[data-fid="fromDate"]');
-            var toEl = dynWrap.querySelector('[data-fid="toDate"]');
-            var daysEl = dynWrap.querySelector('[data-fid="days"]');
-            var lStats = tgGetEmployeeLeaveData();
+            if (_tgCalcLock) return;
+            _tgCalcLock = true;
+            try {
+                var dynWrap = document.getElementById('reqDynamicFormWrap');
+                if (!dynWrap) { _tgCalcLock = false; return; }
+                var fromEl = dynWrap.querySelector('[data-fid="fromDate"]');
+                var toEl = dynWrap.querySelector('[data-fid="toDate"]');
+                var daysEl = dynWrap.querySelector('[data-fid="days"]');
+                var lStats = tgGetEmployeeLeaveData();
 
-            var fromVal = fromEl ? fromEl.value : '';
-            var toVal = toEl ? toEl.value : '';
+                var fromVal = fromEl ? fromEl.value : '';
+                var toVal = toEl ? toEl.value : '';
 
-            var calculatedDays = 0;
-            if (fromVal && toVal) {
-                var dFrom = new Date(fromVal + 'T12:00:00');
-                var dTo = new Date(toVal + 'T12:00:00');
-                if (dTo >= dFrom) {
-                    calculatedDays = Math.round((dTo - dFrom) / (1000 * 60 * 60 * 24)) + 1;
-                    if (daysEl && (!daysEl.value || parseInt(daysEl.value) !== calculatedDays)) {
-                        daysEl.value = calculatedDays;
+                var calculatedDays = 0;
+                if (fromVal && toVal) {
+                    var dFrom = new Date(fromVal + 'T12:00:00');
+                    var dTo = new Date(toVal + 'T12:00:00');
+                    if (dTo >= dFrom) {
+                        calculatedDays = Math.round((dTo - dFrom) / (1000 * 60 * 60 * 24)) + 1;
+                        if (daysEl && parseInt(daysEl.value) !== calculatedDays) {
+                            daysEl.value = calculatedDays;
+                        }
+                    }
+                } else if (daysEl && daysEl.value) {
+                    calculatedDays = parseInt(daysEl.value) || 0;
+                }
+
+                var afterDisplay = document.getElementById('tgLeaveAfterDisplay');
+                var warnBox = document.getElementById('tgLeaveWarnBox');
+                var remAfter = Math.max(0, lStats.remainAnnual - calculatedDays);
+
+                if (afterDisplay) {
+                    afterDisplay.textContent = remAfter + ' يوم';
+                    afterDisplay.style.color = (calculatedDays > lStats.remainAnnual) ? '#ef4444' : '#8b5cf6';
+                }
+
+                if (warnBox) {
+                    if (calculatedDays > lStats.remainAnnual) {
+                        warnBox.style.display = 'block';
+                        warnBox.innerHTML = '⚠️ <strong>تنبيه تجاوز الرصيد:</strong> عدد الأيام المطلوبة (' + calculatedDays + ' يوم) يتجاوز رصيد إجازاتك السنوية المتبقي (' + lStats.remainAnnual + ' يوم).';
+                    } else if (lStats.remainAnnual <= 3) {
+                        warnBox.style.display = 'block';
+                        warnBox.style.background = 'rgba(217,119,6,0.12)';
+                        warnBox.style.borderColor = '#d97706';
+                        warnBox.style.color = '#d97706';
+                        warnBox.innerHTML = 'ℹ️ <strong>ملاحظة:</strong> رصيد إجازاتك المتبقي منخفض (' + lStats.remainAnnual + ' يوم).';
+                    } else {
+                        warnBox.style.display = 'none';
                     }
                 }
-            } else if (daysEl && daysEl.value) {
-                calculatedDays = parseInt(daysEl.value) || 0;
-            }
-
-            var afterDisplay = document.getElementById('tgLeaveAfterDisplay');
-            var warnBox = document.getElementById('tgLeaveWarnBox');
-            var remAfter = Math.max(0, lStats.remainAnnual - calculatedDays);
-
-            if (afterDisplay) {
-                afterDisplay.textContent = remAfter + ' يوم';
-                afterDisplay.style.color = (calculatedDays > lStats.remainAnnual) ? '#ef4444' : '#8b5cf6';
-            }
-
-            if (warnBox) {
-                if (calculatedDays > lStats.remainAnnual) {
-                    warnBox.style.display = 'block';
-                    warnBox.innerHTML = '⚠️ <strong>تنبيه تجاوز الرصيد:</strong> عدد الأيام المطلوبة (' + calculatedDays + ' يوم) يتجاوز رصيد إجازاتك السنوية المتبقي (' + lStats.remainAnnual + ' يوم).';
-                } else if (lStats.remainAnnual <= 3) {
-                    warnBox.style.display = 'block';
-                    warnBox.style.background = 'rgba(217,119,6,0.12)';
-                    warnBox.style.borderColor = '#d97706';
-                    warnBox.style.color = '#d97706';
-                    warnBox.innerHTML = 'ℹ️ <strong>ملاحظة:</strong> رصيد إجازاتك المتبقي منخفض (' + lStats.remainAnnual + ' يوم).';
-                } else {
-                    warnBox.style.display = 'none';
-                }
+            } catch(e) {
+                console.error('Error in leave calculator:', e);
+            } finally {
+                _tgCalcLock = false;
             }
         }
 
@@ -3229,7 +3238,7 @@
         تطوير وتصميم: أبانوب فايز</div>
     <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
-    <script src="theme.js?v=1787650132"></script>
+    <script src="theme.js?v=1787651035"></script>
 
 
     <!-- Incoming Meeting Call Modal -->
