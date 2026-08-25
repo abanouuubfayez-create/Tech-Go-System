@@ -3,28 +3,19 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>نظام تحليل الحضور والانصراف · تيك جو</title>
+    <title>لوحة إدارة الحضور والانصراف والأذونات · تيك جو</title>
     <script>
-        // تحديد الوضع (فاتح/داكن) قبل الرسم لتجنب وميض الشاشة
         (function() {
             var saved = null;
             try { saved = localStorage.getItem('techgo_theme') || localStorage.getItem('tg-theme'); } catch(e) {}
             document.documentElement.setAttribute('data-theme', saved || 'light');
         })();
     </script>
-    <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@300;400;600;700;900&family=Tajawal:wght@400;500;700;800&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;800;900&family=Tajawal:wght@400;500;700;800&display=swap" rel="stylesheet">
     <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
+        * { margin: 0; padding: 0; box-sizing: border-box; }
 
-        /* ══════════════════════════════════════════
-           نظام التصميم — TechGo Attendance Design System
-           ══════════════════════════════════════════ */
-        :root,
-        html[data-theme="dark"] {
+        :root, html[data-theme="dark"] {
             --primary: #0f6e64;
             --primary-dark: #0b4f49;
             --primary-light: #3fa79a;
@@ -39,821 +30,576 @@
 
             --danger: #c0392b;
             --danger-dark: #96281d;
-            --danger-light: #da6459;
+            --danger-light: #ef4444;
             --danger-tint: rgba(192, 57, 43, 0.16);
 
             --warning: #c7891c;
             --warning-dark: #9c6813;
             --warning-light: #e0ab55;
-            --warning-tint: rgba(199, 137, 28, 0.16);
-            --warning-tint-2: rgba(199, 137, 28, 0.08);
 
             --leave: #7c5cbf;
-            --leave-dark: #5f4494;
             --leave-light: #a088d6;
             --leave-tint: rgba(124, 92, 191, 0.16);
 
-            --info: #3b6ea5;
-            --info-dark: #2c5480;
-            --info-light: #6c97c4;
-            --info-tint: rgba(59, 110, 165, 0.16);
-
             --perm: #0284c7;
-            --perm-dark: #0369a1;
             --perm-light: #38bdf8;
             --perm-tint: rgba(2, 132, 199, 0.16);
 
-            --bg: #14181a;
-            --bg-elevated: #1c2224;
-            --surface: #1c2224;
-            --surface-2: #2a3234;
-            --border: #3b4547;
-            --text: #f2efe7;
-            --text-secondary: #dcd8cc;
-            --text-muted: #9a9f9a;
-            --text-faint: #6e7370;
-            --paper: #f6f3ec;
+            --bg: #0f1416;
+            --surface: #182022;
+            --surface-2: #222b2e;
+            --surface-3: #2c373b;
+            --border: #334044;
+            --text: #f3f4f6;
+            --text-secondary: #cbd5e1;
+            --text-muted: #94a3b8;
+            --text-faint: #64748b;
 
-            --shadow-color: rgba(0, 0, 0, 0.35);
+            --shadow-color: rgba(0, 0, 0, 0.4);
+            --card-shadow: 0 4px 20px rgba(0,0,0,0.3);
         }
 
         html[data-theme="light"] {
-            --bg: #f6f3ec;
-            --bg-elevated: #ffffff;
+            --bg: #f8fafc;
             --surface: #ffffff;
-            --surface-2: #efeae0;
-            --border: #ded7c8;
-            --text: #1c2422;
-            --text-secondary: #3a413e;
-            --text-muted: #6b7269;
-            --text-faint: #8d948a;
-            --paper: #ffffff;
+            --surface-2: #f1f5f9;
+            --surface-3: #e2e8f0;
+            --border: #cbd5e1;
+            --text: #0f172a;
+            --text-secondary: #334155;
+            --text-muted: #64748b;
+            --text-faint: #94a3b8;
 
-            --primary-tint: rgba(15, 110, 100, 0.10);
-            --accent-tint: rgba(201, 154, 61, 0.12);
-            --success-tint: rgba(46, 139, 87, 0.10);
-            --danger-tint: rgba(192, 57, 43, 0.10);
-            --warning-tint: rgba(199, 137, 28, 0.10);
-            --warning-tint-2: rgba(199, 137, 28, 0.06);
-            --leave-tint: rgba(124, 92, 191, 0.10);
-            --info-tint: rgba(59, 110, 165, 0.10);
-            --perm-tint: rgba(2, 132, 199, 0.10);
+            --primary-tint: rgba(15, 110, 100, 0.08);
+            --perm-tint: rgba(2, 132, 199, 0.08);
+            --leave-tint: rgba(124, 92, 191, 0.08);
 
-            --shadow-color: rgba(28, 36, 34, 0.12);
+            --shadow-color: rgba(0, 0, 0, 0.08);
+            --card-shadow: 0 2px 12px rgba(15, 23, 42, 0.06);
         }
-
-        :root {
-            --font-display: 'Cairo', sans-serif;
-            --font-body: 'Tajawal', 'Cairo', sans-serif;
-            --radius-sm: 8px;
-            --radius-md: 12px;
-            --radius-lg: 16px;
-            --radius-pill: 999px;
-            --shadow-sm: 0 2px 8px var(--shadow-color);
-            --shadow-md: 0 8px 24px var(--shadow-color);
-        }
-
-        html { transition: background-color .25s ease; }
-        body, .stat-card, .employee-card { transition: background-color .25s ease, border-color .25s ease, color .25s ease; }
-
-        .theme-toggle {
-            position: fixed;
-            top: 1.25rem;
-            left: 1.25rem;
-            z-index: 500;
-            width: 44px;
-            height: 44px;
-            border-radius: var(--radius-pill);
-            border: 1px solid var(--border);
-            background: var(--surface);
-            color: var(--text);
-            font-size: 1.2rem;
-            cursor: pointer;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            box-shadow: var(--shadow-sm);
-            transition: transform .2s ease, background-color .2s ease;
-        }
-        .theme-toggle:hover { transform: translateY(-2px); }
 
         body {
             min-height: 100vh;
             background: var(--bg);
-            background-image:
-                radial-gradient(ellipse 80% 50% at 50% -10%, rgba(15,110,100,0.15) 0%, transparent 70%),
-                radial-gradient(ellipse 50% 30% at 80% 100%, rgba(124,92,191,0.1) 0%, transparent 60%);
-            font-family: var(--font-body);
-            direction: rtl;
-            padding: 2rem;
+            font-family: 'Tajawal', 'Cairo', sans-serif;
             color: var(--text);
+            direction: rtl;
+            padding: 1.5rem;
         }
 
-        @keyframes fadeInUp {
-            from { opacity: 0; transform: translateY(30px); }
-            to { opacity: 1; transform: translateY(0); }
-        }
-        @keyframes pulse {
-            0%, 100% { opacity: 1; }
-            50% { opacity: 0.5; }
-        }
-
-        .header {
-            text-align: center;
-            margin-bottom: 3rem;
-            animation: fadeInUp 0.8s ease-out;
-        }
-        .header-box {
-            display: inline-flex;
+        /* Top Navbar */
+        .admin-nav {
+            max-width: 1400px;
+            margin: 0 auto 1.5rem auto;
+            display: flex;
             align-items: center;
-            gap: 1.2rem;
-            background: rgba(15,110,100, 0.1);
-            padding: 1.2rem 2.5rem;
-            border-radius: 16px;
-            border: 2px solid rgba(15,110,100, 0.3);
-        }
-        .main-title {
-            font-size: 2.5rem;
-            font-weight: 900;
-            background: linear-gradient(135deg, var(--primary-light) 0%, var(--primary) 50%, var(--primary-dark) 100%);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            background-clip: text;
-            margin: 0;
-        }
-        .subtitle {
-            margin-top: 1rem;
-            font-size: 1.1rem;
-            color: var(--text-muted);
-            font-weight: 500;
-        }
-
-        /* Upload */
-        .upload-zone {
-            max-width: 800px;
-            margin: 0 auto;
-            padding: 4rem 2rem;
-            border: 1.5px solid rgba(15,110,100,0.25);
-            border-radius: 16px;
+            justify-content: space-between;
             background: var(--surface);
-            text-align: center;
-            cursor: pointer;
-            box-shadow: 0 0 0 1px rgba(15,110,100,0.05), inset 0 1px 0 rgba(255,255,255,0.04);
-            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            border: 1px solid var(--border);
+            border-radius: 16px;
+            padding: 0.9rem 1.4rem;
+            box-shadow: var(--card-shadow);
         }
-        .upload-zone:hover {
-            border-color: rgba(15,110,100,0.5);
-            background: var(--surface-2);
-            box-shadow: 0 20px 60px rgba(15,110,100,0.15), 0 0 0 1px rgba(15,110,100,0.15);
-            transform: translateY(-4px);
+        .nav-brand {
+            display: flex;
+            align-items: center;
+            gap: 12px;
         }
-        .upload-zone.dragging {
-            border-color: var(--primary);
-            background: linear-gradient(135deg, rgba(15,110,100,0.2) 0%, rgba(11,79,73,0.1) 100%);
-            box-shadow: 0 20px 60px rgba(15,110,100,0.3);
-        }
-        .upload-icon { width: 80px; height: 80px; color: rgba(15,110,100,0.4); margin-bottom: 1.5rem; }
-        .upload-zone.dragging .upload-icon { color: var(--primary); }
-        .processing .upload-icon { animation: pulse 1.5s ease-in-out infinite; }
-        .upload-title { font-size: 1.8rem; color: var(--text-secondary); margin-bottom: 1rem; font-weight: 700; }
-        .upload-text { font-size: 1.1rem; color: var(--text-muted); margin-bottom: 1.5rem; }
-
-        .btn-primary {
-            display: inline-block;
-            padding: 1rem 2.5rem;
+        .brand-icon {
+            width: 42px; height: 42px;
             border-radius: 12px;
-            background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
-            color: white;
-            font-weight: 700;
-            font-size: 1.1rem;
-            cursor: pointer;
-            border: none;
-            position: relative;
-            overflow: hidden;
-            transition: all 0.3s ease;
-            font-family: 'Cairo', sans-serif;
-            box-shadow: 0 4px 15px rgba(15,110,100,0.3);
+            background: linear-gradient(135deg, var(--primary), var(--perm));
+            display: flex; align-items: center; justify-content: center;
+            color: #fff; font-size: 20px; font-weight: 900;
         }
-        .btn-primary:hover { transform: translateY(-2px); box-shadow: 0 10px 30px rgba(15,110,100,0.4); }
+        .brand-title {
+            font-size: 1.25rem;
+            font-weight: 900;
+            color: var(--text);
+            line-height: 1.2;
+        }
+        .brand-sub {
+            font-size: 0.75rem;
+            color: var(--text-muted);
+            font-weight: 600;
+        }
+        .nav-actions {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            flex-wrap: wrap;
+        }
 
-        /* Stats compact cards */
-        .stats-compact {
+        /* Main Executive Switcher Tabs */
+        .exec-tabs-bar {
+            max-width: 1400px;
+            margin: 0 auto 1.5rem auto;
             display: grid;
             grid-template-columns: repeat(4, 1fr);
-            gap: 1rem; max-width: 1400px;
-            margin: 0 auto 2rem auto;
-        }
-        @media(max-width: 700px){ .stats-compact { grid-template-columns: repeat(2,1fr); } }
-        .sc-card {
+            gap: 10px;
             background: var(--surface);
-            border-radius: 16px; padding: 1.2rem 1.4rem;
-            display: flex; align-items: center; gap: 1rem;
-            border: 1px solid rgba(59,69,71,0.3);
-            transition: all 0.2s ease;
-        }
-        .sc-card:hover { transform: translateY(-2px); border-color: rgba(15,110,100,0.3); }
-        .sc-icon { width: 40px; height: 40px; border-radius: 12px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
-        .sc-val { font-size: 1.8rem; font-weight: 900; line-height: 1; }
-        .sc-lbl { font-size: 0.8rem; color: var(--text-faint); font-weight: 600; margin-top: 2px; }
-
-        /* Toolbar */
-        .results-toolbar {
-            position: sticky; top: 0; z-index: 200;
-            background: var(--surface);
-            backdrop-filter: blur(20px);
-            border-bottom: 1px solid rgba(15,110,100,0.15);
-            padding: 0.7rem 1.5rem;
-            display: flex; align-items: center; gap: 1rem;
-            flex-wrap: wrap;
-            max-width: 100%; margin: 0 -2rem 2rem -2rem;
-        }
-        .toolbar-title {
-            font-size: 1rem; font-weight: 800;
-            background: linear-gradient(135deg,var(--primary-light),var(--primary));
-            -webkit-background-clip: text; -webkit-text-fill-color: transparent;
-            background-clip: text; white-space: nowrap; flex: 1;
-        }
-        .toolbar-actions { display: flex; gap: 0.5rem; align-items: center; flex-wrap: wrap; }
-        .btn-toolbar {
-            padding: 0.45rem 1rem; border-radius: 8px;
-            font-family: 'Cairo', sans-serif; font-size: 0.85rem; font-weight: 700;
-            cursor: pointer; border: none; display: inline-flex; align-items: center; gap: 5px;
-            transition: all 0.2s;
-        }
-        .btn-tb-settings { background: rgba(15,110,100,0.15); border: 1px solid rgba(15,110,100,0.35); color: var(--primary-light); }
-        .btn-tb-settings:hover { background: rgba(15,110,100,0.3); }
-        .btn-tb-txt { background: rgba(15,110,100,0.2); border: 1px solid rgba(15,110,100,0.4); color: var(--primary-light); }
-        .btn-tb-txt:hover { background: rgba(15,110,100,0.35); }
-        .btn-tb-pdf { background: rgba(192,57,43,0.2); border: 1px solid rgba(192,57,43,0.4); color: var(--danger-light); }
-        .btn-tb-pdf:hover { background: rgba(192,57,43,0.35); }
-        .btn-tb-emgr { background:rgba(124,92,191,.15); border:1px solid rgba(124,92,191,.35); color:var(--leave-light); }
-        .btn-tb-emgr:hover { background:rgba(124,92,191,.3); }
-        .btn-tb-emgr.active-view { background:rgba(124,92,191,.3); border-color:var(--leave); color:var(--leave-tint); }
-        .btn-tb-reset { background: rgba(59,69,71,0.3); border: 1px solid rgba(59,69,71,0.4); color: var(--text-muted); }
-        .btn-tb-reset:hover { background: rgba(59,69,71,0.6); color: var(--text-secondary); }
-
-        /* Employee Cards */
-        .emp-card-v2 {
-            background: var(--surface);
-            border: 1px solid rgba(59,69,71,0.2);
+            border: 1px solid var(--border);
             border-radius: 16px;
-            margin-bottom: 1.2rem;
-            overflow: hidden;
-            box-shadow: 0 1px 0 rgba(255,255,255,0.02) inset;
+            padding: 6px;
+        }
+        @media (max-width: 900px) {
+            .exec-tabs-bar { grid-template-columns: repeat(2, 1fr); }
+        }
+        @media (max-width: 550px) {
+            .exec-tabs-bar { grid-template-columns: 1fr; }
+        }
+        .exec-tab-btn {
+            background: transparent;
+            border: none;
+            padding: 10px 14px;
+            border-radius: 12px;
+            font-family: 'Cairo', sans-serif;
+            font-size: 0.92rem;
+            font-weight: 700;
+            color: var(--text-muted);
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
             transition: all 0.2s ease;
         }
-        .emp-card-v2:hover { border-color: rgba(15,110,100,0.3); box-shadow: 0 4px 20px rgba(0,0,0,0.3); }
-        .ecv2-hdr { display: flex; align-items: center; padding: .9rem 1.3rem; cursor: pointer; gap: .9rem; background: var(--surface); border-bottom: 1px solid rgba(59,69,71,0.2); user-select: none; }
-        .ecv2-num { width:30px; height:30px; border-radius:50%; flex-shrink:0; display:flex; align-items:center; justify-content:center; background:rgba(15,110,100,0.15); border:1px solid rgba(15,110,100,0.3); color:var(--primary-light); font-weight:900; font-size:.85rem; }
-        .ecv2-nameblock { flex:1; min-width:0; }
-        .ecv2-name { font-size:1.05rem; font-weight:800; color:var(--text); display:flex; align-items:center; gap:.4rem; }
-        .ecv2-id { font-size:.75rem; color: var(--text-faint); margin-top:1px; }
-        .ecv2-chevron { color: var(--text-faint); font-size:1rem; flex-shrink:0; transition: transform .3s ease; }
-        .ecv2-chevron.open { transform:rotate(180deg); color:var(--primary-light); }
-        .ecv2-scores { display: grid; grid-template-columns: repeat(6,1fr); border-bottom: 1px solid rgba(59,69,71,0.2); }
-        @media(max-width:850px){ .ecv2-scores { grid-template-columns: repeat(3,1fr); } }
-        .ecv2-score { padding: .75rem .5rem; display: flex; flex-direction:column; align-items:center; gap:2px; border-left: 1px solid rgba(59,69,71,0.15); }
-        .ecv2-score:last-child { border-left:none; }
-        .ecv2-score-val { font-size:1.5rem; font-weight:900; line-height:1; }
-        .ecv2-score-lbl { font-size:.68rem; font-weight:600; color: var(--text-faint); text-align:center; line-height:1.2; }
-        .sv-present  { color:var(--success-light); }
-        .sv-absent   { color:var(--warning-light); }
-        .sv-late     { color:var(--danger-light); }
-        .sv-early    { color:var(--primary-light); }
-        .sv-hours    { color:var(--leave-light); }
-        .sv-pct      { color:var(--info-light); }
-        .sv-extra    { color:var(--warning); }
-        .sv-perm     { color:var(--perm-light); }
-
-        .ecv2-verdict { padding: .6rem 1.4rem; font-size: .85rem; font-weight: 700; display: flex; align-items:center; gap:.5rem; flex-wrap:wrap; }
-        .verdict-ok    { background:rgba(46,139,87,0.07);  border-bottom:1px solid rgba(46,139,87,0.15);  color:var(--success-light); }
-        .verdict-warn  { background:rgba(224,171,85,0.07); border-bottom:1px solid rgba(224,171,85,0.15); color:var(--warning-light); }
-        .verdict-bad   { background:rgba(192,57,43,0.08);  border-bottom:1px solid rgba(192,57,43,0.15);  color:var(--danger-light); }
-        .verdict-chip { padding:1px 8px; border-radius:16px; font-size:.75rem; font-weight:700; background:rgba(255,255,255,0.07); }
-        .ecv2-body { display:none; }
-        .ecv2-body.open { display:block; animation: fadeInUp .2s ease; }
-
-        .day-log { width:100%; border-collapse:collapse; font-size:.85rem; }
-        .day-log thead tr { background:var(--surface); }
-        .day-log th { padding:6px 12px; color: var(--text-faint); font-weight:700; text-align:right; border-bottom:1px solid rgba(59,69,71,0.25); font-size:.72rem; white-space:nowrap; letter-spacing: 0.03em; }
-        .day-log tbody tr { border-bottom:1px solid rgba(59,69,71,0.1); transition:background .1s; }
-        .day-log tbody tr:last-child { border-bottom:none; }
-        .day-log tbody tr:hover { background:rgba(255,255,255,0.025); }
-        .day-log td { padding:7px 12px; vertical-align:middle; }
-        .dl-print-hdr-row { display:none; }
-
-        .dl-stripe { width:3px; padding:0 !important; }
-        .dl-stripe span { display:block; width:3px; min-height:32px; border-radius:4px; }
-        .stripe-ok      { background:var(--success); }
-        .stripe-late    { background:var(--danger); }
-        .stripe-early   { background:var(--primary); }
-        .stripe-absent  { background:var(--warning); }
-        .stripe-holiday { background:var(--leave-light); }
-        .stripe-none    { background:var(--surface-2); }
-        .stripe-extra   { background:var(--warning); }
-        .stripe-perm    { background:var(--perm); }
-
-        .dl-date { font-weight:700; color:var(--text-secondary); white-space:nowrap; font-size:.83rem; }
-        .dl-dayname { font-size:.7rem; color: var(--text-faint); display:block; }
-        .dl-pill { display:inline-flex; align-items:center; gap:3px; padding:2px 9px; border-radius:16px; font-size:.78rem; font-weight:700; white-space:nowrap; }
-        .pill-ok      { background:rgba(46,139,87,.1);   border:1px solid rgba(46,139,87,.3);   color:var(--success-light); }
-        .pill-late    { background:rgba(192,57,43,.1);   border:1px solid rgba(192,57,43,.3);   color:var(--danger-light); }
-        .pill-perm    { background:rgba(2,132,199,.15);  border:1px solid rgba(2,132,199,.4);   color:var(--perm-light); }
-        .pill-early   { background:rgba(15,110,100,.1);  border:1px solid rgba(15,110,100,.3);  color:var(--primary-light); }
-        .pill-absent  { background:rgba(224,171,85,.1);  border:1px solid rgba(224,171,85,.3);  color:var(--warning-light); }
-        .pill-holiday { background:rgba(160,136,214,.1); border:1px solid rgba(160,136,214,.3); color:var(--leave-light); }
-        .pill-none    { background:rgba(59,69,71,.15);  border:1px solid rgba(59,69,71,.3);   color:var(--text-faint); }
-        .pill-extra   { background:rgba(199,137,28,0.15); border:1px solid rgba(199,137,28,0.5); color:var(--warning); }
-
-        .dl-time-in  { color:var(--success-light); font-weight:600; font-size:.83rem; white-space:nowrap; }
-        .dl-time-out { color:var(--danger-light); font-weight:600; font-size:.83rem; white-space:nowrap; }
-        .dl-hours    { color:var(--leave-light); font-weight:700; font-size:.83rem; white-space:nowrap; }
-        .dl-note     { font-size:.72rem; color:var(--danger); font-weight:700; }
-
-        .row-absent  { background:rgba(224,171,85,0.04) !important; }
-        .row-late    { background:rgba(192,57,43,0.03) !important; }
-        .row-holiday { background:rgba(160,136,214,0.04) !important; }
-        .row-extra   { background:rgba(199,137,28,0.04) !important; }
-
-        /* Decision grid */
-        .decision-grid { display: grid; grid-template-columns: repeat(3,1fr); gap: 1.2rem; max-width: 1400px; margin: 0 auto 2.5rem auto; }
-        @media(max-width: 900px){ .decision-grid { grid-template-columns: 1fr; } }
-        .dg-col { background: var(--surface) !important; border-radius: 16px; overflow: hidden; }
-        .dg-col-hdr { padding: 0.9rem 1.2rem; display: flex; align-items: center; justify-content: space-between; }
-        .dg-col-hdr-title { font-size: 1rem; font-weight: 800; display: flex; align-items: center; gap: 6px; }
-        .dg-col-hdr-count { font-size: 1.4rem; font-weight: 900; }
-        .dg-late  .dg-col-hdr { background: rgba(192,57,43,0.15); border-bottom: 1px solid rgba(192,57,43,0.2); }
-        .dg-late  .dg-col-hdr-title { color: var(--danger-light); }
-        .dg-late  .dg-col-hdr-count { color: var(--danger); }
-        .dg-ok    .dg-col-hdr { background: rgba(46,139,87,0.12); border-bottom: 1px solid rgba(46,139,87,0.2); }
-        .dg-ok    .dg-col-hdr-title { color: var(--success-light); }
-        .dg-ok    .dg-col-hdr-count { color: var(--success); }
-        .dg-early .dg-col-hdr { background: rgba(15,110,100,0.12); border-bottom: 1px solid rgba(15,110,100,0.2); }
-        .dg-early .dg-col-hdr-title { color: var(--primary-light); }
-        .dg-early .dg-col-hdr-count { color: var(--primary); }
-        .dg-late  { background: var(--surface); border: 1px solid rgba(192,57,43,0.25); }
-        .dg-ok    { background: var(--surface); border: 1px solid rgba(46,139,87,0.25); }
-        .dg-early { background: var(--surface); border: 1px solid rgba(15,110,100,0.25); }
-        .dg-body { padding: 0.8rem 1rem; }
-        .dg-row { display: flex; align-items: center; padding: 0.55rem 0.6rem; border-radius: 8px; margin-bottom: 4px; gap: 0.5rem; }
-        .dg-row:last-child { margin-bottom: 0; }
-        .dg-late  .dg-row:hover { background: rgba(192,57,43,0.08); }
-        .dg-ok    .dg-row:hover { background: rgba(46,139,87,0.06); }
-        .dg-early .dg-row:hover { background: rgba(15,110,100,0.08); }
-        .dg-emp-name { font-size: 0.9rem; font-weight: 600; color: var(--text-secondary); flex: 1; }
-        .dg-badge { font-size: 0.72rem; font-weight: 700; padding: 2px 8px; border-radius: 16px; white-space: nowrap; }
-        .dg-badge-red   { background: rgba(192,57,43,0.15); border:1px solid rgba(192,57,43,0.4); color:var(--danger-light); }
-        .dg-badge-green { background: rgba(46,139,87,0.15);  border:1px solid rgba(46,139,87,0.4);  color:var(--success-light); }
-        .dg-badge-blue  { background: rgba(15,110,100,0.15); border:1px solid rgba(15,110,100,0.4); color:var(--primary-light); }
-        .dg-empty { color: var(--text-faint); font-size: 0.85rem; text-align: center; padding: 1rem 0; }
-
-        /* Notes wrap */
-        .notes-wrap { max-width: 1400px; margin: 0 auto; background: var(--surface); border: 1px solid rgba(59,69,71,0.3); border-radius: 16px; overflow: hidden; }
-        .notes-row { display: flex; align-items: flex-start; gap: 1rem; padding: 0.9rem 1.2rem; border-bottom: 1px solid var(--border); }
-        .notes-row:last-child { border-bottom: none; }
-        .notes-emp-name { flex: 0 0 150px; font-size: 0.9rem; font-weight: 700; color: var(--text-secondary); padding-top: 0.6rem; }
-        .notes-textarea { flex: 1; width: 100%; min-height: 46px; resize: vertical; background: var(--bg); border: 1px solid var(--border); border-radius: 10px; padding: 0.55rem 0.8rem; font-family: var(--font-body); font-size: 0.88rem; color: var(--text); line-height: 1.6; }
-        .notes-textarea:focus { outline: none; border-color: var(--primary); box-shadow: 0 0 0 3px var(--primary-tint); }
-        .notes-hint { text-align: center; color: var(--text-faint); font-size: 0.8rem; padding: 0.6rem 0 0; }
-        .notes-empty { padding: 1.4rem; text-align: center; color: var(--text-faint); font-size: 0.9rem; }
-
-        /* Section headers */
-        .sec-hdr { max-width: 1400px; margin: 0 auto 1rem auto; display: flex; align-items: center; gap: 0.7rem; }
-        .sec-hdr-line { flex: 1; height: 1px; background: linear-gradient(90deg, rgba(15,110,100,0.4), transparent); }
-        .sec-hdr-title { font-size: 1.1rem !important; font-weight: 800; color: var(--text-secondary); white-space: nowrap; display: flex; align-items: center; gap: 0.5rem; letter-spacing: 0.02em; }
-
-        .hidden { display: none; }
-        .center { text-align: center; }
-
-        /* Period bar */
-        .period-bar {
-            max-width:1400px; margin:0 auto 1.5rem auto;
-            background:var(--surface) !important; border:1px solid rgba(124,92,191,.2) !important;
-            border-radius:16px; padding:.9rem 1.4rem;
-            display:flex; align-items:center; gap:1rem; flex-wrap:wrap;
+        .exec-tab-btn:hover {
+            color: var(--text);
+            background: var(--surface-2);
         }
-        .period-bar-label { color:var(--leave-light); font-weight:700; font-size:.9rem; white-space:nowrap; }
-        .period-btns { display:flex; gap:.4rem; flex-wrap:wrap; }
-        .btn-period { padding:.4rem 1rem; border-radius:8px; background:var(--surface-2); border:1px solid rgba(59,69,71,.4); color:var(--text-faint); font-family:'Cairo',sans-serif; font-size:.85rem; font-weight:700; cursor:pointer; transition:all .2s; }
-        .btn-period.active { background:rgba(124,92,191,.2); border-color:rgba(124,92,191,.5); color:var(--leave-light); }
-        .period-selects { display:flex; gap:.5rem; align-items:center; }
-        .period-select { background:var(--surface-2); border:1px solid rgba(59,69,71,.5); border-radius:8px; padding:.35rem .7rem; color:var(--text-secondary); font-family:'Cairo',sans-serif; font-size:.88rem; }
-        .period-select:focus { outline:none; border-color:var(--leave); }
+        .exec-tab-btn.active {
+            background: linear-gradient(135deg, var(--primary), var(--primary-dark));
+            color: #ffffff;
+            box-shadow: 0 4px 14px var(--primary-tint);
+        }
 
-        /* Buttons for Leaves, WFH, Permissions */
-        .btn-emp-leaves { padding: 0.35rem 0.9rem; border-radius: 8px; background: rgba(124,92,191,0.15); border: 1px solid rgba(124,92,191,0.35); color: var(--leave-light); font-family: 'Cairo', sans-serif; font-size: 0.8rem; font-weight: 700; cursor: pointer; display: inline-flex; align-items: center; gap: 4px; transition: all 0.2s; }
-        .btn-emp-leaves:hover { background: rgba(124,92,191,0.3); }
-        .btn-emp-wfh { padding: 0.35rem 0.9rem; border-radius: 8px; background: rgba(59,110,165,0.15); border: 1px solid rgba(59,110,165,0.35); color: var(--info-light); font-family: 'Cairo', sans-serif; font-size: 0.8rem; font-weight: 700; cursor: pointer; display: inline-flex; align-items: center; gap: 4px; transition: all 0.2s; }
-        .btn-emp-wfh:hover { background: rgba(59,110,165,0.3); }
-        .btn-emp-perms { padding: 0.35rem 0.9rem; border-radius: 8px; background: rgba(2,132,199,0.15); border: 1px solid rgba(2,132,199,0.35); color: var(--perm-light); font-family: 'Cairo', sans-serif; font-size: 0.8rem; font-weight: 700; cursor: pointer; display: inline-flex; align-items: center; gap: 4px; transition: all 0.2s; }
-        .btn-emp-perms:hover { background: rgba(2,132,199,0.3); }
+        /* KPI Grid */
+        .kpi-grid {
+            max-width: 1400px;
+            margin: 0 auto 1.5rem auto;
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 12px;
+        }
+        @media (max-width: 850px) { .kpi-grid { grid-template-columns: repeat(2, 1fr); } }
+        .kpi-box {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 14px;
+            padding: 1rem 1.2rem;
+            display: flex;
+            align-items: center;
+            gap: 14px;
+            box-shadow: var(--card-shadow);
+        }
+        .kpi-icon-wrap {
+            width: 48px; height: 48px;
+            border-radius: 12px;
+            display: flex; align-items: center; justify-content: center;
+            font-size: 22px; flex-shrink: 0;
+        }
+        .kpi-val { font-size: 1.6rem; font-weight: 900; line-height: 1.1; }
+        .kpi-lbl { font-size: 0.8rem; color: var(--text-muted); font-weight: 600; margin-top: 2px; }
 
-        .perm-chip { padding: 2px 8px; border-radius: 16px; font-size: 0.72rem; font-weight: 700; background: rgba(2,132,199,0.15); color: var(--perm-light); border: 1px solid rgba(2,132,199,0.3); }
-        .wfh-chip { padding: 2px 8px; border-radius: 16px; font-size: 0.72rem; font-weight: 700; background: rgba(59,110,165,0.15); color: var(--info-light); border: 1px solid rgba(59,110,165,0.3); }
-        .els-chip { padding: 2px 8px; border-radius: 16px; font-size: 0.72rem; font-weight: 700; }
-        .els-annual  { background: rgba(46,139,87,0.15); color: var(--success-light); border: 1px solid rgba(46,139,87,0.3); }
-        .els-casual  { background: rgba(199,137,28,0.15); color: var(--warning); border: 1px solid rgba(199,137,28,0.3); }
+        /* Container sections */
+        .tab-panel {
+            max-width: 1400px;
+            margin: 0 auto;
+            display: none;
+        }
+        .tab-panel.active {
+            display: block;
+            animation: fadeIn 0.25s ease;
+        }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(6px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        /* Tables */
+        .card-table-wrap {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 16px;
+            overflow: hidden;
+            box-shadow: var(--card-shadow);
+            margin-bottom: 1.5rem;
+        }
+        .card-table-hdr {
+            padding: 1rem 1.4rem;
+            background: var(--surface-2);
+            border-bottom: 1px solid var(--border);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            flex-wrap: wrap;
+            gap: 10px;
+        }
+        .card-table-title {
+            font-size: 1.05rem;
+            font-weight: 800;
+            color: var(--text);
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .admin-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 0.9rem;
+        }
+        .admin-table th {
+            padding: 10px 14px;
+            background: var(--surface-2);
+            color: var(--text-muted);
+            font-weight: 700;
+            text-align: right;
+            border-bottom: 1px solid var(--border);
+            font-size: 0.82rem;
+            white-space: nowrap;
+        }
+        .admin-table td {
+            padding: 11px 14px;
+            border-bottom: 1px solid var(--border);
+            vertical-align: middle;
+            color: var(--text);
+        }
+        .admin-table tbody tr:hover {
+            background: var(--surface-2);
+        }
+
+        /* Status Pills */
+        .status-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 5px;
+            padding: 3px 10px;
+            border-radius: 20px;
+            font-size: 0.78rem;
+            font-weight: 700;
+            white-space: nowrap;
+        }
+        .badge-ok      { background: rgba(46,139,87,0.15); color: var(--success-light); border: 1px solid rgba(46,139,87,0.3); }
+        .badge-danger  { background: rgba(239,68,68,0.15); color: var(--danger-light); border: 1px solid rgba(239,68,68,0.3); }
+        .badge-perm    { background: rgba(2,132,199,0.15); color: var(--perm-light); border: 1px solid rgba(2,132,199,0.3); }
+        .badge-leave   { background: rgba(124,92,191,0.15); color: var(--leave-light); border: 1px solid rgba(124,92,191,0.3); }
+        .badge-warning { background: rgba(199,137,28,0.15); color: var(--warning-light); border: 1px solid rgba(199,137,28,0.3); }
+
+        /* Buttons */
+        .btn-action {
+            padding: 0.45rem 1rem;
+            border-radius: 10px;
+            font-family: 'Cairo', sans-serif;
+            font-size: 0.85rem;
+            font-weight: 700;
+            cursor: pointer;
+            border: 1px solid transparent;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            transition: all 0.2s ease;
+        }
+        .btn-action:hover { transform: translateY(-1px); }
+        .btn-primary-action { background: linear-gradient(135deg, var(--primary), var(--primary-dark)); color: #fff; }
+        .btn-pdf-action     { background: linear-gradient(135deg, var(--danger), var(--danger-dark)); color: #fff; }
+        .btn-perm-action    { background: rgba(2,132,199,0.15); color: var(--perm-light); border-color: rgba(2,132,199,0.35); }
+        .btn-leave-action   { background: rgba(124,92,191,0.15); color: var(--leave-light); border-color: rgba(124,92,191,0.35); }
+        .btn-wfh-action     { background: rgba(59,110,165,0.15); color: var(--info-light); border-color: rgba(59,110,165,0.35); }
+        .btn-ghost          { background: var(--surface-2); color: var(--text); border-color: var(--border); }
+
+        /* Search input */
+        .search-box {
+            background: var(--bg);
+            border: 1px solid var(--border);
+            border-radius: 10px;
+            padding: 6px 12px;
+            color: var(--text);
+            font-family: inherit;
+            font-size: 0.85rem;
+            outline: none;
+            width: 220px;
+        }
+        .search-box:focus { border-color: var(--primary); }
+
+        /* Employee Timesheet Cards */
+        .emp-sheet-card {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 16px;
+            margin-bottom: 1rem;
+            overflow: hidden;
+            box-shadow: var(--card-shadow);
+        }
+        .emp-sheet-hdr {
+            padding: 1rem 1.4rem;
+            background: var(--surface);
+            border-bottom: 1px solid var(--border);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            cursor: pointer;
+            user-select: none;
+        }
+        .emp-sheet-hdr:hover { background: var(--surface-2); }
+        .emp-meta { display: flex; align-items: center; gap: 12px; }
+        .emp-avatar {
+            width: 40px; height: 40px; border-radius: 50%;
+            background: var(--primary-tint); border: 1.5px solid var(--primary);
+            color: var(--primary-light); font-weight: 800; font-size: 1rem;
+            display: flex; align-items: center; justify-content: center;
+        }
+        .emp-title-text { font-size: 1.05rem; font-weight: 800; color: var(--text); }
+        .emp-sub-text { font-size: 0.78rem; color: var(--text-muted); }
+        .emp-sheet-body { display: none; padding: 0; }
+        .emp-sheet-body.open { display: block; }
 
         /* Modals */
-        .modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.7); backdrop-filter: blur(12px); z-index: 1000; display: flex; align-items: center; justify-content: center; }
-        .leave-modal-box { background: var(--bg); border: 2px solid rgba(124,92,191,0.4); border-radius: 16px; padding: 1.5rem; width: 560px; max-width: 96vw; max-height: 88vh; overflow-y: auto; animation: fadeInUp 0.3s ease; box-shadow: 0 25px 60px rgba(0,0,0,0.6); }
-        .wfh-modal-box { background: var(--bg); border: 2px solid rgba(59,110,165,0.4); border-radius: 16px; padding: 1.5rem; width: 520px; max-width: 96vw; max-height: 85vh; overflow-y: auto; animation: fadeInUp 0.3s ease; }
-        .perm-modal-box { background: var(--bg); border: 2px solid rgba(2,132,199,0.4); border-radius: 16px; padding: 1.5rem; width: 540px; max-width: 96vw; max-height: 88vh; overflow-y: auto; animation: fadeInUp 0.3s ease; }
+        .modal-overlay {
+            position: fixed; inset: 0;
+            background: rgba(0,0,0,0.7); backdrop-filter: blur(8px);
+            z-index: 1000; display: flex; align-items: center; justify-content: center;
+        }
+        .modal-box {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 16px;
+            padding: 1.5rem;
+            width: 550px;
+            max-width: 95vw;
+            max-height: 88vh;
+            overflow-y: auto;
+            box-shadow: 0 20px 50px rgba(0,0,0,0.5);
+        }
 
-        /* Print / PDF Elements */
-        #printHeader { display: none; }
-        .emp-extras-stack { display: flex; flex-direction: column; gap: 7px; margin-top: 6px; padding-bottom: 10px; }
-        .mini-table-card { margin: 0; padding: 8px 10px 9px; border-radius: 0 8px 8px 0; }
-        .mini-table-title { font-size: 10.5px; font-weight: 800; margin-bottom: 6px; display: flex; align-items: center; flex-wrap: wrap; gap: 4px; }
-        .mini-table { width: 100%; border-collapse: collapse; font-size: 10px; background: #fff; border-radius: 6px; overflow: hidden; }
-        .mini-table th { padding: 5px 9px; color: white; font-weight: 700; text-align: right; }
-        .mini-table td { padding: 5px 9px; border-bottom: 1px solid rgba(0,0,0,0.06); color: #3a413e; }
-        .mini-table tbody tr:nth-child(even) td { background: rgba(0,0,0,0.025); }
+        /* Upload Area */
+        .upload-card {
+            max-width: 750px;
+            margin: 2rem auto;
+            background: var(--surface);
+            border: 2px dashed var(--primary);
+            border-radius: 20px;
+            padding: 3rem 2rem;
+            text-align: center;
+            box-shadow: var(--card-shadow);
+        }
 
-        .mtc-absent { background: #f5e3e1; border-right: 3px solid #c0392b; }
-        .mtc-absent .mini-table-title { color: #c0392b; }
-        .mtc-absent .mini-table thead tr { background: #c0392b; }
-
-        .mtc-casual { background: #f3e8d4; border-right: 3px solid #9c6813; }
-        .mtc-casual .mini-table-title { color: #9c6813; }
-        .mtc-casual .mini-table thead tr { background: #9c6813; }
-
-        .mtc-leave { background: #ede7f5; border-right: 3px solid #7c5cbf; }
-        .mtc-leave .mini-table-title { color: #5f4494; }
-        .mtc-leave .mini-table thead tr { background: #7c5cbf; }
-
-        .mtc-extra { background: #f8f1e2; border-right: 3px solid #c7891c; }
-        .mtc-extra .mini-table-title { color: #9c6813; }
-        .mtc-extra .mini-table thead tr { background: #c7891c; }
-
-        .mtc-wfh { background: #e4ebf2; border-right: 3px solid #3b6ea5; }
-        .mtc-wfh .mini-table-title { color: #2c5480; }
-        .mtc-wfh .mini-table thead tr { background: #3b6ea5; }
-
-        .mtc-perm { background: #e0f2fe; border-right: 3px solid #0284c7; }
-        .mtc-perm .mini-table-title { color: #0369a1; }
-        .mtc-perm .mini-table thead tr { background: #0284c7; }
+        .hidden { display: none !important; }
 
         @media print {
-            @page { size: A4 portrait; margin: 12mm 10mm; }
-            body { background: #ffffff !important; color: #0f172a !important; padding: 0 !important; font-size: 10.5pt; }
-            .header, #uploadSection, #namingSection, .results-toolbar, #resetBtnWrap, .alert, .theme-toggle, .settings-drawer, #periodBar, .decision-grid, .sec-hdr, #employeeNotesWrap, .notes-hint { display: none !important; }
-            #resultsSection { display: block !important; }
-            #printHeader { display: block !important; text-align: center; margin-bottom: 16px; padding-bottom: 10px; border-bottom: 2px solid #0f172a; }
-            #printHeader h1 { font-size: 1.4rem; font-weight: 900; color: #0f172a; }
-            .stats-compact { margin-bottom: 16px !important; }
-            .sc-card { border: 1px solid #cbd5e1 !important; background: #f8fafc !important; }
-            .emp-card-v2 { background: #ffffff !important; border: 1.5px solid #0f172a !important; page-break-inside: avoid; break-inside: avoid; margin-bottom: 16px !important; }
-            .ecv2-hdr { background: #f1f5f9 !important; border-bottom: 1px solid #cbd5e1 !important; }
-            .ecv2-body { display: block !important; }
-            .ecv2-chevron, .btn-emp-leaves, .btn-emp-wfh, .btn-emp-perms { display: none !important; }
-            .day-log th { background: #0f172a !important; color: #fff !important; }
-            .day-log td { border-bottom: 1px solid #cbd5e1 !important; }
+            body { background: #fff !important; color: #0f172a !important; padding: 0 !important; }
+            .admin-nav, .exec-tabs-bar, .nav-actions, .upload-card, .btn-action, .search-box, .theme-toggle { display: none !important; }
+            .tab-panel { display: block !important; }
         }
     </style>
 </head>
 <body>
-    <button class="theme-toggle" id="themeToggleBtn" onclick="toggleAppTheme()" title="تبديل الوضع الفاتح/الداكن">🌙</button>
-    
-    <!-- العنوان -->
-    <div class="header">
-        <div class="header-box">
-            <div style="width:46px;height:46px;background:linear-gradient(135deg,rgba(15,110,100,0.25),rgba(124,92,191,0.15));border-radius:16px;display:flex;align-items:center;justify-content:center;border:1px solid rgba(15,110,100,0.35);">
-                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="var(--primary-light)" stroke-width="2">
-                    <rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/>
-                </svg>
-            </div>
-            <div style="text-align:right;">
-                <h1 class="main-title">نظام تحليل الحضور والانصراف</h1>
-                <p style="color: var(--text-faint);font-size:0.72rem;font-weight:600;letter-spacing:0.08em;margin-top:3px;">ATTENDANCE ANALYTICS SYSTEM · TECH GO</p>
+    <!-- Top Admin Header -->
+    <header class="admin-nav">
+        <div class="nav-brand">
+            <div class="brand-icon">🏢</div>
+            <div>
+                <h1 class="brand-title">لوحة إدارة الحضور والانضباط والأذونات</h1>
+                <div class="brand-sub">Tech Go System · منظومة الموارد البشرية والتحليل الإداري المعتمد</div>
             </div>
         </div>
-        <p class="subtitle">ارفع ملف attlog.dat كل شهر وهو يعمل التقرير تلقائياً مع ربط الأذونات والإجازات</p>
+        <div class="nav-actions">
+            <button class="btn-action btn-pdf-action" id="exportPdfBtn" title="تصدير كشف رسمي A4">
+                🖨️ طباعة / تصدير PDF
+            </button>
+            <button class="btn-action btn-ghost" onclick="toggleTheme()" id="themeBtn" title="تبديل المظهر">
+                🌙
+            </button>
+            <button class="btn-action btn-ghost" id="resetBtn" title="رفع ملف جديد">
+                🔄 ملف جديد
+            </button>
+        </div>
+    </header>
+
+    <!-- Upload Section -->
+    <div id="uploadSection">
+        <div class="upload-card">
+            <div style="font-size: 50px; margin-bottom: 1rem;">📂</div>
+            <h2 style="font-size: 1.5rem; font-weight: 800; margin-bottom: 0.5rem;">رفع ملف بصمة الدوام (attlog.dat)</h2>
+            <p style="color: var(--text-muted); font-size: 0.95rem; margin-bottom: 1.5rem;">
+                اسحب ملف البصمة هنا أو اضغط لاختياره لتحليل الحضور وساعات العمل والأذونات تلقائياً
+            </p>
+            <input type="file" id="attlogInput" accept=".dat" style="display:none;" onchange="onFileSelected(event)">
+            <label for="attlogInput" class="btn-action btn-primary-action" style="padding: 0.8rem 2.5rem; font-size: 1rem;">
+                📂 اختيار ملف البصمة
+            </label>
+        </div>
     </div>
 
-    <!-- منطقة رفع الملفات -->
-    <div id="uploadSection">
-        <div id="dropZone1" class="upload-zone"
-             ondragover="onDrag(event,true,'dropZone1')"
-             ondragleave="onDrag(event,false,'dropZone1')"
-             ondrop="onDrop(event,'attlog')">
-
-            <svg class="upload-icon" id="icon1" xmlns="http://www.w3.org/2000/svg"
-                 viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
-                <polyline points="17 8 12 3 7 8"/>
-                <line x1="12" y1="3" x2="12" y2="15"/>
-            </svg>
-
-            <h2 class="upload-title">ارفع ملف الحضور</h2>
-            <p class="upload-text">
-                اسحب ملف <code style="background:rgba(15,110,100,0.15);color:var(--primary-light);padding:3px 10px;border-radius:8px;font-weight:700;font-family:monospace;">attlog.dat</code> هنا أو اضغط لاختياره
-            </p>
-            <div style="display:flex;gap:1.5rem;justify-content:center;margin:1.2rem 0;flex-wrap:wrap;">
-                <span style="display:flex;align-items:center;gap:5px;color: var(--text-faint);font-size:0.82rem;"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="var(--success-light)" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>تحليل انضباط مع الأذونات</span>
-                <span style="display:flex;align-items:center;gap:5px;color: var(--text-faint);font-size:0.82rem;"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="var(--success-light)" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>تحديد التأخير بإذن وبدون إذن</span>
-                <span style="display:flex;align-items:center;gap:5px;color: var(--text-faint);font-size:0.82rem;"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="var(--success-light)" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>تصدير تقرير معتمد PDF / TXT</span>
+    <!-- Results / Admin Hub Section -->
+    <main id="resultsSection" class="hidden">
+        <!-- Executive KPI Bar -->
+        <div class="kpi-grid">
+            <div class="kpi-box">
+                <div class="kpi-icon-wrap" style="background: var(--primary-tint); color: var(--primary-light);">👥</div>
+                <div><div class="kpi-val" id="kpiEmployees">0</div><div class="kpi-lbl">إجمالي الموظفين</div></div>
             </div>
+            <div class="kpi-box">
+                <div class="kpi-icon-wrap" style="background: var(--success-tint); color: var(--success-light);">📅</div>
+                <div><div class="kpi-val" id="kpiWorkDays">0</div><div class="kpi-lbl">أيام الدوام الفعلية</div></div>
+            </div>
+            <div class="kpi-box">
+                <div class="kpi-icon-wrap" style="background: var(--perm-tint); color: var(--perm-light);">🎫</div>
+                <div><div class="kpi-val" id="kpiPermsUsed">0</div><div class="kpi-lbl">أذونات معتمدة مستخدمة</div></div>
+            </div>
+            <div class="kpi-box">
+                <div class="kpi-icon-wrap" style="background: var(--leave-tint); color: var(--leave-light);">⏱</div>
+                <div><div class="kpi-val" id="kpiTotalHours" style="font-size: 1.3rem;">0 س</div><div class="kpi-lbl">إجمالي الساعات الفعلية</div></div>
+            </div>
+        </div>
 
-            <input type="file" id="attlogInput" accept=".dat" style="display:none;" onchange="onFileChange(event,'attlog')">
-            <label for="attlogInput" class="btn-primary" style="padding:1rem 3rem;font-size:1rem;">📂 اختر الملف</label>
+        <!-- Tab Bar Switcher -->
+        <div class="exec-tabs-bar">
+            <button class="exec-tab-btn active" onclick="switchExecTab('overview', this)">
+                📊 الملخص التنفيذي والانضباط
+            </button>
+            <button class="exec-tab-btn" onclick="switchExecTab('timesheets', this)">
+                👤 كشوفات الموظفين وسجلات البصمة
+            </button>
+            <button class="exec-tab-btn" onclick="switchExecTab('permissions', this)">
+                🎫 سجل الأذونات والإجازات
+            </button>
+            <button class="exec-tab-btn" onclick="switchExecTab('settings', this)">
+                ⚙️ سياسات ومواعيد الدوام
+            </button>
+        </div>
 
-            <div style="margin-top:1.5rem;display:flex;flex-direction:column;align-items:center;gap:0.8rem;">
-                <div style="display:flex;gap:0.7rem;flex-wrap:wrap;justify-content:center;">
-                    <label for="importNamesInput"
-                        style="display:inline-flex;align-items:center;gap:6px;padding:0.6rem 1.3rem;
-                        border-radius:12px;background:rgba(46,139,87,0.15);border:1px solid rgba(46,139,87,0.35);
-                        color:var(--success-light);font-weight:700;font-size:0.88rem;cursor:pointer;transition:all 0.2s;font-family:'Cairo',sans-serif;">
-                        📂 فتح ملف محفوظ مسبقاً
-                    </label>
-                    <input type="file" id="importNamesInput" accept=".html" style="display:none;" onchange="importSavedHtml(this.files[0])">
-                    <button onclick="saveFileWithData()"
-                        style="display:inline-flex;align-items:center;gap:6px;padding:0.6rem 1.3rem;
-                        border-radius:12px;background:rgba(15,110,100,0.2);border:1px solid rgba(15,110,100,0.45);
-                        color:var(--primary-light);font-weight:700;font-size:0.88rem;cursor:pointer;transition:all 0.2s;font-family:'Cairo',sans-serif;">
-                        💾 حفظ الملف مع البيانات
+        <!-- ════════════ TAB 1: EXECUTIVE OVERVIEW ════════════ -->
+        <section id="tab-overview" class="tab-panel active">
+            <div class="card-table-wrap">
+                <div class="card-table-hdr">
+                    <div class="card-table-title">
+                        📊 كشف الانضباط الشهري وتدقيق الأذونات
+                    </div>
+                    <input type="text" class="search-box" id="overviewSearch" placeholder="🔍 بحث عن موظف..." oninput="filterOverviewTable()">
+                </div>
+                <div style="overflow-x: auto;">
+                    <table class="admin-table" id="overviewTable">
+                        <thead>
+                            <tr>
+                                <th>#</th>
+                                <th>اسم الموظف</th>
+                                <th>الكود</th>
+                                <th>✅ في الميعاد</th>
+                                <th>⏰ تأخير بدون إذن</th>
+                                <th>🎫 تأخير بإذن معتمد</th>
+                                <th>🚫 غياب</th>
+                                <th>🎫 الأذونات</th>
+                                <th>⏱ ساعات العمل الفعلية</th>
+                                <th>إجراءات سريعة</th>
+                            </tr>
+                        </thead>
+                        <tbody id="overviewTableBody"></tbody>
+                    </table>
+                </div>
+            </div>
+        </section>
+
+        <!-- ════════════ TAB 2: EMPLOYEE TIMESHEETS ════════════ -->
+        <section id="tab-timesheets" class="tab-panel">
+            <div style="margin-bottom: 1rem; display: flex; gap: 10px; align-items: center; justify-content: space-between; flex-wrap: wrap;">
+                <input type="text" class="search-box" id="timesheetSearch" placeholder="🔍 تصفية بطاقات الموظفين..." oninput="filterTimesheetCards()" style="width: 280px;">
+                <div style="font-size: 0.85rem; color: var(--text-muted);">💡 اضغط على بطاقة أي موظف لعرض أو إخفاء سجل بصماته التفصيلي اليومي</div>
+            </div>
+            <div id="timesheetsContainer"></div>
+        </section>
+
+        <!-- ════════════ TAB 3: PERMISSIONS & LEAVES HUB ════════════ -->
+        <section id="tab-permissions" class="tab-panel">
+            <div class="card-table-wrap">
+                <div class="card-table-hdr">
+                    <div class="card-table-title">
+                        🎫 سجل أذونات الحضور والانصراف المعتمدة
+                    </div>
+                    <button class="btn-action btn-perm-action" onclick="openNewPermDialog()">
+                        ➕ تسجيل إذن جديد
                     </button>
                 </div>
-                <div id="savedNamesHint" style="margin-top:0.2rem;"></div>
-                <div id="_persistIndicator" style="font-size:0.78rem;color: var(--text-faint);margin-top:0.5rem;transition:opacity 1s ease;"></div>
-            </div>
-
-            <div id="attlogStatus" class="file-status hidden"></div>
-        </div>
-    </div>
-
-    <!-- قسم تسمية الموظفين -->
-    <div id="namingSection" class="hidden">
-        <div class="naming-panel" style="background:var(--surface);border:2px solid rgba(15,110,100,0.4);border-radius:16px;padding:2rem;">
-            <div style="display:flex; align-items:center; gap:0.75rem; margin-bottom:0.5rem;">
-                <h2 style="font-size:1.4rem;font-weight:700;color:var(--primary-light);margin:0;">تسمية الموظفين</h2>
-            </div>
-            <p style="color:var(--text-muted);font-size:0.95rem;margin-bottom:1.5rem;">تم العثور على الأرقام التالية – يمكنك كتابة اسم لكل موظف (اختياري)</p>
-            <div id="namingRows"></div>
-            <button class="btn-apply-names" style="width:100%;padding:1rem;border-radius:12px;background:linear-gradient(135deg,var(--primary),var(--primary-dark));color:#fff;font-weight:700;border:none;cursor:pointer;margin-top:1rem;" onclick="applyNamesAndShow()">✓ تطبيق الأسماء وعرض النتائج</button>
-            <button class="btn-skip-names" style="width:100%;padding:0.75rem;border-radius:12px;background:transparent;border:1px solid rgba(59,69,71,0.5);color:var(--text-muted);cursor:pointer;margin-top:0.5rem;" onclick="applyNamesAndShow(true)">تخطي – استخدام الأرقام فقط</button>
-        </div>
-    </div>
-
-    <!-- قسم النتائج -->
-    <div id="resultsSection" class="hidden">
-        <div id="printHeader">
-            <h1>نظام تحليل الحضور والانصراف · شركة تيك - جو</h1>
-            <p id="printPeriod" style="font-size:1.05rem;font-weight:800;color:#0284c7;"></p>
-            <p id="printDate"></p>
-        </div>
-
-        <!-- Toolbar -->
-        <div class="results-toolbar">
-            <div class="toolbar-title">📋 تقرير الحضور والانصراف والأذونات</div>
-            <div class="toolbar-actions">
-                <button class="btn-toolbar btn-tb-settings" onclick="toggleSettingsDrawer()">
-                    ⚙️ الإعدادات
-                </button>
-                <button id="exportTxtBtn" class="btn-toolbar btn-tb-txt">
-                    📄 تصدير TXT
-                </button>
-                <button id="exportPdfBtn" class="btn-toolbar btn-tb-pdf">
-                    🖨️ طباعة / تصدير PDF
-                </button>
-                <button class="btn-toolbar btn-tb-emgr" id="empMgrBtn" onclick="toggleEmpManager()">
-                    👥 إدارة الموظفين
-                </button>
-                <button onclick="exportDataAsJson()" class="btn-toolbar" style="background:rgba(46,139,87,0.2);border:1px solid rgba(46,139,87,0.4);color:var(--success-light);font-weight:700;">
-                    📦 تصدير JSON
-                </button>
-                <button id="resetBtn" class="btn-toolbar btn-tb-reset">
-                    🔄 تحليل جديد
-                </button>
-            </div>
-        </div>
-
-        <!-- Period Filter -->
-        <div class="period-bar" id="periodBar">
-            <span class="period-bar-label">📅 نوع التقرير:</span>
-            <div class="period-btns">
-                <button class="btn-period active" id="btn-period-all" onclick="setPeriod('all')">كل الفترة</button>
-                <button class="btn-period" id="btn-period-month" onclick="setPeriod('month')">شهري</button>
-                <button class="btn-period" id="btn-period-annual" onclick="setPeriod('annual')">سنوي</button>
-            </div>
-            <div class="period-selects" id="periodSelects" style="display:none;">
-                <select class="period-select" id="periodYear" onchange="applyPeriodFilter()"></select>
-                <select class="period-select" id="periodMonth" onchange="applyPeriodFilter()"></select>
-            </div>
-            <div class="period-selects" id="periodAnnualSel" style="display:none;">
-                <select class="period-select" id="periodAnnualYear" onchange="applyPeriodFilter()"></select>
-            </div>
-            <span id="periodLabelDisplay" style="color:var(--leave-light,#7c5cbf);font-size:.92rem;font-weight:800;margin-right:.5rem;padding:.35rem .8rem;background:rgba(124,92,191,.12);border:1px solid rgba(124,92,191,.3);border-radius:20px;"></span>
-        </div>
-
-        <!-- Settings Drawer -->
-        <div class="settings-drawer" id="settingsDrawer">
-            <div class="settings-drawer-header" onclick="toggleSettingsDrawer()">
-                <div class="settings-drawer-title">⚙️ إعدادات الدوام، العطل، والأذونات الرسمية</div>
-                <span class="settings-drawer-chevron" id="settingsChevron">▾</span>
-            </div>
-            <div class="settings-drawer-body" id="settingsDrawerBody">
-                <div class="settings-tabs">
-                    <button class="settings-tab active" onclick="switchSettingsTab('work',this)">⏰ إعدادات الدوام</button>
-                    <button class="settings-tab" onclick="switchSettingsTab('holidays',this)">🗓 الإجازات الرسمية</button>
-                    <button class="settings-tab" onclick="switchSettingsTab('extradays',this)">⭐ أيام إضافية</button>
-                    <button class="settings-tab" onclick="switchSettingsTab('globalwfh',this)">🏠 WFH جماعي</button>
-                </div>
-                <div class="settings-tab-content active" id="stab-work">
-                    <div style="display:flex;gap:1.5rem;flex-wrap:wrap;align-items:center;margin-bottom:1rem;">
-                        <div><label style="font-size:12px;color:var(--text-faint);">وقت الحضور الرسمي:</label> <input type="time" id="wsStart" value="10:00" style="padding:4px 8px;border-radius:6px;background:var(--surface-2);color:var(--text);border:1px solid var(--border);"></div>
-                        <div><label style="font-size:12px;color:var(--text-faint);">وقت الانصراف الرسمي:</label> <input type="time" id="wsEnd" value="18:00" style="padding:4px 8px;border-radius:6px;background:var(--surface-2);color:var(--text);border:1px solid var(--border);"></div>
-                        <div><label style="font-size:12px;color:var(--text-faint);">سماح التأخير (دقيقة):</label> <input type="number" id="wsGrace" value="15" min="0" max="120" style="width:65px;padding:4px 8px;border-radius:6px;background:var(--surface-2);color:var(--text);border:1px solid var(--border);"></div>
-                        <button class="btn-toolbar" style="background:var(--primary);color:#fff;" onclick="applyWorkSettings()">✓ تطبيق</button>
-                    </div>
-                </div>
-                <div class="settings-tab-content" id="stab-holidays">
-                    <div class="holidays-list" id="holidaysList"></div>
-                    <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
-                        <input type="date" id="holidayDateInput" style="padding:4px 8px;border-radius:6px;background:var(--surface-2);color:var(--text);border:1px solid var(--border);">
-                        <input type="text" id="holidayLabelInput" placeholder="اسم الإجازة..." style="padding:4px 8px;border-radius:6px;background:var(--surface-2);color:var(--text);border:1px solid var(--border);">
-                        <button class="btn-toolbar" style="background:var(--warning);color:#fff;" onclick="addHoliday()">➕ إضافة</button>
-                    </div>
-                </div>
-                <div class="settings-tab-content" id="stab-extradays">
-                    <div class="extra-days-list" id="extraWorkDaysList"></div>
-                    <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
-                        <input type="date" id="extraDayDateInput" style="padding:4px 8px;border-radius:6px;background:var(--surface-2);color:var(--text);border:1px solid var(--border);">
-                        <input type="text" id="extraDayLabelInput" placeholder="سبب اليوم الإضافي..." style="padding:4px 8px;border-radius:6px;background:var(--surface-2);color:var(--text);border:1px solid var(--border);">
-                        <button class="btn-toolbar" style="background:var(--warning);color:#fff;" onclick="addExtraWorkDay()">⭐ إضافة</button>
-                    </div>
-                </div>
-                <div class="settings-tab-content" id="stab-globalwfh">
-                    <div id="globalWfhList" style="display:flex;flex-wrap:wrap;gap:0.5rem;margin-bottom:1rem;"></div>
-                    <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
-                        <input type="date" id="globalWfhFrom" style="padding:4px 8px;border-radius:6px;background:var(--surface-2);color:var(--text);border:1px solid var(--border);">
-                        <input type="date" id="globalWfhTo" style="padding:4px 8px;border-radius:6px;background:var(--surface-2);color:var(--text);border:1px solid var(--border);">
-                        <input type="text" id="globalWfhNote" placeholder="ملاحظة..." style="padding:4px 8px;border-radius:6px;background:var(--surface-2);color:var(--text);border:1px solid var(--border);">
-                        <button class="btn-toolbar" style="background:var(--info);color:#fff;" onclick="addGlobalWfh()">🏠 تطبيق WFH على الكل</button>
-                    </div>
+                <div style="overflow-x: auto;">
+                    <table class="admin-table">
+                        <thead>
+                            <tr>
+                                <th>اسم الموظف</th>
+                                <th>الكود</th>
+                                <th>تاريخ الإذن</th>
+                                <th>نوع الإذن</th>
+                                <th>السبب والملاحظات</th>
+                                <th>إجراء</th>
+                            </tr>
+                        </thead>
+                        <tbody id="permissionsTableBody"></tbody>
+                    </table>
                 </div>
             </div>
-        </div>
+        </section>
 
-        <!-- إحصائيات مختصرة -->
-        <div class="stats-compact">
-            <div class="sc-card">
-                <div class="sc-icon" style="background:rgba(15,110,100,0.15);"><span style="font-size:20px;">👥</span></div>
-                <div><div class="sc-val" style="color:var(--primary-light);" id="totalEmployees">0</div><div class="sc-lbl">إجمالي الموظفين</div></div>
-            </div>
-            <div class="sc-card">
-                <div class="sc-icon" style="background:rgba(46,139,87,0.15);"><span style="font-size:20px;">📅</span></div>
-                <div><div class="sc-val" style="color:var(--success-light);" id="uniqueDates">0</div><div class="sc-lbl">أيام العمل</div></div>
-            </div>
-            <div class="sc-card">
-                <div class="sc-icon" style="background:rgba(2,132,199,0.15);"><span style="font-size:20px;">🎫</span></div>
-                <div><div class="sc-val" style="color:var(--perm-light);" id="totalPermsUsed">0</div><div class="sc-lbl">أذونات مستخدمة</div></div>
-            </div>
-            <div class="sc-card">
-                <div class="sc-icon" style="background:rgba(124,92,191,0.15);"><span style="font-size:20px;">⏱</span></div>
-                <div><div class="sc-val" style="color:var(--leave-light);" id="avgWorkHours">0</div><div class="sc-lbl">متوسط ساعات العمل</div></div>
-            </div>
-        </div>
-
-        <!-- قرارات الانضباط -->
-        <div class="sec-hdr">
-            <div class="sec-hdr-title">⚖️ قرارات الانضباط ومتابعة الأذونات</div>
-            <div class="sec-hdr-line"></div>
-        </div>
-        <div class="decision-grid" id="decisionGrid"></div>
-
-        <!-- ملاحظات الموظفين -->
-        <div class="sec-hdr" style="margin-top:1rem;">
-            <div class="sec-hdr-title">📝 ملاحظات الموظفين خلال الشهر</div>
-            <div class="sec-hdr-line"></div>
-        </div>
-        <div class="notes-wrap" id="employeeNotesWrap"></div>
-
-        <!-- تفاصيل الموظفين -->
-        <div class="sec-hdr" style="margin-top:1.5rem;">
-            <div class="sec-hdr-title">👤 سجل الحضور والأذونات التفصيلي للموظفين</div>
-            <div class="sec-hdr-line"></div>
-        </div>
-        <div class="emp-wrap" id="employeesList"></div>
-    </div>
-
-    <!-- Modal for Permissions (الأذونات) -->
-    <div id="permModalOverlay" class="modal-overlay" style="display:none;" onclick="if(event.target===this)closePermModal()">
-        <div class="perm-modal-box" onclick="event.stopPropagation()">
-            <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:1.2rem;">
-                <div>
-                    <div style="font-size:1.15rem;font-weight:800;color:var(--perm-light);">🎫 أذونات الحضور والانصراف (الحد الأقصى 5 أيام شهرياً)</div>
-                    <div id="pm-emp-name" style="font-size:1rem;font-weight:700;color:var(--text);margin-top:2px;"></div>
-                    <div id="pm-emp-id" style="font-size:0.8rem;color:var(--text-faint);"></div>
-                </div>
-                <button class="leave-modal-close-x" onclick="closePermModal()">✕</button>
-            </div>
-
-            <!-- Permission Form -->
-            <div style="background:var(--surface-2);border:1px solid rgba(2,132,199,0.3);border-radius:12px;padding:12px;margin-bottom:14px;">
-                <div style="font-size:12px;font-weight:bold;color:var(--perm-light);margin-bottom:8px;">➕ تسجيل إذن جديد:</div>
-                <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:8px;">
+        <!-- ════════════ TAB 4: SETTINGS & POLICIES ════════════ -->
+        <section id="tab-settings" class="tab-panel">
+            <div class="card-table-wrap" style="padding: 1.5rem;">
+                <h3 style="font-size: 1.15rem; font-weight: 800; margin-bottom: 1.2rem; color: var(--primary-light);">
+                    ⏰ مواعيد الدوام الرسمي وسياسات السماح
+                </h3>
+                <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; margin-bottom: 1.5rem;">
                     <div>
-                        <label style="font-size:11px;color:var(--text-faint);display:block;margin-bottom:2px;">التاريخ:</label>
-                        <input type="date" id="pm-date" style="width:100%;padding:5px 8px;border-radius:6px;background:var(--surface);color:var(--text);border:1px solid var(--border);font-family:inherit;">
+                        <label style="display: block; font-size: 0.85rem; color: var(--text-muted); margin-bottom: 4px;">بداية الدوام الرسمي:</label>
+                        <input type="time" id="cfgStart" value="10:00" style="width: 100%; padding: 8px 12px; border-radius: 8px; background: var(--bg); border: 1px solid var(--border); color: var(--text);">
                     </div>
                     <div>
-                        <label style="font-size:11px;color:var(--text-faint);display:block;margin-bottom:2px;">نوع الإذن:</label>
-                        <select id="pm-type" style="width:100%;padding:5px 8px;border-radius:6px;background:var(--surface);color:var(--text);border:1px solid var(--border);font-family:inherit;">
-                            <option value="late">⏰ إذن تأخير في الحضور (صباحي)</option>
-                            <option value="early">🚪 إذن انصراف مبكر (مسائي)</option>
-                            <option value="temp">🔄 إذن خروج مؤقت أثناء العمل</option>
-                        </select>
+                        <label style="display: block; font-size: 0.85rem; color: var(--text-muted); margin-bottom: 4px;">نهاية الدوام الرسمي:</label>
+                        <input type="time" id="cfgEnd" value="18:00" style="width: 100%; padding: 8px 12px; border-radius: 8px; background: var(--bg); border: 1px solid var(--border); color: var(--text);">
+                    </div>
+                    <div>
+                        <label style="display: block; font-size: 0.85rem; color: var(--text-muted); margin-bottom: 4px;">سماح التأخير (بالدقائق):</label>
+                        <input type="number" id="cfgGrace" value="15" style="width: 100%; padding: 8px 12px; border-radius: 8px; background: var(--bg); border: 1px solid var(--border); color: var(--text);">
                     </div>
                 </div>
-                <div style="margin-bottom:8px;">
-                    <label style="font-size:11px;color:var(--text-faint);display:block;margin-bottom:2px;">السبب / الملاحظة:</label>
-                    <input type="text" id="pm-note" placeholder="مثال: ظرف طارئ، مأمورية عمل، موعد طبي..." style="width:100%;padding:5px 8px;border-radius:6px;background:var(--surface);color:var(--text);border:1px solid var(--border);font-family:inherit;">
-                </div>
-                <button type="button" class="btn-toolbar" style="background:linear-gradient(135deg,var(--perm),var(--perm-dark));color:#fff;width:100%;justify-content:center;padding:8px;font-weight:bold;" onclick="addPermissionRecord()">✓ حفظ وتسجيل الإذن</button>
+                <button class="btn-action btn-primary-action" onclick="saveWorkSettings()">✓ حفظ وتطبيق السياسات</button>
             </div>
+        </section>
+    </main>
 
-            <div style="font-size:12px;font-weight:bold;color:var(--text-muted);margin-bottom:8px;">📋 الأذونات المسجلة لهذا الموظف:</div>
-            <div id="pm-records-list" style="display:flex;flex-direction:column;gap:6px;max-height:220px;overflow-y:auto;"></div>
-        </div>
-    </div>
-
-    <!-- Modal for Leaves -->
-    <div id="leaveModalOverlay" class="modal-overlay" style="display:none;" onclick="if(event.target===this)closeLeaveModal()">
-        <div class="leave-modal-box" onclick="event.stopPropagation()">
-            <div class="leave-modal-header">
+    <!-- Permission Modal -->
+    <div id="permModal" class="modal-overlay hidden" onclick="if(event.target===this)closePermModal()">
+        <div class="modal-box">
+            <h3 style="font-size: 1.2rem; font-weight: 800; color: var(--perm-light); margin-bottom: 1rem;">🎫 تسجيل إذن حضور / انصراف</h3>
+            <div style="margin-bottom: 10px;">
+                <label style="font-size: 0.82rem; color: var(--text-muted); display: block; margin-bottom: 4px;">الموظف:</label>
+                <select id="modalPermEmpSel" style="width: 100%; padding: 8px; border-radius: 8px; background: var(--surface-2); color: var(--text); border: 1px solid var(--border);"></select>
+            </div>
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 10px;">
                 <div>
-                    <div class="leave-modal-emp-name" id="lm-emp-name">—</div>
-                    <div class="leave-modal-emp-id" id="lm-emp-id"></div>
+                    <label style="font-size: 0.82rem; color: var(--text-muted); display: block; margin-bottom: 4px;">التاريخ:</label>
+                    <input type="date" id="modalPermDate" style="width: 100%; padding: 8px; border-radius: 8px; background: var(--surface-2); color: var(--text); border: 1px solid var(--border);">
                 </div>
-                <button class="leave-modal-close-x" onclick="closeLeaveModal()">✕</button>
-            </div>
-            <div style="display:flex;align-items:center;gap:1rem;flex-wrap:wrap;padding:0.7rem 1rem;background:rgba(15,110,100,0.07);border-radius:12px;border:1px solid rgba(15,110,100,0.18);margin-bottom:0.8rem;">
-                <div style="display:flex;align-items:center;gap:0.5rem;font-size:0.85rem;color:var(--text-muted);">
-                    <span>📅</span>
-                    <label for="lm-hire-date" style="white-space:nowrap;color:var(--text-muted);">تاريخ التعيين:</label>
-                    <input type="date" id="lm-hire-date" style="background:var(--surface);border:1px solid rgba(59,69,71,0.5);border-radius:8px;padding:0.3rem 0.6rem;color:var(--text-secondary);font-family:'Cairo',sans-serif;font-size:0.85rem;" onchange="onHireDateOrDisabilityChange()" />
-                </div>
-                <div style="display:flex;align-items:center;gap:0.4rem;font-size:0.85rem;color:var(--text-muted);">
-                    <input type="checkbox" id="lm-disability" style="width:16px;height:16px;cursor:pointer;accent-color:var(--leave);" onchange="onHireDateOrDisabilityChange()" />
-                    <label for="lm-disability" style="cursor:pointer;color:var(--leave-light);">ذو إعاقة / قزم (٤٥ يوم — م.١٢٤)</label>
-                </div>
-            </div>
-            <div class="leave-balance-grid">
-                <div class="leave-bal-card lbc-annual"><div class="lbc-val" id="lm-bal-annual">—</div><div class="lbc-lbl">إجازة سنوية</div><div class="lbc-sub" id="lm-bal-annual-sub">م. ١٢٤</div></div>
-                <div class="leave-bal-card lbc-casual"><div class="lbc-val" id="lm-bal-casual">—</div><div class="lbc-lbl">إجازة عارضة</div><div class="lbc-sub">م. ١٢٨ — حد أقصى ٧ أيام</div></div>
-                <div class="leave-bal-card lbc-official"><div class="lbc-val" id="lm-bal-official">—</div><div class="lbc-lbl">إجازات رسمية</div><div class="lbc-sub">م. ١٢٩ — بأجر كامل</div></div>
-            </div>
-            <div class="leave-add-section">
-                <div class="leave-add-title">➕ تسجيل إجازة جديدة</div>
-                <div class="leave-add-row">
-                    <div class="leave-field"><label>نوع الإجازة</label><select id="lm-type"><option value="annual">📅 سنوية (م.١٢٤)</option><option value="casual">⚡ عارضة (م.١٢٨)</option><option value="official">🏖️ رسمية (م.١٢٩)</option></select></div>
-                    <div class="leave-field"><label>من تاريخ</label><input type="date" id="lm-date-from" /></div>
-                    <div class="leave-field"><label>إلى تاريخ</label><input type="date" id="lm-date-to" /></div>
-                    <div class="leave-field"><label>ملاحظة (اختياري)</label><input type="text" id="lm-note" placeholder="سبب الإجازة..." style="width:130px;" /></div>
-                    <button class="btn-leave-add" onclick="addLeaveRecord()">+ إضافة</button>
-                </div>
-            </div>
-            <div class="leave-records-title">📋 الإجازات المسجلة</div>
-            <div class="leave-records-list" id="lm-records-list"></div>
-        </div>
-    </div>
-
-    <!-- Modal for WFH -->
-    <div id="wfhModalOverlay" class="modal-overlay" style="display:none;" onclick="if(event.target===this)closeWfhModal()">
-        <div class="wfh-modal-box" onclick="event.stopPropagation()">
-            <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:1rem;">
                 <div>
-                    <div style="font-size:1.15rem;font-weight:800;color:var(--info-light);">🏠 العمل من المنزل (WFH)</div>
-                    <div id="wfh-emp-name" style="font-size:1rem;font-weight:700;color:var(--text-secondary);"></div>
-                    <div id="wfh-emp-id" style="font-size:0.8rem;color:var(--text-faint);"></div>
-                </div>
-                <button class="leave-modal-close-x" onclick="closeWfhModal()">✕</button>
-            </div>
-            <div class="wfh-add-section">
-                <div style="font-size:12px;font-weight:bold;color:var(--info-light);margin-bottom:8px;">➕ تسجيل فترة عمل من المنزل:</div>
-                <div style="display:flex;gap:6px;flex-wrap:wrap;align-items:flex-end;">
-                    <div><label style="font-size:11px;color:var(--text-faint);">من:</label><input type="date" id="wfh-date-from" style="padding:4px 8px;border-radius:6px;background:var(--surface);color:var(--text);border:1px solid var(--border);"></div>
-                    <div><label style="font-size:11px;color:var(--text-faint);">إلى:</label><input type="date" id="wfh-date-to" style="padding:4px 8px;border-radius:6px;background:var(--surface);color:var(--text);border:1px solid var(--border);"></div>
-                    <div><label style="font-size:11px;color:var(--text-faint);">ملاحظة:</label><input type="text" id="wfh-note" placeholder="السبب..." style="padding:4px 8px;border-radius:6px;background:var(--surface);color:var(--text);border:1px solid var(--border);width:140px;"></div>
-                    <button class="btn-toolbar" style="background:var(--info);color:#fff;" onclick="addWfhRecord()">+ تسجيل</button>
+                    <label style="font-size: 0.82rem; color: var(--text-muted); display: block; margin-bottom: 4px;">نوع الإذن:</label>
+                    <select id="modalPermType" style="width: 100%; padding: 8px; border-radius: 8px; background: var(--surface-2); color: var(--text); border: 1px solid var(--border);">
+                        <option value="late">⏰ إذن تأخير في الحضور</option>
+                        <option value="early">🚪 إذن انصراف مبكر</option>
+                        <option value="temp">🔄 إذن خروج مؤقت</option>
+                    </select>
                 </div>
             </div>
-            <div id="wfh-records-list" style="display:flex;flex-direction:column;gap:6px;margin-top:10px;"></div>
+            <div style="margin-bottom: 14px;">
+                <label style="font-size: 0.82rem; color: var(--text-muted); display: block; margin-bottom: 4px;">السبب والملاحظات:</label>
+                <input type="text" id="modalPermNote" placeholder="ظرف طارئ، مأمورية عمل..." style="width: 100%; padding: 8px; border-radius: 8px; background: var(--surface-2); color: var(--text); border: 1px solid var(--border);">
+            </div>
+            <div style="display: flex; justify-content: flex-end; gap: 8px;">
+                <button class="btn-action btn-ghost" onclick="closePermModal()">إلغاء</button>
+                <button class="btn-action btn-primary-action" onclick="savePermRecord()">✓ حفظ الإذن</button>
+            </div>
         </div>
     </div>
 
     <script>
         // ══════════════════════════════════════════
-        //  CORE LOGIC & STORAGE
+        //  DATA STATE & STORAGE
         // ══════════════════════════════════════════
-        const _LS_PREFIX = 'attendance_sys_';
-        const _localStorage = {
-            getItem: k => { try { return localStorage.getItem(_LS_PREFIX + k) || localStorage.getItem(k); } catch(e){ return null; } },
-            setItem: (k, v) => { try { localStorage.setItem(_LS_PREFIX + k, v); localStorage.setItem(k, v); } catch(e){} },
-            removeItem: k => { try { localStorage.removeItem(_LS_PREFIX + k); localStorage.removeItem(k); } catch(e){} }
-        };
-
         const _SAVED_DATA = {
             empNames: {
                 '3': 'ابتهال',
@@ -864,58 +610,30 @@
                 '6': 'يوستينا',
                 '10': 'كيرلس مجدي'
             },
-            deletedEmps: [],
-            officialHolidays: [],
-            extraWorkDays: [],
-            workConfig: { start: '10:00', end: '18:00', grace: 15, workDays: [0, 1, 2, 3, 4] },
-            employeeLeaves: {
-                '3': { '2026': { annual: [{ from: '2026-07-16', to: '2026-07-16', days: 1, note: 'إجازة' }], casual: [{ from: '2026-07-09', to: '2026-07-09', days: 1, note: 'إجازة عارضة' }], official: [{ from: '2026-07-16', to: '2026-07-16', days: 1, note: 'من الإدارة' }] } },
-                '8': { '2026': { annual: [{ from: '2026-07-09', to: '2026-07-09', days: 1, note: 'إجازة' }], casual: [], official: [] } },
-                '7': { '2026': { annual: [{ from: '2026-07-19', to: '2026-07-22', days: 4, note: 'سفر' }], casual: [{ from: '2026-07-16', to: '2026-07-16', days: 1, note: 'سفر' }], official: [] } },
-                '4': { '2026': { annual: [], casual: [], official: [] } },
-                '5': { '2026': { annual: [{ from: '2026-04-16', to: '2026-04-16', days: 1, note: '' }], casual: [{ from: '2026-07-14', to: '2026-07-14', days: 1, note: 'تعب' }, { from: '2026-07-22', to: '2026-07-22', days: 1, note: 'تلقائي' }], official: [] } },
-                '6': { '2026': { annual: [{ from: '2026-07-12', to: '2026-07-16', days: 5, note: 'سفر' }, { from: '2026-07-28', to: '2026-07-28', days: 1, note: 'تعب' }], casual: [{ from: '2026-07-02', to: '2026-07-02', days: 1, note: 'تعب' }, { from: '2026-07-05', to: '2026-07-06', days: 2, note: 'تعب' }, { from: '2026-07-21', to: '2026-07-21', days: 1, note: 'تعب' }], official: [] } },
-                '10': { '2026': { annual: [], casual: [], official: [] } }
-            },
             employeePermissions: {
                 '8': [ { date: '2026-07-14', type: 'late', note: 'إذن تأخير معتمد من الإدارة' } ],
                 '7': [ { date: '2026-07-06', type: 'late', note: 'إذن تأخير صباحي' } ]
-            },
-            wfhRecords: {}
+            }
         };
 
         let employeeNames = Object.assign({}, _SAVED_DATA.empNames);
-        try { const s = _localStorage.getItem('empNames'); if(s) Object.assign(employeeNames, JSON.parse(s)); } catch(e){}
-
-        let deletedEmployees = new Set(_SAVED_DATA.deletedEmps);
-        let reportPeriod = { type: 'all', year: new Date().getFullYear(), month: new Date().getMonth()+1 };
-        let namesFromDevice = {};
-        let attlogFile = null;
+        let employeePermissions = Object.assign({}, _SAVED_DATA.employeePermissions);
         let workConfig = { start: '10:00', end: '18:00', grace: 15, workDays: [0,1,2,3,4] };
-        let officialHolidays = [..._SAVED_DATA.officialHolidays];
-        let extraWorkDays = [..._SAVED_DATA.extraWorkDays];
-        let attendanceData = [];
         let stats = null;
 
-        // Permissions storage
-        let employeePermissions = Object.assign({}, _SAVED_DATA.employeePermissions);
         try {
-            const sp = _localStorage.getItem('techgo_employee_permissions');
+            const sn = localStorage.getItem('empNames');
+            if (sn) Object.assign(employeeNames, JSON.parse(sn));
+            const sp = localStorage.getItem('techgo_employee_permissions');
             if (sp) Object.assign(employeePermissions, JSON.parse(sp));
         } catch(e){}
 
-        function savePermissions() {
-            try { _localStorage.setItem('techgo_employee_permissions', JSON.stringify(employeePermissions)); } catch(e){}
+        function savePermissionsToStorage() {
+            try { localStorage.setItem('techgo_employee_permissions', JSON.stringify(employeePermissions)); } catch(e){}
         }
 
-        function getPermissionForDate(empId, dateStr) {
-            if (!empId || !dateStr) return null;
-            const list = employeePermissions[empId] || [];
-            return list.find(p => p.date === dateStr) || null;
-        }
-
-        function getEmpPermissionsTotal(empId) {
-            return (employeePermissions[empId] || []).length;
+        function getDisplayName(id) {
+            return employeeNames[id] || ('موظف ' + id);
         }
 
         function timeToMins(t) {
@@ -924,36 +642,24 @@
             return h * 60 + m;
         }
 
-        function isHoliday(dateStr) {
-            return officialHolidays.some(h => h.date === dateStr);
+        function fmtHoursAndMins(decimalHours) {
+            if (!decimalHours || isNaN(decimalHours)) return '—';
+            const totalMin = Math.round(decimalHours * 60);
+            if (totalMin <= 0) return '0 د';
+            const h = Math.floor(totalMin / 60);
+            const m = totalMin % 60;
+            if (h === 0) return m + ' دقيقة';
+            if (m === 0) return h + ' ساعة';
+            return h + ' س و ' + m + ' د';
         }
 
-        function getHolidayLabel(dateStr) {
-            const h = officialHolidays.find(h => h.date === dateStr);
-            return h ? h.label || '🏖️ إجازة رسمية' : '';
-        }
-
-        function getExtraDayLabel(dateStr) {
-            const d = extraWorkDays.find(d => d.date === dateStr);
-            return d ? (d.label || '⭐ عمل إضافي') : '⭐ عمل إضافي';
-        }
-
-        function getWorkDaysInRange(fromDate, toDate) {
-            const days = [];
-            const cur = new Date(fromDate);
-            const end = new Date(toDate);
-            while (cur <= end) {
-                const dStr = cur.toISOString().split('T')[0];
-                if (workConfig.workDays.includes(cur.getDay()) && !isHoliday(dStr)) {
-                    days.push(dStr);
-                }
-                cur.setDate(cur.getDate() + 1);
-            }
-            return days;
-        }
-
-        function getDisplayName(empId) {
-            return employeeNames[empId] ? employeeNames[empId] : `موظف ${empId}`;
+        function calcDayWorkHours(entryTime, exitTime) {
+            if (!entryTime || !exitTime) return { hours: 0, formatted: (entryTime ? '⚠️ دخول فقط' : '⚠️ خروج فقط') };
+            const entryMin = timeToMins(entryTime);
+            const exitMin  = timeToMins(exitTime);
+            const diffMin  = Math.max(0, exitMin - entryMin);
+            const hours    = diffMin / 60;
+            return { hours: hours, formatted: fmtHoursAndMins(hours) };
         }
 
         function getDayPunctuality(empId, date, entryTime) {
@@ -961,673 +667,359 @@
             const entryMins  = timeToMins(entryTime);
             const startMins  = timeToMins(workConfig.start);
             const graceMins  = startMins + parseInt(workConfig.grace);
-            if (entryMins > graceMins)  return 'late';
-            if (entryMins < startMins)  return 'early';
+            if (entryMins > graceMins) return 'late';
+            if (entryMins < startMins) return 'early';
             return 'ok';
         }
 
-        function parseAttendanceFile(file) {
-            return new Promise((resolve) => {
-                const reader = new FileReader();
-                reader.onload = (e) => {
-                    const content = e.target.result;
-                    const lines = content.split('\n').filter(l => l.trim());
-                    const records = lines.map((line, idx) => {
-                        const parts = line.split(/\t+/).map(p => p.trim()).filter(p => p);
-                        if (parts.length >= 2) {
-                            const employeeId = parts[0];
-                            const dateTimePart = parts[1];
-                            const [datePart, timePart] = dateTimePart.split(' ');
-                            return {
-                                id: idx + 1,
-                                employeeId,
-                                date: datePart,
-                                time: timePart,
-                                datetime: new Date(dateTimePart),
-                                type: ''
-                            };
-                        }
-                        return null;
-                    }).filter(Boolean);
-
-                    const employeeDays = new Map();
-                    records.forEach(record => {
-                        const key = `${record.employeeId}-${record.date}`;
-                        if (!employeeDays.has(key)) employeeDays.set(key, []);
-                        employeeDays.get(key).push(record);
-                    });
-                    employeeDays.forEach((dayRecords) => {
-                        dayRecords.sort((a, b) => a.datetime - b.datetime);
-                        if (dayRecords.length === 1) {
-                            const hour = dayRecords[0].datetime.getHours();
-                            dayRecords[0].type = hour < 14 ? 'دخول' : 'خروج';
-                        } else {
-                            dayRecords[0].type = 'دخول';
-                            dayRecords[dayRecords.length - 1].type = 'خروج';
-                            for (let i = 1; i < dayRecords.length - 1; i++) dayRecords[i].type = 'حركة';
-                        }
-                    });
-                    resolve(records);
-                };
-                reader.readAsText(file);
-            });
+        function getPermissionForDate(empId, dateStr) {
+            const list = employeePermissions[empId] || [];
+            return list.find(p => p.date === dateStr) || null;
         }
 
         // ══════════════════════════════════════════
-        //  HOURS CALCULATION & FORMATTING
+        //  FILE PARSING
         // ══════════════════════════════════════════
-        function fmtHoursAndMins(decimalHours) {
-            if (decimalHours === null || decimalHours === undefined || isNaN(decimalHours)) return '—';
-            var totalMin = Math.round(decimalHours * 60);
-            if (totalMin <= 0) return '0 د';
-            var h = Math.floor(totalMin / 60);
-            var m = totalMin % 60;
-            if (h === 0) return m + ' دقيقة';
-            if (m === 0) return h + ' ساعة';
-            return h + ' س و ' + m + ' د';
-        }
-
-        function fmtDurationShort(decimalHours) {
-            if (!decimalHours || isNaN(decimalHours)) return '—';
-            var totalMin = Math.round(decimalHours * 60);
-            var h = Math.floor(totalMin / 60);
-            var m = totalMin % 60;
-            return (h > 0 ? h + 'س ' : '') + (m > 0 ? m + 'د' : (h === 0 ? '0د' : ''));
-        }
-
-        function calcDayWorkHours(entryTime, exitTime, isExtraDay) {
-            if (!entryTime && !exitTime) return { hours: 0, formatted: '—', overtime: 0, deficit: 0, incomplete: true };
-            if (!entryTime || !exitTime) return { hours: null, formatted: (entryTime ? '⚠️ دخول فقط' : '⚠️ خروج فقط'), overtime: 0, deficit: 0, incomplete: true };
-            
-            var entryMin = timeToMins(entryTime);
-            var exitMin  = timeToMins(exitTime);
-            var diffMin  = Math.max(0, exitMin - entryMin);
-            var hours    = diffMin / 60;
-
-            var officialStartMin = timeToMins(workConfig.start);
-            var officialEndMin   = timeToMins(workConfig.end);
-            var targetDailyMin   = Math.max(0, officialEndMin - officialStartMin); // 8 hours (480 mins)
-
-            var overtimeMin = isExtraDay ? diffMin : Math.max(0, exitMin - officialEndMin);
-            var deficitMin  = isExtraDay ? 0 : Math.max(0, targetDailyMin - diffMin);
-
-            return {
-                hours: hours,
-                formatted: fmtHoursAndMins(hours),
-                shortText: fmtDurationShort(hours),
-                overtimeHours: overtimeMin / 60,
-                deficitHours: deficitMin / 60,
-                incomplete: false
-            };
-        }
-
-        function calculateStats(data) {
-            var employeeMap = new Map();
-            data.forEach(function(record) {
-                if (!employeeMap.has(record.employeeId)) {
-                    employeeMap.set(record.employeeId, { entries: [], exits: [], movements: [], dates: new Set() });
-                }
-                var emp = employeeMap.get(record.employeeId);
-                emp.dates.add(record.date);
-                if (record.type === 'دخول') emp.entries.push({ date: record.date, time: record.time });
-                else if (record.type === 'خروج') emp.exits.push({ date: record.date, time: record.time });
-                else if (record.type === 'حركة') emp.movements.push({ date: record.date, time: record.time });
-            });
-
-            var totalHours = 0, validDaysCount = 0;
-            employeeMap.forEach(function(emp) {
-                emp.entries.forEach(function(entry) {
-                    var matchingExit = emp.exits.find(function(exit) { return exit.date === entry.date; });
-                    if (matchingExit) {
-                        var res = calcDayWorkHours(entry.time, matchingExit.time, false);
-                        if (res.hours > 0 && res.hours < 24) {
-                            totalHours += res.hours;
-                            validDaysCount++;
-                        }
+        function onFileSelected(e) {
+            const file = e.target.files[0];
+            if (!file) return;
+            const reader = new FileReader();
+            reader.onload = (evt) => {
+                const lines = evt.target.result.split('\n').filter(l => l.trim());
+                const records = lines.map((line, idx) => {
+                    const parts = line.split(/\t+/).map(p => p.trim()).filter(Boolean);
+                    if (parts.length >= 2) {
+                        const [datePart, timePart] = parts[1].split(' ');
+                        return { id: idx+1, employeeId: parts[0], date: datePart, time: timePart, datetime: new Date(parts[1]), type: '' };
                     }
+                    return null;
+                }).filter(Boolean);
+
+                const employeeDays = new Map();
+                records.forEach(r => {
+                    const k = `${r.employeeId}-${r.date}`;
+                    if (!employeeDays.has(k)) employeeDays.set(k, []);
+                    employeeDays.get(k).push(r);
                 });
-            });
-
-            return {
-                totalEmployees: employeeMap.size,
-                totalRecords: data.length,
-                uniqueDates: new Set(data.map(function(r) { return r.date; })).size,
-                totalHoursSum: totalHours,
-                avgWorkHours: validDaysCount > 0 ? (totalHours / validDaysCount).toFixed(2) : 0,
-                avgFormatted: validDaysCount > 0 ? fmtHoursAndMins(totalHours / validDaysCount) : '—',
-                employeeDetails: Array.from(employeeMap.entries()).map(function(item) {
-                    var id = item[0];
-                    var emp = item[1];
-                    return {
-                        employeeId: id,
-                        totalDays: emp.dates.size,
-                        totalEntries: emp.entries.length,
-                        totalExits: emp.exits.length,
-                        totalMovements: emp.movements.length,
-                        entries: emp.entries,
-                        exits: emp.exits,
-                        movements: emp.movements
-                    };
-                })
-            };
-        }
-
-        function displayResults() {
-            document.getElementById('resultsSection').classList.remove('hidden');
-            document.getElementById('totalEmployees').textContent = stats.totalEmployees;
-            document.getElementById('totalRecords').textContent = stats.totalRecords;
-            document.getElementById('uniqueDates').textContent = stats.uniqueDates;
-            document.getElementById('avgWorkHours').textContent = stats.avgWorkHours + ' س';
-            
-            var totalPerms = 0;
-            stats.employeeDetails.forEach(function(e) {
-                totalPerms += getEmpPermissionsTotal(e.employeeId);
-            });
-            var permVal = document.getElementById('totalPermsUsed');
-            if (permVal) permVal.textContent = totalPerms;
-
-            document.getElementById('printDate').textContent = 'تاريخ التقرير: ' + new Date().toLocaleString('ar-EG');
-            buildPeriodSelectors();
-            renderDecisionGrid();
-            renderEmployeeNotes();
-            displayEmpCards();
-        }
-
-        function displayEmpCards() {
-            if (!stats) return;
-            var employeesList = document.getElementById('employeesList');
-            employeesList.innerHTML = '';
-            var activeEmps = stats.employeeDetails.filter(function(e){ return !deletedEmployees.has(e.employeeId); });
-            _renderEmpCards(activeEmps, employeesList);
-        }
-
-        function _renderEmpCards(empList, container) {
-            var dayNames = ['الأحد','الاثنين','الثلاثاء','الأربعاء','الخميس','الجمعة','السبت'];
-
-            empList.forEach(function(emp, idx) {
-                var allDatesSet = new Set([
-                    ...emp.entries.map(function(e){ return e.date; }),
-                    ...emp.exits.map(function(e){ return e.date; }),
-                    ...emp.movements.map(function(e){ return e.date; })
-                ]);
-                var sortedDates = Array.from(allDatesSet).sort();
-
-                var totalPresent=0, totalAbsent=0, totalLateNoPerm=0, totalLatePerm=0, totalEarly=0, totalOk=0, totalLeave=0;
-                var totalHoursSum=0, hoursCount=0, totalOvertimeHours=0;
-                var dayData = [];
-
-                sortedDates.forEach(function(date) {
-                    var entries = emp.entries.filter(function(e){ return e.date===date; });
-                    var exits   = emp.exits.filter(function(e){ return e.date===date; });
-                    var isOffHol = isHoliday(date);
-                    var dateObj2 = new Date(date + 'T12:00:00');
-                    var isNonWorkDay = !workConfig.workDays.includes(dateObj2.getDay());
-
-                    var hoursCalc = calcDayWorkHours(entries.length ? entries[0].time : null, exits.length ? exits[0].time : null, isNonWorkDay || isOffHol);
-                    if (hoursCalc.hours && hoursCalc.hours > 0 && hoursCalc.hours < 24) {
-                        totalHoursSum += hoursCalc.hours;
-                        totalOvertimeHours += hoursCalc.overtimeHours;
-                        hoursCount++;
-                    }
-
-                    if ((isNonWorkDay || isOffHol) && entries.length > 0) {
-                        dayData.push({ date: date, entries: entries, exits: exits, hoursCalc: hoursCalc, status: 'extra', lateMin: 0, isOffHol: isOffHol });
-                        return;
-                    }
-
-                    if (isOffHol) {
-                        dayData.push({ date: date, entries: entries, exits: exits, hoursCalc: hoursCalc, status: 'holiday', lateMin: 0, isOffHol: true });
-                        return;
-                    }
-
-                    var status = 'none';
-                    var lateMin = 0;
-                    var hasPermission = false;
-                    var perm = getPermissionForDate(emp.employeeId, date);
-
-                    if (entries.length) {
-                        var p = getDayPunctuality(emp.employeeId, date, entries[0].time);
-                        if (p === 'late') {
-                            lateMin = timeToMins(entries[0].time) - timeToMins(workConfig.start);
-                            if (perm && (perm.type === 'late' || perm.type === 'temp')) {
-                                status = 'late-perm';
-                                hasPermission = true;
-                                totalLatePerm++;
-                            } else {
-                                status = 'late-no-perm';
-                                totalLateNoPerm++;
-                            }
-                        } else if (p === 'early') {
-                            status = 'early';
-                            totalEarly++;
-                        } else {
-                            status = 'ok';
-                            totalOk++;
-                        }
-                        totalPresent++;
-                    }
-
-                    var earlyExit = 0;
-                    var earlyExitPerm = false;
-                    if (exits.length) {
-                        var diff = timeToMins(workConfig.end) - timeToMins(exits[0].time);
-                        if (diff > 0) {
-                            earlyExit = diff;
-                            if (perm && (perm.type === 'early' || perm.type === 'temp')) earlyExitPerm = true;
-                        }
-                    }
-
-                    dayData.push({ date: date, entries: entries, exits: exits, hoursCalc: hoursCalc, status: status, lateMin: lateMin, earlyExit: earlyExit, earlyExitPerm: earlyExitPerm, hasPermission: hasPermission, permObj: perm });
-                });
-
-                var allWorkDaysInRange = getWorkDaysInRange(sortedDates[0], sortedDates[sortedDates.length-1]);
-                var missedDates = allWorkDaysInRange.filter(function(d){ return !allDatesSet.has(d); });
-                missedDates.forEach(function(d) {
-                    var leaveInfo = (typeof getLeaveInfo === 'function') ? getLeaveInfo(emp.employeeId, d) : null;
-                    if (leaveInfo) {
-                        totalLeave++;
-                        dayData.push({ date: d, entries: [], exits: [], hoursCalc: { formatted: '—', shortText: '—' }, status: 'leave', leaveType: leaveInfo.type });
+                employeeDays.forEach(dayRecords => {
+                    dayRecords.sort((a,b) => a.datetime - b.datetime);
+                    if (dayRecords.length === 1) {
+                        dayRecords[0].type = dayRecords[0].datetime.getHours() < 14 ? 'دخول' : 'خروج';
                     } else {
-                        totalAbsent++;
-                        dayData.push({ date: d, entries: [], exits: [], hoursCalc: { formatted: '—', shortText: '—' }, status: 'absent' });
+                        dayRecords[0].type = 'دخول';
+                        dayRecords[dayRecords.length-1].type = 'خروج';
+                        for (let i=1; i<dayRecords.length-1; i++) dayRecords[i].type = 'حركة';
                     }
                 });
-                dayData.sort(function(a,b){ return a.date.localeCompare(b.date); });
 
-                var displayName = getDisplayName(emp.employeeId);
-                var avgHoursFormatted = hoursCount > 0 ? fmtHoursAndMins(totalHoursSum / hoursCount) : '—';
-                var totalHoursFormatted = fmtHoursAndMins(totalHoursSum);
-                var totalPerms = getEmpPermissionsTotal(emp.employeeId);
+                calculateAndRenderStats(records);
+            };
+            reader.readAsText(file);
+        }
 
-                var logRows = dayData.map(function(d) {
-                    var dateObj = new Date(d.date + 'T12:00:00');
-                    var dayName = dayNames[dateObj.getDay()];
-                    var dateDisp = dateObj.toLocaleDateString('ar-EG', { day: 'numeric', month: 'short' });
-
-                    var stripeClass='stripe-none', pillClass='pill-none', pillLabel='—';
-                    if (d.status === 'extra') {
-                        stripeClass='stripe-extra'; pillClass='pill-extra'; pillLabel='⭐ عمل إضافي';
-                    } else if (d.status === 'holiday') {
-                        stripeClass='stripe-holiday'; pillClass='pill-holiday'; pillLabel=getHolidayLabel(d.date) || '🏖️ إجازة رسمية';
-                    } else if (d.status === 'leave') {
-                        stripeClass='stripe-holiday'; pillClass='pill-holiday'; pillLabel='📅 إجازة معتمدة';
-                    } else if (d.status === 'absent') {
-                        stripeClass='stripe-absent'; pillClass='pill-absent'; pillLabel='🚫 غياب بالخصم';
-                    } else if (d.status === 'late-perm') {
-                        stripeClass='stripe-perm'; pillClass='pill-perm'; pillLabel='⏰ متأخر ' + d.lateMin + 'د (بإذن)';
-                    } else if (d.status === 'late-no-perm') {
-                        stripeClass='stripe-late'; pillClass='pill-late'; pillLabel='⏰ متأخر ' + d.lateMin + 'د (بدون إذن)';
-                    } else if (d.status === 'early') {
-                        stripeClass='stripe-early'; pillClass='pill-early'; pillLabel='🌅 بدري';
-                    } else if (d.status === 'ok') {
-                        stripeClass='stripe-ok'; pillClass='pill-ok'; pillLabel='✅ في معاده';
-                    }
-
-                    var timeIn  = d.entries.length ? d.entries[0].time : '—';
-                    var timeOut = d.exits.length   ? d.exits[0].time   : '—';
-                    var hoursDisp = d.hoursCalc ? d.hoursCalc.formatted : '—';
-                    
-                    var earlyExitNote = '';
-                    if (d.earlyExit > 0) {
-                        earlyExitNote = d.earlyExitPerm 
-                            ? '<div class="dl-note" style="color:var(--perm-light);">🚪 انصرف بدري -' + d.earlyExit + 'د (بإذن)</div>'
-                            : '<div class="dl-note" style="color:var(--danger);">🚪 انصرف بدري -' + d.earlyExit + 'د (بدون إذن)</div>';
-                    }
-
-                    return '<tr>' +
-                        '<td class="dl-stripe"><span class="' + stripeClass + '"></span></td>' +
-                        '<td class="dl-date">' + dateDisp + ' <span class="dl-dayname">' + dayName + '</span></td>' +
-                        '<td><span class="dl-pill ' + pillClass + '">' + pillLabel + '</span></td>' +
-                        '<td class="dl-time-in">' + timeIn + '</td>' +
-                        '<td class="dl-time-out">' + timeOut + earlyExitNote + '</td>' +
-                        '<td class="dl-hours" style="font-weight:bold;color:var(--tx);">' + hoursDisp + '</td>' +
-                    '</tr>';
-                }).join('');
-
-                var card = document.createElement('div');
-                card.className = 'emp-card-v2';
-                card.dataset.empid = emp.employeeId;
-
-                card.innerHTML = 
-                '<div class="ecv2-hdr" onclick="toggleEmpAcc2(\'' + emp.employeeId + '\')">' +
-                '    <div class="ecv2-num">' + (idx+1) + '</div>' +
-                '    <div class="ecv2-nameblock">' +
-                '        <div class="ecv2-name">' +
-                '            <span class="emp-name-display">' + displayName + '</span>' +
-                '        </div>' +
-                '        <div class="ecv2-id">كود: ' + emp.employeeId + ' · إجمالي الساعات الفعلية: <strong>' + totalHoursFormatted + '</strong> · أذونات مسجلة: ' + totalPerms + '</div>' +
-                '    </div>' +
-                '    <span class="ecv2-chevron" id="accChev-' + emp.employeeId + '">▾</span>' +
-                '</div>' +
-                '<div class="ecv2-scores">' +
-                '    <div class="ecv2-score"><span class="ecv2-score-val sv-present">' + totalPresent + '</span><span class="ecv2-score-lbl">أيام الحضور</span></div>' +
-                '    <div class="ecv2-score"><span class="ecv2-score-val sv-late">' + totalLateNoPerm + '</span><span class="ecv2-score-lbl">تأخير بدون إذن</span></div>' +
-                '    <div class="ecv2-score"><span class="ecv2-score-val sv-perm">' + totalLatePerm + '</span><span class="ecv2-score-lbl">تأخير بإذن</span></div>' +
-                '    <div class="ecv2-score"><span class="ecv2-score-val sv-absent">' + totalAbsent + '</span><span class="ecv2-score-lbl">غياب</span></div>' +
-                '    <div class="ecv2-score"><span class="ecv2-score-val sv-hours" style="font-size:1.1rem;margin-top:4px;">' + totalHoursFormatted + '</span><span class="ecv2-score-lbl">إجمالي الساعات</span></div>' +
-                '    <div class="ecv2-score"><span class="ecv2-score-val sv-hours" style="font-size:1.1rem;margin-top:4px;">' + avgHoursFormatted + '</span><span class="ecv2-score-lbl">متوسط الساعات</span></div>' +
-                '</div>' +
-                '<div style="display:flex;align-items:center;gap:8px;padding:8px 16px;background:var(--surface-2);border-top:1px solid var(--border);flex-wrap:wrap;">' +
-                '    <button class="btn-emp-perms" onclick="event.stopPropagation();openPermModal(\'' + emp.employeeId + '\',\'' + displayName.replace(/'/g,"\\'") + '\')">🎫 أذونات (' + totalPerms + ')</button>' +
-                '    <button class="btn-emp-leaves" onclick="event.stopPropagation();openLeaveModal(\'' + emp.employeeId + '\',\'' + displayName.replace(/'/g,"\\'") + '\')">🏖️ إجازات</button>' +
-                '    <button class="btn-emp-wfh" onclick="event.stopPropagation();openWfhModal(\'' + emp.employeeId + '\',\'' + displayName.replace(/'/g,"\\'") + '\')">🏠 WFH</button>' +
-                '    <span class="perm-chip">🎫 ' + totalLatePerm + ' تأخير بإذن</span>' +
-                '    ' + (totalLateNoPerm > 0 ? '<span style="background:rgba(192,57,43,0.15);color:var(--danger-light);padding:2px 8px;border-radius:12px;font-size:11px;font-weight:bold;">⚠️ ' + totalLateNoPerm + ' تأخير غير مبرر</span>' : '') +
-                '</div>' +
-                '<div class="ecv2-body" id="accBody-' + emp.employeeId + '">' +
-                '    <div class="dl-scroll-wrap" style="overflow-x:auto;">' +
-                '        <table class="day-log">' +
-                '            <thead>' +
-                '                <tr>' +
-                '                    <th style="width:3px;padding:0;"></th>' +
-                '                    <th>التاريخ</th>' +
-                '                    <th>حالة الانضباط والأذونات</th>' +
-                '                    <th>دخول</th>' +
-                '                    <th>خروج</th>' +
-                '                    <th>ساعات العمل الفعلية</th>' +
-                '                </tr>' +
-                '            </thead>' +
-                '            <tbody>' + logRows + '</tbody>' +
-                '        </table>' +
-                '    </div>' +
-                '</div>';
-
-                container.appendChild(card);
+        function calculateAndRenderStats(records) {
+            const employeeMap = new Map();
+            records.forEach(r => {
+                if (!employeeMap.has(r.employeeId)) {
+                    employeeMap.set(r.employeeId, { entries: [], exits: [], dates: new Set() });
+                }
+                const emp = employeeMap.get(r.employeeId);
+                emp.dates.add(r.date);
+                if (r.type === 'دخول') emp.entries.push({ date: r.date, time: r.time });
+                else if (r.type === 'خروج') emp.exits.push({ date: r.date, time: r.time });
             });
-        }
 
-        function toggleEmpAcc2(id) {
-            var body = document.getElementById('accBody-' + id);
-            var chev = document.getElementById('accChev-' + id);
-            if (!body) return;
-            body.classList.toggle('open');
-            if (chev) chev.classList.toggle('open');
-        }
+            let totalHours = 0;
+            employeeMap.forEach(emp => {
+                emp.entries.forEach(entry => {
+                    const exit = emp.exits.find(ex => ex.date === entry.date);
+                    if (exit) {
+                        const h = calcDayWorkHours(entry.time, exit.time).hours;
+                        if (h > 0 && h < 24) totalHours += h;
+                    }
+                });
+            });
 
-        // ══════════════════════════════════════════
-        //  PERMISSION MODAL FUNCTIONS
-        // ══════════════════════════════════════════
-        var _currentPermEmpId = null;
+            let totalPerms = 0;
+            Object.keys(employeePermissions).forEach(k => { totalPerms += (employeePermissions[k] || []).length; });
 
-        function openPermModal(empId, empName) {
-            _currentPermEmpId = empId;
-            document.getElementById('pm-emp-name').textContent = empName || ('موظف ' + empId);
-            document.getElementById('pm-emp-id').textContent = 'كود الموظف: ' + empId;
-            
-            var today = new Date().toISOString().slice(0, 10);
-            document.getElementById('pm-date').value = today;
-            document.getElementById('pm-note').value = '';
-            
-            renderPermModalRecords();
-            document.getElementById('permModalOverlay').style.display = 'flex';
-        }
-
-        function closePermModal() {
-            document.getElementById('permModalOverlay').style.display = 'none';
-            _currentPermEmpId = null;
-        }
-
-        function renderPermModalRecords() {
-            if (!_currentPermEmpId) return;
-            var list = document.getElementById('pm-records-list');
-            var records = employeePermissions[_currentPermEmpId] || [];
-
-            if (!records.length) {
-                list.innerHTML = '<div style="text-align:center;color:var(--text-faint);font-size:12px;padding:15px;">لا توجد أذونات مسجلة لهذا الموظف</div>';
-                return;
-            }
-
-            var typeMap = {
-                late: '⏰ إذن تأخير في الحضور',
-                early: '🚪 إذن انصراف مبكر',
-                temp: '🔄 إذن خروج مؤقت'
+            stats = {
+                totalEmployees: employeeMap.size,
+                uniqueDates: new Set(records.map(r => r.date)).size,
+                totalHoursSum: totalHours,
+                totalPermsUsed: totalPerms,
+                employeeDetails: Array.from(employeeMap.entries()).map(([id, emp]) => ({
+                    employeeId: id,
+                    entries: emp.entries,
+                    exits: emp.exits,
+                    dates: Array.from(emp.dates).sort()
+                }))
             };
 
-            list.innerHTML = records.map(function(r, idx) {
-                return '<div style="display:flex;justify-content:space-between;align-items:center;background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:6px 10px;font-size:12px;">' +
-                    '<div>' +
-                    '    <span style="font-weight:bold;color:var(--perm-light);">' + (typeMap[r.type] || 'إذن') + '</span>' +
-                    '    <span style="color:var(--text);margin:0 6px;">📅 ' + r.date + '</span>' +
-                    (r.note ? '<span style="color:var(--text-faint);font-size:11px;">(' + r.note + ')</span>' : '') +
-                    '</div>' +
-                    '<button type="button" style="background:none;border:none;color:var(--danger-light);cursor:pointer;font-weight:bold;" onclick="deletePermissionRecord(' + idx + ')">✕</button>' +
-                '</div>';
-            }).join('');
-        }
+            document.getElementById('uploadSection').classList.add('hidden');
+            document.getElementById('resultsSection').classList.remove('hidden');
 
-        function addPermissionRecord() {
-            if (!_currentPermEmpId) return;
-            var date = document.getElementById('pm-date').value;
-            var type = document.getElementById('pm-type').value;
-            var note = document.getElementById('pm-note').value.trim();
+            document.getElementById('kpiEmployees').textContent = stats.totalEmployees;
+            document.getElementById('kpiWorkDays').textContent = stats.uniqueDates;
+            document.getElementById('kpiPermsUsed').textContent = stats.totalPermsUsed;
+            document.getElementById('kpiTotalHours').textContent = fmtHoursAndMins(stats.totalHoursSum);
 
-            if (!date) { alert('يرجى تحديد التاريخ'); return; }
-
-            if (!employeePermissions[_currentPermEmpId]) employeePermissions[_currentPermEmpId] = [];
-            employeePermissions[_currentPermEmpId].push({ date: date, type: type, note: note });
-            savePermissions();
-
-            renderPermModalRecords();
-            if (stats) displayResults();
-            document.getElementById('pm-note').value = '';
-        }
-
-        function deletePermissionRecord(idx) {
-            if (!_currentPermEmpId) return;
-            if (!confirm('هل تريد حذف هذا الإذن؟')) return;
-            employeePermissions[_currentPermEmpId].splice(idx, 1);
-            savePermissions();
-            renderPermModalRecords();
-            if (stats) displayResults();
+            renderExecutiveOverview();
+            renderTimesheets();
+            renderPermissionsTable();
         }
 
         // ══════════════════════════════════════════
-        //  OFFICIAL A4 PRINT REPORT BUILDER
+        //  RENDER FUNCTIONS
         // ══════════════════════════════════════════
-        function buildOfficialPrintReport() {
-            var reportDate = new Date().toLocaleDateString('ar-EG', { day: 'numeric', month: 'long', year: 'numeric' });
-            var curPeriod = getReportPeriodLabel('📆 ');
+        function renderExecutiveOverview() {
+            const tbody = document.getElementById('overviewTableBody');
+            tbody.innerHTML = '';
 
-            var summaryRows = '';
-            var detailedBlocks = '';
+            stats.employeeDetails.forEach((emp, idx) => {
+                const name = getDisplayName(emp.employeeId);
+                let ok=0, lateNoPerm=0, latePerm=0, totalHours=0;
 
-            stats.employeeDetails
-              .filter(function(emp){ return !deletedEmployees.has(emp.employeeId); })
-              .forEach(function(emp, idx) {
-                var name = getDisplayName(emp.employeeId);
-                var ok=0, lateNoPerm=0, latePerm=0, early=0, totalHours=0, validDays=0;
-                var presentDates = new Set([...emp.entries.map(function(e){return e.date;}),...emp.exits.map(function(e){return e.date;})]);
-                
-                presentDates.forEach(function(date) {
-                    if (isHoliday(date)) return;
-                    var entry = emp.entries.find(function(e){ return e.date===date; });
-                    var exit = emp.exits.find(function(e){ return e.date===date; });
-                    if (entry && exit) {
-                        var hCalc = calcDayWorkHours(entry.time, exit.time, false);
-                        if (hCalc.hours) { totalHours += hCalc.hours; validDays++; }
-                    }
-                    var p = getDayPunctuality(emp.employeeId, date, entry ? entry.time : null);
-                    var perm = getPermissionForDate(emp.employeeId, date);
+                emp.dates.forEach(date => {
+                    const entry = emp.entries.find(e => e.date === date);
+                    const exit  = emp.exits.find(e => e.date === date);
+                    if (entry && exit) totalHours += calcDayWorkHours(entry.time, exit.time).hours;
+
+                    const p = getDayPunctuality(emp.employeeId, date, entry ? entry.time : null);
+                    const perm = getPermissionForDate(emp.employeeId, date);
                     if (p === 'late') {
                         if (perm && (perm.type === 'late' || perm.type === 'temp')) latePerm++;
                         else lateNoPerm++;
-                    } else if (p === 'early') {
-                        early++;
-                    } else if (p === 'ok') {
+                    } else if (p === 'ok' || p === 'early') {
                         ok++;
                     }
                 });
 
-                var allWorkDaysPdf = getWorkDaysInRange(
-                    Array.from(presentDates).sort()[0],
-                    Array.from(presentDates).sort()[presentDates.size-1]
-                );
-                var missedPdf = allWorkDaysPdf.filter(function(d){ return !presentDates.has(d); });
-                var absent = missedPdf.length;
-                var totalPerms = getEmpPermissionsTotal(emp.employeeId);
+                const permsCount = (employeePermissions[emp.employeeId] || []).length;
+                const tr = document.createElement('tr');
+                tr.innerHTML = `
+                    <td style="font-weight:bold; color:var(--text-muted);">${idx+1}</td>
+                    <td style="font-weight:bold; color:var(--text);">${name}</td>
+                    <td style="color:var(--perm-light); font-weight:bold;">${emp.employeeId}</td>
+                    <td><span class="status-badge badge-ok">✅ ${ok} يوم</span></td>
+                    <td>${lateNoPerm > 0 ? `<span class="status-badge badge-danger">⚠️ ${lateNoPerm} غير مبرر</span>` : '<span style="color:var(--text-muted);">0</span>'}</td>
+                    <td>${latePerm > 0 ? `<span class="status-badge badge-perm">🎫 ${latePerm} بإذن</span>` : '<span style="color:var(--text-muted);">0</span>'}</td>
+                    <td style="color:var(--text-muted);">—</td>
+                    <td><span class="status-badge badge-perm">${permsCount} إذن</span></td>
+                    <td style="font-weight:bold; color:var(--primary-light);">${fmtHoursAndMins(totalHours)}</td>
+                    <td>
+                        <button class="btn-action btn-perm-action" onclick="openNewPermForEmp('${emp.employeeId}')" style="padding:2px 8px;font-size:0.75rem;">+ إذن</button>
+                    </td>
+                `;
+                tbody.appendChild(tr);
+            });
+        }
 
-                summaryRows += '<tr style="border-bottom:1px solid #cbd5e1; height:32px;">' +
-                    '<td style="text-align:center; font-weight:bold;">' + (idx+1) + '</td>' +
-                    '<td style="font-weight:bold; text-align:right; color:#0f172a;">' + name + '</td>' +
-                    '<td style="text-align:center; color:#0284c7; font-weight:bold;">' + emp.employeeId + '</td>' +
-                    '<td style="text-align:center; color:#10b981; font-weight:bold;">' + ok + ' يوم</td>' +
-                    '<td style="text-align:center; color:#ef4444; font-weight:bold;">' + (lateNoPerm > 0 ? lateNoPerm + ' يوم (غير مبرر)' : '0') + '</td>' +
-                    '<td style="text-align:center; color:#0284c7; font-weight:bold;">' + (latePerm > 0 ? latePerm + ' يوم (بإذن)' : '0') + '</td>' +
-                    '<td style="text-align:center; color:#d97706;">' + (absent > 0 ? absent + ' يوم' : '0') + '</td>' +
-                    '<td style="text-align:center; font-weight:bold; color:#0284c7;">' + totalPerms + ' إذن</td>' +
-                    '<td style="text-align:center; font-weight:900; color:#0f172a;">' + fmtHoursAndMins(totalHours) + '</td>' +
-                    '</tr>';
+        function renderTimesheets() {
+            const container = document.getElementById('timesheetsContainer');
+            container.innerHTML = '';
+            const dayNames = ['الأحد','الاثنين','الثلاثاء','الأربعاء','الخميس','الجمعة','السبت'];
 
-                // Per-employee detailed table
-                var dayRows = '';
-                var sortedDates = Array.from(presentDates).sort();
-                var dayNames = ['الأحد','الاثنين','الثلاثاء','الأربعاء','الخميس','الجمعة','السبت'];
-                
-                sortedDates.forEach(function(dStr) {
-                    var dateObj = new Date(dStr + 'T12:00:00');
-                    var dayName = dayNames[dateObj.getDay()];
-                    var entry = emp.entries.find(function(e){ return e.date===dStr; });
-                    var exit  = emp.exits.find(function(e){ return e.date===dStr; });
-                    var hCalc = calcDayWorkHours(entry ? entry.time : null, exit ? exit.time : null, false);
-                    var p = getDayPunctuality(emp.employeeId, dStr, entry ? entry.time : null);
-                    var perm = getPermissionForDate(emp.employeeId, dStr);
+            stats.employeeDetails.forEach((emp, idx) => {
+                const name = getDisplayName(emp.employeeId);
+                let totalHours = 0;
 
-                    var statusText = '✅ في معاده';
-                    var statusColor = '#10b981';
+                const rowsHtml = emp.dates.map(date => {
+                    const dObj = new Date(date + 'T12:00:00');
+                    const dName = dayNames[dObj.getDay()];
+                    const entry = emp.entries.find(e => e.date === date);
+                    const exit  = emp.exits.find(e => e.date === date);
+                    const hCalc = calcDayWorkHours(entry ? entry.time : null, exit ? exit.time : null);
+                    if (hCalc.hours) totalHours += hCalc.hours;
+
+                    const p = getDayPunctuality(emp.employeeId, date, entry ? entry.time : null);
+                    const perm = getPermissionForDate(emp.employeeId, date);
+
+                    let statusBadge = '<span class="status-badge badge-ok">✅ في الميعاد</span>';
                     if (p === 'late') {
-                        var lateMin = timeToMins(entry.time) - timeToMins(workConfig.start);
+                        const lateMin = timeToMins(entry.time) - timeToMins(workConfig.start);
                         if (perm && (perm.type === 'late' || perm.type === 'temp')) {
-                            statusText = '⏰ متأخر ' + lateMin + 'د (بإذن معتمد)';
-                            statusColor = '#0284c7';
+                            statusBadge = `<span class="status-badge badge-perm">⏰ متأخر ${lateMin}د (بإذن معتمد)</span>`;
                         } else {
-                            statusText = '⏰ متأخر ' + lateMin + 'د (بدون إذن)';
-                            statusColor = '#ef4444';
+                            statusBadge = `<span class="status-badge badge-danger">⚠️ متأخر ${lateMin}د (بدون إذن)</span>`;
                         }
                     }
 
-                    dayRows += '<tr>' +
-                        '<td style="text-align:center;">' + dStr + ' (' + dayName + ')</td>' +
-                        '<td style="text-align:center; color:' + statusColor + '; font-weight:bold;">' + statusText + '</td>' +
-                        '<td style="text-align:center; color:#10b981;">' + (entry ? entry.time : '—') + '</td>' +
-                        '<td style="text-align:center; color:#ef4444;">' + (exit ? exit.time : '—') + '</td>' +
-                        '<td style="text-align:center; font-weight:bold;">' + hCalc.formatted + '</td>' +
-                        '<td style="font-size:10px; color:#475569;">' + (perm ? 'إذن: ' + (perm.note || perm.type) : '') + '</td>' +
-                    '</tr>';
-                });
+                    return `<tr>
+                        <td><strong>${date}</strong> <span style="color:var(--text-muted);font-size:0.8rem;">(${dName})</span></td>
+                        <td>${statusBadge}</td>
+                        <td style="color:var(--success-light); font-weight:600;">${entry ? entry.time : '—'}</td>
+                        <td style="color:var(--danger-light); font-weight:600;">${exit ? exit.time : '—'}</td>
+                        <td style="font-weight:bold; color:var(--text);">${hCalc.formatted}</td>
+                        <td style="font-size:0.8rem; color:var(--text-muted);">${perm ? '🎫 ' + (perm.note || perm.type) : '—'}</td>
+                    </tr>`;
+                }).join('');
 
-                detailedBlocks += '<div style="page-break-inside:avoid; break-inside:avoid; border:1px solid #cbd5e1; border-radius:8px; margin-bottom:16px; overflow:hidden;">' +
-                    '<div style="background:#f1f5f9; padding:8px 12px; font-weight:bold; display:flex; justify-content:space-between; align-items:center; border-bottom:1px solid #cbd5e1;">' +
-                    '  <div style="font-size:12px; color:#0f172a;">👤 ' + name + ' (كود: ' + emp.employeeId + ')</div>' +
-                    '  <div style="font-size:11px; color:#0284c7;">إجمالي الساعات: <strong>' + fmtHoursAndMins(totalHours) + '</strong> | أذونات: <strong>' + totalPerms + '</strong></div>' +
-                    '</div>' +
-                    '<table class="tbl" style="margin-bottom:0;">' +
-                    '  <thead><tr><th>التاريخ واليوم</th><th>حالة الانضباط</th><th>دخول</th><th>خروج</th><th>الساعات الفعلية</th><th>ملاحظات الأذونات</th></tr></thead>' +
-                    '  <tbody>' + dayRows + '</tbody>' +
-                    '</table>' +
-                    '</div>';
+                const card = document.createElement('div');
+                card.className = 'emp-sheet-card';
+                card.innerHTML = `
+                    <div class="emp-sheet-hdr" onclick="toggleTimesheetBody('${emp.employeeId}')">
+                        <div class="emp-meta">
+                            <div class="emp-avatar">${name.charAt(0)}</div>
+                            <div>
+                                <div class="emp-title-text">${name}</div>
+                                <div class="emp-sub-text">كود: ${emp.employeeId} · إجمالي الساعات: ${fmtHoursAndMins(totalHours)}</div>
+                            </div>
+                        </div>
+                        <div style="display:flex;align-items:center;gap:8px;">
+                            <span class="status-badge badge-perm">${(employeePermissions[emp.employeeId]||[]).length} أذونات</span>
+                            <span style="font-size:1.2rem;color:var(--text-muted);">▾</span>
+                        </div>
+                    </div>
+                    <div class="emp-sheet-body" id="tsBody-${emp.employeeId}">
+                        <table class="admin-table">
+                            <thead><tr><th>التاريخ واليوم</th><th>حالة الانضباط</th><th>دخول</th><th>خروج</th><th>الساعات الفعلية</th><th>ملاحظات الأذونات</th></tr></thead>
+                            <tbody>${rowsHtml}</tbody>
+                        </table>
+                    </div>
+                `;
+                container.appendChild(card);
             });
-
-            var h = '<!DOCTYPE html><html lang="ar" dir="rtl"><head><meta charset="UTF-8">' +
-                '<link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;900&display=swap" rel="stylesheet">' +
-                '<style>' +
-                '* { box-sizing: border-box; margin: 0; padding: 0; }' +
-                'body { font-family: "Cairo", sans-serif; direction: rtl; background: #fff; color: #0f172a; padding: 20px 24px; font-size: 11px; }' +
-                '@page { size: A4 portrait; margin: 10mm 10mm; }' +
-                '.tbl { width: 100%; border-collapse: collapse; margin-bottom: 20px; font-size: 11px; }' +
-                '.tbl th { background: #0f172a; color: #fff; padding: 7px 8px; text-align: center; }' +
-                '.tbl td { padding: 6px 8px; border-bottom: 1px solid #cbd5e1; }' +
-                '</style></head><body>' +
-
-                // Official Header
-                '<div style="display:flex; justify-content:space-between; align-items:center; border-bottom:2px solid #0f172a; padding-bottom:12px; margin-bottom:14px;">' +
-                '  <div>' +
-                '    <h2 style="font-size:17px; font-weight:900; color:#0f172a; margin:0;">🏢 شركة تيك - جو للحلول التقنية (Tech Go System)</h2>' +
-                '    <div style="font-size:12px; color:#475569; margin-top:2px;">كشف تقرير الحضور والانصراف، ساعات العمل، ومتابعة الأذونات المعتمدة</div>' +
-                '  </div>' +
-                '  <div style="text-align:left; font-size:11px; color:#64748b;">' +
-                '    <div>📅 تاريخ الاستخراج: <strong>' + reportDate + '</strong></div>' +
-                '    <div>⏰ مواعيد الدوام: <strong>' + workConfig.start + ' ← ' + workConfig.end + '</strong></div>' +
-                '  </div>' +
-                '</div>' +
-
-                // Summary KPIs
-                '<div style="display:grid; grid-template-columns:repeat(4,1fr); gap:10px; margin-bottom:16px; text-align:center;">' +
-                '  <div style="background:#f8fafc; border:1px solid #cbd5e1; border-radius:8px; padding:8px;"><div style="font-size:10.5px; color:#64748b; font-weight:bold;">👥 إجمالي الموظفين</div><div style="font-size:18px; font-weight:900; color:#0f172a;">' + stats.totalEmployees + ' موظف</div></div>' +
-                '  <div style="background:#f0fdf4; border:1px solid #bbf7d0; border-radius:8px; padding:8px;"><div style="font-size:10.5px; color:#16a34a; font-weight:bold;">📅 أيام العمل الفعلية</div><div style="font-size:18px; font-weight:900; color:#16a34a;">' + stats.uniqueDates + ' يوم</div></div>' +
-                '  <div style="background:#f0f9ff; border:1px solid #bae6fd; border-radius:8px; padding:8px;"><div style="font-size:10.5px; color:#0369a1; font-weight:bold;">🎫 إجمالي الأذونات المعتمدة</div><div style="font-size:18px; font-weight:900; color:#0284c7;">' + (document.getElementById('totalPermsUsed') ? document.getElementById('totalPermsUsed').textContent : '0') + ' إذن</div></div>' +
-                '  <div style="background:#faf5ff; border:1px solid #e9d5ff; border-radius:8px; padding:8px;"><div style="font-size:10.5px; color:#7c3aed; font-weight:bold;">⏱ إجمالي الساعات الفعلية</div><div style="font-size:16px; font-weight:900; color:#7c3aed;">' + fmtHoursAndMins(stats.totalHoursSum) + '</div></div>' +
-                '</div>' +
-
-                // Summary Matrix
-                '<div style="font-size:12.5px; font-weight:900; color:#0f172a; margin-bottom:6px;">📊 كشف ملخص الانضباط وتدقيق الأذونات لجميع الموظفين:</div>' +
-                '<table class="tbl">' +
-                '  <thead><tr>' +
-                '    <th>م</th><th style="text-align:right;">اسم الموظف</th><th>الكود</th>' +
-                '    <th>✅ في معاده</th><th>⏰ تأخير بدون إذن</th><th>🎫 تأخير بإذن</th><th>🚫 غياب</th><th>🎫 الأذونات</th><th>⏱ الساعات الفعلية</th>' +
-                '  </tr></thead>' +
-                '  <tbody>' + summaryRows + '</tbody>' +
-                '</table>' +
-
-                // Detailed per-employee logs
-                '<div style="font-size:12.5px; font-weight:900; color:#0f172a; margin:20px 0 10px 0;">👤 السجلات التفصيلية لكل موظف:</div>' +
-                detailedBlocks +
-
-                // Signatures Footer
-                '<div style="border-top:1px dashed #94a3b8; padding-top:8px; font-size:10px; color:#475569; margin-bottom:24px;">' +
-                '  <strong>ضوابط تنظيمية:</strong> يتم احتساب التأخير بموجب إذن معتمد بحد أقصى 5 أذونات شهرياً وفق اللائحة المنظمة لشركة تيك جو. التأخيرات غير المبررة تخضع للائحة الجزاءات والخصم من الأجر.' +
-                '</div>' +
-                '<div style="display:grid; grid-template-columns:1fr 1fr 1fr; gap:20px; text-align:center; margin-top:20px;">' +
-                '  <div><div style="font-weight:bold; font-size:11.5px; margin-bottom:30px;">إعداد وتدقيق الموارد البشرية HR:</div><div style="border-top:1px solid #000; width:75%; margin:0 auto; padding-top:3px; font-size:10px;">التوقيع: .....................</div></div>' +
-                '  <div><div style="font-weight:bold; font-size:11.5px; margin-bottom:30px;">المدير الإداري:</div><div style="border-top:1px solid #000; width:75%; margin:0 auto; padding-top:3px; font-size:10px;">التوقيع: .....................</div></div>' +
-                '  <div><div style="font-weight:bold; font-size:11.5px; margin-bottom:30px;">اعتماد المدير التنفيذي:</div><div style="border-top:1px solid #000; width:75%; margin:0 auto; padding-top:3px; font-size:10px;">التوقيع والخاتم: .....................</div></div>' +
-                '</div>' +
-                '</body></html>';
-
-            return h;
         }
 
-        document.getElementById('exportPdfBtn').addEventListener('click', function() {
-            if (!stats) { alert('يرجى رفع ملف الحضور أولاً'); return; }
-            var html = buildOfficialPrintReport();
-            var w = window.open('', '_blank');
-            if (w) {
-                w.document.open();
-                w.document.write(html);
-                w.document.close();
-                setTimeout(function() {
-                    w.focus();
-                    w.print();
-                }, 500);
-            }
-        });
+        function toggleTimesheetBody(id) {
+            const el = document.getElementById('tsBody-' + id);
+            if (el) el.classList.toggle('open');
+        }
 
-        document.getElementById('exportTxtBtn').addEventListener('click', function() {
-            if (!stats) return;
-            var txt = '=== تقرير الحضور والانصراف والأذونات المعتمدة — شركة تيك جو ===\n\n';
-            txt += 'تاريخ التقرير: ' + new Date().toLocaleString('ar-EG') + '\n';
-            txt += 'مواعيد الدوام الرسمي: ' + workConfig.start + ' ← ' + workConfig.end + '\n\n';
-            stats.employeeDetails.forEach(function(emp) {
-                var name = getDisplayName(emp.employeeId);
-                var perms = employeePermissions[emp.employeeId] || [];
-                txt += 'الموظف: ' + name + ' (كود: ' + emp.employeeId + ')\n';
-                txt += 'عدد الأذونات المسجلة: ' + perms.length + '\n';
-                perms.forEach(function(p) { txt += '  - إذن بتاريخ ' + p.date + ' (' + p.type + '): ' + (p.note || '') + '\n'; });
-                txt += '--------------------------------------------------\n';
+        function renderPermissionsTable() {
+            const tbody = document.getElementById('permissionsTableBody');
+            tbody.innerHTML = '';
+
+            let hasRecords = false;
+            Object.keys(employeePermissions).forEach(empId => {
+                const list = employeePermissions[empId] || [];
+                const name = getDisplayName(empId);
+                list.forEach((p, pIdx) => {
+                    hasRecords = true;
+                    const tr = document.createElement('tr');
+                    tr.innerHTML = `
+                        <td style="font-weight:bold;">${name}</td>
+                        <td style="color:var(--perm-light); font-weight:bold;">${empId}</td>
+                        <td>📅 ${p.date}</td>
+                        <td><span class="status-badge badge-perm">${p.type === 'late' ? '⏰ إذن تأخير' : (p.type === 'early' ? '🚪 انصراف مبكر' : '🔄 خروج مؤقت')}</span></td>
+                        <td style="color:var(--text-muted);">${p.note || '—'}</td>
+                        <td>
+                            <button class="btn-action btn-ghost" onclick="deletePerm('${empId}', ${pIdx})" style="color:var(--danger-light);padding:2px 8px;">✕ حذف</button>
+                        </td>
+                    `;
+                    tbody.appendChild(tr);
+                });
             });
-            var blob = new Blob([txt], { type: 'text/plain;charset=utf-8' });
-            var url = URL.createObjectURL(blob);
-            var a = document.createElement('a'); a.href = url; a.download = 'attendance_report.txt'; a.click();
+
+            if (!hasRecords) {
+                tbody.innerHTML = `<tr><td colspan="6" style="text-align:center;color:var(--text-muted);padding:20px;">لا توجد أذونات مسجلة حتى الآن</td></tr>`;
+            }
+        }
+
+        // ══════════════════════════════════════════
+        //  UI INTERACTIONS & MODAL
+        // ══════════════════════════════════════════
+        function switchExecTab(tabId, btn) {
+            document.querySelectorAll('.exec-tab-btn').forEach(b => b.classList.remove('active'));
+            document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+            btn.classList.add('active');
+            document.getElementById('tab-' + tabId).classList.add('active');
+        }
+
+        function toggleTheme() {
+            const html = document.documentElement;
+            const next = html.getAttribute('data-theme') === 'light' ? 'dark' : 'light';
+            html.setAttribute('data-theme', next);
+            localStorage.setItem('techgo_theme', next);
+            document.getElementById('themeBtn').textContent = next === 'light' ? '🌙' : '☀️';
+        }
+
+        function openNewPermDialog() {
+            const sel = document.getElementById('modalPermEmpSel');
+            sel.innerHTML = '';
+            Object.keys(employeeNames).forEach(id => {
+                sel.innerHTML += `<option value="${id}">${employeeNames[id]} (كود ${id})</option>`;
+            });
+            document.getElementById('modalPermDate').value = new Date().toISOString().slice(0, 10);
+            document.getElementById('modalPermNote').value = '';
+            document.getElementById('permModal').classList.remove('hidden');
+        }
+
+        function openNewPermForEmp(empId) {
+            openNewPermDialog();
+            document.getElementById('modalPermEmpSel').value = empId;
+        }
+
+        function closePermModal() {
+            document.getElementById('permModal').classList.add('hidden');
+        }
+
+        function savePermRecord() {
+            const empId = document.getElementById('modalPermEmpSel').value;
+            const date  = document.getElementById('modalPermDate').value;
+            const type  = document.getElementById('modalPermType').value;
+            const note  = document.getElementById('modalPermNote').value.trim();
+
+            if (!empId || !date) { alert('يرجى اختيار الموظف والتاريخ'); return; }
+
+            if (!employeePermissions[empId]) employeePermissions[empId] = [];
+            employeePermissions[empId].push({ date, type, note });
+            savePermissionsToStorage();
+
+            closePermModal();
+            if (stats) {
+                renderExecutiveOverview();
+                renderTimesheets();
+                renderPermissionsTable();
+            }
+        }
+
+        function deletePerm(empId, idx) {
+            if (!confirm('هل تريد حذف هذا الإذن؟')) return;
+            employeePermissions[empId].splice(idx, 1);
+            savePermissionsToStorage();
+            if (stats) {
+                renderExecutiveOverview();
+                renderTimesheets();
+                renderPermissionsTable();
+            }
+        }
+
+        function filterOverviewTable() {
+            const q = document.getElementById('overviewSearch').value.toLowerCase();
+            document.querySelectorAll('#overviewTableBody tr').forEach(tr => {
+                tr.style.display = tr.textContent.toLowerCase().includes(q) ? '' : 'none';
+            });
+        }
+
+        function filterTimesheetCards() {
+            const q = document.getElementById('timesheetSearch').value.toLowerCase();
+            document.querySelectorAll('.emp-sheet-card').forEach(card => {
+                card.style.display = card.textContent.toLowerCase().includes(q) ? '' : 'none';
+            });
+        }
+
+        function saveWorkSettings() {
+            workConfig.start = document.getElementById('cfgStart').value;
+            workConfig.end   = document.getElementById('cfgEnd').value;
+            workConfig.grace = parseInt(document.getElementById('cfgGrace').value) || 0;
+            alert('✓ تم حفظ وتطبيق مواعيد الدوام بنجاح');
+            if (stats) {
+                renderExecutiveOverview();
+                renderTimesheets();
+            }
+        }
+
+        document.getElementById('exportPdfBtn').addEventListener('click', () => {
+            if (!stats) { alert('يرجى رفع ملف البصمة أولاً'); return; }
+            window.print();
         });
 
         document.getElementById('resetBtn').addEventListener('click', () => {
-            attendanceData = [];
             stats = null;
             document.getElementById('uploadSection').classList.remove('hidden');
             document.getElementById('resultsSection').classList.add('hidden');
-        });
-
-        window.addEventListener('DOMContentLoaded', () => {
-            _updateThemeToggleIcon();
         });
     </script>
 </body>
