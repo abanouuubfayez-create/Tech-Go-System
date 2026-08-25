@@ -67,7 +67,7 @@
     <link
         href="https://fonts.googleapis.com/css2?family=Alexandria:wght@300;400;500;600;700;800;900&family=Cairo:wght@400;600;700;800;900&family=Tajawal:wght@400;500;700;800&family=Inter:wght@400;500;600;700&display=swap"
         rel="stylesheet">
-    <link rel="stylesheet" href="styles.css?v=1787659258">
+    <link rel="stylesheet" href="styles.css?v=1787659771">
     <link rel="manifest" href="manifest.json">
     <link rel="icon" type="image/png" sizes="192x192" href="icon-192.png">
     <link rel="apple-touch-icon" href="icon-192.png">
@@ -75,10 +75,10 @@
     <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-storage-compat.js"></script>
-    <script src="firebase-config.js?v=1787659258"></script>
-    <script src="auth.js?v=1787659258"></script>
-    <script src="app.js?v=1787659258"></script>
-    <script src="formsend.js?v=1787659258"></script>
+    <script src="firebase-config.js?v=1787659771"></script>
+    <script src="auth.js?v=1787659771"></script>
+    <script src="app.js?v=1787659771"></script>
+    <script src="formsend.js?v=1787659771"></script>
     <script>
         (function () {
             const theme = localStorage.getItem('tg-theme') || 'light';
@@ -91,43 +91,84 @@
             background: var(--bg);
         }
 
-        .emp-nav {
-            display: flex;
-            gap: 2px;
-            padding: 0 20px;
+        .emp-topbar {
+            height: 56px;
             background: var(--w);
-            border-bottom: 2px solid var(--bd2);
-            flex-wrap: wrap;
+            border-bottom: 1px solid var(--bd);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0 24px;
             position: sticky;
-            top: 56px;
-            z-index: 70;
-            box-shadow: 0 2px 8px rgba(27, 42, 74, .05);
+            top: 0;
+            z-index: 80;
+            box-shadow: 0 1px 3px rgba(15, 23, 42, 0.03);
         }
 
-        .emp-tab {
-            padding: 13px 18px;
-            font-size: 12.5px;
-            font-weight: 600;
-            color: var(--tx3);
-            cursor: pointer;
-            border-bottom: 3px solid transparent;
-            margin-bottom: -2px;
-            transition: var(--tr);
+        .emp-topbar .who {
+            font-size: 14px;
+            font-weight: 800;
+            color: var(--tx);
             display: flex;
             align-items: center;
             gap: 6px;
         }
 
+        .emp-topbar .who small {
+            font-size: 11px;
+            font-weight: 700;
+            color: var(--tx3);
+            background: var(--bg);
+            border: 1px solid var(--bd);
+            padding: 2px 8px;
+            border-radius: 12px;
+            margin-right: 6px;
+        }
+
+        .emp-nav {
+            display: flex;
+            gap: 4px;
+            padding: 6px 20px;
+            background: var(--w);
+            border-bottom: 1px solid var(--bd);
+            flex-wrap: wrap;
+            position: sticky;
+            top: 56px;
+            z-index: 70;
+            box-shadow: 0 1px 3px rgba(15, 23, 42, .03);
+        }
+
+        .emp-tab {
+            padding: 9px 15px;
+            font-size: 12.5px;
+            font-weight: 600;
+            color: var(--tx3);
+            cursor: pointer;
+            border-radius: 8px;
+            transition: all .2s ease;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            border: 1px solid transparent;
+        }
+
         .emp-tab:hover {
-            color: var(--nv);
-            background: rgba(27, 42, 74, .03);
+            color: var(--tx);
+            background: var(--bg);
+            border-color: var(--bd);
         }
 
         .emp-tab.a {
-            color: var(--nv);
-            border-bottom-color: var(--gd);
+            color: #0f766e;
+            background: rgba(15, 118, 110, 0.08);
+            border-color: rgba(15, 118, 110, 0.2);
             font-weight: 800;
-            background: linear-gradient(180deg, transparent, rgba(201, 162, 39, .06));
+        }
+
+        [data-theme='dark'] .emp-tab.a {
+            color: #2dd4bf;
+            background: rgba(45, 212, 191, 0.12);
+            border-color: rgba(45, 212, 191, 0.25);
         }
 
         .emp-ct {
@@ -621,27 +662,16 @@
                 <div id="empHolidayAlertBannerContainer"></div>
 
                 <!-- لوحة الإعلانات -->
-                <div id="empAnnouncementsPanel"
-                    style="background:linear-gradient(135deg, rgba(2,132,199,0.12) 0%, rgba(59,130,246,0.06) 50%, rgba(99,102,241,0.12) 100%); border:1.5px solid rgba(2,132,199,0.35); border-radius:14px; padding:18px 22px; margin-bottom:20px; display:none; box-shadow:0 6px 20px rgba(2,132,199,0.08); position:relative; overflow:hidden; direction:rtl;">
-                    <div style="position:absolute; top:0; right:0; width:6px; height:100%; background:linear-gradient(to bottom, #0284c7, #6366f1);"></div>
-                    <div style="display:flex; align-items:center; gap:12px; margin-bottom:14px;">
-                        <div style="width:40px; height:40px; border-radius:12px; background:linear-gradient(135deg, #0284c7, #2563eb); color:#fff; display:flex; align-items:center; justify-content:center; font-size:18px; box-shadow:0 4px 12px rgba(2,132,199,0.3); flex-shrink:0;">📢</div>
-                        <div>
-                            <div style="font-size:15.5px; font-weight:800; color:var(--tx); display:flex; align-items:center; gap:8px;">
-                                <span>إعلانات وتكليفات الإدارة</span>
-                            </div>
-                            <div style="font-size:11.5px; color:var(--tx2); margin-top:2px;">التعميمات والتوجيهات الرسمية الصادرة من الإدارة</div>
-                        </div>
-                    </div>
+                <div id="empAnnouncementsPanel" style="display:none; margin-bottom:16px;">
                     <div id="empAnnouncementsList" style="display:flex; flex-direction:column; gap:10px;"></div>
                 </div>
 
-                <div style="display:flex; gap:10px; margin-bottom:20px; flex-wrap:wrap;">
-                    <button class="bt" onclick="empGo('wkr')" style="flex:1; min-width:160px; background:linear-gradient(135deg, rgba(16,185,129,0.12), rgba(5,150,105,0.06)); border:1.5px solid rgba(16,185,129,0.3); color:var(--tx); font-weight:800; font-size:13.5px; padding:12px; border-radius:12px; cursor:pointer; display:flex; align-items:center; justify-content:center; gap:8px;">
-                        <span>📊</span> التقارير الأسبوعية (WR)
+                <div style="display:flex; gap:12px; margin-bottom:20px; flex-wrap:wrap;">
+                    <button class="bt" onclick="empGo('wkr')" style="flex:1; min-width:160px; background:var(--w); border:1px solid var(--bd); color:var(--tx); font-weight:700; font-size:13px; padding:12px 16px; border-radius:10px; box-shadow:0 1px 4px rgba(0,0,0,0.03); cursor:pointer; display:flex; align-items:center; justify-content:center; gap:8px; transition:all .2s ease;">
+                        <span style="font-size:16px;">📊</span> التقارير الأسبوعية (WR)
                     </button>
-                    <button class="bt" onclick="empGo('monthlyplans')" style="flex:1; min-width:160px; background:linear-gradient(135deg, rgba(245,158,11,0.12), rgba(217,119,6,0.06)); border:1.5px solid rgba(245,158,11,0.3); color:var(--tx); font-weight:800; font-size:13.5px; padding:12px; border-radius:12px; cursor:pointer; display:flex; align-items:center; justify-content:center; gap:8px;">
-                        <span>🎯</span> المستهدفات والخطط العامة (MP)
+                    <button class="bt" onclick="empGo('monthlyplans')" style="flex:1; min-width:160px; background:var(--w); border:1px solid var(--bd); color:var(--tx); font-weight:700; font-size:13px; padding:12px 16px; border-radius:10px; box-shadow:0 1px 4px rgba(0,0,0,0.03); cursor:pointer; display:flex; align-items:center; justify-content:center; gap:8px; transition:all .2s ease;">
+                        <span style="font-size:16px;">🎯</span> المستهدفات والخطط العامة (MP)
                     </button>
                 </div>
 
@@ -3233,7 +3263,7 @@
         تطوير وتصميم: أبانوب فايز</div>
     <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
-    <script src="theme.js?v=1787659258"></script>
+    <script src="theme.js?v=1787659771"></script>
 
 
     <!-- Incoming Meeting Call Modal -->
@@ -3563,23 +3593,24 @@
             var rFormatted = formatDate(resumeObj);
 
             var bannerHTML = 
-                '<div style="background:linear-gradient(135deg, rgba(16,185,129,0.15) 0%, rgba(5,150,105,0.2) 50%, rgba(245,158,11,0.15) 100%); border:1.5px solid rgba(16,185,129,0.4); border-radius:14px; padding:18px 22px; margin-bottom:20px; box-shadow:0 6px 20px rgba(16,185,129,0.12); position:relative; overflow:hidden; direction:rtl;">' +
-                '  <div style="position:absolute; top:0; right:0; width:6px; height:100%; background:linear-gradient(to bottom, #10b981, #f59e0b);"></div>' +
-                '  <div style="display:flex; align-items:center; gap:14px; margin-bottom:12px;">' +
-                '    <div style="width:44px; height:44px; border-radius:12px; background:linear-gradient(135deg, #10b981, #059669); color:#fff; display:flex; align-items:center; justify-content:center; font-size:22px; box-shadow:0 4px 12px rgba(16,185,129,0.35); flex-shrink:0;">🎉</div>' +
-                '    <div>' +
-                '      <div style="font-size:16px; font-weight:800; color:var(--tx); display:flex; align-items:center; gap:8px; flex-wrap:wrap;">' +
-                '        <span>إشعار إجازة رسمية | <strong>' + escH(target.occasion) + '</strong></span>' +
-                '        <span style="background:#f59e0b; color:#fff; padding:2px 10px; border-radius:12px; font-size:11px; font-weight:800;">' + daysLabel + '</span>' +
+                '<div style="background:var(--w); border:1px solid var(--bd); border-right:4px solid #10b981; border-radius:12px; padding:16px 20px; margin-bottom:14px; box-shadow:0 1px 4px rgba(0,0,0,0.03); direction:rtl;">' +
+                '  <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:10px; flex-wrap:wrap; gap:8px;">' +
+                '    <div style="display:flex; align-items:center; gap:8px;">' +
+                '      <span style="font-size:16px;">🎉</span>' +
+                '      <div style="font-size:15px; font-weight:800; color:var(--tx);">' +
+                '        إشعار إجازة رسمية | <strong>' + escH(target.occasion) + '</strong>' +
                 '      </div>' +
-                '      <div style="font-size:12px; color:var(--tx2); margin-top:2px;">اللائحة التنظيمية لشركة تيك - جو — المادة 129</div>' +
                 '    </div>' +
+                '    <span style="background:rgba(245,158,11,0.12); color:#b45309; border:1px solid rgba(245,158,11,0.25); padding:2px 10px; border-radius:20px; font-size:11px; font-weight:800;">' + daysLabel + '</span>' +
                 '  </div>' +
-                '  <div style="background:var(--bg); border:1px solid var(--bd); border-radius:10px; padding:14px 18px; font-size:13px; line-height:1.85; color:var(--tx);">' +
+                '  <div style="font-size:13px; line-height:1.75; color:var(--tx); font-weight:600;">' +
                 '    تُحيط إدارة الشركة جميع الموظفين الكرام بأن يوم <strong>' + hDayName + ' الموافق ' + hFormatted + '</strong> سيكون إجازة رسمية مدفوعة الأجر بمناسبة <strong>' + escH(target.occasion) + '</strong>.<br>' +
                 '    • تاريخ استئناف العمل: <strong>' + rDayName + ' ' + rFormatted + '</strong> الساعة 10:00 صباحًا.<br>' +
-                '    • يُرجى الالتزام بتسجيل الحضور عبر جهاز البصمة عند العودة.<br>' +
-                '    <div style="margin-top:6px; color:#10b981; font-weight:bold;">🌿 كل عام وحضراتكم بخير — إدارة شركة تيك - جو</div>' +
+                '    • يُرجى الالتزام بتسجيل الحضور عبر جهاز البصمة عند العودة.' +
+                '  </div>' +
+                '  <div style="display:flex; justify-content:space-between; align-items:center; margin-top:8px; border-top:1px dashed var(--bd); padding-top:6px; font-size:11px; color:#10b981; font-weight:700;">' +
+                '    <span>🌿 كل عام وحضراتكم بخير — إدارة شركة تيك - جو</span>' +
+                '    <span style="color:var(--tx3); font-size:10.5px;">اللائحة التنظيمية — المادة 129</span>' +
                 '  </div>' +
                 '</div>';
 
@@ -3607,18 +3638,22 @@
             ];
 
             function annCard(data, isPrivate) {
+                var accentBorder = isPrivate ? '#d97706' : '#0284c7';
                 var audienceBadge = isPrivate 
-                    ? '<span style="background:rgba(245,158,11,0.12); color:#d97706; border:1px solid rgba(245,158,11,0.3); padding:3px 10px; border-radius:12px; font-size:11px; font-weight:800;">👤 خاص بك</span>' 
-                    : '<span style="background:rgba(16,185,129,0.12); color:#059669; border:1px solid rgba(16,185,129,0.3); padding:3px 10px; border-radius:12px; font-size:11px; font-weight:800;">📢 عام لكل الموظفين</span>';
+                    ? '<span style="background:rgba(245,158,11,0.12); color:#b45309; border:1px solid rgba(245,158,11,0.25); padding:2px 10px; border-radius:20px; font-size:11px; font-weight:800;">👤 خاص بك</span>' 
+                    : '<span style="background:rgba(2,132,199,0.12); color:#0369a1; border:1px solid rgba(2,132,199,0.25); padding:2px 10px; border-radius:20px; font-size:11px; font-weight:800;">📢 عام لكل الموظفين</span>';
                 
-                var h = '<div style="background:var(--bg); border:1px solid var(--bd); border-radius:10px; padding:14px 18px; margin-bottom:8px; box-shadow:0 2px 8px rgba(0,0,0,0.02);">';
+                var h = '<div style="background:var(--w); border:1px solid var(--bd); border-right:4px solid ' + accentBorder + '; border-radius:12px; padding:16px 20px; margin-bottom:12px; box-shadow:0 1px 4px rgba(0,0,0,0.03); direction:rtl;">';
                 h += '<div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px; gap:8px; flex-wrap:wrap;">';
-                h += '  <div style="font-size:15.5px; font-weight:800; color:var(--tx);">' + esc(data.title) + '</div>';
+                h += '  <div style="display:flex; align-items:center; gap:8px;">';
+                h += '    <span style="font-size:16px;">📢</span>';
+                h += '    <div style="font-size:15px; font-weight:800; color:var(--tx);">' + esc(data.title) + '</div>';
+                h += '  </div>';
                 h += '  <div>' + audienceBadge + '</div>';
                 h += '</div>';
-                h += '<div style="font-size:13.5px; line-height:1.8; color:var(--tx); white-space:pre-wrap; font-weight:600;">' + esc(data.content) + '</div>';
-                h += '<div style="display:flex; justify-content:space-between; align-items:center; margin-top:10px; border-top:1px dashed var(--bd); padding-top:8px; font-size:11.5px; color:var(--tx2); font-weight:700;">';
-                h += '  <div>👤 ' + esc(data.createdBy) + (data.createdByRole ? ' <span style="opacity:.8">(' + esc(data.createdByRole) + ')</span>' : '') + '</div>';
+                h += '<div style="font-size:13px; line-height:1.75; color:var(--tx); white-space:pre-wrap; font-weight:600;">' + esc(data.content) + '</div>';
+                h += '<div style="display:flex; justify-content:space-between; align-items:center; margin-top:8px; border-top:1px dashed var(--bd); padding-top:6px; font-size:11px; color:var(--tx3); font-weight:600;">';
+                h += '  <div>👤 ' + esc(data.createdBy) + (data.createdByRole ? ' (' + esc(data.createdByRole) + ')' : '') + '</div>';
                 h += '  <div>📅 ' + esc(data.date || '') + '</div>';
                 h += '</div>';
                 h += '</div>';
