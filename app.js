@@ -5884,6 +5884,10 @@ function loadAdminAnnouncements() {
             list.push(a);
         });
 
+        try {
+            localStorage.setItem('techgo_shared_announcements', JSON.stringify(list));
+        } catch(e){}
+
         list.sort(function(a, b) {
             var tA = a.createdAt && a.createdAt.seconds ? a.createdAt.seconds*1000 : (a.createdAt ? new Date(a.createdAt).getTime() : 0);
             var tB = b.createdAt && b.createdAt.seconds ? b.createdAt.seconds*1000 : (b.createdAt ? new Date(b.createdAt).getTime() : 0);

@@ -67,7 +67,7 @@
     <link
         href="https://fonts.googleapis.com/css2?family=Alexandria:wght@300;400;500;600;700;800;900&family=Cairo:wght@400;600;700;800;900&family=Tajawal:wght@400;500;700;800&family=Inter:wght@400;500;600;700&display=swap"
         rel="stylesheet">
-    <link rel="stylesheet" href="styles.css?v=1787658631">
+    <link rel="stylesheet" href="styles.css?v=1787658811">
     <link rel="manifest" href="manifest.json">
     <link rel="icon" type="image/png" sizes="192x192" href="icon-192.png">
     <link rel="apple-touch-icon" href="icon-192.png">
@@ -75,10 +75,10 @@
     <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-storage-compat.js"></script>
-    <script src="firebase-config.js?v=1787658631"></script>
-    <script src="auth.js?v=1787658631"></script>
-    <script src="app.js?v=1787658631"></script>
-    <script src="formsend.js?v=1787658631"></script>
+    <script src="firebase-config.js?v=1787658811"></script>
+    <script src="auth.js?v=1787658811"></script>
+    <script src="app.js?v=1787658811"></script>
+    <script src="formsend.js?v=1787658811"></script>
     <script>
         (function () {
             const theme = localStorage.getItem('tg-theme') || 'light';
@@ -3227,7 +3227,7 @@
         تطوير وتصميم: أبانوب فايز</div>
     <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
-    <script src="theme.js?v=1787658631"></script>
+    <script src="theme.js?v=1787658811"></script>
 
 
     <!-- Incoming Meeting Call Modal -->
@@ -3584,12 +3584,14 @@
         function loadEmpAnnouncements() {
             var box = document.getElementById('empAnnouncementsList');
             var panel = document.getElementById('empAnnouncementsPanel');
-            if(!box || !panel) return;
+            if (!box || !panel) return;
             var myUid = (typeof TG_USER !== 'undefined' && TG_USER) ? TG_USER.uid : '';
 
             function annCard(data, isPrivate) {
                 var borderColor = isPrivate ? 'var(--gd)' : '#10b981';
-                var audienceBadge = isPrivate ? '<span style="background:rgba(201,162,39,0.2);color:var(--gd);padding:2px 8px;border-radius:10px;font-size:11px;font-weight:bold;">👤 خاص بك</span>' : '<span style="background:rgba(16,185,129,0.2);color:#10b981;padding:2px 8px;border-radius:10px;font-size:11px;font-weight:bold;">📢 عام لكل الموظفين</span>';
+                var audienceBadge = isPrivate 
+                    ? '<span style="background:rgba(201,162,39,0.2);color:var(--gd);padding:2px 8px;border-radius:10px;font-size:11px;font-weight:bold;">👤 خاص بك</span>' 
+                    : '<span style="background:rgba(16,185,129,0.2);color:#10b981;padding:2px 8px;border-radius:10px;font-size:11px;font-weight:bold;">📢 عام لكل الموظفين</span>';
                 
                 var h = '<div style="background:var(--w);padding:18px 20px;border-radius:14px;border-right:5px solid '+borderColor+';border:1px solid var(--bd);margin-bottom:12px;box-shadow:0 4px 15px rgba(0,0,0,0.03);">';
                 h += '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;gap:8px;flex-wrap:wrap;">';
@@ -3605,63 +3607,81 @@
                 return h;
             }
 
-            if (typeof db !== 'undefined' && db && db.collection) {
-                db.collection('announcements').limit(50).onSnapshot(function(snap) {
-                    if(!snap || snap.empty) {
-                        panel.style.display = 'none';
-                        box.innerHTML = '';
-                        return;
-                    }
-                    var allList = [];
-                    snap.forEach(function(d) {
-                        var data = Object.assign({ id: d.id }, d.data());
-                        if(data.isHidden) return;
-                        var t = (data.title || '').toLowerCase();
-                        var c = (data.content || '').toLowerCase();
-                        if (t.indexOf('اجتماع') !== -1 || c.indexOf('اجتماع') !== -1 || t.indexOf('مكالمة') !== -1 || c.indexOf('مكالمة') !== -1) return;
-                        allList.push(data);
-                    });
-
-                    allList.sort(function(a, b) {
-                        var tA = a.createdAt && a.createdAt.seconds ? a.createdAt.seconds*1000 : (a.createdAt ? new Date(a.createdAt).getTime() : 0);
-                        var tB = b.createdAt && b.createdAt.seconds ? b.createdAt.seconds*1000 : (b.createdAt ? new Date(b.createdAt).getTime() : 0);
-                        return tB - tA;
-                    });
-
-                    var publicOnes = [];
-                    var privateOnes = [];
-                    allList.forEach(function(data) {
-                        if(data.audience === 'private') {
-                            if(data.targetUid === myUid) privateOnes.push(data);
-                        } else {
-                            publicOnes.push(data);
-                        }
-                    });
-
-                    if(!publicOnes.length && !privateOnes.length) {
-                        panel.style.display = 'none';
-                        box.innerHTML = '';
-                        return;
-                    }
-                    panel.style.display = 'block';
-
-                    var h = '';
-                    if(privateOnes.length) {
-                        h += '<div style="font-size:13px;font-weight:800;margin:0 0 8px;opacity:.9;color:#fff;">👤 إعلانات وتكليفات خاصة بك</div>';
-                        privateOnes.forEach(function(data){ h += annCard(data, true); });
-                    }
-                    if(publicOnes.length) {
-                        if(privateOnes.length) h += '<div style="font-size:13px;font-weight:800;margin:14px 0 8px;opacity:.9;color:#fff;">📢 إعلانات عامة</div>';
-                        publicOnes.forEach(function(data){ h += annCard(data, false); });
-                    }
-                    box.innerHTML = h;
-                }, function(err) {
-                    console.warn('Error loading announcements:', err);
+            function renderAnnList(allList) {
+                if (!allList || !allList.length) {
                     panel.style.display = 'none';
                     box.innerHTML = '';
+                    return;
+                }
+
+                allList.sort(function(a, b) {
+                    var tA = a.createdAt && a.createdAt.seconds ? a.createdAt.seconds*1000 : (a.createdAt ? new Date(a.createdAt).getTime() : 0);
+                    var tB = b.createdAt && b.createdAt.seconds ? b.createdAt.seconds*1000 : (b.createdAt ? new Date(b.createdAt).getTime() : 0);
+                    return tB - tA;
+                });
+
+                var publicOnes = [];
+                var privateOnes = [];
+                allList.forEach(function(data) {
+                    if (data.audience === 'private') {
+                        if (data.targetUid === myUid) privateOnes.push(data);
+                    } else {
+                        publicOnes.push(data);
+                    }
+                });
+
+                if (!publicOnes.length && !privateOnes.length) {
+                    panel.style.display = 'none';
+                    box.innerHTML = '';
+                    return;
+                }
+                panel.style.display = 'block';
+
+                var h = '';
+                if (privateOnes.length) {
+                    h += '<div style="font-size:13px;font-weight:800;margin:0 0 8px;opacity:.9;color:#fff;">👤 إعلانات وتكليفات خاصة بك</div>';
+                    privateOnes.forEach(function(data){ h += annCard(data, true); });
+                }
+                if (publicOnes.length) {
+                    if (privateOnes.length) h += '<div style="font-size:13px;font-weight:800;margin:14px 0 8px;opacity:.9;color:#fff;">📢 إعلانات عامة</div>';
+                    publicOnes.forEach(function(data){ h += annCard(data, false); });
+                }
+                box.innerHTML = h;
+            }
+
+            // 1. Initial fast render from cached storage
+            try {
+                var cached = JSON.parse(localStorage.getItem('techgo_shared_announcements') || '[]');
+                if (cached && cached.length) renderAnnList(cached);
+            } catch(e){}
+
+            // 2. Real-time sync with Firestore
+            if (typeof db !== 'undefined' && db && db.collection) {
+                db.collection('announcements').limit(50).onSnapshot(function(snap) {
+                    if (!snap || snap.empty) {
+                        renderAnnList([]);
+                        return;
+                    }
+                    var list = [];
+                    snap.forEach(function(d) {
+                        var data = Object.assign({ id: d.id }, d.data());
+                        if (data.isHidden) return;
+                        list.push(data);
+                    });
+
+                    try {
+                        localStorage.setItem('techgo_shared_announcements', JSON.stringify(list));
+                    } catch(e){}
+
+                    renderAnnList(list);
+                }, function(err) {
+                    console.warn('Firestore announcements listener notice:', err);
                 });
             }
         }
+
+        // Run immediately
+        loadEmpAnnouncements();
     </script>
 
 </body>
