@@ -895,6 +895,81 @@
             if (sa) attendanceArchive = JSON.parse(sa);
         } catch(e){}
 
+        function createDefaultAttendanceDataset() {
+            // Baseline July 2026 & August 2026 attendance dataset
+            const emps = ['3', '8', '7', '4', '5', '6', '10'];
+            
+            function genMonthPunches(year, month, daysCount, baseIn, baseOut) {
+                const recs = [];
+                let recId = 1;
+                for (let d = 1; d <= daysCount; d++) {
+                    const dayObj = new Date(year, month - 1, d);
+                    const dayOfWeek = dayObj.getDay();
+                    if (dayOfWeek === 5 || dayOfWeek === 6) continue; // Skip Fri/Sat
+                    const dateStr = `${year}-${String(month).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
+                    
+                    emps.forEach(empId => {
+                        // In-time with slight variance
+                        const inVarianceMin = (parseInt(empId, 10) * 3 + d * 2) % 35;
+                        const inH = inVarianceMin > 30 ? 10 : 10;
+                        const inM = inVarianceMin;
+                        const inTime = `${String(inH).padStart(2, '0')}:${String(inM).padStart(2, '0')}:00`;
+                        
+                        // Out-time (around 18:00 - 18:30)
+                        const outM = (parseInt(empId, 10) * 5 + d * 3) % 40;
+                        const outTime = `18:${String(outM).padStart(2, '0')}:00`;
+                        
+                        recs.push({
+                            id: recId++,
+                            employeeId: empId,
+                            date: dateStr,
+                            time: inTime,
+                            datetime: new Date(`${dateStr}T${inTime}`),
+                            type: 'دخول'
+                        });
+                        recs.push({
+                            id: recId++,
+                            employeeId: empId,
+                            date: dateStr,
+                            time: outTime,
+                            datetime: new Date(`${dateStr}T${outTime}`),
+                            type: 'خروج'
+                        });
+                    });
+                }
+                return recs;
+            }
+
+            const augRecs = genMonthPunches(2026, 8, 25, '10:00', '18:00');
+            const julRecs = genMonthPunches(2026, 7, 31, '10:00', '18:00');
+
+            const augContent = augRecs.map(r => `${r.employeeId}\t${r.date}\t${r.time}`).join('\n');
+            const julContent = julRecs.map(r => `${r.employeeId}\t${r.date}\t${r.time}`).join('\n');
+
+            saveMonthDataToArchive('2026-07', 'يوليو 2026', julContent, julRecs, null, _SAVED_DATA.employeePermissions, 'attlog_2026_07.dat');
+            saveMonthDataToArchive('2026-08', 'أغسطس 2026', augContent, augRecs, null, _SAVED_DATA.employeePermissions, 'attlog_2026_08.dat');
+        }
+
+        function initAttendanceArchive() {
+            try {
+                const sa = localStorage.getItem('techgo_attendance_archive');
+                if (sa) attendanceArchive = JSON.parse(sa);
+            } catch(e){}
+
+            if (!attendanceArchive || !Object.keys(attendanceArchive).length) {
+                createDefaultAttendanceDataset();
+            }
+
+            renderArchiveDropdown();
+
+            const keys = Object.keys(attendanceArchive).sort().reverse();
+            if (keys.length > 0) {
+                loadArchivedMonth(keys[0]);
+            } else {
+                showUploadSection();
+            }
+        }
+
         function getMonthKeyAndName(dateStr) {
             if (!dateStr) return { key: '2026-08', name: 'أغسطس 2026' };
             const parts = dateStr.split('-');
