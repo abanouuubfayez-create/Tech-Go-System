@@ -4893,12 +4893,14 @@ function load(id,c){
 
     // ── الحضور والانصراف ──────────────────────────────────────────────
     else if(id==="att"){
-        h='<div style="background:var(--w);border:1px solid var(--bd);border-radius:6px;overflow:hidden">';
-        h+='<div style="background:var(--nv);color:#fff;padding:10px 20px;display:flex;align-items:center;justify-content:space-between">';
-        h+='<div><span style="font-size:15px;font-weight:800">⏱ نظام الحضور والانصراف</span><br><span style="font-size:10px;opacity:.6">تحليل البيانات · WFH · التقارير التفصيلية</span></div>';
-        h+='<div class="np"><button class="bt bt-g" onclick="document.getElementById(\'attF\').contentWindow.print()">🖨 طباعة التقرير</button></div>';
+        h='<div style="background:var(--w);border:1px solid var(--bd);border-radius:12px;overflow:hidden;box-shadow:var(--sh-sm)">';
+        h+='<div style="background:var(--nv);color:#fff;padding:12px 20px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px">';
+        h+='<div><span style="font-size:15px;font-weight:800">⏱ نظام الحضور والانصراف المعتمد والأرشيف الشهري</span><br><span style="font-size:11px;opacity:.7">تحليل ملف البصمة attlog.dat · احتساب الساعات · تدقيق الأذونات</span></div>';
+        h+='<div class="np" style="display:flex;gap:8px">';
+        h+='<a href="attendance.html" target="_blank" class="bt bt-o" style="color:#fff;border-color:rgba(255,255,255,0.3);text-decoration:none;font-size:12px;padding:6px 12px;display:inline-flex;align-items:center;gap:4px">↗️ فتح في نافذة كاملة</a>';
         h+='</div>';
-        h+='<iframe id="attF" src="attendance.html" style="width:100%;height:calc(100vh - 100px);border:none"></iframe>';
+        h+='</div>';
+        h+='<iframe id="attF" src="attendance.html" style="width:100%;height:calc(100vh - 130px);border:none;min-height:750px"></iframe>';
         h+='</div>';
     }
 
