@@ -67,7 +67,7 @@
     <link
         href="https://fonts.googleapis.com/css2?family=Alexandria:wght@300;400;500;600;700;800;900&family=Cairo:wght@400;600;700;800;900&family=Tajawal:wght@400;500;700;800&family=Inter:wght@400;500;600;700&display=swap"
         rel="stylesheet">
-    <link rel="stylesheet" href="styles.css?v=1787667110">
+    <link rel="stylesheet" href="styles.css?v=1787667364">
     <link rel="manifest" href="manifest.json">
     <link rel="icon" type="image/png" sizes="192x192" href="icon-192.png">
     <link rel="apple-touch-icon" href="icon-192.png">
@@ -75,10 +75,10 @@
     <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-storage-compat.js"></script>
-    <script src="firebase-config.js?v=1787667110"></script>
-    <script src="auth.js?v=1787667110"></script>
-    <script src="app.js?v=1787667110"></script>
-    <script src="formsend.js?v=1787667110"></script>
+    <script src="firebase-config.js?v=1787667364"></script>
+    <script src="auth.js?v=1787667364"></script>
+    <script src="app.js?v=1787667364"></script>
+    <script src="formsend.js?v=1787667364"></script>
     <script>
         (function () {
             const theme = localStorage.getItem('tg-theme') || 'light';
@@ -125,56 +125,106 @@
             margin-right: 6px;
         }
 
-        .emp-nav {
-            display: flex;
-            gap: 4px;
-            padding: 6px 20px;
+        /* ═══ MODERN SMART NAVIGATION ═══ */
+        .emp-nav-bar {
             background: var(--w);
             border-bottom: 1px solid var(--bd);
-            flex-wrap: wrap;
             position: sticky;
             top: 56px;
             z-index: 70;
-            box-shadow: 0 1px 3px rgba(15, 23, 42, .03);
+            box-shadow: 0 1px 4px rgba(15, 23, 42, .04);
+            display: flex;
+            align-items: center;
+            padding: 7px 16px;
+            gap: 10px;
+        }
+
+        .emp-nav-menu-btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            padding: 7px 12px;
+            background: var(--bg2);
+            border: 1px solid var(--bd);
+            border-radius: 20px;
+            color: var(--tx);
+            font-family: inherit;
+            font-size: 12px;
+            font-weight: 800;
+            cursor: pointer;
+            flex-shrink: 0;
+            transition: all 0.2s ease;
+        }
+
+        .emp-nav-menu-btn:hover {
+            background: rgba(15, 118, 110, 0.08);
+            border-color: #0f766e;
+            color: #0f766e;
+        }
+
+        .emp-nav {
+            display: flex;
+            gap: 6px;
+            overflow-x: auto;
+            flex-wrap: nowrap;
+            -webkit-overflow-scrolling: touch;
+            scrollbar-width: none;
+            padding: 2px 0;
+            flex: 1;
+            scroll-behavior: smooth;
+        }
+
+        .emp-nav::-webkit-scrollbar {
+            display: none;
         }
 
         .emp-tab {
-            padding: 9px 15px;
+            padding: 8px 14px;
             font-size: 12.5px;
-            font-weight: 600;
+            font-weight: 700;
             color: var(--tx3);
             cursor: pointer;
-            border-radius: 8px;
+            border-radius: 20px;
             transition: all .2s ease;
             display: flex;
             align-items: center;
             gap: 6px;
-            border: 1px solid transparent;
+            border: 1px solid var(--bd);
+            background: var(--bg);
+            flex-shrink: 0;
+            white-space: nowrap;
+            user-select: none;
         }
 
         .emp-tab:hover {
             color: var(--tx);
-            background: var(--bg);
-            border-color: var(--bd);
+            background: var(--bg2);
+            border-color: var(--bd2);
         }
 
         .emp-tab.a {
-            color: #0f766e;
-            background: rgba(15, 118, 110, 0.08);
-            border-color: rgba(15, 118, 110, 0.2);
+            color: #ffffff !important;
+            background: linear-gradient(135deg, #0f766e, #0d9488) !important;
+            border-color: transparent !important;
             font-weight: 800;
+            box-shadow: 0 3px 10px rgba(13, 148, 136, 0.35);
         }
 
         [data-theme='dark'] .emp-tab.a {
-            color: #2dd4bf;
-            background: rgba(45, 212, 191, 0.12);
-            border-color: rgba(45, 212, 191, 0.25);
+            color: #ffffff !important;
+            background: linear-gradient(135deg, #0d9488, #14b8a6) !important;
+            box-shadow: 0 3px 12px rgba(20, 184, 166, 0.4);
         }
 
         .emp-ct {
             padding: 22px 24px;
             max-width: 960px;
             margin: 0 auto;
+        }
+
+        /* ═══ MOBILE BOTTOM NAVIGATION DOCK ═══ */
+        .emp-bottom-dock {
+            display: none;
         }
 
         /* ── Mobile Responsive Optimizations ── */
@@ -217,28 +267,25 @@
                 padding: 5px 8px !important;
             }
 
-            .emp-nav {
-                overflow-x: auto;
-                flex-wrap: nowrap;
+            .emp-nav-bar {
+                top: 52px;
                 padding: 6px 8px;
-                gap: 4px;
-                -webkit-overflow-scrolling: touch;
-                scrollbar-width: none;
+                gap: 6px;
             }
 
-            .emp-nav::-webkit-scrollbar {
-                display: none;
+            .emp-nav-menu-btn {
+                padding: 6px 10px;
+                font-size: 11px;
             }
 
             .emp-tab {
-                padding: 7px 11px;
+                padding: 6px 11px;
                 font-size: 11.5px;
-                flex-shrink: 0;
-                white-space: nowrap;
             }
 
             .emp-ct {
                 padding: 12px 10px;
+                padding-bottom: 75px !important;
             }
 
             .emp-quick-actions {
@@ -250,6 +297,134 @@
                 width: 100% !important;
                 min-width: 100% !important;
             }
+
+            .emp-bottom-dock {
+                display: flex;
+                position: fixed;
+                bottom: 0;
+                left: 0;
+                right: 0;
+                height: 58px;
+                background: var(--w);
+                border-top: 1px solid var(--bd);
+                z-index: 9999;
+                align-items: center;
+                justify-content: space-around;
+                box-shadow: 0 -4px 16px rgba(0,0,0,0.06);
+                backdrop-filter: blur(12px);
+                padding: 0 4px;
+            }
+
+            .dock-item {
+                display: flex;
+                flex-direction: column;
+                align-items: center;
+                justify-content: center;
+                flex: 1;
+                height: 100%;
+                color: var(--tx3);
+                font-size: 10.5px;
+                font-weight: 700;
+                cursor: pointer;
+                border: none;
+                background: transparent;
+                padding: 4px 2px;
+                gap: 2px;
+                transition: all 0.15s ease;
+                position: relative;
+                font-family: inherit;
+            }
+
+            .dock-item.a {
+                color: #0f766e;
+                font-weight: 900;
+            }
+
+            [data-theme='dark'] .dock-item.a {
+                color: #2dd4bf;
+            }
+
+            .dock-icon {
+                font-size: 17px;
+                line-height: 1;
+            }
+        }
+
+        /* ═══ ALL SECTIONS BOTTOM SHEET DRAWER ═══ */
+        .drawer-overlay {
+            position: fixed;
+            inset: 0;
+            background: rgba(15, 23, 42, 0.6);
+            backdrop-filter: blur(6px);
+            z-index: 100000;
+            display: none;
+            align-items: flex-end;
+            justify-content: center;
+            opacity: 0;
+            transition: opacity 0.2s ease;
+        }
+
+        .drawer-overlay.open {
+            display: flex;
+            opacity: 1;
+        }
+
+        .drawer-sheet {
+            background: var(--w);
+            border-top: 2px solid var(--bd);
+            border-radius: 24px 24px 0 0;
+            width: 100%;
+            max-width: 520px;
+            max-height: 82vh;
+            overflow-y: auto;
+            padding: 20px 16px 28px;
+            box-shadow: 0 -10px 40px rgba(0,0,0,0.3);
+            animation: slideUpDrawer 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+            direction: rtl;
+            font-family: inherit;
+        }
+
+        @keyframes slideUpDrawer {
+            from { transform: translateY(100%); }
+            to { transform: translateY(0); }
+        }
+
+        .drawer-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 10px;
+            margin-top: 14px;
+        }
+
+        .drawer-card {
+            background: var(--bg);
+            border: 1px solid var(--bd);
+            border-radius: 14px;
+            padding: 12px 10px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            transition: all 0.2s ease;
+            text-align: right;
+        }
+
+        .drawer-card:hover, .drawer-card.a {
+            background: rgba(15, 118, 110, 0.08);
+            border-color: #0f766e;
+            color: #0f766e;
+        }
+
+        .drawer-card-icon {
+            font-size: 22px;
+            flex-shrink: 0;
+        }
+
+        .drawer-card-title {
+            font-size: 12px;
+            font-weight: 800;
+            color: var(--tx);
+            line-height: 1.3;
         }
 
         .emp-pg {
@@ -679,22 +854,24 @@
         </div>
     </div>
 
-    <div class="emp-nav">
-        <div class="emp-tab a" data-pg="proj" onclick="empGo('proj',this)">📁 مشاريعي <span class="tab-badge"
-                id="proj-badge" style="display:none">0</span></div>
-        <div class="emp-tab" data-pg="tasks" onclick="empGo('tasks',this)">🗂 مهامي وإنجازاتي <span class="tab-badge"
-                id="tasks-badge" style="display:none">0</span></div>
-        <div class="emp-tab" data-pg="wkr" onclick="empGo('wkr',this)">📊 التقارير الأسبوعية</div>
-        <div class="emp-tab" data-pg="monthlyplans" onclick="empGo('monthlyplans',this)">🎯 المستهدفات والخطط العامة</div>
-        <div class="emp-tab" data-pg="docs" onclick="empGo('docs',this)">📄 مستنداتي</div>
-        <div class="emp-tab" data-pg="req" onclick="empGo('req',this)">📨 طلباتي</div>
-        <div class="emp-tab" id="empTabAtt" data-pg="att" onclick="empGo('att',this)" style="display:none">⏱️ الحضور
-            والانصراف</div>
-        <div class="emp-tab" data-pg="devres" onclick="empGo('devres',this)">🚀 التطوير المهني <span class="tab-badge"
-                id="devres-badge" style="display:none">0</span></div>
-        <div class="emp-tab" data-pg="livemeeting" onclick="empGo('livemeeting',this)">🎥 غرفة الاجتماعات <span
-                class="tab-badge" id="meetingBadgeStatus" style="display:none; background:var(--ok)">مباشر</span></div>
-        <div class="emp-tab" data-pg="acct" onclick="empGo('acct',this)">👤 حسابي</div>
+    <div class="emp-nav-bar">
+        <button class="emp-nav-menu-btn" onclick="tgToggleMobileNavDrawer()" title="عرض كافة الأقسام">
+            <span style="font-size:14px;">📑</span>
+            <span class="nav-menu-lbl">الأقسام (10)</span>
+            <span style="font-size:10px; opacity:0.7;">▾</span>
+        </button>
+        <div class="emp-nav" id="empNavPills">
+            <div class="emp-tab a" data-pg="proj" onclick="empGo('proj',this)">📁 مشاريعي <span class="tab-badge" id="proj-badge" style="display:none">0</span></div>
+            <div class="emp-tab" data-pg="tasks" onclick="empGo('tasks',this)">🗂 مهامي وإنجازاتي <span class="tab-badge" id="tasks-badge" style="display:none">0</span></div>
+            <div class="emp-tab" data-pg="wkr" onclick="empGo('wkr',this)">📊 التقارير الأسبوعية</div>
+            <div class="emp-tab" data-pg="monthlyplans" onclick="empGo('monthlyplans',this)">🎯 المستهدفات والخطط العامة</div>
+            <div class="emp-tab" data-pg="docs" onclick="empGo('docs',this)">📄 مستنداتي</div>
+            <div class="emp-tab" data-pg="req" onclick="empGo('req',this)">📨 طلباتي</div>
+            <div class="emp-tab" id="empTabAtt" data-pg="att" onclick="empGo('att',this)" style="display:none">⏱️ الحضور والانصراف</div>
+            <div class="emp-tab" data-pg="devres" onclick="empGo('devres',this)">🚀 التطوير المهني <span class="tab-badge" id="devres-badge" style="display:none">0</span></div>
+            <div class="emp-tab" data-pg="livemeeting" onclick="empGo('livemeeting',this)">🎥 غرفة الاجتماعات <span class="tab-badge" id="meetingBadgeStatus" style="display:none; background:var(--ok)">مباشر</span></div>
+            <div class="emp-tab" data-pg="acct" onclick="empGo('acct',this)">👤 حسابي</div>
+        </div>
     </div>
 
     <div class="emp-ct">
@@ -1095,11 +1272,26 @@
             return '<span class="badge ' + cls + '">' + lbl + '</span>';
         }
         function empGo(id, el, force) {
-            // تم إزالة فحص النص غير المحفوظ لتجنب الإزعاج
+            // Remove active from all navigation elements
             document.querySelectorAll('.emp-tab').forEach(function (t) { t.classList.remove('a'); });
+            document.querySelectorAll('.dock-item').forEach(function (d) { d.classList.remove('a'); });
+            document.querySelectorAll('.drawer-card').forEach(function (c) { c.classList.remove('a'); });
             document.querySelectorAll('.emp-pg').forEach(function (p) { p.classList.remove('a'); });
+
             if (!el) el = document.querySelector('.emp-tab[data-pg="' + id + '"]');
-            if (el) el.classList.add('a');
+            if (el) {
+                el.classList.add('a');
+                try {
+                    el.scrollIntoView({ behavior: 'smooth', inline: 'center', block: 'nearest' });
+                } catch(e){}
+            }
+
+            var dockEl = document.querySelector('.dock-item[data-dock="' + id + '"]');
+            if (dockEl) dockEl.classList.add('a');
+
+            var drawerEl = document.querySelector('.drawer-card[data-drawer="' + id + '"]');
+            if (drawerEl) drawerEl.classList.add('a');
+
             var epg = document.getElementById('epg-' + id);
             if (epg) epg.classList.add('a');
 
@@ -3337,8 +3529,8 @@
         تطوير وتصميم: أبانوب فايز</div>
     <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
-    <script src="theme.js?v=1787667110"></script>
-    <script src="pwa-install.js?v=1787667110"></script>
+    <script src="theme.js?v=1787667364"></script>
+    <script src="pwa-install.js?v=1787667364"></script>
 
 
     <!-- Incoming Meeting Call Modal -->
@@ -3827,8 +4019,128 @@
 
         // Run immediately
         loadEmpAnnouncements();
+
+        // ══════════════════════════════════════════
+        //  MOBILE ALL-SECTIONS DRAWER CONTROLLER
+        // ══════════════════════════════════════════
+        window.tgToggleMobileNavDrawer = function(show) {
+            var drawer = document.getElementById('empAllTabsDrawer');
+            if (!drawer) return;
+            if (typeof show === 'boolean') {
+                if (show) drawer.classList.add('open');
+                else drawer.classList.remove('open');
+            } else {
+                drawer.classList.toggle('open');
+            }
+        };
     </script>
 
-</body>
+    <!-- Mobile Bottom Navigation Dock -->
+    <nav class="emp-bottom-dock">
+        <button class="dock-item a" data-dock="proj" onclick="empGo('proj')">
+            <span class="dock-icon">📁</span>
+            <span>مشاريعي</span>
+        </button>
+        <button class="dock-item" data-dock="tasks" onclick="empGo('tasks')">
+            <span class="dock-icon">🗂</span>
+            <span>مهامي</span>
+        </button>
+        <button class="dock-item" data-dock="wkr" onclick="empGo('wkr')">
+            <span class="dock-icon">📊</span>
+            <span>التقارير</span>
+        </button>
+        <button class="dock-item" data-dock="req" onclick="empGo('req')">
+            <span class="dock-icon">📨</span>
+            <span>طلباتي</span>
+        </button>
+        <button class="dock-item" onclick="tgToggleMobileNavDrawer()">
+            <span class="dock-icon">📑</span>
+            <span>المزيد</span>
+        </button>
+    </nav>
 
+    <!-- All Sections Bottom Sheet Drawer -->
+    <div class="drawer-overlay" id="empAllTabsDrawer" onclick="if(event.target===this) tgToggleMobileNavDrawer(false)">
+        <div class="drawer-sheet">
+            <div style="display:flex; justify-content:space-between; align-items:center; border-bottom:1px solid var(--bd); padding-bottom:12px;">
+                <div style="font-size:15px; font-weight:900; color:var(--tx); display:flex; align-items:center; gap:8px;">
+                    <span style="font-size:18px;">📑</span> كافة أقسام بوابة الموظف
+                </div>
+                <button onclick="tgToggleMobileNavDrawer(false)" style="background:none; border:none; color:var(--tx3); font-size:18px; cursor:pointer; padding:4px 8px; font-weight:bold;">✕</button>
+            </div>
+            <div class="drawer-grid">
+                <div class="drawer-card" data-drawer="proj" onclick="empGo('proj'); tgToggleMobileNavDrawer(false);">
+                    <div class="drawer-card-icon">📁</div>
+                    <div>
+                        <div class="drawer-card-title">مشاريعي</div>
+                        <div class="drawer-card-desc">متابعة المشاريع والتقدم</div>
+                    </div>
+                </div>
+                <div class="drawer-card" data-drawer="tasks" onclick="empGo('tasks'); tgToggleMobileNavDrawer(false);">
+                    <div class="drawer-card-icon">🗂</div>
+                    <div>
+                        <div class="drawer-card-title">مهامي وإنجازاتي</div>
+                        <div class="drawer-card-desc">إدارة وتحديث المهام</div>
+                    </div>
+                </div>
+                <div class="drawer-card" data-drawer="wkr" onclick="empGo('wkr'); tgToggleMobileNavDrawer(false);">
+                    <div class="drawer-card-icon">📊</div>
+                    <div>
+                        <div class="drawer-card-title">التقارير الأسبوعية (WR)</div>
+                        <div class="drawer-card-desc">تقارير نهاية الأسبوع</div>
+                    </div>
+                </div>
+                <div class="drawer-card" data-drawer="monthlyplans" onclick="empGo('monthlyplans'); tgToggleMobileNavDrawer(false);">
+                    <div class="drawer-card-icon">🎯</div>
+                    <div>
+                        <div class="drawer-card-title">المستهدفات والخطط (MP)</div>
+                        <div class="drawer-card-desc">الخطط العامة الشهرية</div>
+                    </div>
+                </div>
+                <div class="drawer-card" data-drawer="docs" onclick="empGo('docs'); tgToggleMobileNavDrawer(false);">
+                    <div class="drawer-card-icon">📄</div>
+                    <div>
+                        <div class="drawer-card-title">مستنداتي</div>
+                        <div class="drawer-card-desc">ملفات العقود والوثائق</div>
+                    </div>
+                </div>
+                <div class="drawer-card" data-drawer="req" onclick="empGo('req'); tgToggleMobileNavDrawer(false);">
+                    <div class="drawer-card-icon">📨</div>
+                    <div>
+                        <div class="drawer-card-title">طلباتي</div>
+                        <div class="drawer-card-desc">إجازات وأذونات وسلف</div>
+                    </div>
+                </div>
+                <div class="drawer-card" data-drawer="att" onclick="empGo('att'); tgToggleMobileNavDrawer(false);">
+                    <div class="drawer-card-icon">⏱️</div>
+                    <div>
+                        <div class="drawer-card-title">الحضور والانصراف</div>
+                        <div class="drawer-card-desc">سجل الدوام والبصمة</div>
+                    </div>
+                </div>
+                <div class="drawer-card" data-drawer="devres" onclick="empGo('devres'); tgToggleMobileNavDrawer(false);">
+                    <div class="drawer-card-icon">🚀</div>
+                    <div>
+                        <div class="drawer-card-title">التطوير المهني</div>
+                        <div class="drawer-card-desc">مصادر التدريب والمهام</div>
+                    </div>
+                </div>
+                <div class="drawer-card" data-drawer="livemeeting" onclick="empGo('livemeeting'); tgToggleMobileNavDrawer(false);">
+                    <div class="drawer-card-icon">🎥</div>
+                    <div>
+                        <div class="drawer-card-title">غرفة الاجتماعات</div>
+                        <div class="drawer-card-desc">مكالمات مرئية وصوتية</div>
+                    </div>
+                </div>
+                <div class="drawer-card" data-drawer="acct" onclick="empGo('acct'); tgToggleMobileNavDrawer(false);">
+                    <div class="drawer-card-icon">👤</div>
+                    <div>
+                        <div class="drawer-card-title">حسابي</div>
+                        <div class="drawer-card-desc">البيانات وكلمة المرور</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</body>
 </html>
