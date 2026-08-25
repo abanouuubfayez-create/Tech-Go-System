@@ -3681,10 +3681,11 @@ function printAchievementDoc(u,a){
     printDoc(h, docTitle);
 }
 function printRequestDoc(u,r){
+    var tplTitle = (window.FS_TEMPLATES && r.formTemplateId && window.FS_TEMPLATES[r.formTemplateId] && window.FS_TEMPLATES[r.formTemplateId].title) ? window.FS_TEMPLATES[r.formTemplateId].title : (r.type || 'طلب موظف');
     if (r.dynamicData && r.formTemplateId && window.FS_OFFICIAL && window.FS_OFFICIAL[r.formTemplateId] && typeof window.FS_OFFICIAL[r.formTemplateId].print === 'function') {
-        var dh = H('نموذج موظف', window.FS_TEMPLATES[r.formTemplateId].title, 'EMPLOYEE FORM', 'req');
+        var dh = H('نموذج موظف', tplTitle, 'EMPLOYEE FORM', 'req');
         dh += window.FS_OFFICIAL[r.formTemplateId].print(r.dynamicData);
-        var dTitle = (window.FS_TEMPLATES[r.formTemplateId].title) + (u.name ? ' - ' + u.name : '');
+        var dTitle = tplTitle + (u.name ? ' - ' + u.name : '');
         printDoc(dh, dTitle);
         return;
     }
