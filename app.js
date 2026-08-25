@@ -13878,19 +13878,24 @@ window.tgShowReminderBannerIfNeeded = function(hasWRThisWeek, hasMRThisMonth, ha
     banner.id = 'tgAutoReminderBanner';
     var borderColor = first.type === 'wr' && dayOfWeek === 4 ? '#f59e0b' : '#38bdf8';
     var shadowGlow = first.type === 'wr' && dayOfWeek === 4 ? '0 15px 40px rgba(245,158,11,0.45)' : '0 15px 40px rgba(0,0,0,0.6)';
+    var isMobile = window.innerWidth <= 600;
 
-    banner.style.cssText = 'position:fixed; bottom:20px; right:20px; z-index:99999; background:linear-gradient(135deg, #1e293b, #0f172a); border:2px solid ' + borderColor + '; border-radius:18px; padding:16px 20px; box-shadow:' + shadowGlow + '; color:#ffffff; max-width:420px; font-family:inherit; animation:slideUp 0.4s ease;';
+    var posStyle = isMobile
+        ? 'position:fixed; bottom:12px; left:12px; right:12px; z-index:99999; background:linear-gradient(135deg, #1e293b, #0f172a); border:1.5px solid ' + borderColor + '; border-radius:14px; padding:12px 14px; box-shadow:' + shadowGlow + '; color:#ffffff; width:calc(100% - 24px); max-width:calc(100% - 24px); font-family:inherit; animation:slideUp 0.35s ease; box-sizing:border-box;'
+        : 'position:fixed; bottom:20px; right:20px; z-index:99999; background:linear-gradient(135deg, #1e293b, #0f172a); border:2px solid ' + borderColor + '; border-radius:18px; padding:16px 20px; box-shadow:' + shadowGlow + '; color:#ffffff; max-width:420px; font-family:inherit; animation:slideUp 0.4s ease;';
+
+    banner.style.cssText = posStyle;
 
     banner.innerHTML = `
-        <div style="display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:8px; gap:10px;">
-            <div style="font-size:14.5px; font-weight:900; color:#fef08a; display:flex; align-items:center; gap:6px;">
+        <div style="display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:6px; gap:10px;">
+            <div style="font-size:13px; font-weight:900; color:#fef08a; display:flex; align-items:center; gap:6px;">
                 🔔 ${first.badge || 'تذكير تلقائي'}
             </div>
-            <button onclick="document.getElementById('tgAutoReminderBanner').remove()" style="background:none; border:none; color:#cbd5e1; font-size:16px; cursor:pointer; font-weight:bold;">✕</button>
+            <button onclick="document.getElementById('tgAutoReminderBanner').remove()" style="background:none; border:none; color:#cbd5e1; font-size:16px; cursor:pointer; font-weight:bold; padding:0 4px; line-height:1;" title="إغلاق">✕</button>
         </div>
-        <p style="margin:0 0 12px; font-size:13.5px; font-weight:700; color:#f8fafc; line-height:1.5;">${first.title}</p>
+        <p style="margin:0 0 10px; font-size:12.5px; font-weight:700; color:#f8fafc; line-height:1.4;">${first.title}</p>
         <div style="display:flex; justify-content:flex-end;">
-            <button onclick="document.getElementById('tgAutoReminderBanner').remove(); ${first.action};" style="background:linear-gradient(135deg, #f59e0b, #d97706); color:#ffffff; border:none; padding:9px 20px; border-radius:10px; font-size:13.5px; font-weight:900; cursor:pointer; box-shadow:0 4px 15px rgba(245,158,11,0.4);">
+            <button onclick="document.getElementById('tgAutoReminderBanner').remove(); ${first.action};" style="background:linear-gradient(135deg, #f59e0b, #d97706); color:#ffffff; border:none; padding:${isMobile ? '8px 14px' : '9px 20px'}; border-radius:10px; font-size:${isMobile ? '12px' : '13.5px'}; font-weight:900; cursor:pointer; box-shadow:0 4px 15px rgba(245,158,11,0.4); ${isMobile ? 'width:100%;' : ''}">
                 ${first.btnText}
             </button>
         </div>
