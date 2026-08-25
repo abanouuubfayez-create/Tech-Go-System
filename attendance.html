@@ -743,7 +743,7 @@
                     </div>
                     <div>
                         <label style="display: block; font-size: 0.85rem; color: var(--text-muted); margin-bottom: 4px;">سماح التأخير (بالدقائق):</label>
-                        <input type="number" id="cfgGrace" value="15" style="width: 100%; padding: 8px 12px; border-radius: 8px; background: var(--bg); border: 1px solid var(--border); color: var(--text);">
+                        <input type="number" id="cfgGrace" value="30" style="width: 100%; padding: 8px 12px; border-radius: 8px; background: var(--bg); border: 1px solid var(--border); color: var(--text);">
                     </div>
                 </div>
                 <button class="btn-action btn-primary-action" onclick="saveWorkSettings()">✓ حفظ وتطبيق السياسات</button>
@@ -806,7 +806,7 @@
 
         let employeeNames = Object.assign({}, _SAVED_DATA.empNames);
         let employeePermissions = Object.assign({}, _SAVED_DATA.employeePermissions);
-        let workConfig = { start: '10:00', end: '18:00', grace: 15, workDays: [0,1,2,3,4] };
+        let workConfig = { start: '10:00', end: '18:00', grace: 30, workDays: [0,1,2,3,4] };
         let stats = null;
 
         try {
@@ -850,13 +850,14 @@
             return { hours: hours, formatted: fmtHoursAndMins(hours) };
         }
 
-        function getDayPunctuality(empId, date, entryTime) {
-            if (!entryTime) return null;
+        function getDayPunctuality(empId, date, entryTime, exitTime) {
+            if (!entryTime && exitTime) return 'missing_entry';
+            if (entryTime && !exitTime) return 'missing_exit';
+            if (!entryTime && !exitTime) return 'absent';
             const entryMins  = timeToMins(entryTime);
             const startMins  = timeToMins(workConfig.start);
-            const graceMins  = startMins + parseInt(workConfig.grace);
+            const graceMins  = startMins + parseInt(workConfig.grace || 30);
             if (entryMins > graceMins) return 'late';
-            if (entryMins < startMins) return 'early';
             return 'ok';
         }
 
@@ -1037,36 +1038,41 @@
 
             stats.employeeDetails.forEach((emp, idx) => {
                 const name = getDisplayName(emp.employeeId);
-                let ok=0, lateNoPerm=0, latePerm=0, totalHours=0;
+                let ok = 0, lateNoPerm = 0, latePerm = 0, early = 0, singlePunch = 0, totalHours = 0, completeDays = 0;
 
                 emp.dates.forEach(date => {
                     const entry = emp.entries.find(e => e.date === date);
                     const exit  = emp.exits.find(e => e.date === date);
-                    if (entry && exit) totalHours += calcDayWorkHours(entry.time, exit.time).hours;
-
-                    const p = getDayPunctuality(emp.employeeId, date, entry ? entry.time : null);
+                    const p = getDayPunctuality(emp.employeeId, date, entry ? entry.time : null, exit ? exit.time : null);
                     const perm = getPermissionForDate(emp.employeeId, date);
-                    if (p === 'late') {
-                        if (perm && (perm.type === 'late' || perm.type === 'temp')) latePerm++;
-                        else lateNoPerm++;
-                    } else if (p === 'ok' || p === 'early') {
-                        ok++;
+
+                    if (entry && exit) {
+                        const h = calcDayWorkHours(entry.time, exit.time).hours;
+                        if (h > 0) { totalHours += h; completeDays++; }
+                        if (p === 'late') {
+                            if (perm && (perm.type === 'late' || perm.type === 'temp')) latePerm++;
+                            else lateNoPerm++;
+                        } else {
+                            ok++;
+                        }
+                    } else {
+                        singlePunch++;
                     }
                 });
 
                 const permsCount = (employeePermissions[emp.employeeId] || []).length;
                 const tr = document.createElement('tr');
                 tr.innerHTML = `
-                    <td style="font-weight:bold; color:var(--text-muted);">${idx+1}</td>
+                    <td style="font-weight:bold; color:var(--text-muted); text-align:center;">${idx + 1}</td>
                     <td style="font-weight:bold; color:var(--text);">${name}</td>
-                    <td style="color:var(--perm-light); font-weight:bold;">${emp.employeeId}</td>
-                    <td><span class="status-badge badge-ok">✅ ${ok} يوم</span></td>
-                    <td>${lateNoPerm > 0 ? `<span class="status-badge badge-danger">⚠️ ${lateNoPerm} غير مبرر</span>` : '<span style="color:var(--text-muted);">0</span>'}</td>
-                    <td>${latePerm > 0 ? `<span class="status-badge badge-perm">🎫 ${latePerm} بإذن</span>` : '<span style="color:var(--text-muted);">0</span>'}</td>
-                    <td style="color:var(--text-muted);">—</td>
-                    <td><span class="status-badge badge-perm">${permsCount} إذن</span></td>
-                    <td style="font-weight:bold; color:var(--primary-light);">${fmtHoursAndMins(totalHours)}</td>
-                    <td class="col-action">
+                    <td style="color:var(--perm-light); font-weight:bold; text-align:center;">${emp.employeeId}</td>
+                    <td style="text-align:center;"><span class="status-badge badge-ok">✅ ${ok} يوم</span></td>
+                    <td style="text-align:center;">${lateNoPerm > 0 ? `<span class="status-badge badge-danger">⚠️ ${lateNoPerm} غير مبرر</span>` : '<span style="color:var(--text-muted);">0</span>'}</td>
+                    <td style="text-align:center;">${latePerm > 0 ? `<span class="status-badge badge-perm">🎫 ${latePerm} بإذن</span>` : '<span style="color:var(--text-muted);">0</span>'}</td>
+                    <td style="text-align:center;">${singlePunch > 0 ? `<span class="status-badge badge-warning">⚠️ ${singlePunch} بصمة فردية</span>` : '<span style="color:var(--text-muted);">—</span>'}</td>
+                    <td style="text-align:center;"><span class="status-badge badge-perm">${permsCount} إذن</span></td>
+                    <td style="font-weight:bold; color:var(--primary-light); text-align:center;">${fmtHoursAndMins(totalHours)} <small style="display:block; font-size:10px; color:var(--text-muted);">(${completeDays} يوم مكتمل)</small></td>
+                    <td class="col-action" style="text-align:center;">
                         <button class="btn-action btn-perm-action" onclick="openNewPermForEmp('${emp.employeeId}')" style="padding:2px 8px;font-size:0.75rem;">+ إذن</button>
                     </td>
                 `;
@@ -1081,26 +1087,43 @@
 
             stats.employeeDetails.forEach((emp, idx) => {
                 const name = getDisplayName(emp.employeeId);
-                let totalHours = 0;
+                let totalHours = 0, okCount = 0, lateCount = 0, completeDays = 0;
 
                 const rowsHtml = emp.dates.map(date => {
                     const dObj = new Date(date + 'T12:00:00');
                     const dName = dayNames[dObj.getDay()];
                     const entry = emp.entries.find(e => e.date === date);
                     const exit  = emp.exits.find(e => e.date === date);
-                    const hCalc = calcDayWorkHours(entry ? entry.time : null, exit ? exit.time : null);
-                    if (hCalc.hours) totalHours += hCalc.hours;
-
-                    const p = getDayPunctuality(emp.employeeId, date, entry ? entry.time : null);
+                    const p = getDayPunctuality(emp.employeeId, date, entry ? entry.time : null, exit ? exit.time : null);
                     const perm = getPermissionForDate(emp.employeeId, date);
 
-                    let statusBadge = '<span class="status-badge badge-ok">✅ في الميعاد</span>';
-                    if (p === 'late') {
-                        const lateMin = timeToMins(entry.time) - timeToMins(workConfig.start);
-                        if (perm && (perm.type === 'late' || perm.type === 'temp')) {
-                            statusBadge = `<span class="status-badge badge-perm">⏰ متأخر ${lateMin}د (بإذن معتمد)</span>`;
+                    let statusBadge = '';
+                    let hoursFormatted = '—';
+
+                    if (!entry && exit) {
+                        statusBadge = '<span class="status-badge badge-danger">⚠️ خروج فقط (دخول مفقود)</span>';
+                        hoursFormatted = '<span style="color:var(--warning-light);">⚠️ غير مكتمل</span>';
+                    } else if (entry && !exit) {
+                        statusBadge = '<span class="status-badge badge-danger">⚠️ دخول فقط (خروج مفقود)</span>';
+                        hoursFormatted = '<span style="color:var(--warning-light);">⚠️ غير مكتمل</span>';
+                    } else if (entry && exit) {
+                        const hCalc = calcDayWorkHours(entry.time, exit.time);
+                        if (hCalc.hours) { totalHours += hCalc.hours; completeDays++; }
+                        hoursFormatted = `<strong>${hCalc.formatted}</strong>`;
+
+                        if (p === 'late') {
+                            lateCount++;
+                            const startMins = timeToMins(workConfig.start);
+                            const graceMins = parseInt(workConfig.grace || 30);
+                            const lateMin = timeToMins(entry.time) - (startMins + graceMins);
+                            if (perm && (perm.type === 'late' || perm.type === 'temp')) {
+                                statusBadge = `<span class="status-badge badge-perm">⏰ متأخر +${lateMin > 0 ? lateMin : ''}د (بإذن معتمد)</span>`;
+                            } else {
+                                statusBadge = `<span class="status-badge badge-danger">⚠️ متأخر +${lateMin > 0 ? lateMin : ''}د (بدون إذن)</span>`;
+                            }
                         } else {
-                            statusBadge = `<span class="status-badge badge-danger">⚠️ متأخر ${lateMin}د (بدون إذن)</span>`;
+                            okCount++;
+                            statusBadge = '<span class="status-badge badge-ok">✅ في معاده</span>';
                         }
                     }
 
@@ -1109,10 +1132,12 @@
                         <td>${statusBadge}</td>
                         <td style="color:var(--success-light); font-weight:600;">${entry ? entry.time : '—'}</td>
                         <td style="color:var(--danger-light); font-weight:600;">${exit ? exit.time : '—'}</td>
-                        <td style="font-weight:bold; color:var(--text);">${hCalc.formatted}</td>
+                        <td>${hoursFormatted}</td>
                         <td style="font-size:0.8rem; color:var(--text-muted);">${perm ? '🎫 ' + (perm.note || perm.type) : '—'}</td>
                     </tr>`;
                 }).join('');
+
+                const avgPerDay = completeDays > 0 ? (totalHours / completeDays).toFixed(2) + ' س/يوم' : '—';
 
                 const card = document.createElement('div');
                 card.className = 'emp-sheet-card';
@@ -1122,10 +1147,12 @@
                             <div class="emp-avatar">${name.charAt(0)}</div>
                             <div>
                                 <div class="emp-title-text">${name}</div>
-                                <div class="emp-sub-text">كود: ${emp.employeeId} · إجمالي الساعات: ${fmtHoursAndMins(totalHours)}</div>
+                                <div class="emp-sub-text">كود: ${emp.employeeId} · ${completeDays} يوم دوام مكتمل · إجمالي: ${fmtHoursAndMins(totalHours)} · متوسط: ${avgPerDay}</div>
                             </div>
                         </div>
                         <div style="display:flex;align-items:center;gap:8px;">
+                            <span class="status-badge badge-ok">✅ ${okCount} في معاده</span>
+                            <span class="status-badge badge-danger">⏰ ${lateCount} تأخير</span>
                             <span class="status-badge badge-perm">${(employeePermissions[emp.employeeId]||[]).length} أذونات</span>
                             <span style="font-size:1.2rem;color:var(--text-muted);">▾</span>
                         </div>
@@ -1284,32 +1311,33 @@
                 monthLabel = `تقرير شهر ${mName} ${y} (من ${minDate} إلى ${maxDate})`;
             }
 
-            const todayStr = new Date().toLocaleDateString('ar-EG', { year: 'numeric', month: 'long', day: 'numeric' });
             const totalEmployees = stats.totalEmployees;
             const uniqueDates = stats.uniqueDates;
             const totalHoursSum = stats.totalHoursSum;
-            const avgDailyHours = (totalHoursSum / (totalEmployees * (uniqueDates || 1))).toFixed(2);
 
             // Build Executive Overview Table Rows
             let overviewRows = '';
             stats.employeeDetails.forEach((emp, idx) => {
                 const name = getDisplayName(emp.employeeId);
-                let ok = 0, lateNoPerm = 0, latePerm = 0, early = 0, totalHours = 0;
+                let ok = 0, lateNoPerm = 0, latePerm = 0, singlePunch = 0, totalHours = 0, completeDays = 0;
 
                 emp.dates.forEach(date => {
                     const entry = emp.entries.find(e => e.date === date);
                     const exit  = emp.exits.find(e => e.date === date);
-                    if (entry && exit) totalHours += calcDayWorkHours(entry.time, exit.time).hours;
-
-                    const p = getDayPunctuality(emp.employeeId, date, entry ? entry.time : null);
+                    const p = getDayPunctuality(emp.employeeId, date, entry ? entry.time : null, exit ? exit.time : null);
                     const perm = getPermissionForDate(emp.employeeId, date);
-                    if (p === 'late') {
-                        if (perm && (perm.type === 'late' || perm.type === 'temp')) latePerm++;
-                        else lateNoPerm++;
-                    } else if (p === 'early') {
-                        early++;
-                    } else if (p === 'ok') {
-                        ok++;
+
+                    if (entry && exit) {
+                        const h = calcDayWorkHours(entry.time, exit.time).hours;
+                        if (h > 0) { totalHours += h; completeDays++; }
+                        if (p === 'late') {
+                            if (perm && (perm.type === 'late' || perm.type === 'temp')) latePerm++;
+                            else lateNoPerm++;
+                        } else {
+                            ok++;
+                        }
+                    } else {
+                        singlePunch++;
                     }
                 });
 
@@ -1319,13 +1347,13 @@
                         <td style="text-align:center; font-weight:bold; color:#64748b;">${idx + 1}</td>
                         <td style="font-weight:bold; color:#0f172a; text-align:right;">${name}</td>
                         <td style="text-align:center; font-weight:bold; color:#0284c7;">${emp.employeeId}</td>
-                        <td style="text-align:center;"><span class="badge-ok">✅ ${ok}</span></td>
+                        <td style="text-align:center;"><span class="badge-ok">✅ ${ok} يوم</span></td>
                         <td style="text-align:center;">${lateNoPerm > 0 ? `<span class="badge-danger">⚠️ ${lateNoPerm}</span>` : '<span style="color:#94a3b8;">0</span>'}</td>
                         <td style="text-align:center;">${latePerm > 0 ? `<span class="badge-perm">🎫 ${latePerm}</span>` : '<span style="color:#94a3b8;">0</span>'}</td>
-                        <td style="text-align:center;">${early > 0 ? `<span class="badge-early">🚪 ${early}</span>` : '<span style="color:#94a3b8;">0</span>'}</td>
+                        <td style="text-align:center;">${singlePunch > 0 ? `<span class="badge-early">⚠️ ${singlePunch}</span>` : '<span style="color:#94a3b8;">0</span>'}</td>
                         <td style="text-align:center; color:#94a3b8;">—</td>
                         <td style="text-align:center;"><span class="badge-perm">${permsCount} إذن</span></td>
-                        <td style="text-align:center; font-weight:bold; color:#0f6e64;">${fmtHoursAndMins(totalHours)}</td>
+                        <td style="text-align:center; font-weight:bold; color:#0f6e64;">${fmtHoursAndMins(totalHours)} <small style="display:block; font-size:7pt; color:#64748b;">(${completeDays} يوم مكتمل)</small></td>
                     </tr>
                 `;
             });
@@ -1334,7 +1362,7 @@
             let empDetailsHtml = '';
             stats.employeeDetails.forEach((emp, idx) => {
                 const name = getDisplayName(emp.employeeId);
-                let empTotalHours = 0, okCount = 0, lateCount = 0, earlyCount = 0;
+                let empTotalHours = 0, okCount = 0, lateCount = 0, completeDays = 0, singleCount = 0;
 
                 let dailyRows = '';
                 emp.dates.forEach(date => {
@@ -1342,36 +1370,47 @@
                     const dName = _DAY_NAMES_AR[dObj.getDay()];
                     const entry = emp.entries.find(e => e.date === date);
                     const exit  = emp.exits.find(e => e.date === date);
-                    const hCalc = calcDayWorkHours(entry ? entry.time : null, exit ? exit.time : null);
-                    if (hCalc.hours) empTotalHours += hCalc.hours;
-
-                    const p = getDayPunctuality(emp.employeeId, date, entry ? entry.time : null);
+                    const p = getDayPunctuality(emp.employeeId, date, entry ? entry.time : null, exit ? exit.time : null);
                     const perm = getPermissionForDate(emp.employeeId, date);
 
-                    let statusBadge = '<span class="badge-ok">✅ في معاده</span>';
-                    if (p === 'late') {
-                        lateCount++;
-                        const lateMin = timeToMins(entry.time) - timeToMins(workConfig.start);
-                        if (perm && (perm.type === 'late' || perm.type === 'temp')) {
-                            statusBadge = `<span class="badge-perm">⏰ متأخر ${lateMin}د (بإذن)</span>`;
+                    let statusBadge = '';
+                    let hoursCell = '—';
+
+                    if (!entry && exit) {
+                        singleCount++;
+                        statusBadge = '<span class="badge-danger">⚠️ خروج فقط (دخول مفقود)</span>';
+                    } else if (entry && !exit) {
+                        singleCount++;
+                        statusBadge = '<span class="badge-danger">⚠️ دخول فقط (خروج مفقود)</span>';
+                    } else if (entry && exit) {
+                        const hCalc = calcDayWorkHours(entry.time, exit.time);
+                        if (hCalc.hours) { empTotalHours += hCalc.hours; completeDays++; }
+                        hoursCell = `<strong>${hCalc.formatted}</strong>`;
+
+                        if (p === 'late') {
+                            lateCount++;
+                            const startMins = timeToMins(workConfig.start);
+                            const graceMins = parseInt(workConfig.grace || 30);
+                            const lateMin = timeToMins(entry.time) - (startMins + graceMins);
+                            if (perm && (perm.type === 'late' || perm.type === 'temp')) {
+                                statusBadge = `<span class="badge-perm">⏰ متأخر +${lateMin > 0 ? lateMin : ''}د (بإذن)</span>`;
+                            } else {
+                                statusBadge = `<span class="badge-danger">⚠️ متأخر +${lateMin > 0 ? lateMin : ''}د (بدون إذن)</span>`;
+                            }
                         } else {
-                            statusBadge = `<span class="badge-danger">⚠️ متأخر ${lateMin}د (بدون إذن)</span>`;
+                            okCount++;
+                            statusBadge = '<span class="badge-ok">✅ في معاده</span>';
                         }
-                    } else if (p === 'early') {
-                        earlyCount++;
-                        statusBadge = `<span class="badge-early">🚪 انصراف مبكر</span>`;
-                    } else {
-                        okCount++;
                     }
 
                     dailyRows += `
                         <tr>
-                            <td style="font-weight:600;">${date} <span style="color:#64748b; font-size:8pt;">(${dName})</span></td>
+                            <td style="font-weight:600;">${date} <span style="color:#64748b; font-size:7.5pt;">(${dName})</span></td>
                             <td style="text-align:center;">${statusBadge}</td>
                             <td style="text-align:center; color:#166534; font-weight:600;">${entry ? entry.time : '—'}</td>
                             <td style="text-align:center; color:#991b1b; font-weight:600;">${exit ? exit.time : '—'}</td>
-                            <td style="text-align:center; font-weight:bold; color:#0f172a;">${hCalc.formatted}</td>
-                            <td style="font-size:8pt; color:#475569;">${perm ? '🎫 ' + (perm.note || perm.type) : '—'}</td>
+                            <td style="text-align:center; font-weight:bold; color:#0f172a;">${hoursCell}</td>
+                            <td style="font-size:7.5pt; color:#475569;">${perm ? '🎫 ' + (perm.note || perm.type) : '—'}</td>
                         </tr>
                     `;
                 });
