@@ -343,19 +343,57 @@ input[type="time"]::-webkit-calendar-picker-indicator {
 
 .fg-full label { align-self: stretch; text-align: right; margin-bottom: 6px; }
 
-/* Checkbox Grid — صف نظيف بلا صندوق مُثقل */
+/* Checkbox / Radio Grid — خيارات منظمة ومتجاوبة */
 .chk-grid {
-    display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px 4px;
-    padding: 10px 2px; border-top: 1px solid var(--bd2); border-bottom: 1px solid var(--bd2);
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+    gap: 8px;
+    padding: 10px 2px;
+    border-top: 1px solid var(--bd2);
+    border-bottom: 1px solid var(--bd2);
     margin: 10px 0;
+    direction: rtl;
 }
 .chk-grid label {
-    display: flex; align-items: center; gap: 7px;
-    font-size: 12px; font-weight: 500; cursor: pointer;
-    padding: 4px 4px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 12px;
+    font-weight: 500;
+    cursor: pointer;
+    padding: 8px 12px;
+    background: var(--bg2, rgba(0,0,0,0.02));
+    border: 1px solid var(--bd2);
+    border-radius: 8px;
+    transition: all 0.2s ease;
+    user-select: none;
+    line-height: 1.4;
+}
+.chk-grid label:hover {
+    border-color: var(--gd);
+    background: var(--bg3, rgba(0,0,0,0.04));
+}
+.chk-grid label:has(input:checked) {
+    border-color: var(--gd);
+    background: rgba(201, 162, 39, 0.09);
+    font-weight: 600;
+    box-shadow: 0 1px 3px rgba(201, 162, 39, 0.12);
 }
 .chk-grid input[type="checkbox"], .chk-grid input[type="radio"] {
-    width: 15px; height: 15px; accent-color: var(--nv); cursor: pointer; flex-shrink: 0;
+    width: 16px;
+    height: 16px;
+    accent-color: var(--gd, #c9a227);
+    cursor: pointer;
+    flex-shrink: 0;
+    margin: 0;
+}
+.fs-law-code {
+    font-size: 11px;
+    opacity: 0.75;
+    font-weight: 400;
+    display: inline-block;
+    white-space: nowrap;
+    margin-right: 2px;
 }
 
 /* Status Buttons */

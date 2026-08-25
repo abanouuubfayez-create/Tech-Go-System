@@ -211,10 +211,10 @@
         h += F2(fgIn('الاسم بالكامل', 'name'), fgIn('القسم / الإدارة', 'dept'));
         h += F2(fgIn('المسمى الوظيفي', 'jobTitle'), fgIn('رقم التواصل أثناء الإجازة', 'phone', 'tel'));
         h += SC('٢', 'نوع الإجازة');
-        h += '<div class="chk-grid" style="grid-template-columns:1fr 1fr 1fr">' +
-          fsRadioIn('leaveType', 'fsLt', 'إجازة سنوية (م.١٢٤)', '<strong>إجازة سنوية</strong> (م.١٢٤)') +
-          fsRadioIn('leaveType', 'fsLt', 'إجازة عارضة (م.١٢٨)', '<strong>إجازة عارضة</strong> (م.١٢٨)') +
-          fsRadioIn('leaveType', 'fsLt', 'إجازة رسمية / أعياد (م.١٢٩)', '<strong>إجازة رسمية</strong> (م.١٢٩)') + '</div>';
+        h += '<div class="chk-grid">' +
+          fsRadioIn('leaveType', 'fsLt', 'إجازة سنوية (م.١٢٤)', '<span><strong>إجازة سنوية</strong> <span class="fs-law-code">(م.١٢٤)</span></span>') +
+          fsRadioIn('leaveType', 'fsLt', 'إجازة عارضة (م.١٢٨)', '<span><strong>إجازة عارضة</strong> <span class="fs-law-code">(م.١٢٨)</span></span>') +
+          fsRadioIn('leaveType', 'fsLt', 'إجازة رسمية / أعياد (م.١٢٩)', '<span><strong>إجازة رسمية</strong> <span class="fs-law-code">(م.١٢٩)</span></span>') + '</div>';
         h += SC('٣', 'مدة الإجازة');
         h += F3(fgIn('تاريخ البدء', 'fromDate', 'date'), fgIn('تاريخ الانتهاء', 'toDate', 'date'), fgIn('عدد الأيام', 'days', 'number'));
         h += SC('٤', 'سبب الإجازة والبديل');
@@ -227,10 +227,10 @@
         h += F2(fgOut('الاسم بالكامل', v.name), fgOut('القسم / الإدارة', v.dept));
         h += F2(fgOut('المسمى الوظيفي', v.jobTitle), fgOut('رقم التواصل أثناء الإجازة', v.phone));
         h += SC('٢', 'نوع الإجازة');
-        h += '<div class="chk-grid" style="grid-template-columns:1fr 1fr 1fr">' +
-          fsRadioOut(v.leaveType, 'إجازة سنوية (م.١٢٤)', '<strong>إجازة سنوية</strong> (م.١٢٤)') +
-          fsRadioOut(v.leaveType, 'إجازة عارضة (م.١٢٨)', '<strong>إجازة عارضة</strong> (م.١٢٨)') +
-          fsRadioOut(v.leaveType, 'إجازة رسمية / أعياد (م.١٢٩)', '<strong>إجازة رسمية</strong> (م.١٢٩)') + '</div>';
+        h += '<div class="chk-grid">' +
+          fsRadioOut(v.leaveType, 'إجازة سنوية (م.١٢٤)', '<span><strong>إجازة سنوية</strong> <span class="fs-law-code">(م.١٢٤)</span></span>') +
+          fsRadioOut(v.leaveType, 'إجازة عارضة (م.١٢٨)', '<span><strong>إجازة عارضة</strong> <span class="fs-law-code">(م.١٢٨)</span></span>') +
+          fsRadioOut(v.leaveType, 'إجازة رسمية / أعياد (م.١٢٩)', '<span><strong>إجازة رسمية</strong> <span class="fs-law-code">(م.١٢٩)</span></span>') + '</div>';
         h += SC('٣', 'مدة الإجازة');
         h += F3(fgOut('تاريخ البدء', v.fromDate), fgOut('تاريخ الانتهاء', v.toDate), fgOut('عدد الأيام', v.days));
         h += SC('٤', 'سبب الإجازة والبديل');
@@ -247,7 +247,7 @@
       noteSection: '٥',
       fill: function () {
         var h = SC('١', 'نوع الإذن');
-        h += '<div class="chk-grid" style="grid-template-columns:1fr 1fr">' +
+        h += '<div class="chk-grid">' +
           fsRadioIn('permType', 'fsPt', 'حضور بعد مواعيد العمل', '<strong>حضور</strong> بعد مواعيد العمل') +
           fsRadioIn('permType', 'fsPt', 'انصراف قبل مواعيد العمل', '<strong>انصراف</strong> قبل مواعيد العمل') + '</div>';
         h += SC('٢', 'بيانات الموظف');
@@ -260,7 +260,7 @@
       },
       print: function (v) {
         var h = SC('١', 'نوع الإذن');
-        h += '<div class="chk-grid" style="grid-template-columns:1fr 1fr">' +
+        h += '<div class="chk-grid">' +
           fsRadioOut(v.permType, 'حضور بعد مواعيد العمل', '<strong>حضور</strong> بعد مواعيد العمل') +
           fsRadioOut(v.permType, 'انصراف قبل مواعيد العمل', '<strong>انصراف</strong> قبل مواعيد العمل') + '</div>';
         h += SC('٢', 'بيانات الموظف');
@@ -360,7 +360,7 @@
         h += F2(fgIn('الاسم بالكامل', 'name'), fgIn('الرقم الوظيفي', 'empId'));
         h += F3(fgIn('القسم / الإدارة', 'dept'), fgIn('المسمى الوظيفي', 'jobTitle'), fgIn('تاريخ آخر يوم عمل', 'lastDay', 'date'));
         h += SC('٢', 'إقرار وتسليم متعلقات');
-        h += '<div class="chk-grid" style="grid-template-columns:1fr 1fr">' +
+        h += '<div class="chk-grid">' +
           '<label><input type="checkbox" data-fid="chk1"> تم تسليم العهدة المالية</label>' +
           '<label><input type="checkbox" data-fid="chk2"> تم تسليم العهدة العينية (لابتوب، هاتف، الخ)</label>' +
           '<label><input type="checkbox" data-fid="chk3"> تم تسليم المستندات والملفات</label>' +
@@ -374,7 +374,7 @@
         h += F2(fgOut('الاسم بالكامل', v.name), fgOut('الرقم الوظيفي', v.empId));
         h += F3(fgOut('القسم / الإدارة', v.dept), fgOut('المسمى الوظيفي', v.jobTitle), fgOut('تاريخ آخر يوم عمل', v.lastDay));
         h += SC('٢', 'إقرار وتسليم متعلقات');
-        h += '<div class="chk-grid" style="grid-template-columns:1fr 1fr">' +
+        h += '<div class="chk-grid">' +
           '<label><input type="checkbox" disabled ' + (v.chk1 ? 'checked' : '') + '> تم تسليم العهدة المالية</label>' +
           '<label><input type="checkbox" disabled ' + (v.chk2 ? 'checked' : '') + '> تم تسليم العهدة العينية (لابتوب، هاتف، الخ)</label>' +
           '<label><input type="checkbox" disabled ' + (v.chk3 ? 'checked' : '') + '> تم تسليم المستندات والملفات</label>' +

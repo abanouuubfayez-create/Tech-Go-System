@@ -4424,7 +4424,7 @@ function load(id,c){
         h+=F2(FG('الاسم بالكامل'),FG('القسم / الإدارة'));
         h+=F2(FG('المسمى الوظيفي'),FG('رقم التواصل أثناء الإجازة','tel'));
         h+=SC('٢','نوع الإجازة');
-        h+='<div class="chk-grid" style="grid-template-columns:1fr 1fr"><label><input type="radio" name="lt"> <strong>إجازة سنوية</strong> (م.١٢٤)</label><label><input type="radio" name="lt"> <strong>إجازة عارضة</strong> (م.١٢٨)</label></div>';
+        h+='<div class="chk-grid"><label><input type="radio" name="lt"> <span><strong>إجازة سنوية</strong> <span class="fs-law-code">(م.١٢٤)</span></span></label><label><input type="radio" name="lt"> <span><strong>إجازة عارضة</strong> <span class="fs-law-code">(م.١٢٨)</span></span></label></div>';
         h+=SC('٣','مدة الإجازة');
         h+=F3(FG('تاريخ البدء','date'),FG('تاريخ الانتهاء','date'),FG('عدد الأيام','number'));
         h+=SC('٤','سبب الإجازة والرصيد');
