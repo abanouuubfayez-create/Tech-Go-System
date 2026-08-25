@@ -386,10 +386,165 @@
 
         .hidden { display: none !important; }
 
+        /* ══════════════════════════════════════════
+           PRINT AESTHETICS (EXACT FRONTEND BEAUTY)
+           ══════════════════════════════════════════ */
+        .print-only-header, .print-only-footer { display: none; }
+
         @media print {
-            body { background: #fff !important; color: #0f172a !important; padding: 0 !important; }
-            .admin-nav, .exec-tabs-bar, .nav-actions, .upload-card, .btn-action, .search-box, .theme-toggle { display: none !important; }
-            .tab-panel { display: block !important; }
+            @page {
+                size: A4 landscape;
+                margin: 8mm 10mm;
+            }
+            * {
+                -webkit-print-color-adjust: exact !important;
+                print-color-adjust: exact !important;
+                color-adjust: exact !important;
+                box-shadow: none !important;
+                text-shadow: none !important;
+            }
+            body {
+                background: #ffffff !important;
+                color: #0f172a !important;
+                padding: 0 !important;
+                font-family: 'Cairo', 'Tajawal', sans-serif !important;
+                font-size: 10pt;
+            }
+            .admin-nav, .exec-tabs-bar, .nav-actions, .upload-card, .btn-action, .search-box, .theme-toggle,
+            #tab-timesheets, #tab-permissions, #tab-settings, .col-action, #timesheetsContainer, .modal-overlay,
+            div[style*="💡"], .hidden-on-print {
+                display: none !important;
+            }
+            #resultsSection, #tab-overview {
+                display: block !important;
+            }
+
+            /* Official Corporate Print Header */
+            .print-only-header {
+                display: flex !important;
+                align-items: center;
+                justify-content: space-between;
+                border-bottom: 2.5px solid #0f6e64 !important;
+                padding-bottom: 10px !important;
+                margin-bottom: 14px !important;
+            }
+            .p-hdr-title { font-size: 16pt; font-weight: 900; color: #0f6e64; margin-bottom: 2px; }
+            .p-hdr-sub { font-size: 10.5pt; font-weight: 700; color: #334155; }
+            .p-hdr-meta { font-size: 8.5pt; color: #64748b; margin-top: 4px; }
+            .p-hdr-badge {
+                border: 1.5px solid #0f6e64;
+                padding: 6px 14px;
+                border-radius: 10px;
+                background: #f0fdfa;
+                text-align: center;
+            }
+
+            /* Horizontal KPI Bar in Print */
+            .kpi-grid {
+                display: grid !important;
+                grid-template-columns: repeat(4, 1fr) !important;
+                gap: 10px !important;
+                margin-bottom: 14px !important;
+            }
+            .kpi-box {
+                background: #f8fafc !important;
+                border: 1.5px solid #cbd5e1 !important;
+                border-radius: 10px !important;
+                padding: 8px 12px !important;
+                display: flex !important;
+                align-items: center !important;
+                gap: 10px !important;
+            }
+            .kpi-icon-wrap {
+                width: 36px !important; height: 36px !important;
+                font-size: 18px !important;
+                border-radius: 8px !important;
+            }
+            .kpi-val { font-size: 14pt !important; font-weight: 900 !important; color: #0f172a !important; }
+            .kpi-lbl { font-size: 8pt !important; color: #64748b !important; }
+
+            /* Table Container */
+            .card-table-wrap {
+                background: #ffffff !important;
+                border: 1.5px solid #cbd5e1 !important;
+                border-radius: 12px !important;
+                overflow: visible !important;
+                margin-bottom: 15px !important;
+            }
+            .card-table-hdr {
+                background: #f1f5f9 !important;
+                border-bottom: 1.5px solid #cbd5e1 !important;
+                padding: 8px 12px !important;
+            }
+            .card-table-title {
+                font-size: 11pt !important;
+                font-weight: 800 !important;
+                color: #0f172a !important;
+            }
+            div[style*="overflow-x: auto;"] {
+                overflow: visible !important;
+            }
+
+            /* Fixed Width Print Table */
+            .admin-table {
+                width: 100% !important;
+                table-layout: fixed !important;
+                border-collapse: collapse !important;
+            }
+            .admin-table th {
+                background: #e2e8f0 !important;
+                color: #1e293b !important;
+                border: 1px solid #cbd5e1 !important;
+                font-size: 8.5pt !important;
+                font-weight: 800 !important;
+                padding: 6px 4px !important;
+                text-align: center !important;
+                white-space: nowrap !important;
+            }
+            .admin-table td {
+                border: 1px solid #e2e8f0 !important;
+                padding: 6px 4px !important;
+                font-size: 8.5pt !important;
+                text-align: center !important;
+                color: #0f172a !important;
+                vertical-align: middle !important;
+            }
+            .admin-table tbody tr:nth-child(even) {
+                background: #f8fafc !important;
+            }
+
+            /* Retain Frontend Badges */
+            .status-badge {
+                display: inline-block !important;
+                padding: 2px 7px !important;
+                border-radius: 12px !important;
+                font-size: 8pt !important;
+                font-weight: 700 !important;
+                white-space: nowrap !important;
+            }
+            .badge-ok      { background: #dcfce7 !important; color: #15803d !important; border: 1px solid #86efac !important; }
+            .badge-danger  { background: #fee2e2 !important; color: #b91c1c !important; border: 1px solid #fca5a5 !important; }
+            .badge-perm    { background: #e0f2fe !important; color: #0369a1 !important; border: 1px solid #7dd3fc !important; }
+
+            /* Official Signatures Footer */
+            .print-only-footer {
+                display: grid !important;
+                grid-template-columns: 1fr 1fr 1fr !important;
+                gap: 20px !important;
+                margin-top: 25px !important;
+                padding-top: 15px !important;
+                border-top: 1.5px solid #cbd5e1 !important;
+                page-break-inside: avoid !important;
+            }
+            .sig-box {
+                border: 1px dashed #94a3b8;
+                border-radius: 8px;
+                padding: 10px;
+                text-align: center;
+                background: #f8fafc;
+            }
+            .sig-title { font-size: 9pt; font-weight: 800; color: #334155; margin-bottom: 25px; }
+            .sig-line { font-size: 8pt; color: #64748b; border-top: 1px dotted #94a3b8; padding-top: 4px; }
         }
     </style>
 </head>
@@ -436,6 +591,20 @@
 
     <!-- Results / Admin Hub Section -->
     <main id="resultsSection" class="hidden">
+
+        <!-- Official Print Header (Visible in Print Only) -->
+        <div class="print-only-header">
+            <div>
+                <div class="p-hdr-title">شركة تيك - جو للحلول التقنية المتطورة (TECH GO)</div>
+                <div class="p-hdr-sub">📊 تقرير انضباط الحضور والانصراف وتدقيق الأذونات الشهري الرسمي</div>
+                <div class="p-hdr-meta">مواعيد العمل الرسمية: 10:00 ص إلى 06:00 م · فترة السماح: 15 دقيقة · تاريخ الاستخراج: <span id="printDateSpan"></span></div>
+            </div>
+            <div class="p-hdr-badge">
+                <div style="font-size:11pt; font-weight:900; color:#0f6e64;">TECH GO</div>
+                <div style="font-size:7.5pt; color:#64748b;">وثيقة رسمية معتمدة</div>
+            </div>
+        </div>
+
         <!-- Executive KPI Bar -->
         <div class="kpi-grid">
             <div class="kpi-box">
@@ -485,20 +654,36 @@
                     <table class="admin-table" id="overviewTable">
                         <thead>
                             <tr>
-                                <th>#</th>
-                                <th>اسم الموظف</th>
-                                <th>الكود</th>
-                                <th>✅ في الميعاد</th>
-                                <th>⏰ تأخير بدون إذن</th>
-                                <th>🎫 تأخير بإذن معتمد</th>
-                                <th>🚫 غياب</th>
-                                <th>🎫 الأذونات</th>
-                                <th>⏱ ساعات العمل الفعلية</th>
-                                <th>إجراءات سريعة</th>
+                                <th style="width: 4%;">#</th>
+                                <th style="width: 22%;">اسم الموظف</th>
+                                <th style="width: 7%;">الكود</th>
+                                <th style="width: 14%;">✅ في الميعاد</th>
+                                <th style="width: 15%;">⏰ تأخير بدون إذن</th>
+                                <th style="width: 14%;">🎫 تأخير بإذن معتمد</th>
+                                <th style="width: 6%;">🚫 غياب</th>
+                                <th style="width: 8%;">🎫 الأذونات</th>
+                                <th style="width: 13%;">⏱ ساعات العمل الفعلية</th>
+                                <th class="col-action" style="width: 8%;">إجراءات سريعة</th>
                             </tr>
                         </thead>
                         <tbody id="overviewTableBody"></tbody>
                     </table>
+                </div>
+            </div>
+
+            <!-- Official Signatures Footer (Visible in Print Only) -->
+            <div class="print-only-footer">
+                <div class="sig-box">
+                    <div class="sig-title">إعداد ومراجعة الموارد البشرية (HR)</div>
+                    <div class="sig-line">الاسم والتوقيع: ............................</div>
+                </div>
+                <div class="sig-box">
+                    <div class="sig-title">تدقيق المدير الإداري</div>
+                    <div class="sig-line">الاسم والتوقيع: ............................</div>
+                </div>
+                <div class="sig-box">
+                    <div class="sig-title">اعتماد المدير التنفيذي وخاتم الشركة</div>
+                    <div class="sig-line">الاعتماد الرسمي: ............................</div>
                 </div>
             </div>
         </section>
@@ -881,7 +1066,7 @@
                     <td style="color:var(--text-muted);">—</td>
                     <td><span class="status-badge badge-perm">${permsCount} إذن</span></td>
                     <td style="font-weight:bold; color:var(--primary-light);">${fmtHoursAndMins(totalHours)}</td>
-                    <td>
+                    <td class="col-action">
                         <button class="btn-action btn-perm-action" onclick="openNewPermForEmp('${emp.employeeId}')" style="padding:2px 8px;font-size:0.75rem;">+ إذن</button>
                     </td>
                 `;
@@ -1087,6 +1272,8 @@
 
         document.getElementById('exportPdfBtn').addEventListener('click', () => {
             if (!stats) { alert('يرجى رفع ملف البصمة أولاً'); return; }
+            const span = document.getElementById('printDateSpan');
+            if (span) span.textContent = new Date().toLocaleDateString('ar-EG', { year: 'numeric', month: 'long', day: 'numeric' });
             window.print();
         });
 
