@@ -714,6 +714,28 @@ function go(id, nav, force){
     document.getElementById("pT").innerText=T[id]||id;
     if(typeof tgToggleSidebar === 'function') tgToggleSidebar(false);
     else if(window.innerWidth<=900) { var _s=document.getElementById("sb"); if(_s) _s.classList.remove("opn"); }
+
+    // Sync Admin Bottom Dock Active State
+    var dockDash = document.getElementById('dock-dash');
+    var dockRequests = document.getElementById('dock-requests');
+    var dockTasks = document.getElementById('dock-tasks');
+    var dockMenu = document.getElementById('dock-menu');
+
+    if(dockDash && dockRequests && dockTasks) {
+        dockDash.classList.remove('a');
+        dockRequests.classList.remove('a');
+        dockTasks.classList.remove('a');
+        if(dockMenu) dockMenu.classList.remove('a');
+
+        if(id === 'dash') {
+            dockDash.classList.add('a');
+        } else if(id === 'allrequests' || id === 'staff' || id === 'la' || id === 'permsheet' || id === 'empdocs') {
+            dockRequests.classList.add('a');
+        } else if(id === 'tasksmgmt' || id === 'pmgmt' || id === 'monthlyplans' || id === 'wkr' || id === 'livetrack') {
+            dockTasks.classList.add('a');
+        }
+    }
+
     var c=document.getElementById("pg-"+id);
     if(id!=="dash" && (c.innerHTML.trim()==="" || id==="wkr")){load(id,c);upCN();setD(c)}
     // Reset global table filter

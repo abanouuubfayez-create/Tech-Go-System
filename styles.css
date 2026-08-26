@@ -554,12 +554,13 @@ input[type="time"]::-webkit-calendar-picker-indicator {
 
 /* Mobile Sidebar, Overlay & Toggle */
 .mtg {
-    display: none; position: fixed; top: 9px; right: 10px; z-index: 100;
+    display: none;
     background: linear-gradient(135deg, var(--nv3), var(--nv)); color: #fff;
     border: 1px solid rgba(255,255,255,.15); border-radius: 10px;
-    width: 38px; height: 38px; font-size: 19px; cursor: pointer;
-    box-shadow: 0 4px 14px rgba(0,0,0,.25);
+    width: 36px; height: 36px; font-size: 18px; cursor: pointer;
+    box-shadow: 0 2px 8px rgba(0,0,0,.2);
     transition: var(--tr);
+    flex-shrink: 0;
 }
 .mtg:active { transform: scale(0.92); }
 
@@ -609,38 +610,212 @@ input[type="time"]::-webkit-calendar-picker-indicator {
     transform: scale(0.92);
 }
 
+/* ═══════════════════════════════════════════ */
+/*  ADMIN MOBILE BOTTOM NAVIGATION DOCK        */
+/* ═══════════════════════════════════════════ */
+.admin-bottom-dock {
+    display: none;
+}
+
 @media (max-width: 900px) {
+    html, body {
+        max-width: 100vw;
+        overflow-x: hidden;
+    }
     .S {
         transform: translateX(100%);
         width: min(300px, 86vw);
-        z-index: 1000;
+        z-index: 10000;
         box-shadow: -8px 0 35px rgba(0,0,0,.5);
         transition: transform 0.3s cubic-bezier(.4,0,.2,1);
     }
     .S.opn { transform: translateX(0); }
     .S-h { position: relative; }
     .sb-close-btn { display: flex; }
-    .M { margin-right: 0; }
+    .M { margin-right: 0; min-height: 100vh; }
     .TB {
-        padding: 10px 14px 10px 14px;
-        padding-right: 56px;
-        gap: 8px;
-        flex-wrap: wrap;
+        padding: 0 10px;
+        height: 54px;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 6px;
+        flex-wrap: nowrap;
+        position: sticky;
+        top: 0;
+        z-index: 50;
     }
-    .TB .t { font-size: 14px; }
-    .mtg { display: flex; align-items: center; justify-content: center; }
-    .CT { padding: 12px; }
-    .F-bd { padding: 16px; }
-    .F-hd { padding: 14px 16px; gap: 12px; }
+    .TB .t {
+        font-size: 13.5px;
+        font-weight: 800;
+        max-width: 110px;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+    }
+    .mtg {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+    .tb-btn-text {
+        display: none !important;
+    }
+    .btn-att-quick, .btn-meeting-quick {
+        padding: 6px 9px !important;
+        border-radius: 12px !important;
+        font-size: 12px !important;
+    }
+    #tgBackBtn {
+        padding: 4px 8px !important;
+        font-size: 11px !important;
+    }
+    #themeToggle, .notif-bell-btn {
+        padding: 5px 8px !important;
+        font-size: 14px !important;
+        border-radius: 8px !important;
+    }
+    .CT {
+        padding: 12px 10px !important;
+        padding-bottom: 80px !important;
+    }
+    .F-bd { padding: 14px 12px; }
+    .F-hd { padding: 12px 14px; gap: 10px; }
     .fr3, .fr4 { grid-template-columns: 1fr 1fr; }
     .sigs { grid-template-columns: 1fr; }
     .chk-grid { grid-template-columns: 1fr 1fr; }
     .ctg { grid-template-columns: 1fr 1fr; }
+
+    /* Admin Bottom Dock */
+    .admin-bottom-dock {
+        display: flex;
+        position: fixed;
+        bottom: 0;
+        left: 0;
+        right: 0;
+        height: 58px;
+        background: var(--w);
+        border-top: 1px solid var(--bd);
+        z-index: 9999;
+        align-items: center;
+        justify-content: space-around;
+        box-shadow: 0 -4px 18px rgba(0,0,0,0.08);
+        backdrop-filter: blur(12px);
+        -webkit-backdrop-filter: blur(12px);
+        padding: 0 4px;
+    }
+    [data-theme='dark'] .admin-bottom-dock {
+        background: rgba(15, 23, 42, 0.95);
+        border-top-color: var(--bd);
+        box-shadow: 0 -4px 20px rgba(0,0,0,0.4);
+    }
+    .adm-dock-item {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        flex: 1;
+        height: 100%;
+        color: var(--tx3);
+        font-size: 10.5px;
+        font-weight: 700;
+        cursor: pointer;
+        border: none;
+        background: transparent;
+        padding: 4px 2px;
+        gap: 2px;
+        transition: all 0.15s ease;
+        position: relative;
+        font-family: inherit;
+        text-decoration: none;
+        -webkit-tap-highlight-color: transparent;
+    }
+    .adm-dock-item.a {
+        color: var(--gd2);
+        font-weight: 900;
+    }
+    [data-theme='dark'] .adm-dock-item.a {
+        color: #f59e0b;
+    }
+    .adm-dock-icon {
+        font-size: 18px;
+        line-height: 1;
+        transition: transform 0.15s ease;
+    }
+    .adm-dock-item:active .adm-dock-icon {
+        transform: scale(1.15);
+    }
+
+    /* Subtools for Form & Table filters on Mobile */
+    #tgTableTools {
+        position: static;
+        width: 100%;
+        padding: 4px 0;
+    }
+    #tgTableTools .global-table-filter {
+        width: 100%;
+        font-size: 12px;
+        padding: 6px 10px;
+    }
+    #tgFormTools {
+        overflow-x: auto;
+        white-space: nowrap;
+        padding: 4px 0;
+        gap: 4px;
+        max-width: 180px;
+        scrollbar-width: none;
+    }
+    #tgFormTools::-webkit-scrollbar { display: none; }
+    #tgFormTools button, #tgFormTools select {
+        padding: 4px 6px !important;
+        font-size: 10.5px !important;
+        flex-shrink: 0;
+    }
+
+    /* Portals and Dashboard Grids */
+    .portal-grid-container {
+        grid-template-columns: 1fr !important;
+        gap: 14px !important;
+    }
+    .DG {
+        grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)) !important;
+        gap: 10px !important;
+    }
+    .DC {
+        padding: 12px 14px !important;
+        border-radius: 12px !important;
+    }
+    .DC .di {
+        font-size: 20px !important;
+        width: 36px !important;
+        height: 36px !important;
+    }
+    .DC .dt2 {
+        font-size: 13px !important;
+    }
+    .DC .dd {
+        font-size: 10.5px !important;
+    }
+
+    /* Tables horizontal scrolling protection */
+    .dt-wrap, .tbl-wrap, .table-responsive, [style*="overflow-x:auto"], [style*="overflow-x: auto"] {
+        width: 100% !important;
+        max-width: 100% !important;
+        overflow-x: auto !important;
+        -webkit-overflow-scrolling: touch !important;
+    }
+    table.dt {
+        min-width: 520px;
+    }
 }
+
 @media (max-width: 600px) {
-    .fr, .fr2, .fr3, .fr4 { grid-template-columns: 1fr; }
+    .fr, .fr2, .fr3, .fr4 { grid-template-columns: 1fr !important; gap: 10px !important; }
     .F-hd { flex-direction: column; text-align: center; }
-    .DG { grid-template-columns: 1fr; }
+    .F-hd .logo-box { margin: 0 auto; }
+    .F-hd .meta { text-align: center; }
+    .F-hd .meta input { margin: 0 auto; text-align: center; }
+    .DG { grid-template-columns: 1fr 1fr !important; }
     /* FL forms — mobile layout matching طلب إجازة */
     .FL { width: 100%; max-width: 100%; overflow: hidden; }
     .FL-head { flex-direction: column-reverse; align-items: flex-end; padding: 18px 16px 12px; gap: 10px; }

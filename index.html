@@ -68,7 +68,7 @@
     <link
         href="https://fonts.googleapis.com/css2?family=Alexandria:wght@300;400;500;600;700;800;900&family=Cairo:wght@400;600;700;800;900&family=Tajawal:wght@400;500;700;800&family=Inter:wght@400;500;600;700&display=swap"
         rel="stylesheet">
-    <link rel="stylesheet" href="styles.css?v=1787693240">
+    <link rel="stylesheet" href="styles.css?v=1787723246">
     <link rel="manifest" href="manifest.json">
     <link rel="icon" type="image/png" sizes="192x192" href="icon-192.png">
     <link rel="apple-touch-icon" href="icon-192.png">
@@ -76,8 +76,8 @@
     <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-storage-compat.js"></script>
-    <script src="firebase-config.js?v=1787693240"></script>
-    <script src="auth.js?v=1787693240"></script>
+    <script src="firebase-config.js?v=1787723246"></script>
+    <script src="auth.js?v=1787723246"></script>
     <script>
         (function () {
             const theme = localStorage.getItem('tg-theme') || 'light';
@@ -142,7 +142,6 @@
     </script>
     <iframe id="tgPrintFrame" style="position:fixed;top:-9999px;left:-9999px;width:0;height:0;border:0"
         title="طباعة"></iframe>
-    <button class="mtg" id="tgSidebarToggleBtn" onclick="tgToggleSidebar()" aria-label="فتح القائمة">☰</button>
     <div class="sb-overlay" id="sbOverlay" onclick="tgToggleSidebar(false)"></div>
 
     <!-- ترويسة وتذييل الطباعة (مخفية على الشاشة) -->
@@ -260,13 +259,14 @@
             </div>
         </div>
         <div class="TB">
-            <div style="display:flex;align-items:center;gap:12px">
+            <div class="TB-right" style="display:flex;align-items:center;gap:8px">
+                <button class="mtg" id="tgSidebarToggleBtn" onclick="tgToggleSidebar()" aria-label="فتح القائمة" title="القائمة الرئيسية">☰</button>
                 <button id="tgBackBtn" class="bt bt-o np"
-                    style="display:none;padding:5px 12px;font-size:12px;box-shadow:none;border-color:var(--bd)"
+                    style="display:none;padding:5px 10px;font-size:12px;box-shadow:none;border-color:var(--bd)"
                     onclick="tgGoBack()" title="رجوع">🔙 رجوع</button>
                 <div class="t" id="pT">لوحة التحكم</div>
             </div>
-            <div class="ac np" style="display:flex; align-items:center; gap:6px; flex-wrap:wrap;">
+            <div class="ac np" style="display:flex; align-items:center; gap:6px;">
 
                 <div id="tgTableTools" style="display:none; align-items:center;">
                     <input type="text" id="globalTableFilter" name="tg-global-search-field-admin"
@@ -276,35 +276,31 @@
                 </div>
 
                 <div id="tgFormTools" style="display:none; align-items:center; gap:6px;">
-                    <button class="bt bt-o" onclick="tgClearForm()" style="font-size:11px;padding:4px 10px;">🧹 مسح
-                        النموذج</button>
-                    <button class="bt bt-o" onclick="tgLoadFormDrafts()" style="font-size:11px;padding:4px 10px;">📂
-                        النماذج المحفوظة</button>
-                    <button class="bt bt-p" onclick="tgSaveFormDraft(false)" style="font-size:11px;padding:4px 10px;"
+                    <button class="bt bt-o" onclick="tgClearForm()" style="font-size:11px;padding:4px 8px;">🧹 مسح</button>
+                    <button class="bt bt-o" onclick="tgLoadFormDrafts()" style="font-size:11px;padding:4px 8px;">📂 مسودات</button>
+                    <button class="bt bt-p" onclick="tgSaveFormDraft(false)" style="font-size:11px;padding:4px 8px;"
                         title="حفظ التعديلات على نفس النموذج">💾 حفظ</button>
-                    <button class="bt bt-p" onclick="tgSaveFormDraft(true)" style="font-size:11px;padding:4px 10px;"
+                    <button class="bt bt-p" onclick="tgSaveFormDraft(true)" style="font-size:11px;padding:4px 8px;"
                         title="حفظ نسخة جديدة">💾 حفظ كـ...</button>
                     <select id="tgAutoCompleteEmp" onchange="tgAutoCompleteForm(this.value)"
-                        style="padding:4px; font-size:11px; border:1px solid var(--bd); border-radius:4px; background:var(--bg); color:var(--tx)">
+                        style="padding:4px 6px; font-size:11px; border:1px solid var(--bd); border-radius:6px; background:var(--bg); color:var(--tx)">
                         <option value="">تعبئة بيانات موظف...</option>
                     </select>
-                    <button class="bt bt-o" onclick="openPrintPreview()" style="font-size:11px;padding:4px 10px;">🖨
-                        طباعة</button>
+                    <button class="bt bt-o" onclick="openPrintPreview()" style="font-size:11px;padding:4px 8px;">🖨 طباعة</button>
                 </div>
 
-                <div style="display:flex; align-items:center; gap:8px;">
-                    <a href="attendance.html" target="_blank" class="bt"
-                        style="background:linear-gradient(135deg, #0f6e64, #0b4f49) !important; color:#fff !important; font-weight:bold; font-size:12px; border:none; padding:6px 15px; border-radius:20px; box-shadow:0 3px 10px rgba(15,110,100,0.3); display:flex; align-items:center; gap:6px; text-decoration:none; cursor:pointer;"
-                        title="فتح نظام الحضور والبصمة"><span style="font-size:14px;">⏱️</span> فتح نظام الحضور والبصمة</a>
-                    <button class="bt" onclick="tgJoinCompanyMeeting(false)"
-                        style="background:linear-gradient(135deg, #10b981, #059669) !important; color:#fff !important; font-weight:bold; font-size:12px; border:none; padding:6px 15px; border-radius:20px; box-shadow:0 3px 10px rgba(16,185,129,0.3); display:flex; align-items:center; gap:6px; cursor:pointer;"
-                        title="الانضمام لغرفة الاجتماعات المباشرة"><span style="font-size:14px;">🎥</span> غرفة
-                        الاجتماعات</button>
+                <div class="tb-quick-actions" style="display:flex; align-items:center; gap:6px;">
+                    <a href="attendance.html" target="_blank" class="bt btn-att-quick"
+                        style="background:linear-gradient(135deg, #0f6e64, #0b4f49) !important; color:#fff !important; font-weight:bold; font-size:12px; border:none; padding:6px 12px; border-radius:20px; box-shadow:0 3px 10px rgba(15,110,100,0.3); display:flex; align-items:center; gap:5px; text-decoration:none; cursor:pointer;"
+                        title="فتح نظام الحضور والبصمة"><span style="font-size:14px;">⏱️</span> <span class="tb-btn-text">نظام الحضور</span></a>
+                    <button class="bt btn-meeting-quick" onclick="tgJoinCompanyMeeting(false)"
+                        style="background:linear-gradient(135deg, #10b981, #059669) !important; color:#fff !important; font-weight:bold; font-size:12px; border:none; padding:6px 12px; border-radius:20px; box-shadow:0 3px 10px rgba(16,185,129,0.3); display:flex; align-items:center; gap:5px; cursor:pointer;"
+                        title="الانضمام لغرفة الاجتماعات المباشرة"><span style="font-size:14px;">🎥</span> <span class="tb-btn-text">غرفة الاجتماعات</span></button>
                     <button class="bt bt-o" id="themeToggle" onclick="tgToggleTheme()" title="تبديل الوضع الليلي"
-                        style="font-size:16px;padding:4px 10px;">🌙</button>
+                        style="font-size:15px;padding:5px 9px;">🌙</button>
                     <div class="notif-wrap np" id="notifWrap">
                         <button class="bt bt-o notif-bell-btn" id="notifBellBtn" onclick="tgToggleNotifPanel(event)"
-                            title="الإشعارات" style="font-size:16px;padding:4px 10px;position:relative">
+                            title="الإشعارات" style="font-size:15px;padding:5px 9px;position:relative">
                             🔔<span class="notif-badge" id="notifBadge" style="display:none">0</span>
                         </button>
                         <div class="notif-panel" id="notifPanel" style="display:none">
@@ -342,7 +338,7 @@
                 <div class="DG" id="dashSummary" style="margin-bottom:20px"></div>
 
                 <!-- ═══ لوحة البوابات الإدارية الرئيسية الأربع (Executive Portals Hub) ═══ -->
-                <div style="display:grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap:18px; margin-bottom:24px;">
+                <div class="portal-grid-container" style="display:grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap:18px; margin-bottom:24px;">
 
                     <!-- بوابة 1: شؤون الموظفين والعمليات -->
                     <div style="background:var(--w); border:1px solid var(--bd); border-radius:16px; overflow:hidden; box-shadow:var(--sh-sm); border-top:4px solid var(--gd);">
@@ -626,9 +622,9 @@
 
     <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
     <script>if (window.pdfjsLib) { pdfjsLib.GlobalWorkerOptions.workerSrc = "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js"; }</script>
-    <script src="app.js?v=1787693240"></script>
-    <script src="livetrack.js?v=1787693240"></script>
-    <script src="formsend.js?v=1787693240"></script>
+    <script src="app.js?v=1787723246"></script>
+    <script src="livetrack.js?v=1787723246"></script>
+    <script src="formsend.js?v=1787723246"></script>
 
 
     <script>
@@ -875,7 +871,7 @@
                             }
                         }
                     }
-                    var fullHtml = '<!DOCTYPE html><html lang="ar" dir="rtl"><head><meta charset="UTF-8"><link rel="stylesheet" href="styles.css?v=1787693240"></head><body style="background:#fff;padding:20px;">' + clone.innerHTML + '</body></html>';
+                    var fullHtml = '<!DOCTYPE html><html lang="ar" dir="rtl"><head><meta charset="UTF-8"><link rel="stylesheet" href="styles.css?v=1787723246"></head><body style="background:#fff;padding:20px;">' + clone.innerHTML + '</body></html>';
                     db.collection('docArchive').add({
                         docTitle: docTitle,
                         employeeName: empName,
@@ -1025,8 +1021,8 @@
         style="position:fixed;bottom:4px;left:50%;transform:translateX(-50%);font-size:9px;color:rgba(255,255,255,0.25);z-index:9999;pointer-events:none;white-space:nowrap;font-family:inherit">
         تطوير وتصميم: أبانوب فايز</div>
     <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
-    <script src="theme.js?v=1787693240"></script>
-    <script src="pwa-install.js?v=1787693240"></script>
+    <script src="theme.js?v=1787723246"></script>
+    <script src="pwa-install.js?v=1787723246"></script>
 
     <!-- Incoming Meeting Call Modal -->
     <div id="incomingMeetingModal"
@@ -1566,6 +1562,30 @@
                 </div>
             </div>
         </div>
+    </div>
+
+    <!-- ═══ ADMIN MOBILE BOTTOM NAVIGATION DOCK ═══ -->
+    <div class="admin-bottom-dock np" id="adminBottomDock">
+        <button class="adm-dock-item a" id="dock-dash" onclick="go('dash', this)">
+            <span class="adm-dock-icon">🏠</span>
+            <span>الرئيسية</span>
+        </button>
+        <button class="adm-dock-item" id="dock-requests" onclick="go('allrequests', this)">
+            <span class="adm-dock-icon">📥</span>
+            <span>الطلبات</span>
+        </button>
+        <a class="adm-dock-item" id="dock-attendance" href="attendance.html" target="_blank">
+            <span class="adm-dock-icon">⏱️</span>
+            <span>الحضور</span>
+        </a>
+        <button class="adm-dock-item" id="dock-tasks" onclick="go('tasksmgmt', this)">
+            <span class="adm-dock-icon">🗂</span>
+            <span>المهام</span>
+        </button>
+        <button class="adm-dock-item" id="dock-menu" onclick="tgToggleSidebar(true)">
+            <span class="adm-dock-icon">☰</span>
+            <span>القائمة</span>
+        </button>
     </div>
 
 </body>
