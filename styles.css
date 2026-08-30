@@ -4815,4 +4815,10 @@ body.dark-mode .tg-expand-btn:hover {
   border-color: #10b981;
 }
 
+/* ── Offline Banner (Disabled) ── */
+#tg-offline-banner {
+  display: none !important;
+}
+
+
 
