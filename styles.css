@@ -1878,9 +1878,14 @@ html.tg-auth-pending body { opacity: 0; transition: opacity 0.25s ease; }
 .tg-mention-item::before { content: '👤'; font-size: 14px; opacity: 0.7; }
 
 
+@media (max-width:900px){
+    .tg-chat-bubble { left: 16px !important; bottom: 74px !important; z-index: 10000; }
+    .tg-chat-panel { left: 12px; right: 12px; width: calc(100% - 24px); bottom: 70px; max-height: calc(100vh - 140px); z-index: 10001; }
+}
+
 @media (max-width:560px){
-    .tg-chat-panel { left: 0; right: 0; width: 100%; bottom: 0; border-radius: 16px 16px 0 0; border-bottom: none; }
-    .tg-chat-bubble { left: 14px; bottom: 14px; }
+    .tg-chat-bubble { left: 14px !important; bottom: 74px !important; z-index: 10000; }
+    .tg-chat-panel { left: 0 !important; right: 0 !important; width: 100% !important; bottom: 58px !important; border-radius: 16px 16px 0 0 !important; border-bottom: none !important; max-height: calc(100vh - 120px) !important; z-index: 10001; }
 }
 
 /* ══════════════════════════════════════════════ */
