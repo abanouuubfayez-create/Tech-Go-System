@@ -133,6 +133,35 @@ class ZKTecoADMSHandler(BaseHTTPRequestHandler):
                 self._send_plain("لا توجد سجلات بعد.", 404)
             return
 
+        # ── خدمة ملفات البرنامج محلياً (attendance.html, styles.css, app.js) ──
+        clean_path = path.lstrip("/").split("?")[0]
+        local_file = os.path.join(os.path.dirname(os.path.abspath(__file__)), clean_path)
+        if os.path.isfile(local_file):
+            content_types = {
+                ".html": "text/html; charset=utf-8",
+                ".css": "text/css; charset=utf-8",
+                ".js": "application/javascript; charset=utf-8",
+                ".json": "application/json; charset=utf-8",
+                ".png": "image/png",
+                ".jpg": "image/jpeg",
+                ".ico": "image/x-icon",
+                ".dat": "text/plain; charset=utf-8"
+            }
+            ext = os.path.splitext(local_file)[1].lower()
+            ct = content_types.get(ext, "application/octet-stream")
+            try:
+                with open(local_file, "rb") as f:
+                    data = f.read()
+                self.send_response(200)
+                self.send_header("Content-Type", ct)
+                self.send_header("Content-Length", str(len(data)))
+                self.send_header("Access-Control-Allow-Origin", "*")
+                self.end_headers()
+                self.wfile.write(data)
+                return
+            except Exception as e:
+                pass
+
         # ── ZKTeco Handshake & Push Config (جميع مسارات ZKTeco الممكنة) ──
         if "cdata" in path or "ping" in path or "registry" in path or "push" in path or "options" in parsed.query.lower():
             connected_devices[sn] = {
