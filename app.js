@@ -2586,13 +2586,22 @@ function tgChatMount(){
     var wrap=document.createElement('div');
     wrap.id='tgChatWidgetWrap';
     wrap.innerHTML =
-        '<div id="tgChatPanel" class="tg-chat-panel">'+
+        '<div id="tgChatBackdrop" class="tg-chat-backdrop" onclick="tgChatToggle(false)"></div>'+
+        '<div id="tgChatPanel" class="tg-chat-panel tg-messenger-popup">'+
+          '<div class="tg-chat-pull-handle" onclick="tgChatToggle(false)" title="اسحب أو اضغط للتصغير"><span></span></div>'+
           '<div class="tg-chat-panel-h">'+
-            '<span>💬 الشات العام</span>'+
-            '<span class="tg-chat-panel-h-r">'+
-              '<span class="tg-chat-panel-mute" id="tgChatMuteBtn" onclick="tgChatToggleMute()" title="كتم/تشغيل صوت الإشعارات">🔔</span>'+
-              '<span class="tg-chat-panel-close" onclick="tgChatToggle(false)">✕</span>'+
-            '</span>'+
+            '<div class="tg-chat-avatar-status">'+
+              '<div class="tg-chat-head-avatar">💬</div>'+
+              '<div class="tg-chat-h-info">'+
+                '<div class="tg-chat-h-title">الشات العام</div>'+
+                '<div class="tg-chat-h-sub"><span class="tg-online-dot"></span> نشط الآن</div>'+
+              '</div>'+
+            '</div>'+
+            '<div class="tg-chat-panel-h-r">'+
+              '<button type="button" class="tg-chat-h-btn" id="tgChatMuteBtn" onclick="tgChatToggleMute()" title="كتم/تشغيل صوت الإشعارات">🔔</button>'+
+              '<button type="button" class="tg-chat-h-btn" onclick="tgChatToggle(false)" title="تصغير">➖</button>'+
+              '<button type="button" class="tg-chat-h-btn tg-chat-h-close" onclick="tgChatToggle(false)" title="إغلاق">✕</button>'+
+            '</div>'+
           '</div>'+
           '<div class="pj-chat-log" id="tgChatLog"><div class="pj-chat-empty">جارِ تحميل الرسائل...</div></div>'+
           '<div id="tgChatReplyPreview" class="tg-chat-reply-preview" style="display:none">'+
@@ -2611,6 +2620,7 @@ function tgChatMount(){
           '</div>'+
         '</div>'+
         '<div id="tgChatBubble" class="tg-chat-bubble" onclick="tgChatToggle()" title="الشات العام">'+
+          '<div class="tg-chat-bubble-ripple"></div>'+
           '<span class="tg-chat-bubble-ic">💬</span>'+
           '<span class="tgChatBadge tg-chat-bubble-badge" id="tgChatBubbleBadge" style="display:none"></span>'+
         '</div>';
@@ -2626,6 +2636,7 @@ function tgChatMount(){
         var panel = document.getElementById('tgChatPanel');
         var bubble = document.getElementById('tgChatBubble');
         var emoji = document.getElementById('tgEmojiWrap');
+        var backdrop = document.getElementById('tgChatBackdrop');
         if (_chatWidgetOpen && panel && bubble && !panel.contains(e.target) && !bubble.contains(e.target)) {
             if (emoji && emoji.contains(e.target)) return;
             tgChatToggle(false);
@@ -2659,6 +2670,7 @@ function tgChatToggleMute(){
 function tgChatToggle(force){
     var panel=document.getElementById('tgChatPanel');
     var bubble=document.getElementById('tgChatBubble');
+    var backdrop=document.getElementById('tgChatBackdrop');
     if(!panel) return;
     
     var willClose = (typeof force === 'boolean') ? !force : _chatWidgetOpen;
@@ -2672,7 +2684,8 @@ function tgChatToggle(force){
                 inp.value = '';
                 _chatWidgetOpen = false;
                 panel.classList.remove('open');
-                if(bubble) bubble.classList.toggle('hide', window.innerWidth<=560);
+                if(backdrop) backdrop.classList.remove('open');
+                if(bubble) bubble.classList.remove('open');
             }}
         ]);
         return;
@@ -2680,7 +2693,8 @@ function tgChatToggle(force){
 
     _chatWidgetOpen = (typeof force==='boolean') ? force : !_chatWidgetOpen;
     panel.classList.toggle('open', _chatWidgetOpen);
-    if(bubble) bubble.classList.toggle('hide', _chatWidgetOpen && window.innerWidth<=560);
+    if(backdrop) backdrop.classList.toggle('open', _chatWidgetOpen);
+    if(bubble) bubble.classList.toggle('open', _chatWidgetOpen);
     if(_chatWidgetOpen){
         renderChatMessages();
         tgChatMarkRead();
