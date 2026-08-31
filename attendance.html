@@ -1996,6 +1996,14 @@
             const avgDailyHours = (totalHoursSum / (totalEmployees * (uniqueDates || 1))).toFixed(2);
             const totalRecordsCount = stats.employeeDetails.reduce((acc, e) => acc + e.entries.length + e.exits.length, 0);
 
+            // Filter holidays & extra days specifically for the active month/period
+            const monthHolidays = _OFFICIAL_HOLIDAYS_LIST.filter(h => {
+                return h.date.startsWith(primaryYm) || (h.date >= minDate && h.date <= maxDate);
+            });
+            const monthExtraDays = _EXTRA_DAYS_LIST.filter(x => {
+                return x.date.startsWith(primaryYm) || (x.date >= minDate && x.date <= maxDate);
+            });
+
             // Compute overall aggregate metrics across all employees
             let sumOk = 0, sumLate = 0, sumEarly = 0, sumLeaves = 0, sumWfh = 0, sumHours = 0;
             const employeeMetrics = [];
@@ -2051,7 +2059,6 @@
                 ? ((sumOk / (sumOk + sumLate + sumEarly)) * 100).toFixed(1) 
                 : '100.0';
 
-            // Top punctual employees (>= 90%)
             const topPunctual = [...employeeMetrics].sort((a,b) => b.punctualityRate - a.punctualityRate).slice(0, 3);
             const needsAttention = [...employeeMetrics].filter(e => e.late > 0).sort((a,b) => b.late - a.late);
 
@@ -2060,8 +2067,7 @@
             employeeMetrics.forEach(em => {
                 const leavesCount = em.meta.used > 0 ? `${em.meta.used} يوم` : '—';
                 const wfhStr = em.meta.wfh > 0 ? `${em.meta.wfh} يوم` : '—';
-                const balStr = `<strong>${em.meta.balance}</strong> / ${em.meta.total} يوم<br><small style="color:#64748b; font-size:7pt;">مستخدم ${em.meta.used} (عارضة ${em.meta.casual}/7)</small>`;
-                
+                const balStr = `<strong>${em.meta.balance}</strong> / ${em.meta.total} <small style="color:#64748b; font-size:6.5pt;">(عارضة ${em.meta.casual}/7)</small>`;
                 const rateColor = em.punctualityRate >= 95 ? '#15803d' : (em.punctualityRate >= 85 ? '#0369a1' : '#b91c1c');
 
                 overviewRows += `
@@ -2076,7 +2082,7 @@
                         <td style="text-align:center; font-weight:600; color:#0f766e;">${wfhStr}</td>
                         <td style="text-align:center; font-weight:800; color:#0f766e;">${(em.empHours).toFixed(1)} س</td>
                         <td style="text-align:center; font-weight:900; color:${rateColor};">${em.punctualityRate}%</td>
-                        <td style="text-align:center; font-weight:700; font-size:7.5pt;">${balStr}</td>
+                        <td style="text-align:center; font-weight:700; font-size:7pt;">${balStr}</td>
                     </tr>
                 `;
             });
@@ -2084,39 +2090,74 @@
             // Add Totals & Averages Row to Overview Table
             overviewRows += `
                 <tr style="background:#f1f5f9; border-top:2px solid #0f6e64; font-weight:900;">
-                    <td colspan="2" style="text-align:center; color:#0f6e64; font-size:8.5pt;">📌 الإجمالي والمتوسطات العامة</td>
-                    <td style="text-align:center; color:#0f172a;">${uniqueDates} يوم</td>
+                    <td colspan="2" style="text-align:center; color:#0f6e64; font-size:8pt;">📌 الإجمالي والمتوسطات</td>
+                    <td style="text-align:center; color:#0f172a;">${uniqueDates} ي</td>
                     <td style="text-align:center; color:#15803d;">${sumOk}</td>
                     <td style="text-align:center; color:#b91c1c;">${sumLate}</td>
                     <td style="text-align:center; color:#64748b;">${sumEarly}</td>
-                    <td style="text-align:center; color:#0369a1;">${sumLeaves} يوم</td>
-                    <td style="text-align:center; color:#0f766e;">${sumWfh} يوم</td>
+                    <td style="text-align:center; color:#0369a1;">${sumLeaves} ي</td>
+                    <td style="text-align:center; color:#0f766e;">${sumWfh} ي</td>
                     <td style="text-align:center; color:#0f766e;">${sumHours.toFixed(1)} س</td>
-                    <td style="text-align:center; color:#0f6e64; font-size:9pt;">${overallPunctuality}%</td>
-                    <td style="text-align:center; color:#64748b; font-size:7pt;">متوسط الدوام: ${avgDailyHours} س/يوم</td>
+                    <td style="text-align:center; color:#0f6e64; font-size:8.5pt;">${overallPunctuality}%</td>
+                    <td style="text-align:center; color:#64748b; font-size:6.5pt;">معدل: ${avgDailyHours} س/يوم</td>
                 </tr>
             `;
 
-            // Holidays Table Rows
-            let holidaysRows = _OFFICIAL_HOLIDAYS_LIST.map(h => `
-                <tr>
-                    <td style="text-align:center; color:#64748b;">${h.id}</td>
-                    <td style="font-weight:600; text-align:center;">${h.date}</td>
-                    <td style="text-align:center;">${h.day}</td>
-                    <td style="text-align:center; font-weight:bold; color:#0f172a;">${h.occasion}</td>
-                    <td style="text-align:center; color:#64748b;">${h.details}</td>
-                </tr>
-            `).join('');
+            // Month Holidays HTML
+            let monthHolidaysHtml = '';
+            if (monthHolidays.length > 0) {
+                monthHolidaysHtml = `
+                    <div style="margin-top:6px;">
+                        <div style="font-size:8pt; font-weight:800; color:#92400e; margin-bottom:3px;">📅 العطلات الرسمية خلال شهر ${monthNameAr} (${monthHolidays.length}):</div>
+                        <table class="print-table table-gold" style="margin-bottom:0;">
+                            <thead>
+                                <tr>
+                                    <th style="width:25%;">التاريخ</th>
+                                    <th style="width:20%;">اليوم</th>
+                                    <th style="width:55%;">المناسبة</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                ${monthHolidays.map(h => `
+                                    <tr>
+                                        <td style="font-weight:700; text-align:center;">${h.date}</td>
+                                        <td style="text-align:center;">${h.day}</td>
+                                        <td style="text-align:center; font-weight:bold; color:#0f172a;">${h.occasion} (${h.details})</td>
+                                    </tr>
+                                `).join('')}
+                            </tbody>
+                        </table>
+                    </div>
+                `;
+            } else {
+                monthHolidaysHtml = `<div style="background:#fefce8; border:1px solid #fef08a; border-radius:6px; padding:4px 8px; font-size:7pt; color:#854d0e; margin-top:6px;">🌴 لا توجد عطلات رسمية خلال شهر ${monthNameAr} ${pYear}</div>`;
+            }
 
-            // Extra Days Table Rows
-            let extraDaysRows = _EXTRA_DAYS_LIST.map(x => `
-                <tr>
-                    <td style="text-align:center; color:#64748b;">${x.id}</td>
-                    <td style="font-weight:600; text-align:center;">${x.date}</td>
-                    <td style="text-align:center;">${x.day}</td>
-                    <td style="text-align:right; font-weight:bold; color:#0f172a;">${x.desc}</td>
-                </tr>
-            `).join('');
+            // Month Extra Days HTML
+            let monthExtraDaysHtml = '';
+            if (monthExtraDays.length > 0) {
+                monthExtraDaysHtml = `
+                    <div style="margin-top:6px;">
+                        <div style="font-size:8pt; font-weight:800; color:#92400e; margin-bottom:3px;">⭐ أيام العمل الإضافية المعلنة:</div>
+                        <table class="print-table table-gold" style="margin-bottom:0;">
+                            <thead>
+                                <tr>
+                                    <th style="width:30%;">التاريخ</th>
+                                    <th style="width:70%;">الوصف</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                ${monthExtraDays.map(x => `
+                                    <tr>
+                                        <td style="font-weight:700; text-align:center;">${x.date}</td>
+                                        <td style="text-align:right; font-weight:bold; color:#0f172a;">${x.desc}</td>
+                                    </tr>
+                                `).join('')}
+                            </tbody>
+                        </table>
+                    </div>
+                `;
+            }
 
             // Build Per-Employee Detailed Sections
             let empDetailsHtml = '';
@@ -2142,17 +2183,17 @@
 
                     if (!entry && exit) {
                         earlyCount++;
-                        statusBadge = '<span class="badge-danger">⚠️ خروج فقط (فقدان دخول)</span>';
+                        statusBadge = '<span class="badge-danger">⚠️ خروج فقط</span>';
                     } else if (entry && !exit) {
                         if (p === 'late') {
                             lateCount++;
                             const startMins = timeToMins(workConfig.start);
                             const graceMins = parseInt(workConfig.grace || 30);
                             const lateMin = timeToMins(entry.time) - (startMins + graceMins);
-                            statusBadge = `<span class="badge-danger">⏰ متأخر +${lateMin > 0 ? lateMin : ''} دقيقة</span>`;
+                            statusBadge = `<span class="badge-danger">⏰ متأخر +${lateMin > 0 ? lateMin : ''}د</span>`;
                         } else {
                             okCount++;
-                            statusBadge = '<span class="badge-ok">✅ في معاده (منضبط)</span>';
+                            statusBadge = '<span class="badge-ok">✅ في معاده</span>';
                         }
                     } else if (entry && exit) {
                         const hCalc = calcDayWorkHours(entry.time, exit.time);
@@ -2164,10 +2205,10 @@
                             const startMins = timeToMins(workConfig.start);
                             const graceMins = parseInt(workConfig.grace || 30);
                             const lateMin = timeToMins(entry.time) - (startMins + graceMins);
-                            statusBadge = `<span class="badge-danger">⏰ متأخر +${lateMin > 0 ? lateMin : ''} دقيقة</span>`;
+                            statusBadge = `<span class="badge-danger">⏰ متأخر +${lateMin > 0 ? lateMin : ''}د</span>`;
                         } else {
                             okCount++;
-                            statusBadge = '<span class="badge-ok">✅ في معاده (منضبط)</span>';
+                            statusBadge = '<span class="badge-ok">✅ في معاده</span>';
                         }
                     }
 
@@ -2179,20 +2220,20 @@
                             <td style="text-align:center; color:#166534; font-weight:700;">${entry ? entry.time : '—'}</td>
                             <td style="text-align:center; color:#991b1b; font-weight:700;">${exit ? exit.time : '—'}</td>
                             <td style="text-align:center; font-weight:800; color:#0f172a;">${hoursDecimal}</td>
-                            <td style="text-align:center; font-size:7pt; color:#64748b;">${entry && exit ? 'حركة مكتملة' : (entry ? 'حضور فقط' : 'انصراف فقط')}</td>
+                            <td style="text-align:center; font-size:6.5pt; color:#64748b;">${entry && exit ? 'مكتملة' : (entry ? 'دخول فقط' : 'خروج فقط')}</td>
                         </tr>
                     `;
                 });
 
                 let leavesBoxesHtml = meta.leaves.length ? meta.leaves.map(l => `
-                    <div style="background:#eff6ff; border:1px solid #bfdbfe; border-radius:6px; padding:4px 8px; margin-bottom:4px; font-size:7.5pt; color:#1e40af;">
+                    <div style="background:#eff6ff; border:1px solid #bfdbfe; border-radius:4px; padding:3px 6px; margin-bottom:2px; font-size:7pt; color:#1e40af;">
                         📌 <strong>${l.type}:</strong> ${l.date}
                     </div>
-                `).join('') : '<div style="font-size:7.5pt; color:#64748b;">لا توجد إجازات مستهلكة مسجلة هذا الشهر</div>';
+                `).join('') : '<div style="font-size:7pt; color:#64748b;">لا توجد إجازات مستهلكة هذا الشهر</div>';
 
                 let wfhBoxHtml = meta.wfh > 0 ? `
-                    <div style="background:#f0fdf4; border:1px solid #bbf7d0; border-radius:6px; padding:4px 8px; margin-top:4px; font-size:7.5pt; color:#166534;">
-                        🏠 <strong>أيام العمل من المنزل — WFH (${meta.wfh} يوم):</strong> من 12 مايو 2026 ← 25 مايو 2026 (10 أيام)
+                    <div style="background:#f0fdf4; border:1px solid #bbf7d0; border-radius:4px; padding:3px 6px; margin-top:2px; font-size:7pt; color:#166534;">
+                        🏠 <strong>العمل من المنزل — WFH (${meta.wfh} يوم):</strong> من 12 مايو ← 25 مايو (10 أيام)
                     </div>
                 ` : '';
 
@@ -2201,33 +2242,33 @@
                     : '100.0';
 
                 empDetailsHtml += `
-                    <div class="emp-print-section" style="margin-top:14px; margin-bottom:18px; page-break-inside:avoid;">
+                    <div class="emp-print-section">
                         <div class="emp-print-banner">
-                            <div style="display:flex; align-items:center; gap:10px;">
+                            <div style="display:flex; align-items:center; gap:8px;">
                                 <span class="emp-num-pill">${em.idx}</span>
                                 <div>
-                                    <div style="font-size:12pt; font-weight:900; color:#ffffff;">${name}</div>
-                                    <div style="font-size:7.5pt; color:#cbd5e1;">كود البصمة: #${emp.employeeId} | الدوام: 10:00 ص → 06:00 م (سماح ${workConfig.grace || 30} د) | إجمالي الساعات: <strong>${totalWorkHrs.toFixed(1)} س</strong></div>
+                                    <div style="font-size:11pt; font-weight:900; color:#ffffff;">${name}</div>
+                                    <div style="font-size:7pt; color:#ccfbf1;">كود #${emp.employeeId} | الدوام: 10:00 ص → 06:00 م (سماح ${workConfig.grace || 30}د) | إجمالي الساعات: <strong>${totalWorkHrs.toFixed(1)} س</strong></div>
                                 </div>
                             </div>
-                            <div style="display:flex; gap:6px; align-items:center;">
-                                <span class="badge-pill badge-pill-rate">🎯 نسبة الالتزام: ${empPunctRate}%</span>
+                            <div style="display:flex; gap:4px; align-items:center;">
+                                <span class="badge-pill badge-pill-rate">🎯 الالتزام: ${empPunctRate}%</span>
                                 <span class="badge-pill badge-pill-ok">✅ ${okCount} في معاده</span>
                                 <span class="badge-pill badge-pill-danger">⏰ ${lateCount} متأخر</span>
-                                <span class="badge-pill badge-pill-early">🚪 ${earlyCount} خروج مبكر</span>
+                                <span class="badge-pill badge-pill-early">🚪 ${earlyCount} بدري</span>
                             </div>
                         </div>
 
-                        <table class="print-table" style="margin-bottom:6px;">
+                        <table class="print-table" style="margin-bottom:4px;">
                             <thead>
                                 <tr>
                                     <th style="width:12%;">اليوم</th>
                                     <th style="width:16%;">التاريخ</th>
-                                    <th style="width:24%;">حالة الانضباط اليومي</th>
+                                    <th style="width:24%;">حالة الانضباط</th>
                                     <th style="width:14%;">وقت الدخول</th>
                                     <th style="width:14%;">وقت الخروج</th>
                                     <th style="width:12%;">ساعات العمل</th>
-                                    <th style="width:8%;">الملاحظات</th>
+                                    <th style="width:8%;">الحركة</th>
                                 </tr>
                             </thead>
                             <tbody>
@@ -2235,16 +2276,16 @@
                             </tbody>
                         </table>
 
-                        <div style="display:grid; grid-template-columns: 1fr 1fr; gap:8px; margin-top:4px;">
-                            <div style="background:#f8fafc; border:1px solid #cbd5e1; border-radius:6px; padding:6px 10px;">
-                                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:2px;">
-                                    <span style="font-size:8pt; font-weight:800; color:#334155;">📑 رصيد الإجازة السنوية (مادة 124)</span>
-                                    <span style="font-size:11pt; font-weight:900; color:#0f766e;">${meta.balance} <small style="font-size:7pt;">يوم متبقي</small></span>
+                        <div style="display:grid; grid-template-columns: 1fr 1fr; gap:6px; margin-top:2px;">
+                            <div style="background:#f8fafc; border:1px solid #cbd5e1; border-radius:6px; padding:5px 8px;">
+                                <div style="display:flex; justify-content:space-between; align-items:center;">
+                                    <span style="font-size:7.5pt; font-weight:800; color:#334155;">📑 رصيد الإجازة السنوية (مادة 124)</span>
+                                    <span style="font-size:10pt; font-weight:900; color:#0f766e;">${meta.balance} <small style="font-size:6.5pt;">يوم متبقي</small></span>
                                 </div>
-                                <div style="font-size:7.5pt; color:#64748b;">إجمالي الاستحقاق: ${meta.total} يوم | مستهلك: <strong>${meta.used} يوم</strong> (عارضة: ${meta.casual}/7)</div>
+                                <div style="font-size:6.5pt; color:#64748b; margin-top:1px;">الاستحقاق: ${meta.total} يوم | مستهلك: <strong>${meta.used} يوم</strong> (عارضة: ${meta.casual}/7)</div>
                             </div>
-                            <div style="background:#f8fafc; border:1px solid #cbd5e1; border-radius:6px; padding:6px 10px;">
-                                <div style="font-size:8pt; font-weight:800; color:#334155; margin-bottom:4px;">🏖️ الإجازات المسجلة وأيام العمل عن بعد (WFH)</div>
+                            <div style="background:#f8fafc; border:1px solid #cbd5e1; border-radius:6px; padding:5px 8px;">
+                                <div style="font-size:7.5pt; font-weight:800; color:#334155; margin-bottom:2px;">🏖️ الإجازات والعمل عن بعد (WFH)</div>
                                 ${leavesBoxesHtml}
                                 ${wfhBoxHtml}
                             </div>
@@ -2253,7 +2294,7 @@
                 `;
             });
 
-            // Full Printable HTML Document with Rich Executive Styling
+            // Full Printable HTML Document with Rich Executive Styling & Perfect Page Breaking
             const htmlContent = `
 <!DOCTYPE html>
 <html lang="ar" dir="rtl">
@@ -2267,74 +2308,77 @@
             font-family: 'Cairo', sans-serif;
             color: #0f172a;
             background: #fff;
-            padding: 8mm 10mm;
-            font-size: 8.5pt;
+            padding: 6mm 8mm;
+            font-size: 8pt;
             direction: rtl;
         }
         @page {
             size: A4 portrait;
-            margin: 8mm 10mm;
+            margin: 6mm 8mm;
         }
         @media print {
             * { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
             .no-print { display: none !important; }
+            .page-break { page-break-before: always !important; break-before: page !important; }
+            .avoid-break { page-break-inside: avoid !important; break-inside: avoid !important; }
+            .emp-print-section { page-break-inside: avoid !important; break-inside: avoid !important; }
+            .sig-grid { page-break-inside: avoid !important; break-inside: avoid !important; }
         }
 
         /* Top Header */
         .hdr-box {
             background: linear-gradient(135deg, #094740 0%, #0f6e64 100%);
             color: #ffffff;
-            border-radius: 12px;
-            padding: 14px 18px;
+            border-radius: 10px;
+            padding: 10px 16px;
             display: flex;
             justify-content: space-between;
             align-items: center;
-            margin-bottom: 12px;
-            box-shadow: 0 2px 6px rgba(0,0,0,0.08);
+            margin-bottom: 8px;
         }
-        .hdr-brand { font-size: 8pt; color: #99f6e4; font-weight: 700; margin-bottom: 2px; }
-        .hdr-title { font-size: 15pt; font-weight: 900; line-height: 1.2; }
-        .hdr-sub { font-size: 8.5pt; color: #ccfbf1; font-weight: 600; margin-top: 3px; }
+        .hdr-brand { font-size: 7.5pt; color: #99f6e4; font-weight: 700; }
+        .hdr-title { font-size: 13.5pt; font-weight: 900; line-height: 1.2; }
+        .hdr-sub { font-size: 7.5pt; color: #ccfbf1; font-weight: 600; }
         
         .hdr-badge-wrap {
             background: rgba(0,0,0,0.3);
             border: 1px solid rgba(255,255,255,0.15);
-            border-radius: 8px;
-            padding: 8px 14px;
+            border-radius: 6px;
+            padding: 6px 12px;
             text-align: right;
-            font-size: 8pt;
-            line-height: 1.6;
+            font-size: 7.5pt;
+            line-height: 1.5;
         }
 
         /* Month Ribbon */
         .month-ribbon {
             background: #f0fdfa;
             border: 1.5px solid #0f766e;
-            border-radius: 8px;
-            padding: 8px 14px;
+            border-radius: 6px;
+            padding: 6px 12px;
             display: flex;
             justify-content: space-between;
             align-items: center;
-            margin-bottom: 12px;
+            margin-bottom: 8px;
         }
-        .month-ribbon-title { font-size: 11pt; font-weight: 900; color: #0f766e; }
-        .month-ribbon-dates { font-size: 8pt; font-weight: 700; color: #334155; }
+        .month-ribbon-title { font-size: 10pt; font-weight: 900; color: #0f766e; }
+        .month-ribbon-dates { font-size: 7.5pt; font-weight: 700; color: #334155; }
 
         /* KPI Grid */
         .kpi-grid {
             display: grid;
             grid-template-columns: repeat(6, 1fr);
-            gap: 6px;
-            margin-bottom: 12px;
+            gap: 5px;
+            margin-bottom: 8px;
         }
         .kpi-card {
-            border-radius: 8px;
-            padding: 8px 6px;
+            border-radius: 6px;
+            padding: 6px 4px;
             text-align: center;
-            border: 1.5px solid transparent;
+            border: 1px solid transparent;
         }
-        .kpi-val { font-size: 13pt; font-weight: 900; margin-bottom: 2px; line-height: 1; }
-        .kpi-lbl { font-size: 7pt; font-weight: 700; color: #475569; }
+        .kpi-val { font-size: 11.5pt; font-weight: 900; margin-bottom: 1px; line-height: 1; }
+        .kpi-lbl { font-size: 6.5pt; font-weight: 700; color: #475569; }
 
         .kpi-blue   { background: #eff6ff; border-color: #bfdbfe; color: #1e40af; }
         .kpi-green  { background: #f0fdf4; border-color: #bbf7d0; color: #166534; }
@@ -2347,43 +2391,43 @@
         .insights-box {
             background: #f8fafc;
             border: 1px solid #cbd5e1;
-            border-radius: 8px;
-            padding: 8px 12px;
-            margin-bottom: 12px;
+            border-radius: 6px;
+            padding: 6px 10px;
+            margin-bottom: 8px;
             display: grid;
-            grid-template-columns: 1fr 1fr 1fr;
-            gap: 10px;
+            grid-template-columns: 1.1fr 1fr 1fr;
+            gap: 8px;
         }
-        .insight-col { font-size: 7.5pt; line-height: 1.5; }
-        .insight-col-title { font-size: 8pt; font-weight: 800; color: #0f172a; margin-bottom: 3px; display: flex; align-items: center; gap: 4px; }
+        .insight-col { font-size: 7pt; line-height: 1.4; }
+        .insight-col-title { font-size: 7.5pt; font-weight: 800; color: #0f172a; margin-bottom: 2px; }
 
         /* Tables */
         .table-hdr-title {
-            font-size: 9.5pt;
+            font-size: 9pt;
             font-weight: 800;
             color: #0f172a;
-            margin-bottom: 5px;
+            margin-bottom: 4px;
             display: flex;
             align-items: center;
-            gap: 6px;
+            gap: 4px;
         }
         .print-table {
             width: 100%;
             border-collapse: collapse;
-            margin-bottom: 10px;
-            font-size: 7.5pt;
+            margin-bottom: 6px;
+            font-size: 7pt;
         }
         .print-table th {
             background: #0f6e64;
             color: #ffffff;
             border: 1px solid #0d5c54;
-            padding: 5px 4px;
+            padding: 4px 3px;
             font-weight: 800;
             text-align: center;
         }
         .print-table td {
             border: 1px solid #e2e8f0;
-            padding: 3.5px 5px;
+            padding: 3px 4px;
             vertical-align: middle;
         }
         .print-table tbody tr:nth-child(even) {
@@ -2397,10 +2441,18 @@
         }
 
         /* Employee Banners */
+        .emp-print-section {
+            border: 1px solid #cbd5e1;
+            border-radius: 8px;
+            overflow: hidden;
+            margin-bottom: 12px;
+            page-break-inside: avoid;
+            break-inside: avoid;
+            background: #ffffff;
+        }
         .emp-print-banner {
             background: #0f6e64;
-            border-radius: 8px 8px 0 0;
-            padding: 6px 12px;
+            padding: 6px 10px;
             display: flex;
             justify-content: space-between;
             align-items: center;
@@ -2408,19 +2460,19 @@
         .emp-num-pill {
             background: #ffffff;
             color: #0f6e64;
-            width: 20px;
-            height: 20px;
+            width: 18px;
+            height: 18px;
             border-radius: 50%;
             display: inline-flex;
             align-items: center;
             justify-content: center;
             font-weight: 900;
-            font-size: 7.5pt;
+            font-size: 7pt;
         }
         .badge-pill {
-            padding: 2.5px 7px;
-            border-radius: 12px;
-            font-size: 7pt;
+            padding: 2px 6px;
+            border-radius: 10px;
+            font-size: 6.5pt;
             font-weight: 800;
         }
         .badge-pill-rate    { background: #ffffff; color: #0f766e; }
@@ -2428,163 +2480,140 @@
         .badge-pill-danger  { background: #fee2e2; color: #b91c1c; }
         .badge-pill-early   { background: #fef3c7; color: #b45309; }
 
-        .badge-ok      { display: inline-block; padding: 1px 6px; border-radius: 8px; font-size: 6.5pt; font-weight: 700; background: #dcfce7; color: #15803d; border: 1px solid #86efac; }
-        .badge-danger  { display: inline-block; padding: 1px 6px; border-radius: 8px; font-size: 6.5pt; font-weight: 700; background: #fee2e2; color: #b91c1c; border: 1px solid #fca5a5; }
+        .badge-ok      { display: inline-block; padding: 1px 5px; border-radius: 6px; font-size: 6pt; font-weight: 700; background: #dcfce7; color: #15803d; border: 1px solid #86efac; }
+        .badge-danger  { display: inline-block; padding: 1px 5px; border-radius: 6px; font-size: 6pt; font-weight: 700; background: #fee2e2; color: #b91c1c; border: 1px solid #fca5a5; }
 
         /* Signatures */
         .sig-grid {
             display: grid;
             grid-template-columns: 1fr 1fr 1fr;
-            gap: 10px;
-            margin-top: 14px;
-            padding-top: 10px;
+            gap: 8px;
+            margin-top: 12px;
+            padding-top: 8px;
             border-top: 1.5px solid #cbd5e1;
             page-break-inside: avoid;
+            break-inside: avoid;
         }
         .sig-card {
             border: 1px dashed #94a3b8;
             border-radius: 6px;
-            padding: 8px;
+            padding: 6px;
             text-align: center;
             background: #f8fafc;
         }
-        .sig-hdr { font-size: 8pt; font-weight: 800; color: #334155; margin-bottom: 24px; }
-        .sig-sub { font-size: 7pt; color: #64748b; border-top: 1px dotted #94a3b8; padding-top: 3px; }
+        .sig-hdr { font-size: 7.5pt; font-weight: 800; color: #334155; margin-bottom: 20px; }
+        .sig-sub { font-size: 6.5pt; color: #64748b; border-top: 1px dotted #94a3b8; padding-top: 2px; }
     </style>
 </head>
 <body>
-    <!-- Top Header -->
-    <div class="hdr-box">
-        <div>
-            <div class="hdr-brand">🏢 شركة تيك جو للحلول التقنية المتطورة</div>
-            <div class="hdr-title">📊 التقرير الإداري الشهري للحضور والانصراف</div>
-            <div class="hdr-sub">سجل الحضور المعتمد والأرشيف الإداري ومطابقة ساعات العمل الرسمية</div>
+    <!-- ════════════ PAGE 1: EXECUTIVE DASHBOARD ════════════ -->
+    <div class="avoid-break">
+        <!-- Top Header -->
+        <div class="hdr-box">
+            <div>
+                <div class="hdr-brand">🏢 شركة تيك جو للحلول التقنية المتطورة</div>
+                <div class="hdr-title">📊 التقرير الإداري الشهري للحضور والانصراف</div>
+                <div class="hdr-sub">سجل الحضور المعتمد والأرشيف الإداري ومطابقة ساعات العمل الرسمية</div>
+            </div>
+            <div class="hdr-badge-wrap">
+                <div>📅 <strong>شهر التقرير:</strong> ${monthNameAr} ${pYear}</div>
+                <div>⏰ <strong>مواعيد الدوام:</strong> ${workConfig.start} → ${workConfig.end} (سماح ${workConfig.grace || 30}د)</div>
+                <div>👥 <strong>${totalEmployees} موظف</strong> | <strong>${uniqueDates} يوم عمل</strong> | <strong>${totalRecordsCount} حركة</strong></div>
+            </div>
         </div>
-        <div class="hdr-badge-wrap">
-            <div>📅 <strong>شهر التقرير:</strong> ${monthNameAr} ${pYear}</div>
-            <div>⏰ <strong>مواعيد الدوام:</strong> ${workConfig.start} → ${workConfig.end} (سماح ${workConfig.grace || 30} د)</div>
-            <div>👥 <strong>${totalEmployees} موظف</strong> | <strong>${uniqueDates} يوم عمل</strong> | <strong>${totalRecordsCount} حركة</strong></div>
+
+        <!-- Month Ribbon Banner -->
+        <div class="month-ribbon">
+            <div class="month-ribbon-title">🗓️ ملخص واعتماد دوام شهر: ${monthNameAr} ${pYear}</div>
+            <div class="month-ribbon-dates">الفترة المعتمدة: من <strong>${minDate}</strong> إلى <strong>${maxDate}</strong> | تاريخ الطباعة: <strong>${new Date().toLocaleDateString('ar-EG')}</strong></div>
+        </div>
+
+        <!-- Executive KPI Grid -->
+        <div class="kpi-grid">
+            <div class="kpi-card kpi-purple">
+                <div class="kpi-val">${totalEmployees}</div>
+                <div class="kpi-lbl">الموظفين</div>
+            </div>
+            <div class="kpi-card kpi-yellow">
+                <div class="kpi-val">${uniqueDates}</div>
+                <div class="kpi-lbl">أيام الدوام</div>
+            </div>
+            <div class="kpi-card kpi-teal">
+                <div class="kpi-val">${sumHours.toFixed(1)} س</div>
+                <div class="kpi-lbl">ساعات العمل</div>
+            </div>
+            <div class="kpi-card kpi-green">
+                <div class="kpi-val">${overallPunctuality}%</div>
+                <div class="kpi-lbl">الانضباط العام</div>
+            </div>
+            <div class="kpi-card kpi-red">
+                <div class="kpi-val">${sumLate}</div>
+                <div class="kpi-lbl">التأخيرات</div>
+            </div>
+            <div class="kpi-card kpi-blue">
+                <div class="kpi-val">${sumLeaves}ي / ${sumWfh}ي</div>
+                <div class="kpi-lbl">إجازات / WFH</div>
+            </div>
+        </div>
+
+        <!-- Executive Highlights Box -->
+        <div class="insights-box">
+            <div class="insight-col">
+                <div class="insight-col-title" style="color:#15803d;">🏆 الأكثر التزاماً بالمواعيد:</div>
+                ${topPunctual.map(t => `<div>• <strong>${t.name}:</strong> التزام <strong>${t.punctualityRate}%</strong> (${t.ok} يوم في معاده)</div>`).join('')}
+            </div>
+            <div class="insight-col">
+                <div class="insight-col-title" style="color:#b91c1c;">⚠️ ملاحظات التأخيرات المسجلة:</div>
+                ${needsAttention.length ? needsAttention.slice(0, 3).map(n => `<div>• <strong>${n.name}:</strong> ${n.late} يوم تأخير</div>`).join('') : '<div>• لا توجد أي حالات تأخير مسجلة هذا الشهر</div>'}
+            </div>
+            <div class="insight-col">
+                <div class="insight-col-title" style="color:#0f766e;">📑 مؤشرات الدوام والأرصدة:</div>
+                <div>• متوسط الدوام: <strong>${avgDailyHours} ساعة/يوم</strong></div>
+                <div>• إجمالي السجلات: <strong>${totalRecordsCount} حركة</strong></div>
+                <div>• رصيد الإجازات: مادة 124 قانون العمل</div>
+            </div>
+        </div>
+
+        <!-- Summary Performance Matrix Table -->
+        <div class="table-hdr-title">📊 جدول ملخص الانضباط والأداء لكافة الموظفين (${monthNameAr} ${pYear})</div>
+        <table class="print-table">
+            <thead>
+                <tr>
+                    <th style="width:3%;">#</th>
+                    <th style="width:16%;">الموظف</th>
+                    <th style="width:7%;">الدوام</th>
+                    <th style="width:8%;">✅ في معاده</th>
+                    <th style="width:7%;">⏰ متأخر</th>
+                    <th style="width:7%;">🚪 بدري</th>
+                    <th style="width:8%;">🏖️ إجازة</th>
+                    <th style="width:8%;">🏠 WFH</th>
+                    <th style="width:10%;">⏱ ساعات العمل</th>
+                    <th style="width:9%;">🎯 الانضباط</th>
+                    <th style="width:17%;">📑 رصيد الإجازة</th>
+                </tr>
+            </thead>
+            <tbody>
+                ${overviewRows}
+            </tbody>
+        </table>
+
+        <!-- Month Holidays & Extra Days Section (Only for active month) -->
+        <div style="display:grid; grid-template-columns: ${monthExtraDays.length ? '1.4fr 1fr' : '1fr'}; gap:8px;">
+            ${monthHolidaysHtml}
+            ${monthExtraDaysHtml}
         </div>
     </div>
 
-    <!-- Month Ribbon Banner -->
-    <div class="month-ribbon">
-        <div class="month-ribbon-title">🗓️ ملخص واعتماد دوام شهر: ${monthNameAr} ${pYear}</div>
-        <div class="month-ribbon-dates">الفترة المعتمدة: من <strong>${minDate}</strong> إلى <strong>${maxDate}</strong> | تاريخ الطباعة: <strong>${new Date().toLocaleDateString('ar-EG')}</strong></div>
+    <!-- ════════════ PAGES 2+: DETAILED EMPLOYEE TIMESHEETS ════════════ -->
+    <div class="page-break"></div>
+    <div style="margin-top:4px;">
+        <div class="table-hdr-title" style="font-size:11pt; margin-bottom:8px; border-bottom: 2px solid #0f6e64; padding-bottom: 4px;">
+            👥 السجل التفصيلي اليومي للموظفين — شهر ${monthNameAr} ${pYear}
+        </div>
+        ${empDetailsHtml}
     </div>
 
-    <!-- Executive KPI Grid -->
-    <div class="kpi-grid">
-        <div class="kpi-card kpi-purple">
-            <div class="kpi-val">${totalEmployees}</div>
-            <div class="kpi-lbl">إجمالي الموظفين</div>
-        </div>
-        <div class="kpi-card kpi-yellow">
-            <div class="kpi-val">${uniqueDates}</div>
-            <div class="kpi-lbl">أيام الدوام الفعلي</div>
-        </div>
-        <div class="kpi-card kpi-teal">
-            <div class="kpi-val">${sumHours.toFixed(1)} س</div>
-            <div class="kpi-lbl">إجمالي ساعات العمل</div>
-        </div>
-        <div class="kpi-card kpi-green">
-            <div class="kpi-val">${overallPunctuality}%</div>
-            <div class="kpi-lbl">معدل الانضباط العام</div>
-        </div>
-        <div class="kpi-card kpi-red">
-            <div class="kpi-val">${sumLate}</div>
-            <div class="kpi-lbl">إجمالي حالات التأخير</div>
-        </div>
-        <div class="kpi-card kpi-blue">
-            <div class="kpi-val">${sumLeaves}ي / ${sumWfh}ي</div>
-            <div class="kpi-lbl">إجازات / عمل WFH</div>
-        </div>
-    </div>
-
-    <!-- Executive Insights & Highlights Box -->
-    <div class="insights-box">
-        <div class="insight-col">
-            <div class="insight-col-title" style="color:#15803d;">🏆 الأكثر التزاماً بالمواعيد:</div>
-            ${topPunctual.map(t => `<div>• <strong>${t.name}:</strong> نسبة التزام <strong>${t.punctualityRate}%</strong> (${t.ok} يوم في معاده)</div>`).join('')}
-        </div>
-        <div class="insight-col">
-            <div class="insight-col-title" style="color:#b91c1c;">⚠️ ملاحظات التأخيرات المسجلة:</div>
-            ${needsAttention.length ? needsAttention.slice(0, 3).map(n => `<div>• <strong>${n.name}:</strong> ${n.late} يوم تأخير</div>`).join('') : '<div>• لا توجد أي حالات تأخير مسجلة هذا الشهر</div>'}
-        </div>
-        <div class="insight-col">
-            <div class="insight-col-title" style="color:#0f766e;">📑 متوسطات العمل والإنتاجية:</div>
-            <div>• متوسط الدوام اليومي: <strong>${avgDailyHours} ساعة/يوم</strong></div>
-            <div>• إجمالي السجلات المستلمة: <strong>${totalRecordsCount} حركة بصمة</strong></div>
-            <div>• رصيد الإجازات السنوية: طبقا لقانون العمل م. 124</div>
-        </div>
-    </div>
-
-    <!-- Summary Performance Matrix Table -->
-    <div class="table-hdr-title">📊 جدول ملخص الانضباط والأداء لكافة الموظفين (${monthNameAr} ${pYear})</div>
-    <table class="print-table">
-        <thead>
-            <tr>
-                <th style="width:3%;">#</th>
-                <th style="width:16%;">الموظف</th>
-                <th style="width:7%;">أيام الدوام</th>
-                <th style="width:8%;">✅ في معاده</th>
-                <th style="width:7%;">⏰ متأخر</th>
-                <th style="width:7%;">🚪 بدري</th>
-                <th style="width:8%;">🏖️ إجازة</th>
-                <th style="width:8%;">🏠 WFH</th>
-                <th style="width:10%;">⏱ ساعات العمل</th>
-                <th style="width:9%;">🎯 الانضباط</th>
-                <th style="width:17%;">📑 رصيد الإجازة المتبقي</th>
-            </tr>
-        </thead>
-        <tbody>
-            ${overviewRows}
-        </tbody>
-    </table>
-
-    <!-- Official Holidays & Extra Days Section (Compact) -->
-    <div style="display:grid; grid-template-columns: 2fr 1fr; gap:10px; margin-top:8px;">
-        <div>
-            <div class="table-hdr-title" style="font-size:8.5pt;">📅 العطلات الرسمية المعتمدة</div>
-            <table class="print-table table-gold" style="margin-bottom:6px;">
-                <thead>
-                    <tr>
-                        <th style="width:6%;">#</th>
-                        <th style="width:24%;">التاريخ</th>
-                        <th style="width:20%;">اليوم</th>
-                        <th style="width:50%;">المناسبة</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    ${holidaysRows}
-                </tbody>
-            </table>
-        </div>
-        <div>
-            <div class="table-hdr-title" style="font-size:8.5pt;">⭐ أيام العمل الإضافية المعلنة</div>
-            <table class="print-table table-gold" style="margin-bottom:6px;">
-                <thead>
-                    <tr>
-                        <th style="width:10%;">#</th>
-                        <th style="width:35%;">التاريخ</th>
-                        <th style="width:55%;">الوصف</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    ${extraDaysRows}
-                </tbody>
-            </table>
-        </div>
-    </div>
-
-    <!-- Detailed Employee Timesheets Section -->
-    <div style="page-break-before: always;"></div>
-    <div class="table-hdr-title" style="font-size:12pt; margin-top:10px; margin-bottom:8px; border-bottom: 2px solid #0f6e64; padding-bottom: 4px;">
-        👥 السجل التفصيلي اليومي للموظفين — شهر ${monthNameAr} ${pYear}
-    </div>
-    ${empDetailsHtml}
-
-    <!-- Signatures & Official Approval -->
+    <!-- Signatures & Official Approval (Stays on last page) -->
     <div class="sig-grid">
         <div class="sig-card">
             <div class="sig-hdr">إعداد: مسؤول الموارد البشرية (HR)</div>
@@ -2649,7 +2678,7 @@
         updatePolicyLabels();
         initAttendanceArchive();
     </script>
-    <script src="theme.js?v=1788163410"></script>
-    <script src="pwa-install.js?v=1788163410"></script>
+    <script src="theme.js?v=1788164082"></script>
+    <script src="pwa-install.js?v=1788164082"></script>
 </body>
 </html>
