@@ -1953,7 +1953,11 @@ function loadPmgmtData(){
     if(!assigneesBox||!listBox)return;
     db.collection('users').where('role','==','employee').get().then(function(snap){
         PMGMT_EMPLOYEES=[];
-        snap.forEach(function(doc){PMGMT_EMPLOYEES.push(Object.assign({uid:doc.id},doc.data()));});
+        snap.forEach(function(doc){
+            var data = doc.data() || {};
+            if (data.disabled === true || data.status === 'disabled' || data.active === false) return;
+            PMGMT_EMPLOYEES.push(Object.assign({uid:doc.id}, data));
+        });
         PMGMT_EMPLOYEES.sort(function(a,b){return (a.name||a.email||'').localeCompare((b.name||b.email||''),'ar');});
         renderPmgmtAssigneesBox();
         return db.collection('projects').get();
@@ -6175,7 +6179,11 @@ function loadAnnouncementTargetEmployees() {
         var opts = '<option value="">اختر الموظف...</option>';
         var mentionOpts = '<option value="">👤 إشارة لموظف (@)...</option>';
         var list = [];
-        snap.forEach(function(doc) { list.push(Object.assign({uid:doc.id}, doc.data())); });
+        snap.forEach(function(doc) {
+            var data = doc.data() || {};
+            if (data.disabled === true || data.status === 'disabled' || data.active === false) return;
+            list.push(Object.assign({uid:doc.id}, data));
+        });
         list.sort(function(a,b){ return (a.name||'').localeCompare(b.name||'', 'ar'); });
         list.forEach(function(emp) {
             var n = emp.name || emp.email || emp.uid;
@@ -7081,7 +7089,11 @@ function loadEmpDocsOverview() {
             return;
         }
         var employees = [];
-        snap.forEach(function(doc){ employees.push(Object.assign({uid:doc.id},doc.data())); });
+        snap.forEach(function(doc){
+            var data = doc.data() || {};
+            if (data.disabled === true || data.status === 'disabled' || data.active === false) return;
+            employees.push(Object.assign({uid:doc.id}, data));
+        });
         window._empDocsCache = employees;
         renderEmpDocsList(employees);
     }).catch(function(err){
@@ -8308,7 +8320,12 @@ function tgViewArchiveDoc(id) {
 var tgAutoEmpList = [];
 function tgLoadAutoCompleteList() {
     db.collection('users').where('role','==','employee').get().then(function(snap){
-        tgAutoEmpList = snap.docs.map(function(d){ return Object.assign({uid:d.id}, d.data()); });
+        tgAutoEmpList = [];
+        snap.forEach(function(d){
+            var data = d.data() || {};
+            if (data.disabled === true || data.status === 'disabled' || data.active === false) return;
+            tgAutoEmpList.push(Object.assign({uid:d.id}, data));
+        });
         tgAutoEmpList.sort(function(a,b){ return (a.name||a.email||'').localeCompare(b.name||b.email||''); });
         
         // 1. Update top bar select if exists
