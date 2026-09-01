@@ -187,7 +187,12 @@
 
     _ltUsersUnsub = db.collection('users').where('role', '==', 'employee')
       .onSnapshot(function (snap) {
-        ltEmployees = snap.docs.map(function (d) { return Object.assign({ uid: d.id }, d.data()); });
+        ltEmployees = [];
+        snap.forEach(function(doc) {
+          var d = doc.data() || {};
+          if (d.disabled === true || d.status === 'disabled' || d.active === false) return;
+          ltEmployees.push(Object.assign({ uid: doc.id }, d));
+        });
         ltRenderTeam();
       });
 

@@ -65,7 +65,7 @@ function tgRequireAuth(requiredRole, onOk) {
                 return;
             }
             var data = res.data;
-            if (data.disabled === true) {
+            if (data.disabled === true || data.status === 'disabled' || data.active === false) {
                 alert('تم تعطيل هذا الحساب من قبل الإدارة. تواصل مع مدير النظام لمزيد من التفاصيل.');
                 auth.signOut().then(function () { location.href = 'login.html'; });
                 return;

@@ -615,7 +615,12 @@
 
   function fsLoadEmployees() {
     db.collection('users').where('role', 'in', ['employee', 'tech_admin']).get().then(function (snap) {
-      fsEmployees = snap.docs.map(function (d) { return Object.assign({ uid: d.id }, d.data()); });
+      fsEmployees = [];
+      snap.forEach(function(doc) {
+        var d = doc.data() || {};
+        if (d.disabled === true || d.status === 'disabled' || d.active === false) return;
+        fsEmployees.push(Object.assign({ uid: doc.id }, d));
+      });
       var sel = document.getElementById('fsTargetEmp');
       if (!sel) return;
       sel.innerHTML = '<option value="">اختر موظفاً...</option>' +

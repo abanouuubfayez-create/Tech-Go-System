@@ -1132,7 +1132,12 @@ function loadDashboardSummary(){
         db.collection('tasks').get(),
         db.collection('attendance_logs').where('date','>=',new Date().toISOString().split('T')[0].substring(0,7)+'-01').get()
     ]).then(function(res){
-        var employees=res[0].docs.map(function(d){return Object.assign({uid:d.id},d.data())});
+        var employees = [];
+        res[0].docs.forEach(function(d){
+            var data = d.data() || {};
+            if (data.disabled === true || data.status === 'disabled' || data.active === false) return;
+            employees.push(Object.assign({uid:d.id}, data));
+        });
         var projects=res[1].docs.map(function(d){return Object.assign({id:d.id},d.data())});
         var pendingCount=res[2].size;
         var tasks=res[3].docs.map(function(d){return Object.assign({id:d.id},d.data())});
@@ -1150,7 +1155,7 @@ function loadDashboardSummary(){
 
         var top3 = employees.sort(function(a,b){ return b.perf.total - a.perf.total; }).slice(0,3);
 
-        var empCount=res[0].size, projCount=res[1].size;
+        var empCount=employees.length, projCount=res[1].size;
         var h = '<div class="DC" onclick="go(\'staff\')" style="cursor:pointer"><div class="di-wrap"><div class="di">👥</div></div><div class="dt2">'+empCount+' موظف</div><div class="dd">إجمالي حسابات الموظفين المسجّلة</div></div>'+
             '<div class="DC" onclick="go(\'pmgmt\')" style="cursor:pointer"><div class="di-wrap"><div class="di">📁</div></div><div class="dt2">'+projCount+' مشروع</div><div class="dd">إجمالي المشاريع الحالية</div></div>'+
             '<div class="DC" onclick="window._reqHubStatusTab=\'pending\';go(\'allrequests\')" style="cursor:pointer'+(pendingCount?';border:1px solid var(--no);box-shadow:0 4px 12px rgba(239,68,68,0.15)':'')+'"><div class="di-wrap"><div class="di" '+(pendingCount?'style="background:#fef2f2"':'')+'>⏳</div>'+(pendingCount?'<span class="badge-new" style="background:#fef2f2;color:#ef4444;border-color:rgba(239,68,68,0.2)">عاجل</span>':'')+'</div><div class="dt2" '+(pendingCount?'style="color:#ef4444"':'')+'>'+pendingCount+' طلب معلّق</div><div class="dd">بانتظار موافقة أو رفض الأدمن</div></div>';
@@ -15125,13 +15130,14 @@ window.tgRenderCallTargetUserList = function() {
     if (window._lastUsersSnap && !window._lastUsersSnap.empty) {
         window._lastUsersSnap.forEach(function(doc) {
             var d = doc.data() || {};
+            if (d.disabled === true || d.status === 'disabled' || d.active === false) return;
             var uid = doc.id;
             var name = d.name || d.displayName || d.userName || d.email || uid;
             var role = d.role || d.jobTitle || 'موظف';
             rawUsers.push({ uid: uid, name: name, role: role });
         });
     } else if (Array.isArray(window.allUsers) && window.allUsers.length > 0) {
-        rawUsers = window.allUsers.map(function(u) {
+        rawUsers = window.allUsers.filter(function(u){ return !u.disabled && u.status !== 'disabled' && u.active !== false; }).map(function(u) {
             return { uid: u.uid || u.id, name: u.name || u.displayName || u.userName || u.email, role: u.role || 'موظف' };
         });
     }
