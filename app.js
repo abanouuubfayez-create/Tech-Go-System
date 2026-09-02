@@ -3814,6 +3814,43 @@ function printWeeklyReportDoc(u, r) {
 }
 
 // ─── بريد التقارير والخطط الأسبوعية (Admin Inbox) ───────────────────────────
+
+function tgFormatReportContentHtml(txt, emptyLabel) {
+    if (!txt || !txt.trim()) return '<div style="color:var(--tx3); font-size:13px; font-style:italic;">' + (emptyLabel || 'لا توجد بيانات مسجلة') + '</div>';
+    var lines = txt.split('\n');
+    var html = '';
+    var inList = false;
+
+    lines.forEach(function(l) {
+        var trimmed = l.trim();
+        if (!trimmed) return;
+        var isBullet = trimmed.startsWith('•') || trimmed.startsWith('-') || /^\d+\./.test(trimmed) || trimmed.startsWith('☑️') || trimmed.startsWith('🎯');
+        
+        if (isBullet) {
+            var icon = '•';
+            var cleanText = trimmed;
+            if (trimmed.startsWith('•') || trimmed.startsWith('-')) {
+                icon = '•'; cleanText = trimmed.replace(/^[•\-]\s*/, '');
+            } else if (trimmed.startsWith('☑️')) {
+                icon = '☑️'; cleanText = trimmed.replace(/^☑️\s*/, '');
+            } else if (trimmed.startsWith('🎯')) {
+                icon = '🎯'; cleanText = trimmed.replace(/^🎯\s*/, '');
+            } else {
+                var m = trimmed.match(/^(\d+\.)\s*(.*)/);
+                if (m) { icon = m[1]; cleanText = m[2]; }
+            }
+            html += '<div style="display:flex; align-items:flex-start; gap:8px; margin-bottom:6px; font-size:14px; line-height:1.7; font-weight:700; color:var(--tx);">' +
+                    '<span style="color:#0284c7; font-weight:900; font-size:14px; min-width:18px;">' + escH(icon) + '</span>' +
+                    '<span style="flex:1;">' + escH(cleanText) + '</span>' +
+                    '</div>';
+        } else {
+            html += '<div style="font-size:14px; line-height:1.75; font-weight:700; color:var(--tx); margin-bottom:6px;">' + escH(trimmed) + '</div>';
+        }
+    });
+
+    return html || ('<div style="font-size:14px; line-height:1.7; font-weight:700; color:var(--tx);">' + escH(txt) + '</div>');
+}
+
 function loadWeeklyReportsInbox(targetContainer) {
     var container = targetContainer || document.getElementById('pg-wkr') || document.getElementById('pg-weeklyreports');
     if (!container) {
@@ -3823,7 +3860,7 @@ function loadWeeklyReportsInbox(targetContainer) {
     if (!container) return;
 
     container.innerHTML = `
-        <div class="set-sec" style="background:var(--w); border:1px solid var(--bd); border-radius:18px; padding:22px 24px; box-shadow:0 4px 20px rgba(0,0,0,0.04); direction:rtl;">
+        <div class="set-sec" style="background:var(--w); border:1px solid var(--bd); border-radius:18px; padding:24px 26px; box-shadow:0 4px 20px rgba(0,0,0,0.04); direction:rtl;">
             <!-- Header -->
             <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:16px; margin-bottom:20px; border-bottom:1.5px solid var(--bd); padding-bottom:18px;">
                 <div>
@@ -3867,7 +3904,7 @@ function loadWeeklyReportsInbox(targetContainer) {
             </div>
 
             <!-- Modern Filter Bar -->
-            <div style="background:var(--bg2); padding:16px 20px; border-radius:14px; border:1.5px solid var(--bd); margin-bottom:22px;">
+            <div style="background:var(--bg2); padding:16px 20px; border-radius:14px; border:1.5px solid var(--bd); margin-bottom:24px;">
                 <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(220px, 1fr)); gap:14px; align-items:flex-end;">
                     <div>
                         <label style="display:block; font-size:12.5px; font-weight:800; color:var(--tx); margin-bottom:6px;">👤 الموظف (المفعلين فقط):</label>
@@ -3893,15 +3930,15 @@ function loadWeeklyReportsInbox(targetContainer) {
             </div>
 
             <!-- List of Reports -->
-            <div id="wkrInboxList" style="display:flex; flex-direction:column; gap:16px;">
+            <div id="wkrInboxList" style="display:flex; flex-direction:column; gap:18px;">
                 <div style="text-align:center; padding:35px; color:var(--tx3); font-weight:bold;">⏳ جاري جلب تقارير الموظفين...</div>
             </div>
         </div>
     `;
 
     Promise.all([
-        db.collection('weekly_reports').get().catch(function () { return { docs: [] }; }),
         db.collection('weeklyReports').get().catch(function () { return { docs: [] }; }),
+        db.collection('weekly_reports').get().catch(function () { return { docs: [] }; }),
         db.collection('users').get().catch(function () { return { docs: [] }; })
     ]).then(function (res) {
         var reports = [];
@@ -3912,8 +3949,8 @@ function loadWeeklyReportsInbox(targetContainer) {
                 reports.push(Object.assign({ id: d.id, _collection: colName }, d.data()));
             }
         };
-        res[0].docs.forEach(function (d) { processDoc(d, 'weekly_reports'); });
-        res[1].docs.forEach(function (d) { processDoc(d, 'weeklyReports'); });
+        res[0].docs.forEach(function (d) { processDoc(d, 'weeklyReports'); });
+        res[1].docs.forEach(function (d) { processDoc(d, 'weekly_reports'); });
 
         var users = {};
         var activeEmpList = [];
@@ -3921,7 +3958,7 @@ function loadWeeklyReportsInbox(targetContainer) {
             var u = d.data();
             u.uid = d.id;
             users[d.id] = u;
-            // Only Active Employees (not disabled / not deleted)
+            // Only Active Employees
             var isEmp = (u.role === 'employee' || !u.role || u.role === 'staff');
             var isActive = (u.active !== false && u.disabled !== true && u.status !== 'disabled' && u.isArchived !== true);
             if (isEmp && isActive) {
@@ -4018,8 +4055,8 @@ function renderWeeklyReportsInbox() {
         var u = users[r.uid] || { name: r.empName || r.name, email: r.empEmail || r.email, jobTitle: r.empJob || r.jobTitle };
         var isApproved = (r.status === 'approved' || r.reviewedByAdmin);
         var statusBadge = isApproved 
-            ? '<span style="background:rgba(16,185,129,0.15); color:#10b981; border:1px solid rgba(16,185,129,0.3); font-weight:800; padding:5px 14px; border-radius:20px; font-size:12px;">✅ معتمد من الإدارة</span>'
-            : '<span style="background:rgba(245,158,11,0.15); color:#d97706; border:1px solid rgba(245,158,11,0.3); font-weight:800; padding:5px 14px; border-radius:20px; font-size:12px;">⏳ بانتظار المراجعة</span>';
+            ? '<span style="background:rgba(16,185,129,0.15); color:#059669; border:1.5px solid rgba(16,185,129,0.35); font-weight:900; padding:5px 15px; border-radius:30px; font-size:12px; display:inline-flex; align-items:center; gap:4px;">✅ معتمد من الإدارة</span>'
+            : '<span style="background:rgba(245,158,11,0.15); color:#d97706; border:1.5px solid rgba(245,158,11,0.35); font-weight:900; padding:5px 15px; border-radius:30px; font-size:12px; display:inline-flex; align-items:center; gap:4px;">⏳ بانتظار المراجعة</span>';
         
         var dateStr = '';
         if (r.createdAt) {
@@ -4028,15 +4065,22 @@ function renderWeeklyReportsInbox() {
         }
 
         h += `
-            <div class="ac-row" data-report-id="${r.id}" style="background:var(--w); border:1px solid var(--bd); border-right:4px solid ${isApproved ? '#10b981' : '#f59e0b'}; border-radius:16px; padding:20px 22px; box-shadow:0 2px 8px rgba(0,0,0,0.04); direction:rtl; margin-bottom:8px;">
-                <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:12px; margin-bottom:14px; border-bottom:1px dashed var(--bd); padding-bottom:12px;">
-                    <div style="display:flex; align-items:center; gap:12px;">
-                        <div style="width:42px; height:42px; border-radius:50%; background:linear-gradient(135deg, #0284c7, #0369a1); color:#fff; display:flex; align-items:center; justify-content:center; font-weight:900; font-size:16px; box-shadow:0 3px 10px rgba(2,132,199,0.3);">
+            <div class="ac-row" data-report-id="${r.id}" style="background:var(--w); border:1.5px solid var(--bd); border-right:5px solid ${isApproved ? '#10b981' : '#f59e0b'}; border-radius:18px; padding:22px 24px; box-shadow:0 3px 12px rgba(0,0,0,0.03); direction:rtl; margin-bottom:8px;">
+                <!-- Card Header -->
+                <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:14px; margin-bottom:16px; border-bottom:1.5px solid var(--bd); padding-bottom:14px;">
+                    <div style="display:flex; align-items:center; gap:14px;">
+                        <div style="width:46px; height:46px; border-radius:50%; background:linear-gradient(135deg, #0284c7, #0369a1); color:#fff; display:flex; align-items:center; justify-content:center; font-weight:900; font-size:18px; box-shadow:0 4px 12px rgba(2,132,199,0.35); flex-shrink:0;">
                             ${(u.name || 'م')[0]}
                         </div>
                         <div>
-                            <div style="font-size:16px; font-weight:900; color:var(--tx);">${escH(u.name || u.email || 'موظف')} <span style="font-size:12.5px; color:var(--tx3); font-weight:normal;">(${escH(u.jobTitle || 'موظف')})</span></div>
-                            <div style="font-size:12.5px; color:#0284c7; font-weight:800; margin-top:2px;">📅 ${escH(r.weekLabel || ('أسبوع: ' + (r.weekStart || '')))} · <span style="color:var(--tx3); font-weight:normal;">🕒 ${dateStr}</span></div>
+                            <div style="font-size:16.5px; font-weight:900; color:var(--tx); display:flex; align-items:center; gap:8px;">
+                                <span>${escH(u.name || u.email || 'موظف')}</span>
+                                ${u.jobTitle ? '<span style="font-size:11.5px; background:rgba(2,132,199,0.1); color:#0284c7; padding:2px 10px; border-radius:12px; font-weight:800;">' + escH(u.jobTitle) + '</span>' : ''}
+                            </div>
+                            <div style="font-size:12.5px; color:#0284c7; font-weight:800; margin-top:4px; display:flex; align-items:center; gap:8px;">
+                                <span>📅 ${escH(r.weekLabel || ('أسبوع: ' + (r.weekStart || '')))}</span>
+                                <span style="color:var(--tx3); font-weight:600;">🕒 ${dateStr}</span>
+                            </div>
                         </div>
                     </div>
                     <div>
@@ -4044,63 +4088,59 @@ function renderWeeklyReportsInbox() {
                     </div>
                 </div>
 
-                <!-- Accomplishments -->
-                ${(r.accomplishments || r.content || r.summary) ? `
-                    <div style="margin-bottom:12px; background:var(--bg2); border:1px solid var(--bd); border-radius:12px; padding:14px 16px;">
-                        <div style="color:#0284c7; font-size:13px; font-weight:800; margin-bottom:6px; display:flex; align-items:center; gap:6px;">
-                            <span>📌</span> ما تم إنجازه هذا الأسبوع (الإنجازات والمهام المكتملة):
-                        </div>
-                        <div style="font-size:13.5px; color:var(--tx); line-height:1.75; font-weight:600; white-space:pre-wrap;">${escH(r.accomplishments || r.content || r.summary)}</div>
+                <!-- Section 1: Accomplishments -->
+                <div style="margin-bottom:14px; background:rgba(2,132,199,0.03); border:1.5px solid rgba(2,132,199,0.2); border-right:4px solid #0284c7; border-radius:12px; padding:16px 18px;">
+                    <div style="color:#0284c7; font-size:13.5px; font-weight:900; margin-bottom:8px; display:flex; align-items:center; gap:6px;">
+                        <span>📌</span> ما تم إنجازه هذا الأسبوع (الإنجازات والمهام المكتملة):
                     </div>
-                ` : ''}
+                    <div>${tgFormatReportContentHtml(r.accomplishments || r.content || r.summary, 'لم يذكر إنجازات')}</div>
+                </div>
 
-                <!-- Next Week Plan -->
-                ${(r.nextWeekPlan || r.plan || r.plannedTasks) ? `
-                    <div style="margin-bottom:12px; background:var(--bg2); border:1px solid var(--bd); border-radius:12px; padding:14px 16px;">
-                        <div style="color:#10b981; font-size:13px; font-weight:800; margin-bottom:6px; display:flex; align-items:center; gap:6px;">
-                            <span>🎯</span> خطة ومستهدفات الأسبوع القادم:
-                        </div>
-                        <div style="font-size:13.5px; color:var(--tx); line-height:1.75; font-weight:600; white-space:pre-wrap;">${escH(r.nextWeekPlan || r.plan || r.plannedTasks)}</div>
+                <!-- Section 2: Next Week Plan -->
+                <div style="margin-bottom:14px; background:rgba(16,185,129,0.03); border:1.5px solid rgba(16,185,129,0.2); border-right:4px solid #10b981; border-radius:12px; padding:16px 18px;">
+                    <div style="color:#059669; font-size:13.5px; font-weight:900; margin-bottom:8px; display:flex; align-items:center; gap:6px;">
+                        <span>🎯</span> خطة ومستهدفات الأسبوع القادم:
                     </div>
-                ` : ''}
+                    <div>${tgFormatReportContentHtml(r.nextWeekPlan || r.plan || r.plannedTasks, 'لم تذكر خطة')}</div>
+                </div>
 
-                <!-- Challenges -->
+                <!-- Section 3: Challenges (Optional) -->
                 ${r.challenges ? `
-                    <div style="margin-bottom:12px; background:rgba(245,158,11,0.06); border:1px solid rgba(245,158,11,0.25); border-radius:12px; padding:12px 16px;">
-                        <div style="color:#d97706; font-size:13px; font-weight:800; margin-bottom:4px; display:flex; align-items:center; gap:6px;">
+                    <div style="margin-bottom:14px; background:rgba(245,158,11,0.04); border:1.5px solid rgba(245,158,11,0.25); border-right:4px solid #f59e0b; border-radius:12px; padding:14px 18px;">
+                        <div style="color:#d97706; font-size:13px; font-weight:900; margin-bottom:6px; display:flex; align-items:center; gap:6px;">
                             <span>💡</span> التحديات والمعوقات والملاحظات:
                         </div>
-                        <div style="font-size:13px; color:var(--tx); line-height:1.65; font-weight:600; white-space:pre-wrap;">${escH(r.challenges)}</div>
+                        <div>${tgFormatReportContentHtml(r.challenges)}</div>
                     </div>
                 ` : ''}
 
-                <!-- Admin Feedback -->
+                <!-- Section 4: Admin Feedback -->
                 ${(r.adminFeedback || r.adminNotes) ? `
-                    <div style="margin-bottom:12px; background:rgba(16,185,129,0.08); border:1px solid rgba(16,185,129,0.3); border-radius:12px; padding:12px 16px;">
-                        <div style="color:#10b981; font-size:13px; font-weight:800; margin-bottom:4px; display:flex; align-items:center; gap:6px;">
-                            <span>💬</span> توجيه وملاحظة الإدارة: <span style="color:var(--tx3); font-size:11.5px; font-weight:normal;">(${escH(r.reviewedBy || 'الإدارة')})</span>
+                    <div style="margin-bottom:14px; background:rgba(16,185,129,0.08); border:1.5px solid rgba(16,185,129,0.35); border-right:4px solid #059669; border-radius:12px; padding:14px 18px;">
+                        <div style="color:#047857; font-size:13px; font-weight:900; margin-bottom:6px; display:flex; align-items:center; gap:6px;">
+                            <span>💬</span> توجيه وملاحظة الإدارة: <span style="color:var(--tx3); font-size:11.5px; font-weight:700;">(${escH(r.reviewedBy || 'الإدارة')})</span>
                         </div>
-                        <div style="font-size:13.5px; color:var(--tx); line-height:1.65; font-weight:700; white-space:pre-wrap;">${escH(r.adminFeedback || r.adminNotes)}</div>
+                        <div style="font-size:14px; color:var(--tx); line-height:1.7; font-weight:800; white-space:pre-wrap;">${escH(r.adminFeedback || r.adminNotes)}</div>
                     </div>
                 ` : ''}
 
-                <!-- Action Bar -->
-                <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:8px; border-top:1px dashed var(--bd); padding-top:12px; margin-top:10px;">
-                    <div style="display:flex; gap:8px; flex-wrap:wrap;">
+                <!-- Actions Bar -->
+                <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px; border-top:1.5px dashed var(--bd); padding-top:14px; margin-top:12px;">
+                    <div style="display:flex; gap:10px; flex-wrap:wrap;">
                         ${!isApproved ? `
-                            <button type="button" class="bt" style="background:linear-gradient(135deg,#10b981,#059669); color:#fff; font-weight:900; font-size:12.5px; padding:7px 18px; border-radius:20px; border:none; cursor:pointer; box-shadow:0 3px 10px rgba(16,185,129,0.3);" onclick="tgApproveWeeklyReport('${r.id}', '${r._collection || 'weekly_reports'}', '${r.uid}', '${escH(r.weekLabel || r.weekStart || '')}', this)">
-                                ✔ اعتماد وموافقة
+                            <button type="button" class="bt" style="background:linear-gradient(135deg,#10b981,#059669); color:#fff; font-weight:900; font-size:13px; padding:8px 20px; border-radius:30px; border:none; cursor:pointer; box-shadow:0 3px 12px rgba(16,185,129,0.35); display:inline-flex; align-items:center; gap:6px;" onclick="tgApproveWeeklyReport('${r.id}', '${r._collection || 'weeklyReports'}', '${r.uid}', '${escH(r.weekLabel || r.weekStart || '')}', this)">
+                                <span>✔</span> اعتماد وموافقة
                             </button>
                         ` : ''}
-                        <button type="button" class="bt bt-o" style="font-weight:800; font-size:12.5px; padding:7px 16px; border-radius:20px;" onclick="tgAddFeedbackToWeeklyReport('${r.id}', '${r._collection || 'weekly_reports'}', '${r.uid}', '${escH(r.weekLabel || r.weekStart || '')}')">
-                            💬 كتابة توجيه / ملاحظة
+                        <button type="button" class="bt bt-o" style="font-weight:800; font-size:13px; padding:8px 18px; border-radius:30px; display:inline-flex; align-items:center; gap:6px;" onclick="tgAddFeedbackToWeeklyReport('${r.id}', '${r._collection || 'weeklyReports'}', '${r.uid}', '${escH(r.weekLabel || r.weekStart || '')}')">
+                            <span>💬</span> كتابة توجيه / ملاحظة
                         </button>
-                        <button type="button" class="bt bt-o" style="font-weight:800; font-size:12.5px; padding:7px 16px; border-radius:20px;" onclick="printWeeklyReportInboxItem(${i})">
-                            🖨 طباعة رسمية
+                        <button type="button" class="bt bt-o" style="font-weight:800; font-size:13px; padding:8px 18px; border-radius:30px; display:inline-flex; align-items:center; gap:6px;" onclick="printWeeklyReportInboxItem(${i})">
+                            <span>🖨</span> طباعة رسمية
                         </button>
                     </div>
                     <div>
-                        <button type="button" class="bt bt-o" style="border-color:#ef4444; color:#ef4444; font-weight:800; font-size:12px; padding:6px 14px; border-radius:20px;" onclick="tgAdminDeleteWeeklyReport('${r.id}', '${r._collection || 'weekly_reports'}')">
+                        <button type="button" class="bt bt-o" style="border-color:rgba(239,68,68,0.4); color:#ef4444; font-weight:800; font-size:12.5px; padding:7px 16px; border-radius:30px;" onclick="tgDeleteWeeklyReportAdmin('${r.id}', '${r._collection || 'weeklyReports'}')">
                             🗑 حذف
                         </button>
                     </div>
@@ -4112,6 +4152,151 @@ function renderWeeklyReportsInbox() {
     listEl.innerHTML = h;
 }
 
+window.printWeeklyReportInboxItem = function(index) {
+    var list = window._wkrInboxFiltered || window._wkrInboxData || [];
+    var r = list[index];
+    if (!r) return;
+    var users = window._wkrInboxUsers || {};
+    var u = users[r.uid] || { name: r.empName || r.name, email: r.empEmail || r.email, jobTitle: r.empJob || r.jobTitle };
+    printWeeklyReportDoc(u, r);
+};
+
+window.printWeeklyReportDoc = function(u, r) {
+    if (!u) u = {};
+    if (!r) r = {};
+    var empName = u.name || r.empName || r.name || 'موظف';
+    var empEmail = u.email || r.empEmail || r.email || '';
+    var empJob = u.jobTitle || r.empJob || r.jobTitle || 'موظف';
+    var weekText = r.weekLabel || ('أسبوع: ' + (r.weekStart || ''));
+    if (r.weekEnd && weekText.indexOf(r.weekEnd) === -1) weekText += ' إلى ' + r.weekEnd;
+
+    var statusText = (r.status === 'approved' || r.reviewedByAdmin) ? '✅ معتمد وموافق عليه من الإدارة العامة' : '⏳ قيد المراجعة والاعتماد';
+
+    var formatList = function(txt) {
+        if (!txt) return '<span style="color:#94a3b8;">لا يوجد</span>';
+        var lines = txt.split('\n');
+        var out = '';
+        lines.forEach(function(l) {
+            var trimmed = l.trim();
+            if (!trimmed) return;
+            if (trimmed.startsWith('•') || trimmed.startsWith('-') || /^\d+\./.test(trimmed)) {
+                out += '<div style="margin-bottom:6px; display:flex; gap:8px; align-items:flex-start;"><span style="color:#0284c7; font-weight:bold;">•</span><span>' + escH(trimmed.replace(/^[•\-]\s*/, '')) + '</span></div>';
+            } else {
+                out += '<div style="margin-bottom:6px;">' + escH(trimmed) + '</div>';
+            }
+        });
+        return out || escH(txt);
+    };
+
+    var dateStr = '';
+    if (r.createdAt) {
+        var dt = r.createdAt.seconds ? new Date(r.createdAt.seconds * 1000) : new Date(r.createdAt);
+        dateStr = dt.toLocaleDateString('ar-EG') + ' ' + dt.toLocaleTimeString('ar-EG', { hour: '2-digit', minute: '2-digit' });
+    }
+
+    var printHtml = `<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <title>تقرير وخطة أسبوعية - ${empName}</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;800;900&display=swap');
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body { font-family: 'Cairo', sans-serif; background: #fff; color: #0f172a; padding: 32px 40px; font-size: 13.5px; line-height: 1.6; }
+        .doc-header { border-bottom: 2.5px solid #0f172a; padding-bottom: 16px; margin-bottom: 22px; display: flex; justify-content: space-between; align-items: center; }
+        .doc-title { font-size: 21px; font-weight: 900; color: #0f172a; margin-bottom: 4px; }
+        .doc-sub { font-size: 12px; color: #64748b; font-weight: 700; }
+        .logo-box { text-align: left; font-size: 18px; font-weight: 900; color: #0284c7; line-height: 1.2; }
+        .info-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; background: #f8fafc; border: 1.5px solid #e2e8f0; border-radius: 12px; padding: 14px 20px; margin-bottom: 20px; }
+        .info-item { font-size: 13px; color: #334155; }
+        .info-item strong { color: #0f172a; font-weight: 800; }
+        .section-box { margin-bottom: 18px; border: 1.5px solid #e2e8f0; border-radius: 12px; overflow: hidden; background: #ffffff; }
+        .section-header { background: #f1f5f9; padding: 10px 18px; font-size: 13.5px; font-weight: 800; color: #0f172a; border-bottom: 1.5px solid #e2e8f0; display: flex; align-items: center; gap: 8px; }
+        .section-content { padding: 14px 20px; font-size: 13.5px; line-height: 1.8; color: #1e293b; font-weight: 600; }
+        .feedback-box { background: #ecfdf5; border: 1.5px solid #a7f3d0; border-radius: 12px; padding: 14px 18px; margin-bottom: 20px; color: #065f46; }
+        .signatures { display: grid; grid-template-columns: 1fr 1fr; gap: 40px; margin-top: 36px; padding-top: 18px; border-top: 1.5px dashed #cbd5e1; }
+        .sig-box { text-align: center; }
+        .sig-title { font-weight: 800; font-size: 13px; color: #475569; margin-bottom: 45px; }
+        .sig-line { border-bottom: 1.5px solid #94a3b8; width: 65%; margin: 0 auto; }
+        @media print {
+            body { padding: 20px 25px; }
+            @page { margin: 1cm; size: A4 portrait; }
+        }
+    </style>
+</head>
+<body>
+    <div class="doc-header">
+        <div>
+            <div class="doc-title">📊 التقرير والخطة الأسبوعية (Weekly Report & Plan)</div>
+            <div class="doc-sub">نظام إدارة وتوثيق أداء فرق العمل — شركة تيك جو</div>
+        </div>
+        <div class="logo-box">
+            TECH GO SYSTEM<br>
+            <span style="font-size:11px; color:#64748b; font-weight:600;">Performance Management</span>
+        </div>
+    </div>
+
+    <div class="info-grid">
+        <div class="info-item"><strong>اسم الموظف:</strong> ${empName}</div>
+        <div class="info-item"><strong>المسمى الوظيفي:</strong> ${empJob}</div>
+        <div class="info-item"><strong>أسبوع العمل:</strong> ${weekText}</div>
+        <div class="info-item"><strong>حالة الاعتماد:</strong> ${statusText}</div>
+        ${dateStr ? `<div class="info-item" style="grid-column: span 2;"><strong>تاريخ التقديم:</strong> ${dateStr}</div>` : ''}
+    </div>
+
+    <div class="section-box" style="border-right: 4px solid #0284c7;">
+        <div class="section-header" style="color: #0284c7;">📌 ما تم إنجازه هذا الأسبوع (الإنجازات والمهام المكتملة)</div>
+        <div class="section-content">${formatList(r.accomplishments || r.content || r.summary)}</div>
+    </div>
+
+    <div class="section-box" style="border-right: 4px solid #10b981;">
+        <div class="section-header" style="color: #10b981;">🎯 خطة ومستهدفات الأسبوع القادم</div>
+        <div class="section-content">${formatList(r.nextWeekPlan || r.plan || r.plannedTasks)}</div>
+    </div>
+
+    ${r.challenges ? `
+    <div class="section-box" style="border-right: 4px solid #f59e0b;">
+        <div class="section-header" style="color: #d97706;">💡 التحديات والمعوقات والملاحظات</div>
+        <div class="section-content">${formatList(r.challenges)}</div>
+    </div>
+    ` : ''}
+
+    ${(r.adminFeedback || r.adminNotes) ? `
+    <div class="feedback-box">
+        <strong style="display:block; margin-bottom:6px; font-size:13.5px; color: #047857;">💬 توجيهات وملاحظات الإدارة العامة:</strong>
+        <div style="font-weight:700; line-height:1.7;">${escH(r.adminFeedback || r.adminNotes)}</div>
+        ${r.reviewedBy ? `<div style="font-size:11.5px; margin-top:6px; opacity:0.85;">معتمد بواسطة: ${r.reviewedBy}</div>` : ''}
+    </div>
+    ` : ''}
+
+    <div class="signatures">
+        <div class="sig-box">
+            <div class="sig-title">توقيع الموظف</div>
+            <div class="sig-line"></div>
+        </div>
+        <div class="sig-box">
+            <div class="sig-title">اعتماد الإدارة العامة</div>
+            <div class="sig-line"></div>
+        </div>
+    </div>
+
+    <script>
+        window.onload = function() {
+            setTimeout(function() { window.print(); }, 250);
+        };
+    <\/script>
+</body>
+</html>`;
+
+    var printWin = window.open('', '_blank', 'width=880,height=920');
+    if (printWin) {
+        printWin.document.open();
+        printWin.document.write(printHtml);
+        printWin.document.close();
+    } else {
+        alert('يرجى السماح بالنوافذ المنبثقة (Popups) لمعاينة وطباعة التقرير.');
+    }
+};
 
 function tgApproveWeeklyReport(id, colName, uid, weekLabel, btn) {
     if (btn) { btn.disabled = true; btn.textContent = '⏳ ...'; }

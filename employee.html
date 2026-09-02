@@ -67,7 +67,7 @@
     <link
         href="https://fonts.googleapis.com/css2?family=Alexandria:wght@300;400;500;600;700;800;900&family=Cairo:wght@400;600;700;800;900&family=Tajawal:wght@400;500;700;800&family=Inter:wght@400;500;600;700&display=swap"
         rel="stylesheet">
-    <link rel="stylesheet" href="styles.css?v=1788351233">
+    <link rel="stylesheet" href="styles.css?v=1788352344">
     <link rel="manifest" href="manifest.json">
     <link rel="icon" type="image/png" sizes="192x192" href="icon-192.png">
     <link rel="apple-touch-icon" href="icon-192.png">
@@ -75,10 +75,10 @@
     <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-storage-compat.js"></script>
-    <script src="firebase-config.js?v=1788351233"></script>
-    <script src="auth.js?v=1788351233"></script>
-    <script src="app.js?v=1788351233"></script>
-    <script src="formsend.js?v=1788351233"></script>
+    <script src="firebase-config.js?v=1788352344"></script>
+    <script src="auth.js?v=1788352344"></script>
+    <script src="app.js?v=1788352344"></script>
+    <script src="formsend.js?v=1788352344"></script>
     <script>
         (function () {
             const theme = localStorage.getItem('tg-theme') || 'light';
@@ -3475,8 +3475,8 @@
         تطوير وتصميم: أبانوب فايز</div>
     <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
-    <script src="theme.js?v=1788351233"></script>
-    <script src="pwa-install.js?v=1788351233"></script>
+    <script src="theme.js?v=1788352344"></script>
+    <script src="pwa-install.js?v=1788352344"></script>
 
 
     <!-- Incoming Meeting Call Modal -->
@@ -5393,6 +5393,41 @@
             });
         };
 
+        window.tgFormatReportContentHtmlEmp = function(txt, emptyLabel) {
+            if (!txt || !txt.trim()) return '<div style="color:var(--tx3); font-size:13px; font-style:italic;">' + (emptyLabel || 'لا توجد بيانات مسجلة') + '</div>';
+            var lines = txt.split('\n');
+            var html = '';
+
+            lines.forEach(function(l) {
+                var trimmed = l.trim();
+                if (!trimmed) return;
+                var isBullet = trimmed.startsWith('•') || trimmed.startsWith('-') || /^\d+\./.test(trimmed) || trimmed.startsWith('☑️') || trimmed.startsWith('🎯');
+                
+                if (isBullet) {
+                    var icon = '•';
+                    var cleanText = trimmed;
+                    if (trimmed.startsWith('•') || trimmed.startsWith('-')) {
+                        icon = '•'; cleanText = trimmed.replace(/^[•\-]\s*/, '');
+                    } else if (trimmed.startsWith('☑️')) {
+                        icon = '☑️'; cleanText = trimmed.replace(/^☑️\s*/, '');
+                    } else if (trimmed.startsWith('🎯')) {
+                        icon = '🎯'; cleanText = trimmed.replace(/^🎯\s*/, '');
+                    } else {
+                        var m = trimmed.match(/^(\d+\.)\s*(.*)/);
+                        if (m) { icon = m[1]; cleanText = m[2]; }
+                    }
+                    html += '<div style="display:flex; align-items:flex-start; gap:8px; margin-bottom:6px; font-size:14px; line-height:1.7; font-weight:700; color:var(--tx);">' +
+                            '<span style="color:#0284c7; font-weight:900; font-size:14px; min-width:18px;">' + esc(icon) + '</span>' +
+                            '<span style="flex:1;">' + esc(cleanText) + '</span>' +
+                            '</div>';
+                } else {
+                    html += '<div style="font-size:14px; line-height:1.75; font-weight:700; color:var(--tx); margin-bottom:6px;">' + esc(trimmed) + '</div>';
+                }
+            });
+
+            return html || ('<div style="font-size:14px; line-height:1.7; font-weight:700; color:var(--tx);">' + esc(txt) + '</div>');
+        };
+
         window.tgRenderWeeklyReportsEmp = function () {
             var listEl = document.getElementById('wrEmpList');
             if (!listEl) return;
@@ -5404,14 +5439,14 @@
             var myUid = u.uid || (window.firebase && firebase.auth && firebase.auth().currentUser ? firebase.auth().currentUser.uid : '');
 
             var queries = [
-                targetDb.collection('weekly_reports').get().catch(function () { return { docs: [] }; }),
-                targetDb.collection('weeklyReports').get().catch(function () { return { docs: [] }; })
+                targetDb.collection('weeklyReports').get().catch(function () { return { docs: [] }; }),
+                targetDb.collection('weekly_reports').get().catch(function () { return { docs: [] }; })
             ];
 
             if (myUid) {
                 queries.push(
-                    targetDb.collection('weekly_reports').where('uid', '==', myUid).get().catch(function () { return { docs: [] }; }),
-                    targetDb.collection('weeklyReports').where('uid', '==', myUid).get().catch(function () { return { docs: [] }; })
+                    targetDb.collection('weeklyReports').where('uid', '==', myUid).get().catch(function () { return { docs: [] }; }),
+                    targetDb.collection('weekly_reports').where('uid', '==', myUid).get().catch(function () { return { docs: [] }; })
                 );
             }
 
@@ -5459,8 +5494,8 @@
                 reports.forEach(function (r) {
                     var isApproved = (r.status === 'approved' || r.reviewedByAdmin);
                     var statusBadge = isApproved 
-                        ? '<span style="background:rgba(16,185,129,0.15); color:#10b981; border:1px solid rgba(16,185,129,0.3); font-weight:800; padding:4px 14px; border-radius:20px; font-size:11.5px;">✅ معتمد من الإدارة</span>'
-                        : '<span style="background:rgba(245,158,11,0.15); color:#d97706; border:1px solid rgba(245,158,11,0.3); font-weight:800; padding:4px 14px; border-radius:20px; font-size:11.5px;">⏳ قيد المراجعة</span>';
+                        ? '<span style="background:rgba(16,185,129,0.15); color:#059669; border:1.5px solid rgba(16,185,129,0.35); font-weight:900; padding:5px 15px; border-radius:30px; font-size:12px; display:inline-flex; align-items:center; gap:4px;">✅ معتمد من الإدارة</span>'
+                        : '<span style="background:rgba(245,158,11,0.15); color:#d97706; border:1.5px solid rgba(245,158,11,0.35); font-weight:900; padding:5px 15px; border-radius:30px; font-size:12px; display:inline-flex; align-items:center; gap:4px;">⏳ قيد المراجعة</span>';
 
                     var dateStr = '';
                     if (r.createdAt) {
@@ -5469,68 +5504,64 @@
                     }
 
                     html += `
-                        <div style="background:var(--w); border:1px solid var(--bd); border-right:4px solid ${isApproved ? '#10b981' : '#0284c7'}; border-radius:14px; padding:18px 20px; box-shadow:0 1px 4px rgba(0,0,0,0.03); direction:rtl; margin-bottom:14px;">
-                            <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px; margin-bottom:12px; border-bottom:1px dashed var(--bd); padding-bottom:10px;">
+                        <div style="background:var(--w); border:1.5px solid var(--bd); border-right:5px solid ${isApproved ? '#10b981' : '#0284c7'}; border-radius:18px; padding:22px 24px; box-shadow:0 3px 12px rgba(0,0,0,0.03); direction:rtl; margin-bottom:14px;">
+                            <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:12px; margin-bottom:14px; border-bottom:1.5px solid var(--bd); padding-bottom:14px;">
                                 <div>
-                                    <h4 style="margin:0; font-size:15.5px; font-weight:900; color:var(--tx);">
+                                    <h4 style="margin:0; font-size:16.5px; font-weight:900; color:var(--tx);">
                                         📅 ${esc(r.weekLabel || ('أسبوع: ' + (r.weekStart || '')))}
                                     </h4>
-                                    <div style="font-size:11.5px; color:var(--tx3); font-weight:600; margin-top:3px;">🕒 قُدم بتاريخ: ${dateStr}</div>
+                                    <div style="font-size:12px; color:var(--tx3); font-weight:700; margin-top:3px;">🕒 قُدم بتاريخ: ${dateStr}</div>
                                 </div>
                                 <div>${statusBadge}</div>
                             </div>
 
                             <!-- Accomplishments -->
-                            ${(r.accomplishments || r.content || r.summary) ? `
-                                <div style="margin-bottom:10px; background:var(--bg); border:1px solid var(--bd); border-radius:10px; padding:12px 14px;">
-                                    <div style="color:#0284c7; font-size:12.5px; font-weight:800; margin-bottom:4px; display:flex; align-items:center; gap:6px;">
-                                        <span>📌</span> ما تم إنجازه هذا الأسبوع:
-                                    </div>
-                                    <div style="font-size:13.5px; color:var(--tx); line-height:1.7; font-weight:600; white-space:pre-wrap;">${esc(r.accomplishments || r.content || r.summary)}</div>
+                            <div style="margin-bottom:14px; background:rgba(2,132,199,0.03); border:1.5px solid rgba(2,132,199,0.2); border-right:4px solid #0284c7; border-radius:12px; padding:16px 18px;">
+                                <div style="color:#0284c7; font-size:13.5px; font-weight:900; margin-bottom:8px; display:flex; align-items:center; gap:6px;">
+                                    <span>📌</span> ما تم إنجازه هذا الأسبوع (الإنجازات والمهام المكتملة):
                                 </div>
-                            ` : ''}
+                                <div>${window.tgFormatReportContentHtmlEmp(r.accomplishments || r.content || r.summary, 'لم يذكر إنجازات')}</div>
+                            </div>
 
                             <!-- Next Week Plan -->
-                            ${(r.nextWeekPlan || r.plan || r.plannedTasks) ? `
-                                <div style="margin-bottom:10px; background:var(--bg); border:1px solid var(--bd); border-radius:10px; padding:12px 14px;">
-                                    <div style="color:#10b981; font-size:12.5px; font-weight:800; margin-bottom:4px; display:flex; align-items:center; gap:6px;">
-                                        <span>🎯</span> خطة ومستهدفات الأسبوع القادم:
-                                    </div>
-                                    <div style="font-size:13.5px; color:var(--tx); line-height:1.7; font-weight:600; white-space:pre-wrap;">${esc(r.nextWeekPlan || r.plan || r.plannedTasks)}</div>
+                            <div style="margin-bottom:14px; background:rgba(16,185,129,0.03); border:1.5px solid rgba(16,185,129,0.2); border-right:4px solid #10b981; border-radius:12px; padding:16px 18px;">
+                                <div style="color:#059669; font-size:13.5px; font-weight:900; margin-bottom:8px; display:flex; align-items:center; gap:6px;">
+                                    <span>🎯</span> خطة ومستهدفات الأسبوع القادم:
                                 </div>
-                            ` : ''}
+                                <div>${window.tgFormatReportContentHtmlEmp(r.nextWeekPlan || r.plan || r.plannedTasks, 'لم تذكر خطة')}</div>
+                            </div>
 
                             <!-- Challenges -->
                             ${r.challenges ? `
-                                <div style="margin-bottom:10px; background:rgba(245,158,11,0.06); border:1px solid rgba(245,158,11,0.25); border-radius:10px; padding:10px 14px;">
-                                    <div style="color:#d97706; font-size:12.5px; font-weight:800; margin-bottom:4px; display:flex; align-items:center; gap:6px;">
-                                        <span>💡</span> التحديات أو الملاحظات:
+                                <div style="margin-bottom:14px; background:rgba(245,158,11,0.04); border:1.5px solid rgba(245,158,11,0.25); border-right:4px solid #f59e0b; border-radius:12px; padding:14px 18px;">
+                                    <div style="color:#d97706; font-size:13px; font-weight:900; margin-bottom:6px; display:flex; align-items:center; gap:6px;">
+                                        <span>💡</span> التحديات والمعوقات والملاحظات:
                                     </div>
-                                    <div style="font-size:13px; color:var(--tx); line-height:1.6; font-weight:600; white-space:pre-wrap;">${esc(r.challenges)}</div>
+                                    <div>${window.tgFormatReportContentHtmlEmp(r.challenges)}</div>
                                 </div>
                             ` : ''}
 
                             <!-- Admin Feedback -->
                             ${(r.adminFeedback || r.adminNotes) ? `
-                                <div style="margin-bottom:10px; background:rgba(16,185,129,0.08); border:1px solid rgba(16,185,129,0.3); border-radius:10px; padding:10px 14px;">
-                                    <div style="color:#10b981; font-size:12.5px; font-weight:800; margin-bottom:4px; display:flex; align-items:center; gap:6px;">
-                                        <span>💬</span> توجيه وملاحظة الإدارة: <span style="color:var(--tx3); font-size:11px; font-weight:normal;">(${esc(r.reviewedBy || 'الإدارة')})</span>
+                                <div style="margin-bottom:14px; background:rgba(16,185,129,0.08); border:1.5px solid rgba(16,185,129,0.35); border-right:4px solid #059669; border-radius:12px; padding:14px 18px;">
+                                    <div style="color:#047857; font-size:13px; font-weight:900; margin-bottom:6px; display:flex; align-items:center; gap:6px;">
+                                        <span>💬</span> توجيه وملاحظة الإدارة: <span style="color:var(--tx3); font-size:11.5px; font-weight:700;">(${esc(r.reviewedBy || 'الإدارة')})</span>
                                     </div>
-                                    <div style="font-size:13px; color:var(--tx); line-height:1.6; font-weight:700; white-space:pre-wrap;">${esc(r.adminFeedback || r.adminNotes)}</div>
+                                    <div style="font-size:14px; color:var(--tx); line-height:1.7; font-weight:800; white-space:pre-wrap;">${esc(r.adminFeedback || r.adminNotes)}</div>
                                 </div>
                             ` : ''}
 
                             <!-- Actions -->
-                            <div style="display:flex; justify-content:flex-end; gap:8px; align-items:center; margin-top:10px; border-top:1px dashed var(--bd); padding-top:8px;">
+                            <div style="display:flex; justify-content:flex-end; gap:10px; align-items:center; margin-top:14px; border-top:1.5px dashed var(--bd); padding-top:12px;">
                                 ${!isApproved ? `
-                                    <button type="button" onclick="tgOpenNewWeeklyReportModal('${r.id}')" class="bt bt-o" style="font-size:12px; padding:5px 14px; font-weight:800; border-radius:20px;">
+                                    <button type="button" onclick="tgOpenNewWeeklyReportModal('${r.id}')" class="bt bt-o" style="font-size:12.5px; padding:7px 18px; font-weight:800; border-radius:30px;">
                                         ✏️ تعديل
                                     </button>
-                                    <button type="button" onclick="tgDeleteWeeklyReport('${r.id}')" class="bt bt-o" style="border-color:#ef4444; color:#ef4444; font-size:12px; padding:5px 12px; font-weight:800; border-radius:20px;">
+                                    <button type="button" onclick="tgDeleteWeeklyReport('${r.id}')" class="bt bt-o" style="border-color:rgba(239,68,68,0.4); color:#ef4444; font-size:12.5px; padding:7px 16px; font-weight:800; border-radius:30px;">
                                         🗑 حذف
                                     </button>
                                 ` : ''}
-                                <button type="button" onclick="tgPrintWeeklyReport('${r.id}')" class="bt bt-o" style="font-size:12px; padding:5px 14px; font-weight:800; border-radius:20px;">
+                                <button type="button" onclick="tgPrintWeeklyReport('${r.id}')" class="bt bt-o" style="font-size:12.5px; padding:7px 18px; font-weight:800; border-radius:30px;">
                                     🖨 طباعة رسمية
                                 </button>
                             </div>
@@ -5550,11 +5581,33 @@
             if (!r) r = {};
             var empName = u.name || r.empName || r.name || 'موظف';
             var empEmail = u.email || r.empEmail || r.email || '';
-            var empJob = u.jobTitle || r.empJob || r.jobTitle || '';
+            var empJob = u.jobTitle || r.empJob || r.jobTitle || 'موظف';
             var weekText = r.weekLabel || ('أسبوع: ' + (r.weekStart || ''));
-            if (r.weekEnd) weekText += ' إلى ' + r.weekEnd;
+            if (r.weekEnd && weekText.indexOf(r.weekEnd) === -1) weekText += ' إلى ' + r.weekEnd;
 
             var statusText = (r.status === 'approved' || r.reviewedByAdmin) ? '✅ معتمد وموافق عليه من الإدارة العامة' : '⏳ قيد المراجعة والاعتماد';
+
+            var formatList = function(txt) {
+                if (!txt) return '<span style="color:#94a3b8;">لا يوجد</span>';
+                var lines = txt.split('\n');
+                var out = '';
+                lines.forEach(function(l) {
+                    var trimmed = l.trim();
+                    if (!trimmed) return;
+                    if (trimmed.startsWith('•') || trimmed.startsWith('-') || /^\d+\./.test(trimmed)) {
+                        out += '<div style="margin-bottom:6px; display:flex; gap:8px; align-items:flex-start;"><span style="color:#0284c7; font-weight:bold;">•</span><span>' + esc(trimmed.replace(/^[•\-]\s*/, '')) + '</span></div>';
+                    } else {
+                        out += '<div style="margin-bottom:6px;">' + esc(trimmed) + '</div>';
+                    }
+                });
+                return out || esc(txt);
+            };
+
+            var dateStr = '';
+            if (r.createdAt) {
+                var dt = r.createdAt.seconds ? new Date(r.createdAt.seconds * 1000) : new Date(r.createdAt);
+                dateStr = dt.toLocaleDateString('ar-EG') + ' ' + dt.toLocaleTimeString('ar-EG', { hour: '2-digit', minute: '2-digit' });
+            }
 
             var printHtml = `<!DOCTYPE html>
 <html lang="ar" dir="rtl">
@@ -5564,32 +5617,32 @@
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;800;900&display=swap');
         * { box-sizing: border-box; margin: 0; padding: 0; }
-        body { font-family: 'Cairo', sans-serif; background: #fff; color: #1e293b; padding: 30px; font-size: 13.5px; line-height: 1.6; }
-        .doc-header { border-bottom: 2.5px solid #0f172a; padding-bottom: 16px; margin-bottom: 24px; display: flex; justify-content: space-between; align-items: center; }
-        .doc-title { font-size: 20px; font-weight: 900; color: #0f172a; margin-bottom: 4px; }
+        body { font-family: 'Cairo', sans-serif; background: #fff; color: #0f172a; padding: 32px 40px; font-size: 13.5px; line-height: 1.6; }
+        .doc-header { border-bottom: 2.5px solid #0f172a; padding-bottom: 16px; margin-bottom: 22px; display: flex; justify-content: space-between; align-items: center; }
+        .doc-title { font-size: 21px; font-weight: 900; color: #0f172a; margin-bottom: 4px; }
         .doc-sub { font-size: 12px; color: #64748b; font-weight: 700; }
-        .logo-box { text-align: left; font-size: 18px; font-weight: 900; color: #0284c7; }
-        .info-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; background: #f8fafc; border: 1.5px solid #e2e8f0; border-radius: 10px; padding: 14px 18px; margin-bottom: 20px; }
-        .info-item { font-size: 13px; }
+        .logo-box { text-align: left; font-size: 18px; font-weight: 900; color: #0284c7; line-height: 1.2; }
+        .info-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; background: #f8fafc; border: 1.5px solid #e2e8f0; border-radius: 12px; padding: 14px 20px; margin-bottom: 20px; }
+        .info-item { font-size: 13px; color: #334155; }
         .info-item strong { color: #0f172a; font-weight: 800; }
-        .section-box { margin-bottom: 20px; border: 1.5px solid #e2e8f0; border-radius: 10px; overflow: hidden; }
-        .section-header { background: #f1f5f9; padding: 10px 16px; font-size: 14px; font-weight: 800; color: #0f172a; border-bottom: 1.5px solid #e2e8f0; display: flex; align-items: center; gap: 8px; }
-        .section-content { padding: 14px 18px; white-space: pre-wrap; font-size: 13.5px; line-height: 1.8; color: #334155; font-weight: 600; }
-        .feedback-box { background: #ecfdf5; border: 1.5px solid #a7f3d0; border-radius: 10px; padding: 14px 18px; margin-bottom: 20px; color: #065f46; }
-        .signatures { display: grid; grid-template-columns: 1fr 1fr; gap: 30px; margin-top: 40px; padding-top: 20px; border-top: 1.5px dashed #cbd5e1; }
+        .section-box { margin-bottom: 18px; border: 1.5px solid #e2e8f0; border-radius: 12px; overflow: hidden; background: #ffffff; }
+        .section-header { background: #f1f5f9; padding: 10px 18px; font-size: 13.5px; font-weight: 800; color: #0f172a; border-bottom: 1.5px solid #e2e8f0; display: flex; align-items: center; gap: 8px; }
+        .section-content { padding: 14px 20px; font-size: 13.5px; line-height: 1.8; color: #1e293b; font-weight: 600; }
+        .feedback-box { background: #ecfdf5; border: 1.5px solid #a7f3d0; border-radius: 12px; padding: 14px 18px; margin-bottom: 20px; color: #065f46; }
+        .signatures { display: grid; grid-template-columns: 1fr 1fr; gap: 40px; margin-top: 36px; padding-top: 18px; border-top: 1.5px dashed #cbd5e1; }
         .sig-box { text-align: center; }
-        .sig-title { font-weight: 800; font-size: 13px; color: #475569; margin-bottom: 50px; }
-        .sig-line { border-bottom: 1.5px solid #94a3b8; width: 70%; margin: 0 auto; }
+        .sig-title { font-weight: 800; font-size: 13px; color: #475569; margin-bottom: 45px; }
+        .sig-line { border-bottom: 1.5px solid #94a3b8; width: 65%; margin: 0 auto; }
         @media print {
-            body { padding: 15px; }
-            @page { margin: 1.2cm; size: A4 portrait; }
+            body { padding: 20px 25px; }
+            @page { margin: 1cm; size: A4 portrait; }
         }
     </style>
 </head>
 <body>
     <div class="doc-header">
         <div>
-            <div class="doc-title">📊 التقرير والخطة الأسبوعية</div>
+            <div class="doc-title">📊 التقرير والخطة الأسبوعية (Weekly Report & Plan)</div>
             <div class="doc-sub">نظام إدارة وتوثيق أداء فرق العمل — شركة تيك جو</div>
         </div>
         <div class="logo-box">
@@ -5600,33 +5653,34 @@
 
     <div class="info-grid">
         <div class="info-item"><strong>اسم الموظف:</strong> ${empName}</div>
-        <div class="info-item"><strong>المسمى الوظيفي:</strong> ${empJob || 'موظف'}</div>
+        <div class="info-item"><strong>المسمى الوظيفي:</strong> ${empJob}</div>
         <div class="info-item"><strong>أسبوع العمل:</strong> ${weekText}</div>
         <div class="info-item"><strong>حالة الاعتماد:</strong> ${statusText}</div>
+        ${dateStr ? `<div class="info-item" style="grid-column: span 2;"><strong>تاريخ التقديم:</strong> ${dateStr}</div>` : ''}
     </div>
 
-    <div class="section-box">
-        <div class="section-header">📌 ما تم إنجازه هذا الأسبوع (الإنجازات والمهام المكتملة)</div>
-        <div class="section-content">${r.accomplishments || r.content || r.summary || 'لا يوجد'}</div>
+    <div class="section-box" style="border-right: 4px solid #0284c7;">
+        <div class="section-header" style="color: #0284c7;">📌 ما تم إنجازه هذا الأسبوع (الإنجازات والمهام المكتملة)</div>
+        <div class="section-content">${formatList(r.accomplishments || r.content || r.summary)}</div>
     </div>
 
-    <div class="section-box">
-        <div class="section-header">🎯 خطة ومستهدفات الأسبوع القادم</div>
-        <div class="section-content">${r.nextWeekPlan || r.plan || r.plannedTasks || 'لا يوجد'}</div>
+    <div class="section-box" style="border-right: 4px solid #10b981;">
+        <div class="section-header" style="color: #10b981;">🎯 خطة ومستهدفات الأسبوع القادم</div>
+        <div class="section-content">${formatList(r.nextWeekPlan || r.plan || r.plannedTasks)}</div>
     </div>
 
     ${r.challenges ? `
-    <div class="section-box">
-        <div class="section-header">💡 التحديات والمعوقات والملاحظات</div>
-        <div class="section-content">${r.challenges}</div>
+    <div class="section-box" style="border-right: 4px solid #f59e0b;">
+        <div class="section-header" style="color: #d97706;">💡 التحديات والمعوقات والملاحظات</div>
+        <div class="section-content">${formatList(r.challenges)}</div>
     </div>
     ` : ''}
 
     ${(r.adminFeedback || r.adminNotes) ? `
     <div class="feedback-box">
-        <strong style="display:block; margin-bottom:6px; font-size:13.5px;">💬 توجيهات وملاحظات الإدارة:</strong>
-        <div style="font-weight:700; white-space:pre-wrap;">${r.adminFeedback || r.adminNotes}</div>
-        ${r.reviewedBy ? `<div style="font-size:11px; margin-top:6px; opacity:0.8;">معتمد بواسطة: ${r.reviewedBy}</div>` : ''}
+        <strong style="display:block; margin-bottom:6px; font-size:13.5px; color: #047857;">💬 توجيهات وملاحظات الإدارة العامة:</strong>
+        <div style="font-weight:700; line-height:1.7;">${esc(r.adminFeedback || r.adminNotes)}</div>
+        ${r.reviewedBy ? `<div style="font-size:11.5px; margin-top:6px; opacity:0.85;">معتمد بواسطة: ${r.reviewedBy}</div>` : ''}
     </div>
     ` : ''}
 
@@ -5643,33 +5697,33 @@
 
     <script>
         window.onload = function() {
-            setTimeout(function() { window.print(); }, 300);
+            setTimeout(function() { window.print(); }, 250);
         };
     <\/script>
 </body>
 </html>`;
 
-            var printWin = window.open('', '_blank', 'width=850,height=900');
+            var printWin = window.open('', '_blank', 'width=880,height=920');
             if (printWin) {
                 printWin.document.open();
                 printWin.document.write(printHtml);
                 printWin.document.close();
             } else {
-                alert('يرجى السماح بالنوافذ المنبثقة (Popups) للطباعة.');
+                alert('يرجى السماح بالنوافذ المنبثقة (Popups) لمعاينة وطباعة التقرير.');
             }
         };
 
         window.tgPrintWeeklyReport = function(id) {
             var r = (window._allWeeklyReports || []).find(function(x){ return x.id === id; });
             if (!r) return;
-            printWeeklyReportDoc(window.TG_USER || {}, r);
+            window.printWeeklyReportDoc(window.TG_USER || {}, r);
         };
 
         window.tgDeleteWeeklyReport = function(id) {
             if (!confirm('هل أنت متأكد من حذف هذا التقرير؟')) return;
             Promise.all([
-                db.collection('weekly_reports').doc(id).delete().catch(function(){}),
-                db.collection('weeklyReports').doc(id).delete().catch(function(){})
+                db.collection('weeklyReports').doc(id).delete().catch(function(){}),
+                db.collection('weekly_reports').doc(id).delete().catch(function(){})
             ]).then(function(){
                 alert('🗑 تم حذف التقرير بنجاح');
                 tgRenderWeeklyReportsEmp();
