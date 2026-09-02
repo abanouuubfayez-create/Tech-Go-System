@@ -67,7 +67,7 @@
     <link
         href="https://fonts.googleapis.com/css2?family=Alexandria:wght@300;400;500;600;700;800;900&family=Cairo:wght@400;600;700;800;900&family=Tajawal:wght@400;500;700;800&family=Inter:wght@400;500;600;700&display=swap"
         rel="stylesheet">
-    <link rel="stylesheet" href="styles.css?v=1788340116">
+    <link rel="stylesheet" href="styles.css?v=1788340433">
     <link rel="manifest" href="manifest.json">
     <link rel="icon" type="image/png" sizes="192x192" href="icon-192.png">
     <link rel="apple-touch-icon" href="icon-192.png">
@@ -75,10 +75,10 @@
     <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-storage-compat.js"></script>
-    <script src="firebase-config.js?v=1788340116"></script>
-    <script src="auth.js?v=1788340116"></script>
-    <script src="app.js?v=1788340116"></script>
-    <script src="formsend.js?v=1788340116"></script>
+    <script src="firebase-config.js?v=1788340433"></script>
+    <script src="auth.js?v=1788340433"></script>
+    <script src="app.js?v=1788340433"></script>
+    <script src="formsend.js?v=1788340433"></script>
     <script>
         (function () {
             const theme = localStorage.getItem('tg-theme') || 'light';
@@ -3550,8 +3550,8 @@
         تطوير وتصميم: أبانوب فايز</div>
     <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
-    <script src="theme.js?v=1788340116"></script>
-    <script src="pwa-install.js?v=1788340116"></script>
+    <script src="theme.js?v=1788340433"></script>
+    <script src="pwa-install.js?v=1788340433"></script>
 
 
     <!-- Incoming Meeting Call Modal -->
@@ -3830,7 +3830,7 @@
                         allHolidays.push({
                             key: 'custom_' + lh.date,
                             label: lh.label || 'إجازة رسمية',
-                            occasion: (lh.label || 'إجازة رسمية').replace(/^[^\w\u0600-\u06FF]+/g, ''),
+                            occasion: (lh.label || 'إجازة رسمية').replace(/^[^\w؀-ۿ]+/g, ''),
                             date: lh.date,
                             durationDays: 1
                         });
@@ -3841,6 +3841,7 @@
             var upcoming = [];
             allHolidays.forEach(function(h) {
                 if (!h.date) return;
+                if (localStorage.getItem('tg_dismissed_holiday_' + h.date) === 'true') return;
                 var hDate = new Date(h.date + 'T00:00:00');
                 var diffMs = hDate.getTime() - today.getTime();
                 var diffDays = Math.round(diffMs / (1000 * 60 * 60 * 24));
@@ -3881,7 +3882,7 @@
             var rFormatted = formatDate(resumeObj);
 
             var bannerHTML = 
-                '<div style="background:var(--w); border:1px solid var(--bd); border-right:4px solid #10b981; border-radius:12px; padding:16px 20px; margin-bottom:14px; box-shadow:0 1px 4px rgba(0,0,0,0.03); direction:rtl;">' +
+                '<div id="empHolidayBannerCard" style="background:var(--w); border:1px solid var(--bd); border-right:4px solid #10b981; border-radius:12px; padding:16px 20px; margin-bottom:14px; box-shadow:0 1px 4px rgba(0,0,0,0.03); direction:rtl; position:relative;">' +
                 '  <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:10px; flex-wrap:wrap; gap:8px;">' +
                 '    <div style="display:flex; align-items:center; gap:8px;">' +
                 '      <span style="font-size:16px;">🎉</span>' +
@@ -3889,7 +3890,10 @@
                 '        إشعار إجازة رسمية | <strong>' + escH(target.occasion) + '</strong>' +
                 '      </div>' +
                 '    </div>' +
-                '    <span style="background:rgba(245,158,11,0.12); color:#b45309; border:1px solid rgba(245,158,11,0.25); padding:2px 10px; border-radius:20px; font-size:11px; font-weight:800;">' + daysLabel + '</span>' +
+                '    <div style="display:flex; align-items:center; gap:8px;">' +
+                '      <span style="background:rgba(245,158,11,0.12); color:#b45309; border:1px solid rgba(245,158,11,0.25); padding:2px 10px; border-radius:20px; font-size:11px; font-weight:800;">' + daysLabel + '</span>' +
+                '      <button type="button" onclick="tgDismissHolidayBanner('' + target.date + '')" style="background:none; border:none; color:var(--tx3); font-size:16px; cursor:pointer; padding:2px 6px; font-weight:bold;" title="إخفاء الإشعار">✕</button>' +
+                '    </div>' +
                 '  </div>' +
                 '  <div style="font-size:13px; line-height:1.75; color:var(--tx); font-weight:600;">' +
                 '    تُحيط إدارة الشركة جميع الموظفين الكرام بأن يوم <strong>' + hDayName + ' الموافق ' + hFormatted + '</strong> سيكون إجازة رسمية مدفوعة الأجر بمناسبة <strong>' + escH(target.occasion) + '</strong>.<br>' +
@@ -3905,6 +3909,12 @@
             container.innerHTML = bannerHTML;
         }
 
+        window.tgDismissHolidayBanner = function(dateStr) {
+            localStorage.setItem('tg_dismissed_holiday_' + dateStr, 'true');
+            var banner = document.getElementById('empHolidayBannerCard');
+            if (banner) banner.remove();
+        };
+
         // ── تحميل وعرض إعلانات وتكليفات الإدارة الحقيقية في بوابة الموظف ──
         function loadEmpAnnouncements() {
             var box = document.getElementById('empAnnouncementsList');
@@ -3912,32 +3922,21 @@
             if (!box || !panel) return;
             var myUid = (typeof TG_USER !== 'undefined' && TG_USER) ? TG_USER.uid : '';
 
-            var baselineAnnouncements = [
-                {
-                    id: 'admin_ann_delay_2026_08_26',
-                    title: 'تأخير موعد الحضور',
-                    content: 'الحضور الاربعاء 2026-8-26 الساعة 12:00 ظهرا',
-                    audience: 'all',
-                    createdBy: 'ابانوب',
-                    createdByRole: 'أدمن',
-                    date: '2026-08-25',
-                    createdAt: new Date('2026-08-25T14:30:00')
-                }
-            ];
-
             function annCard(data, isPrivate) {
                 var accentBorder = isPrivate ? '#d97706' : '#0284c7';
                 var audienceBadge = isPrivate 
                     ? '<span style="background:rgba(245,158,11,0.12); color:#b45309; border:1px solid rgba(245,158,11,0.25); padding:2px 10px; border-radius:20px; font-size:11px; font-weight:800;">👤 خاص بك</span>' 
                     : '<span style="background:rgba(2,132,199,0.12); color:#0369a1; border:1px solid rgba(2,132,199,0.25); padding:2px 10px; border-radius:20px; font-size:11px; font-weight:800;">📢 عام لكل الموظفين</span>';
                 
-                var h = '<div style="background:var(--w); border:1px solid var(--bd); border-right:4px solid ' + accentBorder + '; border-radius:12px; padding:16px 20px; margin-bottom:12px; box-shadow:0 1px 4px rgba(0,0,0,0.03); direction:rtl;">';
+                var h = '<div class="emp-ann-card" id="annCard_' + esc(data.id) + '" style="background:var(--w); border:1px solid var(--bd); border-right:4px solid ' + accentBorder + '; border-radius:12px; padding:16px 20px; margin-bottom:12px; box-shadow:0 1px 4px rgba(0,0,0,0.03); direction:rtl; position:relative;">';
                 h += '<div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px; gap:8px; flex-wrap:wrap;">';
                 h += '  <div style="display:flex; align-items:center; gap:8px;">';
                 h += '    <span style="font-size:16px;">📢</span>';
                 h += '    <div style="font-size:15px; font-weight:800; color:var(--tx);">' + esc(data.title) + '</div>';
                 h += '  </div>';
-                h += '  <div>' + audienceBadge + '</div>';
+                h += '  <div style="display:flex; align-items:center; gap:8px;">' + audienceBadge + 
+                     '    <button type="button" onclick="tgDismissEmpAnnouncement('' + esc(data.id) + '', this)" style="background:none; border:none; color:var(--tx3); font-size:14px; cursor:pointer; padding:2px 6px; font-weight:bold; border-radius:4px;" title="إخفاء / تمت القراءة">✕</button>' +
+                     '  </div>';
                 h += '</div>';
                 h += '<div style="font-size:13px; line-height:1.75; color:var(--tx); white-space:pre-wrap; font-weight:600;">' + esc(data.content) + '</div>';
                 h += '<div style="display:flex; justify-content:space-between; align-items:center; margin-top:8px; border-top:1px dashed var(--bd); padding-top:6px; font-size:11px; color:var(--tx3); font-weight:600;">';
@@ -3949,11 +3948,18 @@
             }
 
             function renderAnnList(allList) {
-                if (!allList || !allList.length) {
-                    allList = baselineAnnouncements;
-                }
+                if (!allList) allList = [];
 
-                allList.sort(function(a, b) {
+                var dismissed = [];
+                try {
+                    dismissed = JSON.parse(localStorage.getItem('techgo_dismissed_announcements') || '[]');
+                } catch(e){}
+
+                var activeList = allList.filter(function(a){
+                    return a && a.id && !dismissed.includes(a.id) && !a.isHidden;
+                });
+
+                activeList.sort(function(a, b) {
                     var tA = a.createdAt && a.createdAt.seconds ? a.createdAt.seconds*1000 : (a.createdAt ? new Date(a.createdAt).getTime() : 0);
                     var tB = b.createdAt && b.createdAt.seconds ? b.createdAt.seconds*1000 : (b.createdAt ? new Date(b.createdAt).getTime() : 0);
                     return tB - tA;
@@ -3961,7 +3967,7 @@
 
                 var publicOnes = [];
                 var privateOnes = [];
-                allList.forEach(function(data) {
+                activeList.forEach(function(data) {
                     if (data.audience === 'private') {
                         if (data.targetUid === myUid) privateOnes.push(data);
                     } else {
@@ -3988,16 +3994,43 @@
                 box.innerHTML = h;
             }
 
-            // 1. Initial fast render from cache or baseline
+            window.tgDismissEmpAnnouncement = function(id, btn) {
+                if (!id) return;
+                var dismissed = [];
+                try {
+                    dismissed = JSON.parse(localStorage.getItem('techgo_dismissed_announcements') || '[]');
+                } catch(e){}
+                if (!dismissed.includes(id)) dismissed.push(id);
+                try {
+                    localStorage.setItem('techgo_dismissed_announcements', JSON.stringify(dismissed));
+                } catch(e){}
+
+                var card = document.getElementById('annCard_' + id) || (btn ? btn.closest('.emp-ann-card') : null);
+                if (card) {
+                    card.style.transition = 'all 0.3s ease';
+                    card.style.opacity = '0';
+                    card.style.transform = 'translateY(-10px)';
+                    setTimeout(function(){
+                        card.remove();
+                        if (!box.querySelectorAll('.emp-ann-card').length) {
+                            panel.style.display = 'none';
+                        }
+                    }, 300);
+                }
+            };
+
+            // 1. Initial fast render from cache
             try {
                 var cached = JSON.parse(localStorage.getItem('techgo_shared_announcements') || '[]');
                 if (cached && cached.length) {
                     renderAnnList(cached);
                 } else {
-                    renderAnnList(baselineAnnouncements);
+                    panel.style.display = 'none';
+                    box.innerHTML = '';
                 }
             } catch(e){
-                renderAnnList(baselineAnnouncements);
+                panel.style.display = 'none';
+                box.innerHTML = '';
             }
 
             // 2. Real-time sync with Firestore
@@ -4012,18 +4045,13 @@
                         });
                     }
 
-                    if (!list.length) {
-                        list = baselineAnnouncements;
-                    }
-
                     try {
                         localStorage.setItem('techgo_shared_announcements', JSON.stringify(list));
                     } catch(e){}
 
                     renderAnnList(list);
                 }, function(err) {
-                    console.warn('Firestore announcements listener notice (using local):', err);
-                    renderAnnList(baselineAnnouncements);
+                    console.warn('Firestore announcements listener notice:', err);
                 });
             }
 
@@ -4032,7 +4060,7 @@
                 if (e.key === 'techgo_shared_announcements' && e.newValue) {
                     try {
                         var updated = JSON.parse(e.newValue);
-                        if (updated && updated.length) renderAnnList(updated);
+                        renderAnnList(updated || []);
                     } catch(err){}
                 }
             });
@@ -4040,7 +4068,6 @@
 
         // Run immediately
         loadEmpAnnouncements();
-
         function empMexpGetDayName(dateStr) {
             if (!dateStr) return '';
             try {
