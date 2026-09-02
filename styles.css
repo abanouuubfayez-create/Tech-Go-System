@@ -6092,3 +6092,16 @@ body.dark-mode .tg-expand-btn:hover {
 
 
 
+
+
+/* Responsive Portal Grid Container */
+@media (max-width: 1280px) {
+    .portal-grid-container {
+        grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+    }
+}
+@media (max-width: 768px) {
+    .portal-grid-container {
+        grid-template-columns: 1fr !important;
+    }
+}
