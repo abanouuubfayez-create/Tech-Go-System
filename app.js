@@ -6879,6 +6879,7 @@ function renderAllRequestsListHub() {
                     (r.formTemplateId === 'emp' || (r.type && r.type.indexOf('بيانات الموظف') !== -1) ?
                         '<button class="bt bt-o" style="padding:6px 14px;font-size:12px;font-weight:800;border-radius:20px;border-color:#0284c7;color:#0284c7;" onclick="tgOpenEditAdminDataModal(\'' + r.id + '\')">✏️ استكمال البيانات الإدارية</button>' : '') +
              '      <button class="bt bt-o" style="padding:6px 14px;font-size:12px;font-weight:800;border-radius:20px;" onclick="tgPrintRequestFromHub(\'' + r.id + '\')">🖨 طباعة الطلب الرسمية</button>' +
+              '      <button class="bt bt-p" style="padding:6px 14px;font-size:12px;font-weight:800;border-radius:20px;background:linear-gradient(135deg, #0284c7, #0369a1);border:none;color:#fff;" onclick="tgForwardRequestFromHub(\'' + r.id + '\')">↗️ تحويل لموظف</button>' +
              '    </div>' +
              '  </div>' +
              '</div>';
@@ -6886,6 +6887,32 @@ function renderAllRequestsListHub() {
     h += '</div>';
     container.innerHTML = h;
 }
+
+
+window.tgForwardRequestFromHub = function(reqId) {
+    if (!reqId) return;
+    var r = (window._reqHubDataCache || []).find(function(x) { return x.id === reqId; });
+    if (!r) return;
+
+    var empName = tgExtractNameFromRequest(r) || 'موظف';
+    var formTitle = 'طلب: ' + (r.type || 'طلب رسمي') + ' (' + empName + ')';
+    var docNum = r.docNum || genDocNum('req');
+
+    var data = [];
+    if (r.type) data.push('نوع الطلب: ' + r.type);
+    if (empName) data.push('اسم الموظف: ' + empName);
+    if (r.dept) data.push('القسم: ' + r.dept);
+    if (r.fromDate) data.push('من تاريخ: ' + r.fromDate + (r.toDate ? (' إلى: ' + r.toDate) : ''));
+    if (r.details) data.push('التفاصيل والسبب: ' + r.details);
+    if (r.dynamicData) {
+        for (var k in r.dynamicData) {
+            if (r.dynamicData[k]) data.push(k + ': ' + r.dynamicData[k]);
+        }
+    }
+    if (r.status) data.push('حالة الطلب: ' + (r.status === 'approved' ? 'تمت الموافقة' : (r.status === 'rejected' ? 'مرفوض' : 'معلق')));
+
+    openForwardModal('req', formTitle, docNum, data);
+};
 
 window.tgOpenEditAdminDataModal = function(reqId) {
     if (!reqId) return;
