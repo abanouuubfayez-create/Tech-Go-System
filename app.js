@@ -4204,16 +4204,19 @@ function saveMyPassword(){
 }
 
 // ─── سجل وأرصدة الإجازات السنوية للموظفين (Admin HR Leaves Overview) ───────────
-window.tgPrintAdminLeavesReport = function () {
-    var baseline = [
-        { empId: '3',  name: 'ابتهال', job: 'UI/UX Designer', entitlement: 15, usedAnnual: 0, usedCasual: 1, usedOfficial: 1 },
-        { empId: '8',  name: 'م/ مرقس مدحت', job: 'Senior Backend Developer', entitlement: 15, usedAnnual: 1, usedCasual: 0, usedOfficial: 0 },
-        { empId: '7',  name: 'باسل', job: 'Frontend Developer', entitlement: 15, usedAnnual: 4, usedCasual: 1, usedOfficial: 0 },
-        { empId: '4',  name: 'أبانوب فايز', job: 'Tech Lead / Admin', entitlement: 15, usedAnnual: 0, usedCasual: 0, usedOfficial: 0 },
-        { empId: '5',  name: 'إبراهيم', job: 'Mobile App Developer', entitlement: 15, usedAnnual: 1, usedCasual: 2, usedOfficial: 0 },
-        { empId: '6',  name: 'يوستينا', job: 'Graphic Designer', entitlement: 15, usedAnnual: 6, usedCasual: 4, usedOfficial: 0 },
-        { empId: '10', name: 'كيرلس', job: 'Software Developer', entitlement: 15, usedAnnual: 0, usedCasual: 0, usedOfficial: 0 }
+window.tgGetOfficialLeavesBaseline = function() {
+    return [
+        { empId: '3',  name: 'ابتهال', job: 'UI/UX Designer', entitlement: 15, usedAnnual: 3, usedCasual: 2, usedOfficial: 1, wfh: 10 },
+        { empId: '8',  name: 'م/ مرقس مدحت', job: 'Senior Backend Developer', entitlement: 15, usedAnnual: 2, usedCasual: 0, usedOfficial: 0, wfh: 10 },
+        { empId: '7',  name: 'باسل', job: 'Frontend Developer', entitlement: 15, usedAnnual: 4, usedCasual: 1, usedOfficial: 0, wfh: 0 },
+        { empId: '4',  name: 'أبانوب فايز', job: 'Tech Lead / Admin', entitlement: 15, usedAnnual: 0, usedCasual: 0, usedOfficial: 0, wfh: 10 },
+        { empId: '6',  name: 'يوستينا', job: 'Graphic Designer', entitlement: 15, usedAnnual: 13, usedCasual: 2, usedOfficial: 0, wfh: 10 },
+        { empId: '10', name: 'كيرلس', job: 'Software Developer', entitlement: 15, usedAnnual: 0, usedCasual: 0, usedOfficial: 0, wfh: 0 }
     ];
+};
+
+window.tgPrintAdminLeavesReport = function () {
+    var baseline = window.tgGetOfficialLeavesBaseline();
 
     var leavesStore = null;
     try {
@@ -4271,7 +4274,7 @@ window.tgPrintAdminLeavesReport = function () {
         '  </div>' +
         '  <div style="text-align:left; font-size:11px; color:#64748b;">' +
         '    <div>📅 تاريخ الاستخراج: <strong>' + todayStr + '</strong></div>' +
-        '    <div>📋 تصنيف الوثيقة: <strong>تقرير إداري معتمد</strong></div>' +
+        '    <div>📋 تصنيف الوثيقة: <strong>تقرير إداري معتمد مستخرج من نظام البصمة</strong></div>' +
         '  </div>' +
         '</div>' +
 
@@ -4300,7 +4303,7 @@ window.tgPrintAdminLeavesReport = function () {
         '</table>' +
 
         '<div style="border-top:1px dashed #94a3b8; padding-top:10px; font-size:10.5px; color:#475569; margin-bottom:30px;">' +
-        '  <strong>ملاحظة تنظيمية:</strong> الإجازة السنوية استحقاق قانوني (م.١٢٤) تُخصم منها الإجازات العارضة (م.١٢٨ بحد أقصى ٧ أيام سنوياً). في حالة انتهاء عقد العمل يُصرف للموظف مقابل رصيد إجازاته المتبقية نقداً وفقاً للأجر الأساسي.' +
+        '  <strong>ملاحظة تنظيمية:</strong> الإجازة السنوية استحقاق قانوني (م.١٢٤) تُخصم منها الإجازات العارضة (م.١٢٨ بحد أقصى ٧ أيام سنوياً). تم مطابقة هذه البيانات مع أحدث كشف حضور وبصمة معتمد.' +
         '</div>' +
 
         '<div style="display:grid; grid-template-columns:1fr 1fr 1fr; gap:20px; text-align:center; margin-top:20px;">' +
@@ -4318,15 +4321,7 @@ function renderAdminLeavesRecordPage(c) {
     if (!c) c = document.getElementById('pg-la');
     if (!c) return;
 
-    var baseline = [
-        { empId: '3',  name: 'ابتهال', job: 'UI/UX Designer', entitlement: 15, usedAnnual: 0, usedCasual: 1, usedOfficial: 1 },
-        { empId: '8',  name: 'م/ مرقس مدحت', job: 'Senior Backend Developer', entitlement: 15, usedAnnual: 1, usedCasual: 0, usedOfficial: 0 },
-        { empId: '7',  name: 'باسل', job: 'Frontend Developer', entitlement: 15, usedAnnual: 4, usedCasual: 1, usedOfficial: 0 },
-        { empId: '4',  name: 'أبانوب فايز', job: 'Tech Lead / Admin', entitlement: 15, usedAnnual: 0, usedCasual: 0, usedOfficial: 0 },
-        { empId: '5',  name: 'إبراهيم', job: 'Mobile App Developer', entitlement: 15, usedAnnual: 1, usedCasual: 2, usedOfficial: 0 },
-        { empId: '6',  name: 'يوستينا', job: 'Graphic Designer', entitlement: 15, usedAnnual: 6, usedCasual: 4, usedOfficial: 0 },
-        { empId: '10', name: 'كيرلس', job: 'Software Developer', entitlement: 15, usedAnnual: 0, usedCasual: 0, usedOfficial: 0 }
-    ];
+    var baseline = window.tgGetOfficialLeavesBaseline();
 
     // Check attendance.html leavesStore
     var leavesStore = null;
@@ -4341,7 +4336,7 @@ function renderAdminLeavesRecordPage(c) {
     baseline.forEach(function(emp, idx) {
         var usedAnn = emp.usedAnnual;
         var usedCas = emp.usedCasual;
-        var usedOff = emp.usedOfficial;
+        var usedOff = emp.usedOfficial || 0;
 
         if (leavesStore && leavesStore[emp.empId]) {
             var cYr = String(new Date().getFullYear());
@@ -4359,8 +4354,8 @@ function renderAdminLeavesRecordPage(c) {
         var usedTotal = usedAnn + usedCas;
         var remAnn = Math.max(0, emp.entitlement - usedTotal);
         var pct = Math.min(100, Math.round((usedTotal / emp.entitlement) * 100));
-        var remColor = remAnn <= 3 ? '#ef4444' : (remAnn <= 7 ? '#d97706' : '#10b981');
-        var barColor = remAnn <= 3 ? '#ef4444' : (remAnn <= 7 ? '#d97706' : '#0284c7');
+        var remColor = remAnn <= 0 ? '#ef4444' : (remAnn <= 5 ? '#d97706' : '#10b981');
+        var barColor = remAnn <= 0 ? '#ef4444' : (remAnn <= 5 ? '#d97706' : '#0284c7');
 
         totalEnt += emp.entitlement;
         totalUsedAll += usedTotal;
@@ -4388,7 +4383,7 @@ function renderAdminLeavesRecordPage(c) {
     });
 
     var h = '<div class="SP"><h3>🏖️ سجل وأرصدة الإجازات السنوية لعام ' + new Date().getFullYear() + '</h3>';
-    h += '<div class="set-hint">استناداً للمادة (١٢٤) من اللائحة التنظيمية — كشف مركزي يوضح الاستحقاق السنوي، الأيام المستهلكة، والرصيد المتبقي لجميع الموظفين.</div>';
+    h += '<div class="set-hint">استناداً للمادة (١٢٤) من اللائحة التنظيمية — كشف معتمد ومطابق لأحدث ملفات وسجلات البصمة يوضح الاستحقاق السنوي، الأيام المستهلكة، والرصيد المتبقي.</div>';
 
     // Top KPI Cards
     h += '<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:12px;margin:16px 0;">' +
@@ -4414,7 +4409,7 @@ function renderAdminLeavesRecordPage(c) {
     h += '<div style="background:rgba(2,132,199,0.08);border:1px solid rgba(2,132,199,0.3);border-radius:10px;padding:12px 16px;margin-bottom:16px;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px;">' +
         '<div>' +
         '  <div style="font-size:12.5px;font-weight:bold;color:#0284c7;">💡 التزامن اللحظي مع نظام الحضور وبوابة الموظف:</div>' +
-        '  <div style="font-size:11.5px;color:var(--tx2);margin-top:2px;">يتم خصم الإجازات واحتساب الأرصدة تلقائياً بمجرد رفع ملف البصمة الشهري في شاشة <strong>«⏱ الحضور والانصراف»</strong> أو اعتماد طلبات الإجازات الإلكترونية.</div>' +
+        '  <div style="font-size:11.5px;color:var(--tx2);margin-top:2px;">تم تحديث ومطابقة البيانات مباشرة مع سجلات البصمة المعتمدة (يتم خصم الإجازات واحتساب الأرصدة تلقائياً بمجرد رفع ملف البصمة الشهري أو اعتماد طلبات الإجازات الإلكترونية).</div>' +
         '</div>' +
         '<div style="display:flex;gap:8px;">' +
         '  <button type="button" class="bt bt-p" style="font-size:11.5px;padding:6px 14px;" onclick="go(\'att\')">⏱ فتح نظام الحضور والبصمة</button>' +
