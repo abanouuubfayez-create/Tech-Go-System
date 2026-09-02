@@ -67,7 +67,7 @@
     <link
         href="https://fonts.googleapis.com/css2?family=Alexandria:wght@300;400;500;600;700;800;900&family=Cairo:wght@400;600;700;800;900&family=Tajawal:wght@400;500;700;800&family=Inter:wght@400;500;600;700&display=swap"
         rel="stylesheet">
-    <link rel="stylesheet" href="styles.css?v=1788352344">
+    <link rel="stylesheet" href="styles.css?v=1788352506">
     <link rel="manifest" href="manifest.json">
     <link rel="icon" type="image/png" sizes="192x192" href="icon-192.png">
     <link rel="apple-touch-icon" href="icon-192.png">
@@ -75,10 +75,10 @@
     <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-storage-compat.js"></script>
-    <script src="firebase-config.js?v=1788352344"></script>
-    <script src="auth.js?v=1788352344"></script>
-    <script src="app.js?v=1788352344"></script>
-    <script src="formsend.js?v=1788352344"></script>
+    <script src="firebase-config.js?v=1788352506"></script>
+    <script src="auth.js?v=1788352506"></script>
+    <script src="app.js?v=1788352506"></script>
+    <script src="formsend.js?v=1788352506"></script>
     <script>
         (function () {
             const theme = localStorage.getItem('tg-theme') || 'light';
@@ -3475,8 +3475,8 @@
         تطوير وتصميم: أبانوب فايز</div>
     <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
-    <script src="theme.js?v=1788352344"></script>
-    <script src="pwa-install.js?v=1788352344"></script>
+    <script src="theme.js?v=1788352506"></script>
+    <script src="pwa-install.js?v=1788352506"></script>
 
 
     <!-- Incoming Meeting Call Modal -->
@@ -5703,13 +5703,34 @@
 </body>
 </html>`;
 
-            var printWin = window.open('', '_blank', 'width=880,height=920');
-            if (printWin) {
-                printWin.document.open();
-                printWin.document.write(printHtml);
-                printWin.document.close();
-            } else {
-                alert('يرجى السماح بالنوافذ المنبثقة (Popups) لمعاينة وطباعة التقرير.');
+            var ifr = document.getElementById('tgWeeklyEmpPrintIframe');
+            if (!ifr) {
+                ifr = document.createElement('iframe');
+                ifr.id = 'tgWeeklyEmpPrintIframe';
+                ifr.style.cssText = 'position:fixed; right:-9999px; bottom:-9999px; width:0; height:0; border:none; opacity:0; pointer-events:none; z-index:-1;';
+                document.body.appendChild(ifr);
+            }
+
+            try {
+                var doc = ifr.contentWindow.document;
+                doc.open();
+                doc.write(printHtml);
+                doc.close();
+
+                setTimeout(function () {
+                    var oldTitle = document.title;
+                    document.title = 'تقرير وخطة أسبوعية - ' + empName;
+                    ifr.contentWindow.focus();
+                    ifr.contentWindow.print();
+                    document.title = oldTitle;
+                }, 350);
+            } catch (e) {
+                var printWin = window.open('', '_blank', 'width=880,height=920');
+                if (printWin) {
+                    printWin.document.open();
+                    printWin.document.write(printHtml);
+                    printWin.document.close();
+                }
             }
         };
 

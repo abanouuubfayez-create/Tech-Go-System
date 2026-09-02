@@ -4288,13 +4288,34 @@ window.printWeeklyReportDoc = function(u, r) {
 </body>
 </html>`;
 
-    var printWin = window.open('', '_blank', 'width=880,height=920');
-    if (printWin) {
-        printWin.document.open();
-        printWin.document.write(printHtml);
-        printWin.document.close();
-    } else {
-        alert('يرجى السماح بالنوافذ المنبثقة (Popups) لمعاينة وطباعة التقرير.');
+    var ifr = document.getElementById('tgWeeklyPrintIframe');
+    if (!ifr) {
+        ifr = document.createElement('iframe');
+        ifr.id = 'tgWeeklyPrintIframe';
+        ifr.style.cssText = 'position:fixed; right:-9999px; bottom:-9999px; width:0; height:0; border:none; opacity:0; pointer-events:none; z-index:-1;';
+        document.body.appendChild(ifr);
+    }
+
+    try {
+        var doc = ifr.contentWindow.document;
+        doc.open();
+        doc.write(printHtml);
+        doc.close();
+
+        setTimeout(function () {
+            var oldTitle = document.title;
+            document.title = 'تقرير وخطة أسبوعية - ' + empName;
+            ifr.contentWindow.focus();
+            ifr.contentWindow.print();
+            document.title = oldTitle;
+        }, 350);
+    } catch (e) {
+        var printWin = window.open('', '_blank', 'width=880,height=920');
+        if (printWin) {
+            printWin.document.open();
+            printWin.document.write(printHtml);
+            printWin.document.close();
+        }
     }
 };
 
