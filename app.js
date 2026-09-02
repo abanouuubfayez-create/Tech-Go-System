@@ -4546,39 +4546,18 @@ function mexpAddRow(row){
     tr.style.height = '34px';
     var qtyVal = (row && row.qty !== undefined && row.qty !== null && row.qty !== '') ? String(row.qty) : '';
     var priceVal = (row && row.price !== undefined && row.price !== null && row.price !== '') ? String(row.price) : '';
-    var amtVal = (row && row.amt !== undefined && row.amt !== null && row.amt !== '') ? String(row.amt) : '';
     var dateVal = (row && row.date) ? row.date : '';
 
     tr.innerHTML =
         '<td class="mexp-idx" style="font-weight:bold; font-size:11px; text-align:center;">' + (tbody.children.length + 1) + '</td>' +
         '<td><input type="text" class="mexp-spender" list="mexp-spenders-list" placeholder="اسم الصارف..." value="' + escH(row && row.spender || '') + '" oninput="mexpUpdateSpenderSuggestions()"></td>' +
         '<td><input type="text" class="mexp-cat" list="mexp-cats-list" placeholder="النوع / البند..." value="' + escH(row && row.cat || '') + '"></td>' +
-        '<td><input type="number" min="1" step="1" class="mexp-qty" style="text-align:center; font-weight:700;" placeholder="1" value="' + escH(qtyVal) + '" oninput="mexpRowCalc(this)"></td>' +
-        '<td><input type="number" step="0.01" min="0" class="mexp-price" style="text-align:center;" placeholder="" value="' + escH(priceVal) + '" oninput="mexpRowCalc(this)"></td>' +
-        '<td><input type="number" step="0.01" min="0" class="mexp-amt" readonly style="font-weight:900; color:var(--nv); text-align:center; background:rgba(0,0,0,0.02);" placeholder="" value="' + escH(amtVal) + '" oninput="mexpCalc()"></td>' +
+        '<td><input type="number" min="1" step="1" class="mexp-qty" style="text-align:center; font-weight:700;" placeholder="1" value="' + escH(qtyVal) + '" oninput="mexpCalc()"></td>' +
+        '<td><input type="number" step="0.01" min="0" class="mexp-price" style="text-align:center; font-weight:700;" placeholder="0.00" value="' + escH(priceVal) + '" oninput="mexpCalc()"></td>' +
         '<td><input type="date" class="mexp-date" style="font-weight:600; text-align:center;" value="' + escH(dateVal) + '"></td>' +
         '<td class="np" style="text-align:center"><button type="button" class="bt bt-d" style="padding:3px 7px;font-size:11px;border-radius:4px;" onclick="mexpDelRow(this)" title="حذف السطر">✕</button></td>';
     tbody.appendChild(tr);
     mexpUpdateSpenderSuggestions();
-}
-
-function mexpRowCalc(el) {
-    var tr = el.closest('tr');
-    if(!tr) return;
-    var qInp = tr.querySelector('.mexp-qty');
-    var pInp = tr.querySelector('.mexp-price');
-    var aInp = tr.querySelector('.mexp-amt');
-    
-    var q = parseFloat(qInp && qInp.value ? qInp.value : '1');
-    if (isNaN(q) || q <= 0) q = 1;
-    var p = parseFloat(pInp ? pInp.value : '0');
-    
-    if(!isNaN(p) && pInp.value !== '') {
-        aInp.value = (q * p).toFixed(2);
-    } else {
-        aInp.value = '';
-    }
-    mexpCalc();
 }
 
 function mexpDelRow(btn){
@@ -4597,10 +4576,16 @@ function mexpReindex(){
 }
 
 function mexpCalc(){
-    var total = 0, count = 0;
-    document.querySelectorAll('#mexp-tbody .mexp-amt').forEach(function(inp){
-        var v = parseFloat(inp.value);
-        if(!isNaN(v) && v !== 0){ total += v; count++; }
+    var total = 0;
+    document.querySelectorAll('#mexp-tbody tr').forEach(function(tr){
+        var qInp = tr.querySelector('.mexp-qty');
+        var pInp = tr.querySelector('.mexp-price');
+        var q = parseFloat(qInp && qInp.value ? qInp.value : '1');
+        if (isNaN(q) || q <= 0) q = 1;
+        var p = parseFloat(pInp && pInp.value ? pInp.value : '0');
+        if (!isNaN(p) && p > 0) {
+            total += (q * p);
+        }
     });
     var tc = document.getElementById('mexp-total-cell'); if(tc) tc.innerText = fmtMoney(total);
 }
@@ -5573,16 +5558,15 @@ function load(id,c){
            '<table class="dt" id="mexp-table" style="width:100%; border-collapse:collapse;">'+
            '<thead><tr>'+
            '<th style="width:36px;text-align:center;">م</th>'+
-           '<th style="width:24%;">اسم الصارف</th>'+
-           '<th style="width:28%;">النوع / البند</th>'+
-           '<th style="width:80px;text-align:center;">العدد</th>'+
-           '<th style="width:110px;text-align:center;">السعر (ج.م)</th>'+
-           '<th style="width:120px;text-align:center;">الإجمالي (ج.م)</th>'+
-           '<th style="width:125px;text-align:center;">التاريخ</th>'+
+           '<th style="width:28%;">اسم الصارف</th>'+
+           '<th style="width:34%;">النوع / البند</th>'+
+           '<th style="width:90px;text-align:center;">العدد</th>'+
+           '<th style="width:130px;text-align:center;">السعر (ج.م)</th>'+
+           '<th style="width:135px;text-align:center;">التاريخ</th>'+
            '<th class="np" style="width:36px;text-align:center;"></th>'+
            '</tr></thead>'+
            '<tbody id="mexp-tbody"></tbody>'+
-           '<tfoot><tr><td colspan="5" style="text-align:left;font-weight:800;background:var(--bg2,#edf2f7);padding:8px 12px;font-size:13px;">إجمالي المصروفات الكلي</td><td id="mexp-total-cell" style="font-weight:900;color:var(--nv);background:var(--bg2,#edf2f7);font-size:14px;text-align:center;">0.00 ج.م</td><td colspan="2" style="background:var(--bg2,#edf2f7)"></td></tr></tfoot>'+
+           '<tfoot><tr><td colspan="4" style="text-align:left;font-weight:800;background:var(--bg2,#edf2f7);padding:8px 12px;font-size:13px;">إجمالي المصروفات الكلي</td><td id="mexp-total-cell" style="font-weight:900;color:var(--nv);background:var(--bg2,#edf2f7);font-size:14px;text-align:center;">0.00 ج.م</td><td colspan="2" style="background:var(--bg2,#edf2f7)"></td></tr></tfoot>'+
            '</table>' +
            '</div>';
 
