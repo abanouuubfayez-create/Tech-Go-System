@@ -5972,8 +5972,342 @@ window.tgExtractNameFromRequest = function(r) {
         if (realName && realName !== 'موظف') return realName;
     }
 
-    return 'موظف';
-};
+function loadAllRequestsHub() {
+    var container = document.getElementById('allRequestsHubList');
+    if(container) container.innerHTML = '<div class="empty-hint">⏳ جارٍ تحميل طلبات الموظفين...</div>';
+
+    db.collection('requests').get().then(function(snap) {
+        var list = [];
+        snap.forEach(function(doc) {
+            var data = doc.data() || {};
+            data.id = doc.id;
+            list.push(data);
+        });
+
+        // Sort desc by createdAt or timestamp
+        list.sort(function(a, b) {
+            var tA = a.createdAt && a.createdAt.toMillis ? a.createdAt.toMillis() : (new Date(a.createdAt || 0).getTime() || 0);
+            var tB = b.createdAt && b.createdAt.toMillis ? b.createdAt.toMillis() : (new Date(b.createdAt || 0).getTime() || 0);
+            return tB - tA;
+        });
+
+        window._reqHubDataCache = list;
+        updateReqHubStats();
+        renderAllRequestsListHub();
+    }).catch(function(err) {
+        console.error("loadAllRequestsHub error:", err);
+        if(container) container.innerHTML = '<div class="empty-hint" style="color:var(--no)">❌ تعذر تحميل الطلبات: ' + escH(err.message) + '</div>';
+    });
+}
+
+function updateReqHubStats() {
+    var list = window._reqHubDataCache || [];
+    var pending = 0, approved = 0, rejected = 0, todayCount = 0;
+    var todayYMD = window.tgGetDateYMD(new Date());
+
+    list.forEach(function(r) {
+        var s = (r.status || 'pending').toLowerCase();
+        if(s === 'approved') approved++;
+        else if(s === 'rejected') rejected++;
+        else pending++;
+
+        var dInfo = window.tgParseReqDates(r);
+        if (dInfo.createdYMD === todayYMD) {
+            todayCount++;
+        }
+    });
+
+    var pEl = document.getElementById('reqhub-cnt-pending'); if(pEl) pEl.textContent = pending;
+    var aEl = document.getElementById('reqhub-cnt-all'); if(aEl) aEl.textContent = list.length;
+    var apEl = document.getElementById('reqhub-cnt-approved'); if(apEl) apEl.textContent = approved;
+    var rEl = document.getElementById('reqhub-cnt-rejected'); if(rEl) rEl.textContent = rejected;
+
+    var chipToday = document.getElementById('reqhub-chip-today-cnt');
+    if (chipToday) chipToday.textContent = todayCount;
+
+    var statsBar = document.getElementById('reqHubStatsBar');
+    if(statsBar) {
+        statsBar.innerHTML = 
+            '<div style="flex:1;min-width:130px;background:rgba(243,156,18,0.1);border:1px solid rgba(243,156,18,0.3);padding:12px 16px;border-radius:10px;display:flex;align-items:center;justify-content:space-between">' +
+            '<div><div style="font-size:11px;color:var(--tx3);font-weight:700">⏳ طلبات معلقة</div><div style="font-size:22px;font-weight:800;color:#d35400">' + pending + '</div></div>' +
+            '<span style="font-size:24px">⌛</span></div>' +
+
+            '<div style="flex:1;min-width:130px;background:rgba(39,174,96,0.1);border:1px solid rgba(39,174,96,0.3);padding:12px 16px;border-radius:10px;display:flex;align-items:center;justify-content:space-between">' +
+            '<div><div style="font-size:11px;color:var(--tx3);font-weight:700">✅ طلبات مقبولة</div><div style="font-size:22px;font-weight:800;color:#27ae60">' + approved + '</div></div>' +
+            '<span style="font-size:24px">✔</span></div>' +
+
+            '<div style="flex:1;min-width:130px;background:rgba(231,76,60,0.1);border:1px solid rgba(231,76,60,0.3);padding:12px 16px;border-radius:10px;display:flex;align-items:center;justify-content:space-between">' +
+            '<div><div style="font-size:11px;color:var(--tx3);font-weight:700">❌ طلبات مرفوضة</div><div style="font-size:22px;font-weight:800;color:#c0392b">' + rejected + '</div></div>' +
+            '<span style="font-size:24px">✖</span></div>' +
+
+            '<div style="flex:1;min-width:130px;background:rgba(16,185,129,0.1);border:1px solid rgba(16,185,129,0.3);padding:12px 16px;border-radius:10px;display:flex;align-items:center;justify-content:space-between">' +
+            '<div><div style="font-size:11px;color:var(--tx3);font-weight:700">⚡ طلبات اليوم</div><div style="font-size:22px;font-weight:800;color:#10b981">' + todayCount + '</div></div>' +
+            '<span style="font-size:24px">📅</span></div>' +
+
+            '<div style="flex:1;min-width:130px;background:rgba(41,128,185,0.1);border:1px solid rgba(41,128,185,0.3);padding:12px 16px;border-radius:10px;display:flex;align-items:center;justify-content:space-between">' +
+            '<div><div style="font-size:11px;color:var(--tx3);font-weight:700">📋 إجمالي الطلبات</div><div style="font-size:22px;font-weight:800;color:#2980b9">' + list.length + '</div></div>' +
+            '<span style="font-size:24px">📥</span></div>';
+    }
+}
+
+function renderAllRequestsListHub() {
+    var container = document.getElementById('allRequestsHubList');
+    if(!container) return;
+
+    var list = window._reqHubDataCache || [];
+    var statusFilter = window._reqHubStatusTab || 'pending';
+    var search = (document.getElementById('reqHubSearch') ? document.getElementById('reqHubSearch').value : '').toLowerCase().trim();
+    var typeFilter = document.getElementById('reqHubTypeFilter') ? document.getElementById('reqHubTypeFilter').value : 'all';
+    var dateFieldMode = document.getElementById('reqHubDateField') ? document.getElementById('reqHubDateField').value : 'created';
+    var datePreset = window._reqHubDatePreset || 'all';
+
+    // Date calculations for bounds
+    var nowDate = new Date();
+    var todayYMD = window.tgGetDateYMD(nowDate);
+
+    var yestDate = new Date(nowDate);
+    yestDate.setDate(yestDate.getDate() - 1);
+    var yestYMD = window.tgGetDateYMD(yestDate);
+
+    var weekAgoDate = new Date(nowDate);
+    weekAgoDate.setDate(weekAgoDate.getDate() - 7);
+    weekAgoDate.setHours(0, 0, 0, 0);
+
+    var currentYear = nowDate.getFullYear();
+    var currentMonth = nowDate.getMonth();
+
+    var prevMonthDate = new Date(nowDate);
+    prevMonthDate.setMonth(prevMonthDate.getMonth() - 1);
+    var prevMonthYear = prevMonthDate.getFullYear();
+    var prevMonth = prevMonthDate.getMonth();
+
+    var filtered = list.filter(function(r) {
+        var s = (r.status || 'pending').toLowerCase();
+        if(statusFilter !== 'all') {
+            if(statusFilter === 'pending' && s !== 'pending') return false;
+            if(statusFilter === 'approved' && s !== 'approved') return false;
+            if(statusFilter === 'rejected' && s !== 'rejected') return false;
+        }
+
+        if(typeFilter !== 'all') {
+            var t = (r.type || '').toLowerCase();
+            if(typeFilter === 'leave' && t.indexOf('إجازة') === -1) return false;
+            if(typeFilter === 'perm' && t.indexOf('إذن') === -1) return false;
+            if(typeFilter === 'delay' && t.indexOf('التماس') === -1 && t.indexOf('تعديل') === -1) return false;
+            if(typeFilter === 'res' && t.indexOf('استقالة') === -1) return false;
+            if(typeFilter === 'comp' && t.indexOf('شكوى') === -1 && t.indexOf('مقترح') === -1) return false;
+            if(typeFilter === 'other' && (t.indexOf('إجازة') !== -1 || t.indexOf('إذن') !== -1 || t.indexOf('التماس') !== -1 || t.indexOf('استقالة') !== -1 || t.indexOf('شكوى') !== -1)) return false;
+        }
+
+        // ── فلترة التاريخ ──
+        if(datePreset !== 'all') {
+            var dInfo = window.tgParseReqDates(r);
+            var matchDateObj = dInfo.createdDate;
+            var matchDateYMD = dInfo.createdYMD;
+
+            if (dateFieldMode === 'event') {
+                matchDateYMD = dInfo.fromDateYMD || dInfo.createdYMD;
+                if (dInfo.fromDateYMD) {
+                    var parsedFrom = new Date(dInfo.fromDateYMD + 'T00:00:00');
+                    if (!isNaN(parsedFrom.getTime())) matchDateObj = parsedFrom;
+                }
+            }
+
+            if (datePreset === 'today') {
+                if (dateFieldMode === 'any') {
+                    if (dInfo.createdYMD !== todayYMD && dInfo.fromDateYMD !== todayYMD && dInfo.toDateYMD !== todayYMD) return false;
+                } else {
+                    if (matchDateYMD !== todayYMD) return false;
+                }
+            } else if (datePreset === 'yesterday') {
+                if (dateFieldMode === 'any') {
+                    if (dInfo.createdYMD !== yestYMD && dInfo.fromDateYMD !== yestYMD && dInfo.toDateYMD !== yestYMD) return false;
+                } else {
+                    if (matchDateYMD !== yestYMD) return false;
+                }
+            } else if (datePreset === 'week') {
+                if (!matchDateObj || matchDateObj < weekAgoDate || matchDateObj > nowDate) return false;
+            } else if (datePreset === 'month') {
+                if (!matchDateObj || matchDateObj.getFullYear() !== currentYear || matchDateObj.getMonth() !== currentMonth) return false;
+            } else if (datePreset === 'prev_month') {
+                if (!matchDateObj || matchDateObj.getFullYear() !== prevMonthYear || matchDateObj.getMonth() !== prevMonth) return false;
+            } else if (datePreset === 'single') {
+                var targetSingle = window._reqHubDateSingle || todayYMD;
+                if (dateFieldMode === 'any') {
+                    if (dInfo.createdYMD !== targetSingle && dInfo.fromDateYMD !== targetSingle && dInfo.toDateYMD !== targetSingle) return false;
+                } else {
+                    if (matchDateYMD !== targetSingle) return false;
+                }
+            } else if (datePreset === 'range') {
+                var fDate = window._reqHubDateFrom;
+                var tDate = window._reqHubDateTo;
+                if (fDate && matchDateYMD && matchDateYMD < fDate) return false;
+                if (tDate && matchDateYMD && matchDateYMD > tDate) return false;
+                if (!matchDateYMD && (fDate || tDate)) return false;
+            }
+        }
+
+        // ── فلترة البحث النصي ──
+        if(search) {
+            var empMatch = window._staffEmpCache ? (window._staffEmpCache.find(function(e) { return e.uid === r.uid; }) || {}) : {};
+            var nameStr = (empMatch.name || r.uid || '').toLowerCase();
+            var typeStr = (r.type || '').toLowerCase();
+            var detStr = (r.details || '').toLowerCase();
+            var dateStr = (r.fromDate || '').toLowerCase() + (r.toDate || '').toLowerCase();
+            var extractedName = window.tgExtractNameFromRequest(r).toLowerCase();
+            if(nameStr.indexOf(search) === -1 && extractedName.indexOf(search) === -1 && typeStr.indexOf(search) === -1 && detStr.indexOf(search) === -1 && dateStr.indexOf(search) === -1) {
+                return false;
+            }
+        }
+        return true;
+    });
+
+    // تحديث شريط التصفية النشطة
+    var banner = document.getElementById('reqHubActiveFilterBanner');
+    if (banner) {
+        var hasActiveFilter = (statusFilter !== 'all' || typeFilter !== 'all' || search || datePreset !== 'all');
+        if (hasActiveFilter) {
+            banner.style.display = 'flex';
+            var dateDesc = 'كافة التواريخ';
+            if (datePreset === 'today') dateDesc = '⚡ اليوم (' + todayYMD + ')';
+            else if (datePreset === 'yesterday') dateDesc = '📅 أمس (' + yestYMD + ')';
+            else if (datePreset === 'week') dateDesc = '🗓️ آخر 7 أيام';
+            else if (datePreset === 'month') dateDesc = '📆 هذا الشهر';
+            else if (datePreset === 'prev_month') dateDesc = '📆 الشهر السابق';
+            else if (datePreset === 'single') dateDesc = '🎯 يوم (' + (window._reqHubDateSingle || todayYMD) + ')';
+            else if (datePreset === 'range') dateDesc = '⏳ فترة (' + (window._reqHubDateFrom || '...') + ' إلى ' + (window._reqHubDateTo || '...') + ')';
+
+            var statusDesc = statusFilter === 'pending' ? '⏳ قيد الانتظار' : (statusFilter === 'approved' ? '✅ المقبولة' : (statusFilter === 'rejected' ? '❌ المرفوضة' : '📋 الكل'));
+
+            banner.innerHTML = '<div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;">' +
+                '<span>🎯 الفلترة النشطة:</span> ' +
+                '<span style="background:var(--w);padding:3px 8px;border-radius:6px;border:1px solid var(--bd);">الحالة: <b>' + statusDesc + '</b></span>' +
+                '<span style="background:var(--w);padding:3px 8px;border-radius:6px;border:1px solid var(--bd);">التاريخ: <b>' + dateDesc + '</b></span>' +
+                (typeFilter !== 'all' ? '<span style="background:var(--w);padding:3px 8px;border-radius:6px;border:1px solid var(--bd);">النوع: <b>' + escH(typeFilter) + '</b></span>' : '') +
+                (search ? '<span style="background:var(--w);padding:3px 8px;border-radius:6px;border:1px solid var(--bd);">بحث: <b>"' + escH(search) + '"</b></span>' : '') +
+                '<span style="color:#0284c7;font-weight:900;">(تم العثور على ' + filtered.length + ' طلب)</span>' +
+                '</div>' +
+                '<button type="button" onclick="tgResetReqHubFilters()" style="background:none;border:none;color:var(--no);cursor:pointer;font-weight:800;font-size:12px;text-decoration:underline;">✖ تفريغ الفلترة</button>';
+        } else {
+            banner.style.display = 'none';
+        }
+    }
+
+    if(filtered.length === 0) {
+        var emptyMsg = '📭 لا توجد طلبات تطابق عناصر البحث أو الفلترة المحددة.';
+        if (datePreset === 'today') emptyMsg = '📭 لا توجد أي طلبات تم تقديمها اليوم (' + todayYMD + ').';
+        else if (datePreset === 'yesterday') emptyMsg = '📭 لا توجد طلبات مسجلة في تاريخ أمس (' + yestYMD + ').';
+        else if (datePreset === 'single') emptyMsg = '📭 لا توجد طلبات في هذا اليوم المحدد (' + (window._reqHubDateSingle || todayYMD) + ').';
+
+        container.innerHTML = '<div class="empty-hint" style="padding:34px 20px;background:var(--bg2);border-radius:12px;margin-top:10px;text-align:center;">' +
+                              '<div style="font-size:28px;margin-bottom:8px">📭</div>' +
+                              '<div style="font-size:14px;font-weight:800;color:var(--tx);margin-bottom:6px">' + emptyMsg + '</div>' +
+                              '<button type="button" class="bt bt-o" style="margin-top:10px;padding:6px 16px;font-size:12px;font-weight:800;" onclick="tgResetReqHubFilters()">عرض كافة الطلبات والتواريخ</button>' +
+                              '</div>';
+        return;
+    }
+
+    var h = '<div style="display:flex;flex-direction:column;gap:12px;margin-top:10px">';
+    filtered.forEach(function(r) {
+        var empMatch = window._staffEmpCache ? (window._staffEmpCache.find(function(e) { return e.uid === r.uid; }) || {}) : {};
+        var empName = window.tgExtractNameFromRequest(r);
+        var empJob = empMatch.jobTitle || empMatch.dept || r.dept || '';
+
+        var st = (r.status || 'pending').toLowerCase();
+        var statusBadge = '';
+        if(st === 'approved') statusBadge = '<span style="background:rgba(39,174,96,0.15);color:#27ae60;padding:4px 10px;border-radius:20px;font-size:11px;font-weight:800;border:1px solid rgba(39,174,96,0.3)">✅ تمت الموافقة</span>';
+        else if(st === 'rejected') statusBadge = '<span style="background:rgba(231,76,60,0.15);color:#c0392b;padding:4px 10px;border-radius:20px;font-size:11px;font-weight:800;border:1px solid rgba(231,76,60,0.3)">❌ مرفوض</span>';
+        else statusBadge = '<span style="background:rgba(243,156,18,0.15);color:#d35400;padding:4px 10px;border-radius:20px;font-size:11px;font-weight:800;border:1px solid rgba(243,156,18,0.3)">⏳ قيد الانتظار</span>';
+
+        var dh = '';
+        if(r.dynamicData) {
+            var tpl = window.FS_TEMPLATES && r.formTemplateId ? window.FS_TEMPLATES[r.formTemplateId] : null;
+            var fieldLabels = {};
+            if(tpl && tpl.fields) { tpl.fields.forEach(function(f){ fieldLabels[f.id] = f.label; }); }
+            
+            // Canonical consistent field ordering
+            var sortedKeys = [];
+            if(tpl && tpl.fields) {
+                tpl.fields.forEach(function(f) {
+                    if (f.id in r.dynamicData) sortedKeys.push(f.id);
+                });
+            }
+            for(var k in r.dynamicData) {
+                if (sortedKeys.indexOf(k) === -1) sortedKeys.push(k);
+            }
+
+            dh = '<div style="margin-top:8px;padding:10px;background:rgba(0,0,0,0.03);border-radius:8px;font-size:12px;display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:6px">';
+            sortedKeys.forEach(function(k){
+                var v = r.dynamicData[k];
+                if (v === '' || v === '-' || v === '—' || v === null || v === undefined) return;
+                if(v === true) v = 'نعم / تم التسليم';
+                if(v === false) v = 'لا';
+                var lbl = fieldLabels[k] || k;
+                if(lbl === 'chk1') lbl = 'تسليم العهدة المالية';
+                if(lbl === 'chk2') lbl = 'تسليم العهدة العينية';
+                if(lbl === 'chk3') lbl = 'تسليم المستندات والملفات';
+                if(lbl === 'chk4') lbl = 'إنهاء المهام المعلقة';
+                dh += '<div><span style="color:var(--tx3);display:inline-block;">' + escH(lbl) + ':</span> <b style="white-space:pre-wrap;">' + escH(v) + '</b></div>';
+            });
+            dh += '</div>';
+        }
+
+        var attachHtml = '';
+        if(r.fileUrl && r.fileType){
+            if(r.fileType.indexOf('image/')===0){ attachHtml = '<div style="margin-top:8px"><a href="'+r.fileUrl+'" target="_blank"><img src="'+r.fileUrl+'" style="max-width:160px;max-height:110px;border-radius:8px;display:block;border:1px solid var(--bd)"></a></div>'; }
+            else if(r.fileType.indexOf('video/')===0){ attachHtml = '<div style="margin-top:8px"><video src="'+r.fileUrl+'" controls style="max-width:220px;border-radius:8px"></video></div>'; }
+            else { attachHtml = '<div style="margin-top:8px"><a href="'+r.fileUrl+'" target="_blank" style="color:var(--tx);font-weight:700;text-decoration:underline">📎 '+escH(r.fileName||'تحميل الملف المرفق')+'</a></div>'; }
+        }
+
+        // تنسيق وقت وتاريخ الطلب
+        var dInfo = window.tgParseReqDates(r);
+        var dateFmt = dInfo.createdDate ? window.tgFormatReqDateArabic(dInfo.createdDate) : null;
+        var dateBadgeHtml = '';
+        if (dateFmt) {
+            if (dateFmt.isToday) {
+                dateBadgeHtml = '<span class="req-time-badge today-badge">⚡ اليوم (' + escH(dateFmt.label) + ')</span>';
+            } else if (dateFmt.isYesterday) {
+                dateBadgeHtml = '<span class="req-time-badge" style="background:rgba(245,158,11,0.12);color:#d97706;border-color:rgba(245,158,11,0.3);font-weight:800">📅 أمس (' + escH(dateFmt.label) + ')</span>';
+            } else {
+                dateBadgeHtml = '<span class="req-time-badge">🕒 ' + escH(dateFmt.label) + '</span>';
+            }
+        }
+
+        h += '<div class="rq-row" style="background:var(--w);padding:16px;border-radius:12px;border:1px solid var(--bd);box-shadow:0 2px 8px rgba(0,0,0,0.03);">' +
+             '  <div style="display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:8px">' +
+             '    <div>' +
+             '      <div style="font-size:15px;font-weight:800;color:var(--tx);display:flex;align-items:center;gap:8px;flex-wrap:wrap;">' +
+             '        <span>' + escH(r.type || 'طلب جديد') + '</span>' + statusBadge +
+             '      </div>' +
+             '      <div style="font-size:12px;color:var(--tx2);margin-top:6px;display:flex;align-items:center;gap:10px;flex-wrap:wrap">' +
+             '        <span>👤 <strong>' + escH(empName) + '</strong>' + (empJob ? ' (' + escH(empJob) + ')' : '') + '</span>' +
+             (dateBadgeHtml ? dateBadgeHtml : '') +
+             '      </div>' +
+             '    </div>' +
+             '  </div>' +
+             (r.fromDate ? ('<div style="margin-top:8px;font-size:12px;color:var(--tx2);background:rgba(52,152,219,0.08);padding:6px 10px;border-radius:6px;display:inline-block">📅 المدة المطلوبة: من <strong>' + escH(r.fromDate) + '</strong>' + (r.toDate ? (' إلى <strong>' + escH(r.toDate) + '</strong>') : '') + '</div>') : '') +
+             (r.details ? ('<div style="margin-top:8px;font-size:13px;line-height:1.6;color:var(--tx);background:var(--bg2);padding:10px;border-radius:8px">' + escH(r.details) + '</div>') : '') +
+             dh + attachHtml +
+             (r.reviewedBy ? ('<div style="margin-top:8px;font-size:11px;color:var(--tx3)">تمت المراجعة بواسطة: ' + escH(r.reviewedBy) + '</div>') : '') +
+             '  <div style="margin-top:12px;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px;border-top:1px dashed var(--bd);padding-top:12px">' +
+             '    <div style="display:flex;gap:8px;flex-wrap:wrap;">' +
+                    (st === 'pending' ? (
+                        '<button class="bt bt-p" style="padding:7px 18px;font-size:12px;font-weight:700" onclick="reviewRequestHub(\'' + r.id + '\',\'approved\')">✔ موافقة على الطلب</button>' +
+                        '<button class="bt bt-d" style="padding:7px 18px;font-size:12px;font-weight:700" onclick="reviewRequestHub(\'' + r.id + '\',\'rejected\')">✕ رفض الطلب</button>'
+                    ) : '') +
+             '    </div>' +
+             '    <div style="display:flex;gap:8px;flex-wrap:wrap;">' +
+                    (r.formTemplateId === 'emp' || (r.type && r.type.indexOf('بيانات الموظف') !== -1) ?
+                        '<button class="bt bt-o" style="padding:6px 14px;font-size:12px;font-weight:800;border-radius:20px;border-color:#0284c7;color:#0284c7;" onclick="tgOpenEditAdminDataModal(\'' + r.id + '\')">✏️ استكمال البيانات الإدارية</button>' : '') +
+             '      <button class="bt bt-o" style="padding:6px 14px;font-size:12px;font-weight:800;border-radius:20px;" onclick="tgPrintRequestFromHub(\'' + r.id + '\')">🖨 طباعة الطلب الرسمية</button>' +
+             '    </div>' +
+             '  </div>' +
+             '</div>';
+    });
+    h += '</div>';
+    container.innerHTML = h;
+}
+
 window.tgOpenEditAdminDataModal = function(reqId) {
     if (!reqId) return;
     var r = (window._reqHubDataCache || []).find(function(x) { return x.id === reqId; });
