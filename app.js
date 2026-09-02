@@ -4477,9 +4477,39 @@ function mexpInit(){
     mexpLoad();
 }
 
+// ─── MONTHLY EXPENSE SHEET (mexp) - DAILY GROUPED ARCHITECTURE ───────────
+function fmtMoney(n){
+    n = isNaN(n) ? 0 : n;
+    var parts = n.toFixed(2).split('.');
+    parts[0] = parts[0].replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+    return parts.join('.') + ' ج.م';
+}
+
+function mexpGetDayName(dateStr) {
+    if (!dateStr) return '';
+    try {
+        var parts = dateStr.split('-');
+        if (parts.length === 3) {
+            var d = new Date(parseInt(parts[0], 10), parseInt(parts[1], 10) - 1, parseInt(parts[2], 10));
+            var days = ['الأحد', 'الإثنين', 'الثلاثاء', 'الأربعاء', 'الخميس', 'الجمعة', 'السبت'];
+            return days[d.getDay()] || '';
+        }
+    } catch(e){}
+    return '';
+}
+
+function mexpInit(){
+    var mi = document.getElementById('mexp-month');
+    if(mi && !mi.value){
+        var d = new Date();
+        mi.value = d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0');
+    }
+    mexpLoad();
+}
+
 function mexpLoad(showToast){
-    var tbody = document.getElementById('mexp-tbody');
-    if(!tbody) return;
+    var container = document.getElementById('mexp-days-container');
+    if(!container) return;
     var mi = document.getElementById('mexp-month');
     var monthVal = mi && mi.value ? mi.value : '';
     if (!monthVal) {
@@ -4488,122 +4518,265 @@ function mexpLoad(showToast){
         if (mi) mi.value = monthVal;
     }
 
-    tbody.innerHTML = '<tr><td colspan="8" style="text-align:center;padding:24px;color:var(--tx3);font-weight:700;">⏳ جارٍ تحميل بيانات شهر ' + escH(monthVal) + '...</td></tr>';
+    container.innerHTML = '<div style="text-align:center;padding:30px;color:var(--tx3);font-weight:700;">⏳ جارٍ تحميل شيت مصروفات شهر ' + escH(monthVal) + '...</div>';
 
     // Load assigned employee config
     mexpLoadAssigneeConfig();
 
     var storageKey = 'tg_mexp_' + monthVal;
     var localRaw = localStorage.getItem(storageKey);
-    var localRows = [];
-    try { localRows = localRaw ? JSON.parse(localRaw) : []; } catch(e){}
+    var localData = null;
+    try { localData = localRaw ? JSON.parse(localRaw) : null; } catch(e){}
 
-    // Fetch from Firestore
     if (typeof db !== 'undefined' && db) {
         db.collection('mexp_sheets').doc(monthVal).get().then(function(doc) {
-            var rows = [];
+            var days = [];
             var syncInfo = document.getElementById('mexpSyncInfo');
             if (doc.exists) {
                 var data = doc.data() || {};
-                rows = Array.isArray(data.rows) ? data.rows : [];
-                localStorage.setItem(storageKey, JSON.stringify(rows));
+                localStorage.setItem(storageKey, JSON.stringify(data));
                 if (syncInfo && data.updatedBy) {
                     var timeStr = data.updatedAt && data.updatedAt.toDate ? data.updatedAt.toDate().toLocaleTimeString('ar-EG', {hour:'2-digit', minute:'2-digit', day:'numeric', month:'numeric'}) : '';
                     syncInfo.innerHTML = '<span>✅ آخر تحديث تم بواسطة: <b>' + escH(data.updatedBy) + '</b> ' + (timeStr ? '(' + timeStr + ')' : '') + '</span>';
                 }
+                days = mexpNormalizeDaysData(data);
+            } else if (localData) {
+                days = mexpNormalizeDaysData(localData);
+                if (syncInfo) syncInfo.innerHTML = '<span>ℹ️ لا توجد بيانات سابقة على السيرفر لهذا الشهر (شيت جديد)</span>';
             } else {
-                rows = localRows;
-                if (syncInfo) syncInfo.innerHTML = '<span>ℹ️ لا توجد بيانات محفوظة مسبقاً لهذا الشهر على السيرفر (شيت جديد)</span>';
+                if (syncInfo) syncInfo.innerHTML = '<span>ℹ️ لا توجد بيانات سابقة على السيرفر لهذا الشهر (شيت جديد)</span>';
             }
-            renderMexpRows(rows);
+            mexpRenderDays(days);
             if (showToast && typeof tgShowToast === 'function') tgShowToast('تم تحديث الشيت من السيرفر بنجاح', 'success');
         }).catch(function(err) {
             console.error('mexpLoad Firestore err:', err);
-            renderMexpRows(localRows);
+            mexpRenderDays(mexpNormalizeDaysData(localData));
         });
     } else {
-        renderMexpRows(localRows);
+        mexpRenderDays(mexpNormalizeDaysData(localData));
     }
 }
 
-function renderMexpRows(rows) {
-    var tbody = document.getElementById('mexp-tbody');
-    if (!tbody) return;
-    tbody.innerHTML = '';
-    if (!rows || rows.length === 0) {
-        mexpAddRow();
+function mexpNormalizeDaysData(raw) {
+    if (!raw) return [];
+    if (Array.isArray(raw.days)) return raw.days;
+    if (Array.isArray(raw)) {
+        // Check if raw is days array or flat rows
+        if (raw.length > 0 && raw[0].items) return raw;
+        // Group flat rows by date
+        var map = {};
+        raw.forEach(function(r) {
+            var dt = r.date || '';
+            if (!map[dt]) map[dt] = [];
+            map[dt].push({ spender: r.spender || '', cat: r.cat || '', qty: r.qty || '1', price: r.price || '' });
+        });
+        var days = [];
+        Object.keys(map).forEach(function(dt) {
+            days.push({ date: dt, items: map[dt] });
+        });
+        return days;
+    }
+    if (Array.isArray(raw.rows)) {
+        var map = {};
+        raw.rows.forEach(function(r) {
+            var dt = r.date || '';
+            if (!map[dt]) map[dt] = [];
+            map[dt].push({ spender: r.spender || '', cat: r.cat || '', qty: r.qty || '1', price: r.price || '' });
+        });
+        var days = [];
+        Object.keys(map).forEach(function(dt) {
+            days.push({ date: dt, items: map[dt] });
+        });
+        return days;
+    }
+    return [];
+}
+
+function mexpRenderDays(days) {
+    var container = document.getElementById('mexp-days-container');
+    if (!container) return;
+    container.innerHTML = '';
+
+    if (!days || days.length === 0) {
+        // Add 1 initial day
+        mexpAddNewDay();
     } else {
-        rows.forEach(function(r){ mexpAddRow(r); });
+        days.forEach(function(d) {
+            mexpAddNewDay(d);
+        });
     }
     mexpCalc();
     mexpUpdateSpenderSuggestions();
 }
 
-function mexpGetLastDate() {
-    var dateInps = document.querySelectorAll('#mexp-tbody .mexp-date');
-    for (var i = dateInps.length - 1; i >= 0; i--) {
-        if (dateInps[i].value) return dateInps[i].value;
-    }
+function mexpAddNewDay(dayData) {
+    var container = document.getElementById('mexp-days-container');
+    if (!container) return;
+
     var mi = document.getElementById('mexp-month');
+    var monthVal = mi && mi.value ? mi.value : '';
     var d = new Date();
-    var curMonth = d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0');
-    if (mi && mi.value === curMonth) {
-        return d.toISOString().split('T')[0];
-    } else if (mi && mi.value) {
-        return mi.value + '-01';
+    var todayStr = d.toISOString().split('T')[0];
+    var defDate = todayStr;
+
+    if (dayData && dayData.date) {
+        defDate = dayData.date;
+    } else {
+        // Try to find next logical date after existing days
+        var existingDates = document.querySelectorAll('#mexp-days-container .mexp-day-date');
+        if (existingDates.length > 0) {
+            var lastVal = existingDates[existingDates.length - 1].value;
+            if (lastVal) {
+                var lastD = new Date(lastVal);
+                lastD.setDate(lastD.getDate() + 1);
+                defDate = lastD.toISOString().split('T')[0];
+            }
+        } else if (monthVal) {
+            defDate = monthVal + '-01';
+        }
     }
-    return d.toISOString().split('T')[0];
+
+    var dayName = mexpGetDayName(defDate);
+    var dayCard = document.createElement('div');
+    dayCard.className = 'mexp-day-card';
+    dayCard.style.cssText = 'background:var(--w); border:1.5px solid var(--bd); border-radius:14px; margin-bottom:20px; overflow:hidden; box-shadow:var(--sh-sm); transition:all 0.2s ease;';
+
+    dayCard.innerHTML =
+        '<div style="background:linear-gradient(135deg, #1e293b, #0f172a); color:#fff; padding:12px 18px; display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:12px;">' +
+        '  <div style="display:flex; align-items:center; gap:10px; flex-wrap:wrap;">' +
+        '    <span style="font-size:18px;">📅</span>' +
+        '    <label style="font-weight:800; font-size:13px; color:#e2e8f0;">تاريخ اليوم:</label>' +
+        '    <input type="date" class="mexp-day-date" value="' + escH(defDate) + '" onchange="mexpUpdateDayHeader(this)" style="padding:5px 12px; border-radius:8px; border:1px solid #475569; background:#0f172a; color:#fff; font-weight:800; font-size:13px; outline:none; cursor:pointer;">' +
+        '    <span class="mexp-day-name-badge" style="background:rgba(201,162,39,0.2); color:#fbbf24; border:1px solid rgba(251,191,36,0.35); padding:3px 12px; border-radius:20px; font-size:12px; font-weight:800;">' + escH(dayName || 'اليوم') + '</span>' +
+        '  </div>' +
+        '  <div style="display:flex; align-items:center; gap:12px; flex-wrap:wrap;">' +
+        '    <div style="font-size:13px; color:#cbd5e1;">إجمالي اليوم: <strong class="mexp-day-total" style="color:#34d399; font-size:14.5px; font-weight:900;">0.00 ج.م</strong></div>' +
+        '    <button type="button" class="bt bt-p" style="padding:6px 14px; font-size:12px; font-weight:800; border-radius:8px;" onclick="mexpAddDayItem(this)">➕ إضافة بند لهذا اليوم</button>' +
+        '    <button type="button" class="bt bt-d" style="padding:6px 12px; font-size:12px; font-weight:800; border-radius:8px; background:rgba(239,68,68,0.2); color:#fca5a5; border-color:rgba(239,68,68,0.4);" onclick="mexpRemoveDay(this)" title="حذف هذا اليوم بالكامل">🗑 حذف اليوم</button>' +
+        '  </div>' +
+        '</div>' +
+        '<div style="overflow-x:auto;">' +
+        '  <table class="dt" style="width:100%; border-collapse:collapse; margin:0;">' +
+        '    <thead><tr>' +
+        '      <th style="width:36px; text-align:center;">م</th>' +
+        '      <th style="width:34%;">اسم الصارف</th>' +
+        '      <th style="width:40%;">النوع / البند</th>' +
+        '      <th style="width:90px; text-align:center;">العدد</th>' +
+        '      <th style="width:130px; text-align:center;">السعر (ج.م)</th>' +
+        '      <th class="np" style="width:40px; text-align:center;"></th>' +
+        '    </tr></thead>' +
+        '    <tbody class="mexp-day-tbody"></tbody>' +
+        '  </table>' +
+        '</div>';
+
+    container.appendChild(dayCard);
+    var tbody = dayCard.querySelector('.mexp-day-tbody');
+
+    if (dayData && Array.isArray(dayData.items) && dayData.items.length > 0) {
+        dayData.items.forEach(function(item) {
+            mexpAddDayItem(tbody, item);
+        });
+    } else {
+        mexpAddDayItem(tbody);
+    }
+
+    mexpCalc();
+    mexpUpdateSpenderSuggestions();
 }
 
-function mexpAddRow(row){
-    var tbody = document.getElementById('mexp-tbody');
-    if(!tbody) return;
+function mexpAddDayItem(btnOrTbody, itemData) {
+    var tbody = null;
+    if (btnOrTbody && btnOrTbody.tagName === 'TBODY') {
+        tbody = btnOrTbody;
+    } else if (btnOrTbody) {
+        var card = btnOrTbody.closest('.mexp-day-card');
+        if (card) tbody = card.querySelector('.mexp-day-tbody');
+    }
+    if (!tbody) return;
+
     var tr = document.createElement('tr');
     tr.style.height = '34px';
-    var qtyVal = (row && row.qty !== undefined && row.qty !== null && row.qty !== '') ? String(row.qty) : '';
-    var priceVal = (row && row.price !== undefined && row.price !== null && row.price !== '') ? String(row.price) : '';
-    var dateVal = (row && row.date) ? row.date : mexpGetLastDate();
+    var qtyVal = (itemData && itemData.qty !== undefined && itemData.qty !== null && itemData.qty !== '') ? String(itemData.qty) : '';
+    var priceVal = (itemData && itemData.price !== undefined && itemData.price !== null && itemData.price !== '') ? String(itemData.price) : '';
 
     tr.innerHTML =
         '<td class="mexp-idx" style="font-weight:bold; font-size:11px; text-align:center;">' + (tbody.children.length + 1) + '</td>' +
-        '<td><input type="text" class="mexp-spender" list="mexp-spenders-list" placeholder="اسم الصارف..." value="' + escH(row && row.spender || '') + '" oninput="mexpUpdateSpenderSuggestions()"></td>' +
-        '<td><input type="text" class="mexp-cat" list="mexp-cats-list" placeholder="النوع / البند..." value="' + escH(row && row.cat || '') + '"></td>' +
+        '<td><input type="text" class="mexp-spender" list="mexp-spenders-list" placeholder="اسم الصارف..." value="' + escH(itemData && itemData.spender || '') + '" oninput="mexpUpdateSpenderSuggestions()"></td>' +
+        '<td><input type="text" class="mexp-cat" list="mexp-cats-list" placeholder="النوع / البند..." value="' + escH(itemData && itemData.cat || '') + '"></td>' +
         '<td><input type="number" min="1" step="1" class="mexp-qty" style="text-align:center; font-weight:700;" placeholder="1" value="' + escH(qtyVal) + '" oninput="mexpCalc()"></td>' +
         '<td><input type="number" step="0.01" min="0" class="mexp-price" style="text-align:center; font-weight:700;" placeholder="0.00" value="' + escH(priceVal) + '" oninput="mexpCalc()"></td>' +
-        '<td><input type="date" class="mexp-date" style="font-weight:600; text-align:center;" value="' + escH(dateVal) + '" title="تاريخ اليوم (يُورث تلقائياً دون الحاجة لإعادة كتابته كل مرة)"></td>' +
-        '<td class="np" style="text-align:center"><button type="button" class="bt bt-d" style="padding:3px 7px;font-size:11px;border-radius:4px;" onclick="mexpDelRow(this)" title="حذف السطر">✕</button></td>';
+        '<td class="np" style="text-align:center"><button type="button" class="bt bt-d" style="padding:3px 7px;font-size:11px;border-radius:4px;" onclick="mexpDelRow(this)" title="حذف هذا البند">✕</button></td>';
+
     tbody.appendChild(tr);
+    mexpCalc();
     mexpUpdateSpenderSuggestions();
+}
+
+function mexpUpdateDayHeader(dateInp) {
+    if (!dateInp) return;
+    var card = dateInp.closest('.mexp-day-card');
+    if (!card) return;
+    var badge = card.querySelector('.mexp-day-name-badge');
+    if (badge) badge.innerText = mexpGetDayName(dateInp.value) || 'اليوم';
+}
+
+function mexpRemoveDay(btn) {
+    var card = btn.closest('.mexp-day-card');
+    if (card) {
+        var dateInp = card.querySelector('.mexp-day-date');
+        var dStr = dateInp ? dateInp.value : '';
+        if (confirm('هل أنت متأكد من حذف يوم (' + (dStr || '') + ') بكافة بنوده ومصروفاته؟')) {
+            card.remove();
+            mexpCalc();
+            mexpUpdateSpenderSuggestions();
+        }
+    }
 }
 
 function mexpDelRow(btn){
     var tr = btn.closest('tr');
+    var tbody = tr ? tr.closest('tbody') : null;
     if(tr) tr.remove();
-    mexpReindex();
+    if(tbody) mexpReindex(tbody);
     mexpCalc();
     mexpUpdateSpenderSuggestions();
 }
 
-function mexpReindex(){
-    document.querySelectorAll('#mexp-tbody tr').forEach(function(tr, i){
+function mexpReindex(tbody){
+    if(!tbody) return;
+    tbody.querySelectorAll('tr').forEach(function(tr, i){
         var idxEl = tr.querySelector('.mexp-idx');
         if(idxEl) idxEl.innerText = i + 1;
     });
 }
 
 function mexpCalc(){
-    var total = 0;
-    document.querySelectorAll('#mexp-tbody tr').forEach(function(tr){
-        var qInp = tr.querySelector('.mexp-qty');
-        var pInp = tr.querySelector('.mexp-price');
-        var q = parseFloat(qInp && qInp.value ? qInp.value : '1');
-        if (isNaN(q) || q <= 0) q = 1;
-        var p = parseFloat(pInp && pInp.value ? pInp.value : '0');
-        if (!isNaN(p) && p > 0) {
-            total += (q * p);
-        }
+    var grandTotal = 0;
+    var daysCount = 0;
+
+    document.querySelectorAll('.mexp-day-card').forEach(function(card){
+        daysCount++;
+        var dayTotal = 0;
+        card.querySelectorAll('.mexp-day-tbody tr').forEach(function(tr){
+            var qInp = tr.querySelector('.mexp-qty');
+            var pInp = tr.querySelector('.mexp-price');
+            var q = parseFloat(qInp && qInp.value ? qInp.value : '1');
+            if (isNaN(q) || q <= 0) q = 1;
+            var p = parseFloat(pInp && pInp.value ? pInp.value : '0');
+            if (!isNaN(p) && p > 0) {
+                dayTotal += (q * p);
+            }
+        });
+        var dayTotalEl = card.querySelector('.mexp-day-total');
+        if (dayTotalEl) dayTotalEl.innerText = fmtMoney(dayTotal);
+        grandTotal += dayTotal;
     });
-    var tc = document.getElementById('mexp-total-cell'); if(tc) tc.innerText = fmtMoney(total);
+
+    var gt = document.getElementById('mexp-grand-total');
+    if(gt) gt.innerText = fmtMoney(grandTotal);
+
+    var dc = document.getElementById('mexp-days-count');
+    if(dc) dc.innerText = daysCount + ' يوم';
 }
 
 function mexpUpdateSpenderSuggestions() {
@@ -4611,20 +4784,17 @@ function mexpUpdateSpenderSuggestions() {
     if (!datalist) return;
     var namesSet = new Set();
 
-    // 1. Existing rows in current sheet
-    document.querySelectorAll('#mexp-tbody .mexp-spender').forEach(function(inp) {
+    document.querySelectorAll('.mexp-day-tbody .mexp-spender').forEach(function(inp) {
         var v = (inp.value || '').trim();
         if (v && v.length >= 2) namesSet.add(v);
     });
 
-    // 2. Staff names
     if (window._staffEmpCache && Array.isArray(window._staffEmpCache)) {
         window._staffEmpCache.forEach(function(e) {
             if (e.name) namesSet.add(e.name.trim());
         });
     }
 
-    // 3. Cached historical spenders in localStorage
     try {
         var hist = JSON.parse(localStorage.getItem('tg_mexp_spenders_history') || '[]');
         if (Array.isArray(hist)) {
@@ -4644,33 +4814,45 @@ function mexpSave(){
     var monthVal = mi && mi.value ? mi.value : '';
     if (!monthVal) return;
 
-    var rows = [];
+    var days = [];
     var spendersSet = new Set();
-    document.querySelectorAll('#mexp-tbody tr').forEach(function(tr){
-        var spenderInp = tr.querySelector('.mexp-spender');
-        var catInp = tr.querySelector('.mexp-cat');
-        var qtyInp = tr.querySelector('.mexp-qty');
-        var priceInp = tr.querySelector('.mexp-price');
-        var amtInp = tr.querySelector('.mexp-amt');
-        var dateInp = tr.querySelector('.mexp-date');
 
-        var spender = spenderInp ? spenderInp.value.trim() : '';
-        var cat = catInp ? catInp.value.trim() : '';
-        var qty = qtyInp ? qtyInp.value.trim() : '';
-        var price = priceInp ? priceInp.value.trim() : '';
-        var amt = amtInp ? amtInp.value.trim() : '';
-        var date = dateInp ? dateInp.value.trim() : '';
+    document.querySelectorAll('.mexp-day-card').forEach(function(card){
+        var dateInp = card.querySelector('.mexp-day-date');
+        var dateVal = dateInp ? dateInp.value : '';
+        var items = [];
 
-        if(spender || cat || price || amt || date){
-            rows.push({spender: spender, cat: cat, qty: qty || '1', price: price, amt: amt, date: date});
-            if (spender) spendersSet.add(spender);
+        card.querySelectorAll('.mexp-day-tbody tr').forEach(function(tr){
+            var spenderInp = tr.querySelector('.mexp-spender');
+            var catInp = tr.querySelector('.mexp-cat');
+            var qtyInp = tr.querySelector('.mexp-qty');
+            var priceInp = tr.querySelector('.mexp-price');
+
+            var spender = spenderInp ? spenderInp.value.trim() : '';
+            var cat = catInp ? catInp.value.trim() : '';
+            var qty = qtyInp ? qtyInp.value.trim() : '';
+            var price = priceInp ? priceInp.value.trim() : '';
+
+            if (spender || cat || price) {
+                items.push({ spender: spender, cat: cat, qty: qty || '1', price: price });
+                if (spender) spendersSet.add(spender);
+            }
+        });
+
+        if (dateVal || items.length > 0) {
+            days.push({ date: dateVal, items: items });
         }
     });
 
     var storageKey = 'tg_mexp_' + monthVal;
-    localStorage.setItem(storageKey, JSON.stringify(rows));
+    var sheetData = {
+        month: monthVal,
+        days: days,
+        updatedBy: (window.TG_USER && TG_USER.name) ? TG_USER.name : 'الأدمن',
+        updatedAt: new Date().toISOString()
+    };
+    localStorage.setItem(storageKey, JSON.stringify(sheetData));
 
-    // Save spenders history
     try {
         var hist = JSON.parse(localStorage.getItem('tg_mexp_spenders_history') || '[]');
         spendersSet.forEach(function(s){ if (hist.indexOf(s) === -1) hist.push(s); });
@@ -4682,7 +4864,7 @@ function mexpSave(){
     if (typeof db !== 'undefined' && db) {
         db.collection('mexp_sheets').doc(monthVal).set({
             month: monthVal,
-            rows: rows,
+            days: days,
             updatedBy: updatedByName,
             updatedAt: firebase.firestore.FieldValue.serverTimestamp()
         }, { merge: true }).then(function() {
@@ -5527,9 +5709,9 @@ function load(id,c){
     // ── شيت المصروفات الشهري ────────────────────────────────────────────
     else if(id==="mexp"){
         var mexpNum=genDocNum('mexp');
-        h=H('شيت المصروفات الشهري','تسجيل وتوثيق حركة المصروفات النقدية للشركة','MONTHLY EXPENSE SHEET','mexp');
+        h=H('شيت المصروفات الشهري','تسجيل وتوثيق حركة المصروفات النقدية مقسمة بالأيام','MONTHLY EXPENSE SHEET','mexp');
         
-        // Month Selector & Admin Access Control Bar (No top total/count boxes)
+        // Month Selector & Admin Access Control Bar
         h+='<div class="set-sec" style="margin-bottom:14px;background:var(--w);border:1px solid var(--bd);border-radius:12px;padding:14px 18px;box-shadow:var(--sh-sm);">' +
            '  <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:14px;">' +
            '    <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;">' +
@@ -5549,6 +5731,24 @@ function load(id,c){
            '  </div>' +
            '</div>';
 
+        // Summary Badges & Action Buttons
+        h+='<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;flex-wrap:wrap;gap:12px;">' +
+           '  <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;">' +
+           '    <div style="background:var(--nv);color:#fff;padding:8px 16px;border-radius:10px;font-size:13px;font-weight:800;display:flex;align-items:center;gap:8px;box-shadow:var(--sh-sm);">' +
+           '      <span>💰 إجمالي مصروفات الشهر:</span> <span id="mexp-grand-total" style="color:#34d399;font-size:15px;font-weight:900;">0.00 ج.م</span>' +
+           '    </div>' +
+           '    <div style="background:var(--bg2);color:var(--tx);border:1px solid var(--bd);padding:8px 14px;border-radius:10px;font-size:12.5px;font-weight:700;">' +
+           '      <span>📅 الأيام المسجلة:</span> <strong id="mexp-days-count" style="color:var(--nv);">0 يوم</strong>' +
+           '    </div>' +
+           '  </div>' +
+           '  <div class="np" style="display:flex;gap:8px;flex-wrap:wrap;">' +
+           '    <button type="button" class="bt bt-p" style="font-weight:900;padding:8px 16px;" onclick="mexpAddNewDay()">➕ إضافة يوم جديد (📅)</button>' +
+           '    <button type="button" class="bt bt-o" style="font-weight:800;" onclick="mexpSave()">💾 حفظ ومزامنة الشيت</button>' +
+           '    <button type="button" class="bt bt-g" style="font-weight:800;" onclick="mexpPrint()">🖨 طباعة الشيت / PDF</button>' +
+           '    <button type="button" class="bt bt-o" style="font-weight:800;" onclick="mexpLoad(true)" title="تحديث البيانات من السيرفر">🔄 تحديث</button>' +
+           '  </div>' +
+           '</div>';
+
         h+='<datalist id="mexp-spenders-list"></datalist>';
         h+='<datalist id="mexp-cats-list">' +
            '  <option value="بوفيه ومشروبات ضيافة">' +
@@ -5561,30 +5761,8 @@ function load(id,c){
            '  <option value="مستلزمات طباعة وتجهيز">' +
            '</datalist>';
 
-        h+='<div class="np" style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;flex-wrap:wrap;gap:8px">' +
-           '  <div style="display:flex;gap:8px;flex-wrap:wrap;">' +
-           '    <button type="button" class="bt bt-p" style="font-weight:800;" onclick="mexpAddRow()">➕ إضافة سطر</button>' +
-           '    <button type="button" class="bt bt-o" style="font-weight:800;" onclick="mexpSave()">💾 حفظ ومزامنة الشيت</button>' +
-           '    <button type="button" class="bt bt-g" style="font-weight:800;" onclick="mexpPrint()">🖨 طباعة الشيت / PDF</button>' +
-           '    <button type="button" class="bt bt-o" style="font-weight:800;" onclick="mexpLoad(true)" title="تحديث البيانات من السيرفر">🔄 تحديث</button>' +
-           '  </div>' +
-           '</div>';
-
-        h+='<div style="overflow-x:auto;">' +
-           '<table class="dt" id="mexp-table" style="width:100%; border-collapse:collapse;">'+
-           '<thead><tr>'+
-           '<th style="width:36px;text-align:center;">م</th>'+
-           '<th style="width:28%;">اسم الصارف</th>'+
-           '<th style="width:34%;">النوع / البند</th>'+
-           '<th style="width:90px;text-align:center;">العدد</th>'+
-           '<th style="width:130px;text-align:center;">السعر (ج.م)</th>'+
-           '<th style="width:135px;text-align:center;">التاريخ</th>'+
-           '<th class="np" style="width:36px;text-align:center;"></th>'+
-           '</tr></thead>'+
-           '<tbody id="mexp-tbody"></tbody>'+
-           '<tfoot><tr><td colspan="4" style="text-align:left;font-weight:800;background:var(--bg2,#edf2f7);padding:8px 12px;font-size:13px;">إجمالي المصروفات الكلي</td><td id="mexp-total-cell" style="font-weight:900;color:var(--nv);background:var(--bg2,#edf2f7);font-size:14px;text-align:center;">0.00 ج.م</td><td colspan="2" style="background:var(--bg2,#edf2f7)"></td></tr></tfoot>'+
-           '</table>' +
-           '</div>';
+        // Days Container
+        h+='<div id="mexp-days-container"></div>';
 
         h+=SC('٢','الاعتماد والتوقيعات');
         h+=SG3('المسؤول عن الصرف / أمين الصندوق','تحرير وتوثيق البيانات',

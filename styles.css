@@ -4812,71 +4812,75 @@ body.dark-mode .tg-expand-btn:hover {
 }
 
 /* ==========================================================================
-   MONTHLY EXPENSE TABLE (MEXP) - PURE WHITE FLAT GRID & ZERO INPUT BOXES
+   MONTHLY EXPENSE TABLE (MEXP) - DAILY GROUPED BLOCKS & PRINT STYLING
    ========================================================================== */
-#mexp-table {
+.mexp-day-card {
+  border: 1.5px solid var(--bd) !important;
+  border-radius: 12px !important;
+  background: var(--w) !important;
+  margin-bottom: 20px !important;
+  page-break-inside: avoid !important;
+}
+
+.mexp-day-card table {
   border-collapse: collapse !important;
   width: 100% !important;
-  border: 1.5px solid #0f172a !important;
+  margin: 0 !important;
 }
 
-#mexp-table th {
-  background-color: #0f172a !important;
+.mexp-day-card th {
+  background-color: #1e293b !important;
   color: #ffffff !important;
   border: 1px solid #334155 !important;
-  padding: 8px 6px !important;
-  font-size: 11px !important;
+  padding: 8px 8px !important;
+  font-size: 11.5px !important;
+  font-weight: 800 !important;
 }
 
-#mexp-table tr,
-#mexp-table tbody tr,
-#mexp-table tr:nth-child(even),
-#mexp-table tr:nth-child(odd) {
-  background: #ffffff !important;
-  background-color: #ffffff !important;
+.mexp-day-card td {
+  background: var(--w) !important;
+  border: 1px solid var(--bd) !important;
+  padding: 3px 6px !important;
+  height: 34px !important;
 }
 
-#mexp-table td {
-  background: #ffffff !important;
-  background-color: #ffffff !important;
-  border: 1px solid #cbd5e1 !important;
-  padding: 3px 4px !important;
-  height: 32px !important;
-}
-
-#mexp-table td input,
-#mexp-table input {
+.mexp-day-card td input {
   background: transparent !important;
-  background-color: transparent !important;
   border: none !important;
   outline: none !important;
   box-shadow: none !important;
-  border-radius: 0 !important;
-  -webkit-appearance: none !important;
-  appearance: none !important;
+  border-radius: 4px !important;
   color: var(--tx) !important;
   width: 100% !important;
   height: 100% !important;
-  padding: 2px 4px !important;
-  font-size: 11.5px !important;
+  padding: 4px 6px !important;
+  font-size: 12px !important;
 }
 
-#mexp-table input:-webkit-autofill,
-#mexp-table input:-webkit-autofill:hover, 
-#mexp-table input:-webkit-autofill:focus {
-  -webkit-box-shadow: 0 0 0px 1000px #ffffff inset !important;
-  -webkit-text-fill-color: var(--tx) !important;
+.mexp-day-card td input:focus {
+  background: rgba(30, 41, 59, 0.05) !important;
 }
 
 @media print {
-  #mexp-table,
-  #mexp-table tr,
-  #mexp-table tbody tr,
-  #mexp-table td {
+  .mexp-day-card {
+    border: 1.5px solid #334155 !important;
+    margin-bottom: 16px !important;
+    page-break-inside: avoid !important;
+  }
+  .mexp-day-card th {
+    background-color: #0f172a !important;
+    color: #ffffff !important;
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+  }
+  .mexp-day-card td {
     background: #ffffff !important;
-    background-color: #ffffff !important;
     border-color: #64748b !important;
   }
+  .np {
+    display: none !important;
+  }
+}
 
   #mexp-table input {
     border: none !important;

@@ -67,7 +67,7 @@
     <link
         href="https://fonts.googleapis.com/css2?family=Alexandria:wght@300;400;500;600;700;800;900&family=Cairo:wght@400;600;700;800;900&family=Tajawal:wght@400;500;700;800&family=Inter:wght@400;500;600;700&display=swap"
         rel="stylesheet">
-    <link rel="stylesheet" href="styles.css?v=1788333861">
+    <link rel="stylesheet" href="styles.css?v=1788334179">
     <link rel="manifest" href="manifest.json">
     <link rel="icon" type="image/png" sizes="192x192" href="icon-192.png">
     <link rel="apple-touch-icon" href="icon-192.png">
@@ -75,10 +75,10 @@
     <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-storage-compat.js"></script>
-    <script src="firebase-config.js?v=1788333861"></script>
-    <script src="auth.js?v=1788333861"></script>
-    <script src="app.js?v=1788333861"></script>
-    <script src="formsend.js?v=1788333861"></script>
+    <script src="firebase-config.js?v=1788334179"></script>
+    <script src="auth.js?v=1788334179"></script>
+    <script src="app.js?v=1788334179"></script>
+    <script src="formsend.js?v=1788334179"></script>
     <script>
         (function () {
             const theme = localStorage.getItem('tg-theme') || 'light';
@@ -3544,8 +3544,8 @@
         تطوير وتصميم: أبانوب فايز</div>
     <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
-    <script src="theme.js?v=1788333861"></script>
-    <script src="pwa-install.js?v=1788333861"></script>
+    <script src="theme.js?v=1788334179"></script>
+    <script src="pwa-install.js?v=1788334179"></script>
 
 
     <!-- Incoming Meeting Call Modal -->
@@ -3899,177 +3899,17 @@
             container.innerHTML = bannerHTML;
         }
 
-        // ── تحميل وعرض إعلانات وتكليفات الإدارة الحقيقية في بوابة الموظف ──
-        function loadEmpAnnouncements() {
-            var box = document.getElementById('empAnnouncementsList');
-            var panel = document.getElementById('empAnnouncementsPanel');
-            if (!box || !panel) return;
-            var myUid = (typeof TG_USER !== 'undefined' && TG_USER) ? TG_USER.uid : '';
-
-            var baselineAnnouncements = [
-                {
-                    id: 'admin_ann_delay_2026_08_26',
-                    title: 'تأخير موعد الحضور',
-                    content: 'الحضور الاربعاء 2026-8-26 الساعة 12:00 ظهرا',
-                    audience: 'all',
-                    createdBy: 'ابانوب',
-                    createdByRole: 'أدمن',
-                    date: '2026-08-25',
-                    createdAt: new Date('2026-08-25T14:30:00')
-                }
-            ];
-
-            function annCard(data, isPrivate) {
-                var accentBorder = isPrivate ? '#d97706' : '#0284c7';
-                var audienceBadge = isPrivate 
-                    ? '<span style="background:rgba(245,158,11,0.12); color:#b45309; border:1px solid rgba(245,158,11,0.25); padding:2px 10px; border-radius:20px; font-size:11px; font-weight:800;">👤 خاص بك</span>' 
-                    : '<span style="background:rgba(2,132,199,0.12); color:#0369a1; border:1px solid rgba(2,132,199,0.25); padding:2px 10px; border-radius:20px; font-size:11px; font-weight:800;">📢 عام لكل الموظفين</span>';
-                
-                var h = '<div style="background:var(--w); border:1px solid var(--bd); border-right:4px solid ' + accentBorder + '; border-radius:12px; padding:16px 20px; margin-bottom:12px; box-shadow:0 1px 4px rgba(0,0,0,0.03); direction:rtl;">';
-                h += '<div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px; gap:8px; flex-wrap:wrap;">';
-                h += '  <div style="display:flex; align-items:center; gap:8px;">';
-                h += '    <span style="font-size:16px;">📢</span>';
-                h += '    <div style="font-size:15px; font-weight:800; color:var(--tx);">' + esc(data.title) + '</div>';
-                h += '  </div>';
-                h += '  <div>' + audienceBadge + '</div>';
-                h += '</div>';
-                h += '<div style="font-size:13px; line-height:1.75; color:var(--tx); white-space:pre-wrap; font-weight:600;">' + esc(data.content) + '</div>';
-                h += '<div style="display:flex; justify-content:space-between; align-items:center; margin-top:8px; border-top:1px dashed var(--bd); padding-top:6px; font-size:11px; color:var(--tx3); font-weight:600;">';
-                h += '  <div>👤 ' + esc(data.createdBy) + (data.createdByRole ? ' (' + esc(data.createdByRole) + ')' : '') + '</div>';
-                h += '  <div>📅 ' + esc(data.date || '') + '</div>';
-                h += '</div>';
-                h += '</div>';
-                return h;
-            }
-
-            function renderAnnList(allList) {
-                if (!allList || !allList.length) {
-                    allList = baselineAnnouncements;
-                }
-
-                allList.sort(function(a, b) {
-                    var tA = a.createdAt && a.createdAt.seconds ? a.createdAt.seconds*1000 : (a.createdAt ? new Date(a.createdAt).getTime() : 0);
-                    var tB = b.createdAt && b.createdAt.seconds ? b.createdAt.seconds*1000 : (b.createdAt ? new Date(b.createdAt).getTime() : 0);
-                    return tB - tA;
-                });
-
-                var publicOnes = [];
-                var privateOnes = [];
-                allList.forEach(function(data) {
-                    if (data.audience === 'private') {
-                        if (data.targetUid === myUid) privateOnes.push(data);
-                    } else {
-                        publicOnes.push(data);
-                    }
-                });
-
-                if (!publicOnes.length && !privateOnes.length) {
-                    panel.style.display = 'none';
-                    box.innerHTML = '';
-                    return;
-                }
-                panel.style.display = 'block';
-
-                var h = '';
-                if (privateOnes.length) {
-                    h += '<div style="font-size:13px;font-weight:800;margin:0 0 8px;opacity:.9;color:#fff;">👤 إعلانات وتكليفات خاصة بك</div>';
-                    privateOnes.forEach(function(data){ h += annCard(data, true); });
-                }
-                if (publicOnes.length) {
-                    if (privateOnes.length) h += '<div style="font-size:13px;font-weight:800;margin:14px 0 8px;opacity:.9;color:#fff;">📢 إعلانات عامة</div>';
-                    publicOnes.forEach(function(data){ h += annCard(data, false); });
-                }
-                box.innerHTML = h;
-            }
-
-            // 1. Initial fast render from cache or baseline
+        function empMexpGetDayName(dateStr) {
+            if (!dateStr) return '';
             try {
-                var cached = JSON.parse(localStorage.getItem('techgo_shared_announcements') || '[]');
-                if (cached && cached.length) {
-                    renderAnnList(cached);
-                } else {
-                    renderAnnList(baselineAnnouncements);
+                var parts = dateStr.split('-');
+                if (parts.length === 3) {
+                    var d = new Date(parseInt(parts[0], 10), parseInt(parts[1], 10) - 1, parseInt(parts[2], 10));
+                    var days = ['الأحد', 'الإثنين', 'الثلاثاء', 'الأربعاء', 'الخميس', 'الجمعة', 'السبت'];
+                    return days[d.getDay()] || '';
                 }
-            } catch(e){
-                renderAnnList(baselineAnnouncements);
-            }
-
-            // 2. Real-time sync with Firestore
-            if (typeof db !== 'undefined' && db && db.collection) {
-                db.collection('announcements').limit(50).onSnapshot(function(snap) {
-                    var list = [];
-                    if (snap && !snap.empty) {
-                        snap.forEach(function(d) {
-                            var data = Object.assign({ id: d.id }, d.data());
-                            if (data.isHidden) return;
-                            list.push(data);
-                        });
-                    }
-
-                    if (!list.length) {
-                        list = baselineAnnouncements;
-                    }
-
-                    try {
-                        localStorage.setItem('techgo_shared_announcements', JSON.stringify(list));
-                    } catch(e){}
-
-                    renderAnnList(list);
-                }, function(err) {
-                    console.warn('Firestore announcements listener notice (using local):', err);
-                    renderAnnList(baselineAnnouncements);
-                });
-            }
-
-            // 3. Listen to cross-tab storage updates
-            window.addEventListener('storage', function(e) {
-                if (e.key === 'techgo_shared_announcements' && e.newValue) {
-                    try {
-                        var updated = JSON.parse(e.newValue);
-                        if (updated && updated.length) renderAnnList(updated);
-                    } catch(err){}
-                }
-            });
-        }
-
-        // Run immediately
-        loadEmpAnnouncements();
-
-        // ══════════════════════════════════════════
-        //  EMPLOYEE MONTHLY EXPENSES (mexp)
-        // ══════════════════════════════════════════
-        function initEmpMexpAccessCheck() {
-            var myUid = (typeof TG_USER !== 'undefined' && TG_USER) ? TG_USER.uid : '';
-            var tab = document.getElementById('empTabMexp');
-            var drawer = document.getElementById('empDrawerMexp');
-
-            function applyAccess(cfg) {
-                var hasAccess = false;
-                if (cfg && cfg.assignedUid && myUid && cfg.assignedUid === myUid) {
-                    hasAccess = true;
-                } else if (typeof TG_USER !== 'undefined' && TG_USER && (TG_USER.role === 'admin' || TG_USER.isAdmin)) {
-                    hasAccess = true;
-                }
-                if (tab) tab.style.display = hasAccess ? 'flex' : 'none';
-                if (drawer) drawer.style.display = hasAccess ? 'flex' : 'none';
-            }
-
-            // Check cached config
-            try {
-                var cachedCfg = JSON.parse(localStorage.getItem('tg_mexp_config') || '{}');
-                applyAccess(cachedCfg);
             } catch(e){}
-
-            // Check Firestore config in real-time
-            if (typeof db !== 'undefined' && db && db.collection) {
-                db.collection('system_settings').doc('mexp_config').onSnapshot(function(doc) {
-                    if (doc.exists) {
-                        var cfg = doc.data() || {};
-                        localStorage.setItem('tg_mexp_config', JSON.stringify(cfg));
-                        applyAccess(cfg);
-                    }
-                }, function(e){});
-            }
+            return '';
         }
 
         window.empLoadMexpPage = function(container) {
@@ -4086,7 +3926,7 @@
                 '      <span>💵 شيت المصروفات الشهري</span>' +
                 '      <span style="font-size:11px;background:rgba(16,185,129,0.12);color:#10b981;padding:2px 8px;border-radius:20px;font-weight:800;">موظف معتمد</span>' +
                 '    </div>' +
-                '    <div style="font-size:12px;color:var(--tx3);margin-top:2px;">تسجيل وتوثيق حركة المصروفات النقدية للشركة (تزامن فوري مع الإدارة)</div>' +
+                '    <div style="font-size:12px;color:var(--tx3);margin-top:2px;">تسجيل وتوثيق حركة المصروفات النقدية مقسمة بالأيام (تزامن فوري مع الإدارة)</div>' +
                 '  </div>' +
                 '  <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;">' +
                 '    <label style="font-size:12.5px;font-weight:800;color:var(--tx);">📅 الشهر:</label>' +
@@ -4098,8 +3938,24 @@
                 '</div>' +
                 '</div>';
 
+            h += '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;flex-wrap:wrap;gap:12px;">' +
+                '  <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;">' +
+                '    <div style="background:var(--nv);color:#fff;padding:8px 16px;border-radius:10px;font-size:13px;font-weight:800;display:flex;align-items:center;gap:8px;box-shadow:var(--sh-sm);">' +
+                '      <span>💰 إجمالي مصروفات الشهر:</span> <span id="emp-mexp-grand-total" style="color:#34d399;font-size:15px;font-weight:900;">0.00 ج.م</span>' +
+                '    </div>' +
+                '    <div style="background:var(--bg2);color:var(--tx);border:1px solid var(--bd);padding:8px 14px;border-radius:10px;font-size:12.5px;font-weight:700;">' +
+                '      <span>📅 الأيام المسجلة:</span> <strong id="emp-mexp-days-count" style="color:var(--nv);">0 يوم</strong>' +
+                '    </div>' +
+                '  </div>' +
+                '  <div class="np" style="display:flex;gap:8px;flex-wrap:wrap;">' +
+                '    <button type="button" class="bt bt-p" style="font-weight:900;padding:8px 16px;" onclick="empMexpAddNewDay()">➕ إضافة يوم جديد (📅)</button>' +
+                '    <button type="button" class="bt bt-o" style="font-weight:800;" onclick="empMexpSaveData()">💾 حفظ ومزامنة الشيت</button>' +
+                '    <button type="button" class="bt bt-o" style="font-weight:800;" onclick="empMexpLoadData(true)" title="تحديث من السيرفر">🔄 تحديث</button>' +
+                '  </div>' +
+                '</div>';
+
             h += '<datalist id="emp-mexp-spenders-list"></datalist>';
-            h += '<datalist id="emp-mexp-cats-list">' +
+            h += '<datalist id="emp-cats-list">' +
                 '  <option value="بوفيه ومشروبات ضيافة">' +
                 '  <option value="أدوات ومستلزمات مكتبية">' +
                 '  <option value="انتقالات ومواصلات عمل">' +
@@ -4110,153 +3966,273 @@
                 '  <option value="مستلزمات طباعة وتجهيز">' +
                 '</datalist>';
 
-            h += '<div class="np" style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;flex-wrap:wrap;gap:8px">' +
-                '  <div style="display:flex;gap:8px;flex-wrap:wrap;">' +
-                '    <button type="button" class="bt bt-p" style="font-weight:800;" onclick="empMexpAddRow()">➕ إضافة سطر</button>' +
-                '    <button type="button" class="bt bt-o" style="font-weight:800;" onclick="empMexpSaveData()">💾 حفظ ومزامنة الشيت</button>' +
-                '    <button type="button" class="bt bt-o" style="font-weight:800;" onclick="empMexpLoadData(true)" title="تحديث من السيرفر">🔄 تحديث</button>' +
-                '  </div>' +
-                '</div>';
-
-            h += '<div style="overflow-x:auto;">' +
-                '<table class="dt" id="mexp-table" style="width:100%; border-collapse:collapse;">' +
-                '<thead><tr>' +
-                '<th style="width:36px;text-align:center;">م</th>' +
-                '<th style="width:28%;">اسم الصارف</th>' +
-                '<th style="width:34%;">النوع / البند</th>' +
-                '<th style="width:90px;text-align:center;">العدد</th>' +
-                '<th style="width:130px;text-align:center;">السعر (ج.م)</th>' +
-                '<th style="width:135px;text-align:center;">التاريخ</th>' +
-                '<th class="np" style="width:36px;text-align:center;"></th>' +
-                '</tr></thead>' +
-                '<tbody id="emp-mexp-tbody"></tbody>' +
-                '<tfoot><tr><td colspan="4" style="text-align:left;font-weight:800;background:var(--bg2,#edf2f7);padding:8px 12px;font-size:13px;">إجمالي المصروفات الكلي</td><td id="emp-mexp-total-cell" style="font-weight:900;color:var(--nv);background:var(--bg2,#edf2f7);font-size:14px;text-align:center;">0.00 ج.م</td><td colspan="2" style="background:var(--bg2,#edf2f7)"></td></tr></tfoot>' +
-                '</table>' +
-                '</div>';
+            h += '<div id="emp-mexp-days-container"></div>';
 
             container.innerHTML = h;
             empMexpLoadData();
         };
 
         window.empMexpLoadData = function(showToast) {
-            var tbody = document.getElementById('emp-mexp-tbody');
-            if (!tbody) return;
+            var container = document.getElementById('emp-mexp-days-container');
+            if (!container) return;
             var mi = document.getElementById('emp-mexp-month');
             var monthVal = mi && mi.value ? mi.value : '';
             if (!monthVal) return;
 
-            tbody.innerHTML = '<tr><td colspan="8" style="text-align:center;padding:24px;color:var(--tx3);font-weight:700;">⏳ جارٍ تحميل بيانات شهر ' + esc(monthVal) + '...</td></tr>';
+            container.innerHTML = '<div style="text-align:center;padding:30px;color:var(--tx3);font-weight:700;">⏳ جارٍ تحميل بيانات شهر ' + esc(monthVal) + '...</div>';
 
             var storageKey = 'tg_mexp_' + monthVal;
             var localRaw = localStorage.getItem(storageKey);
-            var localRows = [];
-            try { localRows = localRaw ? JSON.parse(localRaw) : []; } catch(e){}
+            var localData = null;
+            try { localData = localRaw ? JSON.parse(localRaw) : null; } catch(e){}
 
             if (typeof db !== 'undefined' && db) {
                 db.collection('mexp_sheets').doc(monthVal).get().then(function(doc) {
-                    var rows = [];
+                    var days = [];
                     var syncInfo = document.getElementById('empMexpSyncInfo');
                     if (doc.exists) {
                         var data = doc.data() || {};
-                        rows = Array.isArray(data.rows) ? data.rows : [];
-                        localStorage.setItem(storageKey, JSON.stringify(rows));
+                        localStorage.setItem(storageKey, JSON.stringify(data));
                         if (syncInfo && data.updatedBy) {
                             var timeStr = data.updatedAt && data.updatedAt.toDate ? data.updatedAt.toDate().toLocaleTimeString('ar-EG', {hour:'2-digit', minute:'2-digit', day:'numeric', month:'numeric'}) : '';
                             syncInfo.innerHTML = '<span>✅ آخر تحديث تم بواسطة: <b>' + esc(data.updatedBy) + '</b> ' + (timeStr ? '(' + timeStr + ')' : '') + '</span>';
                         }
-                    } else {
-                        rows = localRows;
+                        days = empNormalizeDaysData(data);
+                    } else if (localData) {
+                        days = empNormalizeDaysData(localData);
                     }
-                    empRenderMexpRows(rows);
+                    empMexpRenderDays(days);
                     if (showToast && typeof tgShowToast === 'function') tgShowToast('تم تحديث الشيت من السيرفر بنجاح', 'success');
                 }).catch(function(err) {
                     console.error('empMexpLoadData err:', err);
-                    empRenderMexpRows(localRows);
+                    empMexpRenderDays(empNormalizeDaysData(localData));
                 });
             } else {
-                empRenderMexpRows(localRows);
+                empMexpRenderDays(empNormalizeDaysData(localData));
             }
         };
 
-        function empRenderMexpRows(rows) {
-            var tbody = document.getElementById('emp-mexp-tbody');
-            if (!tbody) return;
-            tbody.innerHTML = '';
-            if (!rows || rows.length === 0) {
-                empMexpAddRow();
+        function empNormalizeDaysData(raw) {
+            if (!raw) return [];
+            if (Array.isArray(raw.days)) return raw.days;
+            if (Array.isArray(raw)) {
+                if (raw.length > 0 && raw[0].items) return raw;
+                var map = {};
+                raw.forEach(function(r) {
+                    var dt = r.date || '';
+                    if (!map[dt]) map[dt] = [];
+                    map[dt].push({ spender: r.spender || '', cat: r.cat || '', qty: r.qty || '1', price: r.price || '' });
+                });
+                var days = [];
+                Object.keys(map).forEach(function(dt) {
+                    days.push({ date: dt, items: map[dt] });
+                });
+                return days;
+            }
+            if (Array.isArray(raw.rows)) {
+                var map = {};
+                raw.rows.forEach(function(r) {
+                    var dt = r.date || '';
+                    if (!map[dt]) map[dt] = [];
+                    map[dt].push({ spender: r.spender || '', cat: r.cat || '', qty: r.qty || '1', price: r.price || '' });
+                });
+                var days = [];
+                Object.keys(map).forEach(function(dt) {
+                    days.push({ date: dt, items: map[dt] });
+                });
+                return days;
+            }
+            return [];
+        }
+
+        function empMexpRenderDays(days) {
+            var container = document.getElementById('emp-mexp-days-container');
+            if (!container) return;
+            container.innerHTML = '';
+
+            if (!days || days.length === 0) {
+                empMexpAddNewDay();
             } else {
-                rows.forEach(function(r){ empMexpAddRow(r); });
+                days.forEach(function(d) {
+                    empMexpAddNewDay(d);
+                });
             }
             empMexpCalc();
             empMexpUpdateSpenderSuggestions();
         }
 
-        function empMexpGetLastDate() {
-            var dateInps = document.querySelectorAll('#emp-mexp-tbody .mexp-date');
-            for (var i = dateInps.length - 1; i >= 0; i--) {
-                if (dateInps[i].value) return dateInps[i].value;
-            }
-            var mi = document.getElementById('emp-mexp-month');
-            var d = new Date();
-            var curMonth = d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0');
-            if (mi && mi.value === curMonth) {
-                return d.toISOString().split('T')[0];
-            } else if (mi && mi.value) {
-                return mi.value + '-01';
-            }
-            return d.toISOString().split('T')[0];
-        }
+        window.empMexpAddNewDay = function(dayData) {
+            var container = document.getElementById('emp-mexp-days-container');
+            if (!container) return;
 
-        window.empMexpAddRow = function(row) {
-            var tbody = document.getElementById('emp-mexp-tbody');
+            var mi = document.getElementById('emp-mexp-month');
+            var monthVal = mi && mi.value ? mi.value : '';
+            var d = new Date();
+            var todayStr = d.toISOString().split('T')[0];
+            var defDate = todayStr;
+
+            if (dayData && dayData.date) {
+                defDate = dayData.date;
+            } else {
+                var existingDates = document.querySelectorAll('#emp-mexp-days-container .mexp-day-date');
+                if (existingDates.length > 0) {
+                    var lastVal = existingDates[existingDates.length - 1].value;
+                    if (lastVal) {
+                        var lastD = new Date(lastVal);
+                        lastD.setDate(lastD.getDate() + 1);
+                        defDate = lastD.toISOString().split('T')[0];
+                    }
+                } else if (monthVal) {
+                    defDate = monthVal + '-01';
+                }
+            }
+
+            var dayName = empMexpGetDayName(defDate);
+            var dayCard = document.createElement('div');
+            dayCard.className = 'mexp-day-card';
+            dayCard.style.cssText = 'background:var(--w); border:1.5px solid var(--bd); border-radius:14px; margin-bottom:20px; overflow:hidden; box-shadow:var(--sh-sm); transition:all 0.2s ease;';
+
+            dayCard.innerHTML =
+                '<div style="background:linear-gradient(135deg, #1e293b, #0f172a); color:#fff; padding:12px 18px; display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:12px;">' +
+                '  <div style="display:flex; align-items:center; gap:10px; flex-wrap:wrap;">' +
+                '    <span style="font-size:18px;">📅</span>' +
+                '    <label style="font-weight:800; font-size:13px; color:#e2e8f0;">تاريخ اليوم:</label>' +
+                '    <input type="date" class="mexp-day-date" value="' + esc(defDate) + '" onchange="empMexpUpdateDayHeader(this)" style="padding:5px 12px; border-radius:8px; border:1px solid #475569; background:#0f172a; color:#fff; font-weight:800; font-size:13px; outline:none; cursor:pointer;">' +
+                '    <span class="mexp-day-name-badge" style="background:rgba(201,162,39,0.2); color:#fbbf24; border:1px solid rgba(251,191,36,0.35); padding:3px 12px; border-radius:20px; font-size:12px; font-weight:800;">' + esc(dayName || 'اليوم') + '</span>' +
+                '  </div>' +
+                '  <div style="display:flex; align-items:center; gap:12px; flex-wrap:wrap;">' +
+                '    <div style="font-size:13px; color:#cbd5e1;">إجمالي اليوم: <strong class="mexp-day-total" style="color:#34d399; font-size:14.5px; font-weight:900;">0.00 ج.م</strong></div>' +
+                '    <button type="button" class="bt bt-p" style="padding:6px 14px; font-size:12px; font-weight:800; border-radius:8px;" onclick="empMexpAddDayItem(this)">➕ إضافة بند لهذا اليوم</button>' +
+                '    <button type="button" class="bt bt-d" style="padding:6px 12px; font-size:12px; font-weight:800; border-radius:8px; background:rgba(239,68,68,0.2); color:#fca5a5; border-color:rgba(239,68,68,0.4);" onclick="empMexpRemoveDay(this)" title="حذف هذا اليوم بالكامل">🗑 حذف اليوم</button>' +
+                '  </div>' +
+                '</div>' +
+                '<div style="overflow-x:auto;">' +
+                '  <table class="dt" style="width:100%; border-collapse:collapse; margin:0;">' +
+                '    <thead><tr>' +
+                '      <th style="width:36px; text-align:center;">م</th>' +
+                '      <th style="width:34%;">اسم الصارف</th>' +
+                '      <th style="width:40%;">النوع / البند</th>' +
+                '      <th style="width:90px; text-align:center;">العدد</th>' +
+                '      <th style="width:130px; text-align:center;">السعر (ج.م)</th>' +
+                '      <th class="np" style="width:40px; text-align:center;"></th>' +
+                '    </tr></thead>' +
+                '    <tbody class="mexp-day-tbody"></tbody>' +
+                '  </table>' +
+                '</div>';
+
+            container.appendChild(dayCard);
+            var tbody = dayCard.querySelector('.mexp-day-tbody');
+
+            if (dayData && Array.isArray(dayData.items) && dayData.items.length > 0) {
+                dayData.items.forEach(function(item) {
+                    empMexpAddDayItem(tbody, item);
+                });
+            } else {
+                empMexpAddDayItem(tbody);
+            }
+
+            empMexpCalc();
+            empMexpUpdateSpenderSuggestions();
+        };
+
+        window.empMexpAddDayItem = function(btnOrTbody, itemData) {
+            var tbody = null;
+            if (btnOrTbody && btnOrTbody.tagName === 'TBODY') {
+                tbody = btnOrTbody;
+            } else if (btnOrTbody) {
+                var card = btnOrTbody.closest('.mexp-day-card');
+                if (card) tbody = card.querySelector('.mexp-day-tbody');
+            }
             if (!tbody) return;
+
             var tr = document.createElement('tr');
             tr.style.height = '34px';
-            var qtyVal = (row && row.qty !== undefined && row.qty !== null && row.qty !== '') ? String(row.qty) : '';
-            var priceVal = (row && row.price !== undefined && row.price !== null && row.price !== '') ? String(row.price) : '';
-            var dateVal = (row && row.date) ? row.date : empMexpGetLastDate();
+            var qtyVal = (itemData && itemData.qty !== undefined && itemData.qty !== null && itemData.qty !== '') ? String(itemData.qty) : '';
+            var priceVal = (itemData && itemData.price !== undefined && itemData.price !== null && itemData.price !== '') ? String(itemData.price) : '';
 
             tr.innerHTML =
                 '<td class="mexp-idx" style="font-weight:bold; font-size:11px; text-align:center;">' + (tbody.children.length + 1) + '</td>' +
-                '<td><input type="text" class="mexp-spender" list="emp-mexp-spenders-list" placeholder="اسم الصارف..." value="' + esc(row && row.spender || '') + '" oninput="empMexpUpdateSpenderSuggestions()"></td>' +
-                '<td><input type="text" class="mexp-cat" list="emp-cats-list" placeholder="النوع / البند..." value="' + esc(row && row.cat || '') + '"></td>' +
+                '<td><input type="text" class="mexp-spender" list="emp-mexp-spenders-list" placeholder="اسم الصارف..." value="' + esc(itemData && itemData.spender || '') + '" oninput="empMexpUpdateSpenderSuggestions()"></td>' +
+                '<td><input type="text" class="mexp-cat" list="emp-cats-list" placeholder="النوع / البند..." value="' + esc(itemData && itemData.cat || '') + '"></td>' +
                 '<td><input type="number" min="1" step="1" class="mexp-qty" style="text-align:center; font-weight:700;" placeholder="1" value="' + esc(qtyVal) + '" oninput="empMexpCalc()"></td>' +
                 '<td><input type="number" step="0.01" min="0" class="mexp-price" style="text-align:center; font-weight:700;" placeholder="0.00" value="' + esc(priceVal) + '" oninput="empMexpCalc()"></td>' +
-                '<td><input type="date" class="mexp-date" style="font-weight:600; text-align:center;" value="' + esc(dateVal) + '" title="تاريخ اليوم (يُورث تلقائياً دون الحاجة لإعادة كتابته كل مرة)"></td>' +
-                '<td class="np" style="text-align:center"><button type="button" class="bt bt-d" style="padding:3px 7px;font-size:11px;border-radius:4px;" onclick="empMexpDelRow(this)" title="حذف السطر">✕</button></td>';
+                '<td class="np" style="text-align:center"><button type="button" class="bt bt-d" style="padding:3px 7px;font-size:11px;border-radius:4px;" onclick="empMexpDelRow(this)" title="حذف هذا البند">✕</button></td>';
+
             tbody.appendChild(tr);
+            empMexpCalc();
             empMexpUpdateSpenderSuggestions();
+        };
+
+        window.empMexpUpdateDayHeader = function(dateInp) {
+            if (!dateInp) return;
+            var card = dateInp.closest('.mexp-day-card');
+            if (!card) return;
+            var badge = card.querySelector('.mexp-day-name-badge');
+            if (badge) badge.innerText = empMexpGetDayName(dateInp.value) || 'اليوم';
+        };
+
+        window.empMexpRemoveDay = function(btn) {
+            var card = btn.closest('.mexp-day-card');
+            if (card) {
+                var dateInp = card.querySelector('.mexp-day-date');
+                var dStr = dateInp ? dateInp.value : '';
+                if (confirm('هل أنت متأكد من حذف يوم (' + (dStr || '') + ') بكافة بنوده ومصروفاته؟')) {
+                    card.remove();
+                    empMexpCalc();
+                    empMexpUpdateSpenderSuggestions();
+                }
+            }
         };
 
         window.empMexpDelRow = function(btn) {
             var tr = btn.closest('tr');
-            if(tr) tr.remove();
-            document.querySelectorAll('#emp-mexp-tbody tr').forEach(function(r, i){
-                var idxEl = r.querySelector('.mexp-idx');
-                if(idxEl) idxEl.innerText = i + 1;
-            });
+            var tbody = tr ? tr.closest('tbody') : null;
+            if (tr) tr.remove();
+            if (tbody) {
+                tbody.querySelectorAll('tr').forEach(function(r, i){
+                    var idxEl = r.querySelector('.mexp-idx');
+                    if(idxEl) idxEl.innerText = i + 1;
+                });
+            }
             empMexpCalc();
             empMexpUpdateSpenderSuggestions();
         };
 
         function empMexpCalc() {
-            var total = 0;
-            document.querySelectorAll('#emp-mexp-tbody tr').forEach(function(tr){
-                var qInp = tr.querySelector('.mexp-qty');
-                var pInp = tr.querySelector('.mexp-price');
-                var q = parseFloat(qInp && qInp.value ? qInp.value : '1');
-                if (isNaN(q) || q <= 0) q = 1;
-                var p = parseFloat(pInp && pInp.value ? pInp.value : '0');
-                if (!isNaN(p) && p > 0) {
-                    total += (q * p);
+            var grandTotal = 0;
+            var daysCount = 0;
+
+            document.querySelectorAll('#emp-mexp-days-container .mexp-day-card').forEach(function(card){
+                daysCount++;
+                var dayTotal = 0;
+                card.querySelectorAll('.mexp-day-tbody tr').forEach(function(tr){
+                    var qInp = tr.querySelector('.mexp-qty');
+                    var pInp = tr.querySelector('.mexp-price');
+                    var q = parseFloat(qInp && qInp.value ? qInp.value : '1');
+                    if (isNaN(q) || q <= 0) q = 1;
+                    var p = parseFloat(pInp && pInp.value ? pInp.value : '0');
+                    if (!isNaN(p) && p > 0) {
+                        dayTotal += (q * p);
+                    }
+                });
+                var dayTotalEl = card.querySelector('.mexp-day-total');
+                if (dayTotalEl) {
+                    var p1 = dayTotal.toFixed(2).split('.');
+                    p1[0] = p1[0].replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+                    dayTotalEl.innerText = p1.join('.') + ' ج.م';
                 }
+                grandTotal += dayTotal;
             });
-            var tc = document.getElementById('emp-mexp-total-cell');
-            if(tc) {
-                var parts = total.toFixed(2).split('.');
-                parts[0] = parts[0].replace(/\B(?=(\d{3})+(?!\d))/g, ',');
-                tc.innerText = parts.join('.') + ' ج.م';
+
+            var gt = document.getElementById('emp-mexp-grand-total');
+            if (gt) {
+                var p2 = grandTotal.toFixed(2).split('.');
+                p2[0] = p2[0].replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+                gt.innerText = p2.join('.') + ' ج.م';
             }
+
+            var dc = document.getElementById('emp-mexp-days-count');
+            if (dc) dc.innerText = daysCount + ' يوم';
         }
 
         function empMexpUpdateSpenderSuggestions() {
@@ -4264,7 +4240,7 @@
             if (!datalist) return;
             var namesSet = new Set();
 
-            document.querySelectorAll('#emp-mexp-tbody .mexp-spender').forEach(function(inp) {
+            document.querySelectorAll('#emp-mexp-days-container .mexp-spender').forEach(function(inp) {
                 var v = (inp.value || '').trim();
                 if (v && v.length >= 2) namesSet.add(v);
             });
@@ -4288,31 +4264,44 @@
             var monthVal = mi && mi.value ? mi.value : '';
             if (!monthVal) return;
 
-            var rows = [];
+            var days = [];
             var spendersSet = new Set();
-            document.querySelectorAll('#emp-mexp-tbody tr').forEach(function(tr){
-                var spenderInp = tr.querySelector('.mexp-spender');
-                var catInp = tr.querySelector('.mexp-cat');
-                var qtyInp = tr.querySelector('.mexp-qty');
-                var priceInp = tr.querySelector('.mexp-price');
-                var amtInp = tr.querySelector('.mexp-amt');
-                var dateInp = tr.querySelector('.mexp-date');
 
-                var spender = spenderInp ? spenderInp.value.trim() : '';
-                var cat = catInp ? catInp.value.trim() : '';
-                var qty = qtyInp ? qtyInp.value.trim() : '';
-                var price = priceInp ? priceInp.value.trim() : '';
-                var amt = amtInp ? amtInp.value.trim() : '';
-                var date = dateInp ? dateInp.value.trim() : '';
+            document.querySelectorAll('#emp-mexp-days-container .mexp-day-card').forEach(function(card){
+                var dateInp = card.querySelector('.mexp-day-date');
+                var dateVal = dateInp ? dateInp.value : '';
+                var items = [];
 
-                if(spender || cat || price || amt || date){
-                    rows.push({spender: spender, cat: cat, qty: qty || '1', price: price, amt: amt, date: date});
-                    if (spender) spendersSet.add(spender);
+                card.querySelectorAll('.mexp-day-tbody tr').forEach(function(tr){
+                    var spenderInp = tr.querySelector('.mexp-spender');
+                    var catInp = tr.querySelector('.mexp-cat');
+                    var qtyInp = tr.querySelector('.mexp-qty');
+                    var priceInp = tr.querySelector('.mexp-price');
+
+                    var spender = spenderInp ? spenderInp.value.trim() : '';
+                    var cat = catInp ? catInp.value.trim() : '';
+                    var qty = qtyInp ? qtyInp.value.trim() : '';
+                    var price = priceInp ? priceInp.value.trim() : '';
+
+                    if (spender || cat || price) {
+                        items.push({ spender: spender, cat: cat, qty: qty || '1', price: price });
+                        if (spender) spendersSet.add(spender);
+                    }
+                });
+
+                if (dateVal || items.length > 0) {
+                    days.push({ date: dateVal, items: items });
                 }
             });
 
             var storageKey = 'tg_mexp_' + monthVal;
-            localStorage.setItem(storageKey, JSON.stringify(rows));
+            var sheetData = {
+                month: monthVal,
+                days: days,
+                updatedBy: (typeof TG_USER !== 'undefined' && TG_USER && TG_USER.name) ? TG_USER.name : 'الموظف المسؤول',
+                updatedAt: new Date().toISOString()
+            };
+            localStorage.setItem(storageKey, JSON.stringify(sheetData));
 
             try {
                 var hist = JSON.parse(localStorage.getItem('tg_mexp_spenders_history') || '[]');
@@ -4325,7 +4314,7 @@
             if (typeof db !== 'undefined' && db) {
                 db.collection('mexp_sheets').doc(monthVal).set({
                     month: monthVal,
-                    rows: rows,
+                    days: days,
                     updatedBy: myName,
                     updatedAt: firebase.firestore.FieldValue.serverTimestamp()
                 }, { merge: true }).then(function() {
