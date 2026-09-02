@@ -5481,30 +5481,91 @@ function load(id,c){
 
     // ── مركز طلبات الموظفين الموحد ──────────────────────────────────────────
     else if(id==="allrequests"){
-        h='<div class="SP"><h3>📥 مركز طلبات الموظفين الموحد</h3>';
-        h+='<div class="set-hint">مكان واحد متكامل لمتابعة وتمرير كافة طلبات الموظفين (إجازات، أذونات، التماسات، استقالات، خطابات، شكاوى)، والبت فيها بالموافقة أو الرفض بنقرة واحدة.</div>';
+        h='<div class="SP">';
+        h+='<div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px;margin-bottom:8px">';
+        h+='  <div>';
+        h+='    <h3 style="margin:0;display:flex;align-items:center;gap:8px">📥 مركز طلبات الموظفين الموحد</h3>';
+        h+='    <div class="set-hint" style="margin-top:4px">مكان واحد متكامل لمتابعة وتمرير كافة طلبات الموظفين، والبت فيها مع تصفية ذكية باليوم والتاريخ والنوع والحالة.</div>';
+        h+='  </div>';
+        h+='  <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">';
+        h+='    <button class="bt bt-o" style="padding:6px 14px;font-size:12px;font-weight:700;border-radius:20px" onclick="loadAllRequestsHub()">🔄 تحديث البيانات</button>';
+        h+='    <button class="bt bt-d" style="padding:6px 14px;font-size:12px;font-weight:700;border-radius:20px" onclick="tgDeleteAllRecords(\'requests\', \'الطلبات\', null, null, loadAllRequestsHub)">🗑 حذف السجلات</button>';
+        h+='  </div>';
+        h+='</div>';
+
         h+='<div id="reqHubStatsBar" style="display:flex;gap:12px;margin:16px 0;flex-wrap:wrap"></div>';
 
         var tabSt = window._reqHubStatusTab || 'pending';
-        h+='<div style="display:flex;gap:10px;margin-bottom:16px;flex-wrap:wrap;border-bottom:2px solid var(--bd);padding-bottom:8px" id="reqHubStatusTabs">';
+        h+='<div style="display:flex;gap:10px;margin-bottom:14px;flex-wrap:wrap;border-bottom:2px solid var(--bd);padding-bottom:8px" id="reqHubStatusTabs">';
         h+='<button class="tg-task-tab '+(tabSt==='pending'?'tg-task-tab-active':'')+'" data-status="pending" onclick="tgSetReqHubStatusTab(this, \'pending\')"><span class="tab-label">⏳ المعلقة</span> <span class="tab-count" id="reqhub-cnt-pending">0</span></button>';
         h+='<button class="tg-task-tab '+(tabSt==='all'?'tg-task-tab-active':'')+'" data-status="all" onclick="tgSetReqHubStatusTab(this, \'all\')"><span class="tab-label">📋 كافة الطلبات</span> <span class="tab-count" id="reqhub-cnt-all">0</span></button>';
         h+='<button class="tg-task-tab '+(tabSt==='approved'?'tg-task-tab-active':'')+'" data-status="approved" onclick="tgSetReqHubStatusTab(this, \'approved\')"><span class="tab-label">✅ المقبولة</span> <span class="tab-count" id="reqhub-cnt-approved">0</span></button>';
         h+='<button class="tg-task-tab '+(tabSt==='rejected'?'tg-task-tab-active':'')+'" data-status="rejected" onclick="tgSetReqHubStatusTab(this, \'rejected\')"><span class="tab-label">❌ المرفوضة</span> <span class="tab-count" id="reqhub-cnt-rejected">0</span></button>';
         h+='</div>';
 
-        h+='<div class="staff-toolbar" style="margin-bottom:16px;gap:10px;flex-wrap:wrap">';
-        h+='<input type="text" class="staff-search" id="reqHubSearch" oninput="renderAllRequestsListHub()" placeholder="🔍 ابحث باسم الموظف، نوع الطلب، أو التفاصيل..." style="max-width:320px">';
-        h+='<select id="reqHubTypeFilter" class="global-table-filter" onchange="renderAllRequestsListHub()" style="width:200px">';
-        h+='<option value="all">كل أنواع الطلبات</option>';
-        h+='<option value="leave">طلب إجازة</option>';
-        h+='<option value="perm">إذن حضور / انصراف</option>';
-        h+='<option value="delay">التماس تعديل الحضور</option>';
-        h+='<option value="res">طلب استقالة</option>';
-        h+='<option value="comp">الشكاوى والمقترحات</option>';
-        h+='<option value="other">طلبات أخرى</option>';
-        h+='</select>';
-        h+='<button class="bt bt-d" style="padding:6px 14px;font-size:11px;margin-right:auto" onclick="tgDeleteAllRecords(\'requests\', \'الطلبات\', null, null, loadAllRequestsHub)">🗑 حذف سجلات الطلبات</button>';
+        // ── بطاقة الفلترة المتقدمة والتاريخ ──
+        var curPreset = window._reqHubDatePreset || 'all';
+        h+='<div class="req-hub-filter-card">';
+        h+='  <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;">';
+        h+='    <input type="text" class="staff-search" id="reqHubSearch" oninput="renderAllRequestsListHub()" placeholder="🔍 ابحث باسم الموظف، نوع الطلب، أو التفاصيل..." style="flex:1;min-width:240px;margin:0">';
+        h+='    <select id="reqHubTypeFilter" class="global-table-filter" onchange="renderAllRequestsListHub()" style="width:190px;margin:0">';
+        h+='      <option value="all">كل أنواع الطلبات</option>';
+        h+='      <option value="leave">طلب إجازة</option>';
+        h+='      <option value="perm">إذن حضور / انصراف</option>';
+        h+='      <option value="delay">التماس تعديل الحضور</option>';
+        h+='      <option value="res">طلب استقالة</option>';
+        h+='      <option value="comp">الشكاوى والمقترحات</option>';
+        h+='      <option value="other">طلبات أخرى</option>';
+        h+='    </select>';
+        h+='    <select id="reqHubDateField" class="global-table-filter" onchange="renderAllRequestsListHub()" style="width:190px;margin:0" title="نطاق التاريخ المراد تصفيته">';
+        h+='      <option value="created">🕒 تاريخ تقديم الطلب</option>';
+        h+='      <option value="event">📅 تاريخ سريان الإجازة / الحدث</option>';
+        h+='      <option value="any">🗓️ أي تاريخ مرتبط بالطلب</option>';
+        h+='    </select>';
+        h+='    <button class="bt bt-o" style="padding:7px 14px;font-size:12px;font-weight:700;border-radius:8px" onclick="tgResetReqHubFilters()" title="إعادة ضبط كل الفلاتر والبحث">↺ تفريغ الفلاتر</button>';
+        h+='  </div>';
+
+        // أزرار فترات التاريخ السريعة
+        h+='  <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;border-top:1px dashed var(--bd);padding-top:10px;">';
+        h+='    <span style="font-size:12px;font-weight:800;color:var(--tx2);display:flex;align-items:center;gap:4px;">🗓️ فلترة باليوم والتاريخ:</span>';
+        h+='    <div class="req-date-chips-wrap" id="reqHubDateChips">';
+        h+='      <button type="button" class="req-date-chip '+(curPreset==='all'?'active':'')+'" data-preset="all" onclick="tgSetReqHubDatePreset(\'all\', this)">🌐 كافة التواريخ</button>';
+        h+='      <button type="button" class="req-date-chip '+(curPreset==='today'?'active':'')+'" data-preset="today" onclick="tgSetReqHubDatePreset(\'today\', this)">⚡ اليوم <span class="chip-count" id="reqhub-chip-today-cnt">0</span></button>';
+        h+='      <button type="button" class="req-date-chip '+(curPreset==='yesterday'?'active':'')+'" data-preset="yesterday" onclick="tgSetReqHubDatePreset(\'yesterday\', this)">📅 أمس</button>';
+        h+='      <button type="button" class="req-date-chip '+(curPreset==='week'?'active':'')+'" data-preset="week" onclick="tgSetReqHubDatePreset(\'week\', this)">🗓️ آخر 7 أيام</button>';
+        h+='      <button type="button" class="req-date-chip '+(curPreset==='month'?'active':'')+'" data-preset="month" onclick="tgSetReqHubDatePreset(\'month\', this)">📆 هذا الشهر</button>';
+        h+='      <button type="button" class="req-date-chip '+(curPreset==='prev_month'?'active':'')+'" data-preset="prev_month" onclick="tgSetReqHubDatePreset(\'prev_month\', this)">📆 الشهر السابق</button>';
+        h+='      <button type="button" class="req-date-chip '+(curPreset==='single'?'active':'')+'" data-preset="single" onclick="tgSetReqHubDatePreset(\'single\', this)">🎯 يوم محدد</button>';
+        h+='      <button type="button" class="req-date-chip '+(curPreset==='range'?'active':'')+'" data-preset="range" onclick="tgSetReqHubDatePreset(\'range\', this)">⏳ فترة مخصصة</button>';
+        h+='    </div>';
+        h+='  </div>';
+
+        // محدد اليوم الواحد
+        var todayStr = tgGetDateYMD(new Date());
+        var singleVal = window._reqHubDateSingle || todayStr;
+        h+='  <div id="reqHubDateSingleWrap" style="display:'+(curPreset==='single'?'flex':'none')+';background:var(--bg2);padding:10px 14px;border-radius:8px;align-items:center;gap:12px;flex-wrap:wrap;">';
+        h+='    <label style="font-size:12px;font-weight:800;color:var(--tx);margin:0">🎯 حدد اليوم المطلوب:</label>';
+        h+='    <input type="date" id="reqHubDateSingle" lang="en-GB" value="'+singleVal+'" onchange="tgOnReqHubDateSingleChange(this.value)" style="padding:6px 12px;border-radius:8px;border:1px solid var(--bd);background:var(--w);color:var(--tx);font-weight:700">';
+        h+='    <button type="button" class="bt bt-o" style="padding:4px 10px;font-size:11px;border-radius:6px;font-weight:800;" onclick="tgSetReqHubDateSingleToToday()">اليوم</button>';
+        h+='  </div>';
+
+        // محدد الفترة المخصصة (من - إلى)
+        var fromVal = window._reqHubDateFrom || '';
+        var toVal = window._reqHubDateTo || '';
+        h+='  <div id="reqHubDateRangeWrap" style="display:'+(curPreset==='range'?'flex':'none')+';background:var(--bg2);padding:10px 14px;border-radius:8px;align-items:center;gap:12px;flex-wrap:wrap;">';
+        h+='    <label style="font-size:12px;font-weight:800;color:var(--tx);margin:0">⏳ الفترة المخصصة:</label>';
+        h+='    <div style="display:flex;align-items:center;gap:6px">';
+        h+='      <span style="font-size:11px;color:var(--tx2);font-weight:700">من:</span>';
+        h+='      <input type="date" id="reqHubDateFrom" lang="en-GB" value="'+fromVal+'" onchange="tgOnReqHubDateRangeChange()" style="padding:6px 10px;border-radius:8px;border:1px solid var(--bd);background:var(--w);color:var(--tx);font-weight:700">';
+        h+='    </div>';
+        h+='    <div style="display:flex;align-items:center;gap:6px">';
+        h+='      <span style="font-size:11px;color:var(--tx2);font-weight:700">إلى:</span>';
+        h+='      <input type="date" id="reqHubDateTo" lang="en-GB" value="'+toVal+'" onchange="tgOnReqHubDateRangeChange()" style="padding:6px 10px;border-radius:8px;border:1px solid var(--bd);background:var(--w);color:var(--tx);font-weight:700">';
+        h+='    </div>';
+        h+='  </div>';
+
+        // شريط التصفية النشطة
+        h+='  <div id="reqHubActiveFilterBanner" class="req-active-filter-banner" style="display:none"></div>';
         h+='</div>';
 
         h+='<div id="allRequestsHubList"><div class="empty-hint">⏳ جارٍ تحميل الطلبات...</div></div>';
@@ -5672,7 +5733,93 @@ function load(id,c){
 // ═══════════════════════════════════════════════════════════════
 window._reqHubStatusTab = 'pending';
 window._reqHubDataCache = [];
+window._reqHubDatePreset = 'all';
+window._reqHubDateSingle = '';
+window._reqHubDateFrom = '';
+window._reqHubDateTo = '';
 
+// دالة موحدة لاستخراج التاريخ بصيغة YYYY-MM-DD
+window.tgGetDateYMD = function(d) {
+    if (!d) return '';
+    var dateObj = d;
+    if (d.toDate && typeof d.toDate === 'function') dateObj = d.toDate();
+    else if (d.toMillis && typeof d.toMillis === 'function') dateObj = new Date(d.toMillis());
+    else if (d.seconds) dateObj = new Date(d.seconds * 1000);
+    else if (!(d instanceof Date)) dateObj = new Date(d);
+    if (!dateObj || isNaN(dateObj.getTime())) return '';
+    var year = dateObj.getFullYear();
+    var month = String(dateObj.getMonth() + 1).padStart(2, '0');
+    var day = String(dateObj.getDate()).padStart(2, '0');
+    return year + '-' + month + '-' + day;
+};
+
+// دالة استخراج التواريخ من كائن الطلب
+window.tgParseReqDates = function(r) {
+    var res = {
+        createdDate: null,
+        createdYMD: '',
+        fromDateYMD: '',
+        toDateYMD: '',
+        hasTime: false
+    };
+    if (!r) return res;
+
+    // 1. تاريخ الإنشاء / التقديم
+    var c = r.createdAt || r.date || r.timestamp;
+    if (c) {
+        if (c.toDate && typeof c.toDate === 'function') res.createdDate = c.toDate();
+        else if (c.toMillis && typeof c.toMillis === 'function') res.createdDate = new Date(c.toMillis());
+        else if (c.seconds) res.createdDate = new Date(c.seconds * 1000);
+        else if (c instanceof Date) res.createdDate = c;
+        else {
+            var parsed = new Date(c);
+            if (!isNaN(parsed.getTime())) res.createdDate = parsed;
+        }
+        if (res.createdDate) {
+            res.createdYMD = window.tgGetDateYMD(res.createdDate);
+            res.hasTime = true;
+        }
+    }
+
+    // 2. تواريخ الإجازة أو المدة
+    if (r.fromDate) res.fromDateYMD = window.tgGetDateYMD(r.fromDate);
+    if (r.toDate) res.toDateYMD = window.tgGetDateYMD(r.toDate);
+
+    // 3. تواريخ النماذج الديناميكية
+    if (r.dynamicData && typeof r.dynamicData === 'object') {
+        var dynDate = r.dynamicData.date || r.dynamicData.fromDate || r.dynamicData['تاريخ'] || r.dynamicData['التاريخ'] || r.dynamicData.startDate;
+        if (dynDate && !res.fromDateYMD) res.fromDateYMD = window.tgGetDateYMD(dynDate);
+        var dynEndDate = r.dynamicData.toDate || r.dynamicData.endDate;
+        if (dynEndDate && !res.toDateYMD) res.toDateYMD = window.tgGetDateYMD(dynEndDate);
+    }
+
+    return res;
+};
+
+// تنسيق التاريخ بالعربية مع بيان (اليوم / أمس) والوقت
+window.tgFormatReqDateArabic = function(dateObj) {
+    if (!dateObj || isNaN(dateObj.getTime())) return null;
+    var now = new Date();
+    var todayYMD = window.tgGetDateYMD(now);
+    var targetYMD = window.tgGetDateYMD(dateObj);
+
+    var y = new Date(now);
+    y.setDate(y.getDate() - 1);
+    var yestYMD = window.tgGetDateYMD(y);
+
+    var timeStr = dateObj.toLocaleTimeString('ar-EG', { hour: '2-digit', minute: '2-digit' });
+    var dateFullStr = dateObj.toLocaleDateString('ar-EG', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
+
+    if (targetYMD === todayYMD) {
+        return { label: 'اليوم، ' + timeStr, isToday: true, isYesterday: false, full: dateFullStr + ' (' + timeStr + ')' };
+    } else if (targetYMD === yestYMD) {
+        return { label: 'أمس، ' + timeStr, isToday: false, isYesterday: true, full: dateFullStr + ' (' + timeStr + ')' };
+    } else {
+        return { label: dateFullStr + ' • ' + timeStr, isToday: false, isYesterday: false, full: dateFullStr + ' (' + timeStr + ')' };
+    }
+};
+
+// تغيير تبويب الحالة (معلقة، مقبولة، مرفوضة، الكل)
 function tgSetReqHubStatusTab(btnEl, status) {
     window._reqHubStatusTab = status || 'all';
     var tabs = document.querySelectorAll('#reqHubStatusTabs .tg-task-tab');
@@ -5681,116 +5828,87 @@ function tgSetReqHubStatusTab(btnEl, status) {
     renderAllRequestsListHub();
 }
 
-function loadAllRequestsHub() {
-    var container = document.getElementById('allRequestsHubList');
-    if(container) container.innerHTML = '<div class="empty-hint">⏳ جارٍ تحميل طلبات الموظفين...</div>';
+// اختيار فترة تاريخ سريعة (اليوم، أمس، أسبوع، شهر...)
+window.tgSetReqHubDatePreset = function(preset, btnEl) {
+    window._reqHubDatePreset = preset || 'all';
 
-    db.collection('requests').get().then(function(snap) {
-        var list = [];
-        snap.forEach(function(doc) {
-            var data = doc.data() || {};
-            data.id = doc.id;
-            list.push(data);
-        });
-
-        // Sort desc by createdAt or timestamp
-        list.sort(function(a, b) {
-            var tA = a.createdAt && a.createdAt.toMillis ? a.createdAt.toMillis() : (new Date(a.createdAt || 0).getTime() || 0);
-            var tB = b.createdAt && b.createdAt.toMillis ? b.createdAt.toMillis() : (new Date(b.createdAt || 0).getTime() || 0);
-            return tB - tA;
-        });
-
-        window._reqHubDataCache = list;
-        updateReqHubStats();
-        renderAllRequestsListHub();
-    }).catch(function(err) {
-        console.error("loadAllRequestsHub error:", err);
-        if(container) container.innerHTML = '<div class="empty-hint" style="color:var(--no)">❌ تعذر تحميل الطلبات: ' + escH(err.message) + '</div>';
-    });
-}
-
-function updateReqHubStats() {
-    var list = window._reqHubDataCache || [];
-    var pending = 0, approved = 0, rejected = 0;
-    list.forEach(function(r) {
-        var s = (r.status || 'pending').toLowerCase();
-        if(s === 'approved') approved++;
-        else if(s === 'rejected') rejected++;
-        else pending++;
-    });
-
-    var pEl = document.getElementById('reqhub-cnt-pending'); if(pEl) pEl.textContent = pending;
-    var aEl = document.getElementById('reqhub-cnt-all'); if(aEl) aEl.textContent = list.length;
-    var apEl = document.getElementById('reqhub-cnt-approved'); if(apEl) apEl.textContent = approved;
-    var rEl = document.getElementById('reqhub-cnt-rejected'); if(rEl) rEl.textContent = rejected;
-
-    var statsBar = document.getElementById('reqHubStatsBar');
-    if(statsBar) {
-        statsBar.innerHTML = 
-            '<div style="flex:1;min-width:130px;background:rgba(243,156,18,0.1);border:1px solid rgba(243,156,18,0.3);padding:12px 16px;border-radius:10px;display:flex;align-items:center;justify-content:space-between">' +
-            '<div><div style="font-size:11px;color:var(--tx3);font-weight:700">⏳ طلبات معلقة</div><div style="font-size:22px;font-weight:800;color:#d35400">' + pending + '</div></div>' +
-            '<span style="font-size:24px">⌛</span></div>' +
-
-            '<div style="flex:1;min-width:130px;background:rgba(39,174,96,0.1);border:1px solid rgba(39,174,96,0.3);padding:12px 16px;border-radius:10px;display:flex;align-items:center;justify-content:space-between">' +
-            '<div><div style="font-size:11px;color:var(--tx3);font-weight:700">✅ طلبات مقبولة</div><div style="font-size:22px;font-weight:800;color:#27ae60">' + approved + '</div></div>' +
-            '<span style="font-size:24px">✔</span></div>' +
-
-            '<div style="flex:1;min-width:130px;background:rgba(231,76,60,0.1);border:1px solid rgba(231,76,60,0.3);padding:12px 16px;border-radius:10px;display:flex;align-items:center;justify-content:space-between">' +
-            '<div><div style="font-size:11px;color:var(--tx3);font-weight:700">❌ طلبات مرفوضة</div><div style="font-size:22px;font-weight:800;color:#c0392b">' + rejected + '</div></div>' +
-            '<span style="font-size:24px">✖</span></div>' +
-
-            '<div style="flex:1;min-width:130px;background:rgba(41,128,185,0.1);border:1px solid rgba(41,128,185,0.3);padding:12px 16px;border-radius:10px;display:flex;align-items:center;justify-content:space-between">' +
-            '<div><div style="font-size:11px;color:var(--tx3);font-weight:700">📋 إجمالي الطلبات</div><div style="font-size:22px;font-weight:800;color:#2980b9">' + list.length + '</div></div>' +
-            '<span style="font-size:24px">📥</span></div>';
+    var chips = document.querySelectorAll('#reqHubDateChips .req-date-chip');
+    chips.forEach(function(c) { c.classList.remove('active'); });
+    if (btnEl) btnEl.classList.add('active');
+    else {
+        var targetChip = document.querySelector('#reqHubDateChips .req-date-chip[data-preset="' + preset + '"]');
+        if (targetChip) targetChip.classList.add('active');
     }
-}
 
-function renderAllRequestsListHub() {
-    var container = document.getElementById('allRequestsHubList');
-    if(!container) return;
+    var singleWrap = document.getElementById('reqHubDateSingleWrap');
+    var rangeWrap = document.getElementById('reqHubDateRangeWrap');
 
-    var list = window._reqHubDataCache || [];
-    var statusFilter = window._reqHubStatusTab || 'pending';
-    var search = (document.getElementById('reqHubSearch') ? document.getElementById('reqHubSearch').value : '').toLowerCase().trim();
-    var typeFilter = document.getElementById('reqHubTypeFilter') ? document.getElementById('reqHubTypeFilter').value : 'all';
+    if (singleWrap) singleWrap.style.display = (preset === 'single') ? 'flex' : 'none';
+    if (rangeWrap) rangeWrap.style.display = (preset === 'range') ? 'flex' : 'none';
 
-    var filtered = list.filter(function(r) {
-        var s = (r.status || 'pending').toLowerCase();
-        if(statusFilter !== 'all') {
-            if(statusFilter === 'pending' && s !== 'pending') return false;
-            if(statusFilter === 'approved' && s !== 'approved') return false;
-            if(statusFilter === 'rejected' && s !== 'rejected') return false;
-        }
-
-        if(typeFilter !== 'all') {
-            var t = (r.type || '').toLowerCase();
-            if(typeFilter === 'leave' && t.indexOf('إجازة') === -1) return false;
-            if(typeFilter === 'perm' && t.indexOf('إذن') === -1) return false;
-            if(typeFilter === 'delay' && t.indexOf('التماس') === -1 && t.indexOf('تعديل') === -1) return false;
-            if(typeFilter === 'res' && t.indexOf('استقالة') === -1) return false;
-            if(typeFilter === 'comp' && t.indexOf('شكوى') === -1 && t.indexOf('مقترح') === -1) return false;
-            if(typeFilter === 'other' && (t.indexOf('إجازة') !== -1 || t.indexOf('إذن') !== -1 || t.indexOf('التماس') !== -1 || t.indexOf('استقالة') !== -1 || t.indexOf('شكوى') !== -1)) return false;
-        }
-
-        if(search) {
-            var empMatch = window._staffEmpCache ? (window._staffEmpCache.find(function(e) { return e.uid === r.uid; }) || {}) : {};
-            var nameStr = (empMatch.name || r.uid || '').toLowerCase();
-            var typeStr = (r.type || '').toLowerCase();
-            var detStr = (r.details || '').toLowerCase();
-            var dateStr = (r.fromDate || '').toLowerCase() + (r.toDate || '').toLowerCase();
-            if(nameStr.indexOf(search) === -1 && typeStr.indexOf(search) === -1 && detStr.indexOf(search) === -1 && dateStr.indexOf(search) === -1) {
-                return false;
-            }
-        }
-        return true;
-    });
-
-    if(filtered.length === 0) {
-        container.innerHTML = '<div class="empty-hint" style="padding:30px;background:var(--bg2);border-radius:12px;margin-top:10px">' +
-                              '📭 لا توجد طلبات تطابق عناصر البحث أو الفلترة المحددة.' +
-                              '</div>';
-        return;
+    if (preset === 'today') {
+        window._reqHubDateSingle = window.tgGetDateYMD(new Date());
+    } else if (preset === 'yesterday') {
+        var y = new Date();
+        y.setDate(y.getDate() - 1);
+        window._reqHubDateSingle = window.tgGetDateYMD(y);
     }
+
+    renderAllRequestsListHub();
+};
+
+window.tgOnReqHubDateSingleChange = function(val) {
+    window._reqHubDateSingle = val || '';
+    window._reqHubDatePreset = 'single';
+    var chips = document.querySelectorAll('#reqHubDateChips .req-date-chip');
+    chips.forEach(function(c) { c.classList.remove('active'); });
+    var singleChip = document.querySelector('#reqHubDateChips .req-date-chip[data-preset="single"]');
+    if (singleChip) singleChip.classList.add('active');
+    renderAllRequestsListHub();
+};
+
+window.tgSetReqHubDateSingleToToday = function() {
+    var todayStr = window.tgGetDateYMD(new Date());
+    var el = document.getElementById('reqHubDateSingle');
+    if (el) el.value = todayStr;
+    window.tgOnReqHubDateSingleChange(todayStr);
+};
+
+window.tgOnReqHubDateRangeChange = function() {
+    var fromEl = document.getElementById('reqHubDateFrom');
+    var toEl = document.getElementById('reqHubDateTo');
+    window._reqHubDateFrom = fromEl ? fromEl.value : '';
+    window._reqHubDateTo = toEl ? toEl.value : '';
+    window._reqHubDatePreset = 'range';
+    var chips = document.querySelectorAll('#reqHubDateChips .req-date-chip');
+    chips.forEach(function(c) { c.classList.remove('active'); });
+    var rangeChip = document.querySelector('#reqHubDateChips .req-date-chip[data-preset="range"]');
+    if (rangeChip) rangeChip.classList.add('active');
+    renderAllRequestsListHub();
+};
+
+window.tgResetReqHubFilters = function() {
+    var s = document.getElementById('reqHubSearch'); if (s) s.value = '';
+    var tf = document.getElementById('reqHubTypeFilter'); if (tf) tf.value = 'all';
+    var df = document.getElementById('reqHubDateField'); if (df) df.value = 'created';
+    window._reqHubDatePreset = 'all';
+    window._reqHubDateSingle = '';
+    window._reqHubDateFrom = '';
+    window._reqHubDateTo = '';
+    var singleInp = document.getElementById('reqHubDateSingle'); if (singleInp) singleInp.value = window.tgGetDateYMD(new Date());
+    var fromInp = document.getElementById('reqHubDateFrom'); if (fromInp) fromInp.value = '';
+    var toInp = document.getElementById('reqHubDateTo'); if (toInp) toInp.value = '';
+    var singleWrap = document.getElementById('reqHubDateSingleWrap'); if (singleWrap) singleWrap.style.display = 'none';
+    var rangeWrap = document.getElementById('reqHubDateRangeWrap'); if (rangeWrap) rangeWrap.style.display = 'none';
+
+    var chips = document.querySelectorAll('#reqHubDateChips .req-date-chip');
+    chips.forEach(function(c) { c.classList.remove('active'); });
+    var allChip = document.querySelector('#reqHubDateChips .req-date-chip[data-preset="all"]');
+    if (allChip) allChip.classList.add('active');
+
+    renderAllRequestsListHub();
+    if (typeof tgShowToast === 'function') tgShowToast('تمت إعادة ضبط فلاتر البحث والتاريخ', 'info');
+};
 
 window.tgExtractNameFromRequest = function(r) {
     if (!r) return 'موظف';
@@ -5856,96 +5974,6 @@ window.tgExtractNameFromRequest = function(r) {
 
     return 'موظف';
 };
-
-    var h = '<div style="display:flex;flex-direction:column;gap:12px;margin-top:10px">';
-    filtered.forEach(function(r) {
-        var empMatch = window._staffEmpCache ? (window._staffEmpCache.find(function(e) { return e.uid === r.uid; }) || {}) : {};
-        var empName = tgExtractNameFromRequest(r);
-        var empJob = empMatch.jobTitle || empMatch.dept || r.dept || '';
-
-        var st = (r.status || 'pending').toLowerCase();
-        var statusBadge = '';
-        if(st === 'approved') statusBadge = '<span style="background:rgba(39,174,96,0.15);color:#27ae60;padding:4px 10px;border-radius:20px;font-size:11px;font-weight:800;border:1px solid rgba(39,174,96,0.3)">✅ تمت الموافقة</span>';
-        else if(st === 'rejected') statusBadge = '<span style="background:rgba(231,76,60,0.15);color:#c0392b;padding:4px 10px;border-radius:20px;font-size:11px;font-weight:800;border:1px solid rgba(231,76,60,0.3)">❌ مرفوض</span>';
-        else statusBadge = '<span style="background:rgba(243,156,18,0.15);color:#d35400;padding:4px 10px;border-radius:20px;font-size:11px;font-weight:800;border:1px solid rgba(243,156,18,0.3)">⏳ قيد الانتظار</span>';
-
-        var dh = '';
-        if(r.dynamicData) {
-            var tpl = window.FS_TEMPLATES && r.formTemplateId ? window.FS_TEMPLATES[r.formTemplateId] : null;
-            var fieldLabels = {};
-            if(tpl && tpl.fields) { tpl.fields.forEach(function(f){ fieldLabels[f.id] = f.label; }); }
-            
-            // Canonical consistent field ordering
-            var sortedKeys = [];
-            if(tpl && tpl.fields) {
-                tpl.fields.forEach(function(f) {
-                    if (f.id in r.dynamicData) sortedKeys.push(f.id);
-                });
-            }
-            for(var k in r.dynamicData) {
-                if (sortedKeys.indexOf(k) === -1) sortedKeys.push(k);
-            }
-
-            dh = '<div style="margin-top:8px;padding:10px;background:rgba(0,0,0,0.03);border-radius:8px;font-size:12px;display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:6px">';
-            sortedKeys.forEach(function(k){
-                var v = r.dynamicData[k];
-                if (v === '' || v === '-' || v === '—' || v === null || v === undefined) return;
-                if(v === true) v = 'نعم / تم التسليم';
-                if(v === false) v = 'لا';
-                var lbl = fieldLabels[k] || k;
-                if(lbl === 'chk1') lbl = 'تسليم العهدة المالية';
-                if(lbl === 'chk2') lbl = 'تسليم العهدة العينية';
-                if(lbl === 'chk3') lbl = 'تسليم المستندات والملفات';
-                if(lbl === 'chk4') lbl = 'إنهاء المهام المعلقة';
-                dh += '<div><span style="color:var(--tx3);display:inline-block;">' + escH(lbl) + ':</span> <b style="white-space:pre-wrap;">' + escH(v) + '</b></div>';
-            });
-            dh += '</div>';
-        }
-
-        var attachHtml = '';
-        if(r.fileUrl && r.fileType){
-            if(r.fileType.indexOf('image/')===0){ attachHtml = '<div style="margin-top:8px"><a href="'+r.fileUrl+'" target="_blank"><img src="'+r.fileUrl+'" style="max-width:160px;max-height:110px;border-radius:8px;display:block;border:1px solid var(--bd)"></a></div>'; }
-            else if(r.fileType.indexOf('video/')===0){ attachHtml = '<div style="margin-top:8px"><video src="'+r.fileUrl+'" controls style="max-width:220px;border-radius:8px"></video></div>'; }
-            else { attachHtml = '<div style="margin-top:8px"><a href="'+r.fileUrl+'" target="_blank" style="color:var(--tx);font-weight:700;text-decoration:underline">📎 '+escH(r.fileName||'تحميل الملف المرفق')+'</a></div>'; }
-        }
-
-        var createdDateStr = r.createdAt ? (r.createdAt.toMillis ? new Date(r.createdAt.toMillis()).toLocaleString('ar-EG') : new Date(r.createdAt).toLocaleString('ar-EG')) : '';
-
-        h += '<div class="rq-row" style="background:var(--w);padding:16px;border-radius:12px;border:1px solid var(--bd);box-shadow:0 2px 8px rgba(0,0,0,0.03);">' +
-             '  <div style="display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:8px">' +
-             '    <div>' +
-             '      <div style="font-size:15px;font-weight:800;color:var(--tx);display:flex;align-items:center;gap:8px">' +
-             '        <span>' + escH(r.type || 'طلب جديد') + '</span>' + statusBadge +
-             '      </div>' +
-             '      <div style="font-size:12px;color:var(--tx2);margin-top:4px;display:flex;align-items:center;gap:12px;flex-wrap:wrap">' +
-             '        <span>👤 <strong>' + escH(empName) + '</strong>' + (empJob ? ' (' + escH(empJob) + ')' : '') + '</span>' +
-             (createdDateStr ? ('<span>🕒 ' + escH(createdDateStr) + '</span>') : '') +
-             '      </div>' +
-             '    </div>' +
-             '  </div>' +
-             (r.fromDate ? ('<div style="margin-top:8px;font-size:12px;color:var(--tx2);background:rgba(52,152,219,0.08);padding:6px 10px;border-radius:6px;display:inline-block">📅 المدة المطلوبة: من <strong>' + escH(r.fromDate) + '</strong>' + (r.toDate ? (' إلى <strong>' + escH(r.toDate) + '</strong>') : '') + '</div>') : '') +
-             (r.details ? ('<div style="margin-top:8px;font-size:13px;line-height:1.6;color:var(--tx);background:var(--bg2);padding:10px;border-radius:8px">' + escH(r.details) + '</div>') : '') +
-             dh + attachHtml +
-             (r.reviewedBy ? ('<div style="margin-top:8px;font-size:11px;color:var(--tx3)">تمت المراجعة بواسطة: ' + escH(r.reviewedBy) + '</div>') : '') +
-             '  <div style="margin-top:12px;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px;border-top:1px dashed var(--bd);padding-top:12px">' +
-             '    <div style="display:flex;gap:8px;flex-wrap:wrap;">' +
-                    (st === 'pending' ? (
-                        '<button class="bt bt-p" style="padding:7px 18px;font-size:12px;font-weight:700" onclick="reviewRequestHub(\'' + r.id + '\',\'approved\')">✔ موافقة على الطلب</button>' +
-                        '<button class="bt bt-d" style="padding:7px 18px;font-size:12px;font-weight:700" onclick="reviewRequestHub(\'' + r.id + '\',\'rejected\')">✕ رفض الطلب</button>'
-                    ) : '') +
-             '    </div>' +
-             '    <div style="display:flex;gap:8px;flex-wrap:wrap;">' +
-                    (r.formTemplateId === 'emp' || (r.type && r.type.indexOf('بيانات الموظف') !== -1) ?
-                        '<button class="bt bt-o" style="padding:6px 14px;font-size:12px;font-weight:800;border-radius:20px;border-color:#0284c7;color:#0284c7;" onclick="tgOpenEditAdminDataModal(\'' + r.id + '\')">✏️ استكمال البيانات الإدارية</button>' : '') +
-             '      <button class="bt bt-o" style="padding:6px 14px;font-size:12px;font-weight:800;border-radius:20px;" onclick="tgPrintRequestFromHub(\'' + r.id + '\')">🖨 طباعة الطلب الرسمية</button>' +
-             '    </div>' +
-             '  </div>' +
-             '</div>';
-    });
-    h += '</div>';
-    container.innerHTML = h;
-}
-
 window.tgOpenEditAdminDataModal = function(reqId) {
     if (!reqId) return;
     var r = (window._reqHubDataCache || []).find(function(x) { return x.id === reqId; });
