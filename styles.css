@@ -5057,17 +5057,15 @@ body.dark-mode .tg-expand-btn:hover {
     font-size: 11px !important;
     padding: 5px 8px !important;
   }
-}
 
-/* ── Mobile Vertical Card Rows (< 640px) ── */
-@media (max-width: 640px) {
+  /* Vertical Item Cards on Mobile */
   .mexp-table-scroll table,
   .mexp-table-scroll thead,
   .mexp-table-scroll tbody,
   .mexp-table-scroll th,
   .mexp-table-scroll td,
   .mexp-table-scroll tr {
-    display: block;
+    display: block !important;
     width: 100% !important;
     min-width: 0 !important;
   }
@@ -5076,31 +5074,35 @@ body.dark-mode .tg-expand-btn:hover {
     display: none !important;
   }
 
+  .mexp-desktop-idx-span {
+    display: none !important;
+  }
+
   .mexp-day-tbody {
-    padding: 10px;
-    display: flex;
-    flex-direction: column;
-    gap: 10px;
+    padding: 10px !important;
+    display: flex !important;
+    flex-direction: column !important;
+    gap: 10px !important;
   }
 
   .mexp-day-tbody tr {
     background: #f8fafc !important;
-    border: 1.5px solid #e2e8f0 !important;
+    border: 1.5px solid #cbd5e1 !important;
     border-radius: 10px !important;
     padding: 10px 12px !important;
     height: auto !important;
-    box-shadow: 0 1px 3px rgba(0,0,0,0.03);
-    display: flex;
-    flex-direction: column;
-    gap: 8px;
+    box-shadow: 0 1px 4px rgba(0,0,0,0.05) !important;
+    display: flex !important;
+    flex-direction: column !important;
+    gap: 8px !important;
   }
 
   .mexp-mobile-row-top {
     display: flex !important;
-    justify-content: space-between;
-    align-items: center;
-    border-bottom: 1px dashed var(--bd);
-    padding-bottom: 6px;
+    justify-content: space-between !important;
+    align-items: center !important;
+    border-bottom: 1px dashed var(--bd) !important;
+    padding-bottom: 6px !important;
   }
 
   .mexp-del-td {
@@ -5109,15 +5111,15 @@ body.dark-mode .tg-expand-btn:hover {
 
   .mexp-field-label {
     display: block !important;
-    font-size: 11.5px;
-    font-weight: 800;
-    color: var(--tx2);
-    margin-bottom: 3px;
+    font-size: 11.5px !important;
+    font-weight: 800 !important;
+    color: var(--tx2) !important;
+    margin-bottom: 3px !important;
   }
 
   .mexp-field-group {
-    display: flex;
-    flex-direction: column;
+    display: flex !important;
+    flex-direction: column !important;
   }
 
   .mexp-day-tbody tr td {
