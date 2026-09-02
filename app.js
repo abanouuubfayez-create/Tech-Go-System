@@ -4658,31 +4658,32 @@ function mexpAddNewDay(dayData) {
     var dayName = mexpGetDayName(defDate);
     var dayCard = document.createElement('div');
     dayCard.className = 'mexp-day-card';
-    dayCard.style.cssText = 'background:var(--w); border:1.5px solid var(--bd); border-radius:14px; margin-bottom:20px; overflow:hidden; box-shadow:var(--sh-sm); transition:all 0.2s ease;';
 
     dayCard.innerHTML =
-        '<div style="background:linear-gradient(135deg, #1e293b, #0f172a); color:#fff; padding:12px 18px; display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:12px;">' +
-        '  <div style="display:flex; align-items:center; gap:10px; flex-wrap:wrap;">' +
-        '    <span style="font-size:18px;">📅</span>' +
-        '    <label style="font-weight:800; font-size:13px; color:#e2e8f0;">تاريخ اليوم:</label>' +
-        '    <input type="date" class="mexp-day-date" value="' + escH(defDate) + '" onchange="mexpUpdateDayHeader(this)" style="padding:5px 12px; border-radius:8px; border:1px solid #475569; background:#0f172a; color:#fff; font-weight:800; font-size:13px; outline:none; cursor:pointer;">' +
-        '    <span class="mexp-day-name-badge" style="background:rgba(201,162,39,0.2); color:#fbbf24; border:1px solid rgba(251,191,36,0.35); padding:3px 12px; border-radius:20px; font-size:12px; font-weight:800;">' + escH(dayName || 'اليوم') + '</span>' +
+        '<div class="mexp-day-header">' +
+        '  <div class="mexp-day-info">' +
+        '    <span style="font-size:16px;">📅</span>' +
+        '    <label style="font-weight:800; font-size:12.5px; color:#e2e8f0;">تاريخ اليوم:</label>' +
+        '    <input type="date" class="mexp-day-date" value="' + escH(defDate) + '" onchange="mexpUpdateDayHeader(this)" style="padding:4px 10px; border-radius:8px; border:1px solid #475569; background:#0f172a; color:#fff; font-weight:800; font-size:12.5px; outline:none; cursor:pointer;">' +
+        '    <span class="mexp-day-name-badge" style="background:rgba(201,162,39,0.2); color:#fbbf24; border:1px solid rgba(251,191,36,0.35); padding:3px 10px; border-radius:20px; font-size:11.5px; font-weight:800;">' + escH(dayName || 'اليوم') + '</span>' +
         '  </div>' +
-        '  <div style="display:flex; align-items:center; gap:12px; flex-wrap:wrap;">' +
-        '    <div style="font-size:13px; color:#cbd5e1;">إجمالي اليوم: <strong class="mexp-day-total" style="color:#34d399; font-size:14.5px; font-weight:900;">0.00 ج.م</strong></div>' +
-        '    <button type="button" class="bt bt-p" style="padding:6px 14px; font-size:12px; font-weight:800; border-radius:8px;" onclick="mexpAddDayItem(this)">➕ إضافة بند لهذا اليوم</button>' +
-        '    <button type="button" class="bt bt-d" style="padding:6px 12px; font-size:12px; font-weight:800; border-radius:8px; background:rgba(239,68,68,0.2); color:#fca5a5; border-color:rgba(239,68,68,0.4);" onclick="mexpRemoveDay(this)" title="حذف هذا اليوم بالكامل">🗑 حذف اليوم</button>' +
+        '  <div class="mexp-day-actions">' +
+        '    <div class="mexp-day-total-wrap" style="font-size:12px; color:#cbd5e1; font-weight:700;">إجمالي اليوم: <strong class="mexp-day-total" style="color:#34d399; font-size:13.5px; font-weight:900;">0.00 ج.م</strong></div>' +
+        '    <div style="display:flex; align-items:center; gap:6px;">' +
+        '      <button type="button" class="bt bt-p" style="padding:5px 12px; font-size:11.5px; font-weight:800; border-radius:6px;" onclick="mexpAddDayItem(this)">➕ بند جديد</button>' +
+        '      <button type="button" class="bt bt-d" style="padding:5px 10px; font-size:11.5px; font-weight:800; border-radius:6px; background:rgba(239,68,68,0.2); color:#fca5a5; border-color:rgba(239,68,68,0.4);" onclick="mexpRemoveDay(this)" title="حذف هذا اليوم بالكامل">🗑 حذف</button>' +
+        '    </div>' +
         '  </div>' +
         '</div>' +
-        '<div style="overflow-x:auto;">' +
+        '<div class="mexp-table-scroll">' +
         '  <table class="dt" style="width:100%; border-collapse:collapse; margin:0;">' +
         '    <thead><tr>' +
         '      <th style="width:36px; text-align:center;">م</th>' +
         '      <th style="width:34%;">اسم الصارف</th>' +
-        '      <th style="width:40%;">النوع / البند</th>' +
-        '      <th style="width:90px; text-align:center;">العدد</th>' +
-        '      <th style="width:130px; text-align:center;">السعر (ج.م)</th>' +
-        '      <th class="np" style="width:40px; text-align:center;"></th>' +
+        '      <th style="width:38%;">النوع / البند</th>' +
+        '      <th style="width:80px; text-align:center;">العدد</th>' +
+        '      <th style="width:115px; text-align:center;">السعر (ج.م)</th>' +
+        '      <th class="np" style="width:36px; text-align:center;"></th>' +
         '    </tr></thead>' +
         '    <tbody class="mexp-day-tbody"></tbody>' +
         '  </table>' +
@@ -4700,7 +4701,6 @@ function mexpAddNewDay(dayData) {
     }
 
     mexpCalc();
-    mexpUpdateSpenderSuggestions();
 }
 
 function mexpAddDayItem(btnOrTbody, itemData) {
@@ -5782,39 +5782,39 @@ function load(id,c){
         h=H('شيت المصروفات الشهري','تسجيل وتوثيق حركة المصروفات النقدية مقسمة بالأيام','MONTHLY EXPENSE SHEET','mexp');
         
         // Month Selector & Admin Access Control Bar
-        h+='<div class="set-sec" style="margin-bottom:14px;background:var(--w);border:1px solid var(--bd);border-radius:12px;padding:14px 18px;box-shadow:var(--sh-sm);">' +
-           '  <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:14px;">' +
-           '    <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;">' +
-           '      <label style="font-size:13px;font-weight:800;color:var(--tx);">📅 الشهر المستهدف:</label>' +
-           '      <input type="month" id="mexp-month" class="inp" style="padding:7px 14px;font-weight:800;min-width:170px;" onchange="mexpLoad()">' +
+        h+='<div class="set-sec" style="margin-bottom:14px;background:var(--w);border:1px solid var(--bd);border-radius:12px;padding:12px 16px;box-shadow:var(--sh-sm);">' +
+           '  <div class="mexp-ctrl-bar">' +
+           '    <div class="mexp-ctrl-item" style="display:flex;align-items:center;gap:8px;">' +
+           '      <label style="font-size:12.5px;font-weight:800;color:var(--tx);white-space:nowrap;">📅 الشهر:</label>' +
+           '      <input type="month" id="mexp-month" class="inp" style="padding:6px 12px;font-weight:800;flex:1;" onchange="mexpLoad()">' +
            '    </div>' +
-           '    <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;" id="mexpAssigneeWrap">' +
-           '      <label style="font-size:12.5px;font-weight:800;color:var(--tx2);">👤 الموظف المسؤول عن إدخال الشيت:</label>' +
-           '      <select id="mexpAssignedEmp" class="inp" style="padding:7px 12px;font-size:12px;min-width:210px;font-weight:700;">' +
+           '    <div class="mexp-ctrl-item" style="display:flex;align-items:center;gap:8px;" id="mexpAssigneeWrap">' +
+           '      <label style="font-size:12px;font-weight:800;color:var(--tx2);white-space:nowrap;">👤 المسؤول:</label>' +
+           '      <select id="mexpAssignedEmp" class="inp" style="padding:6px 10px;font-size:11.5px;font-weight:700;flex:1;">' +
            '        <option value="">-- لم يتم تعيين موظف (الأدمن فقط) --</option>' +
            '      </select>' +
-           '      <button type="button" class="bt bt-p" style="padding:7px 16px;font-size:12px;font-weight:800;" onclick="mexpSaveAssignee()">💾 حفظ الصلاحية</button>' +
+           '      <button type="button" class="bt bt-p" style="padding:6px 12px;font-size:11.5px;font-weight:800;white-space:nowrap;" onclick="mexpSaveAssignee()">💾 حفظ</button>' +
            '    </div>' +
            '  </div>' +
-           '  <div id="mexpSyncInfo" style="font-size:11.5px;color:var(--tx3);margin-top:10px;display:flex;align-items:center;gap:6px;border-top:1px dashed var(--bd);padding-top:8px;">' +
+           '  <div id="mexpSyncInfo" style="font-size:11px;color:var(--tx3);margin-top:8px;display:flex;align-items:center;gap:6px;border-top:1px dashed var(--bd);padding-top:6px;">' +
            '    <span>🔄 المزامنة مفعلة لحظياً بين الإدارة وبوابة الموظف المسؤول</span>' +
            '  </div>' +
            '</div>';
 
         // Summary Badges & Action Buttons
-        h+='<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;flex-wrap:wrap;gap:12px;">' +
-           '  <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;">' +
-           '    <div style="background:var(--nv);color:#fff;padding:8px 16px;border-radius:10px;font-size:13px;font-weight:800;display:flex;align-items:center;gap:8px;box-shadow:var(--sh-sm);">' +
-           '      <span>💰 إجمالي مصروفات الشهر:</span> <span id="mexp-grand-total" style="color:#34d399;font-size:15px;font-weight:900;">0.00 ج.م</span>' +
+        h+='<div class="mexp-summary-bar">' +
+           '  <div class="mexp-badges-wrap">' +
+           '    <div class="mexp-badge-card" style="background:var(--nv);color:#fff;padding:6px 14px;border-radius:10px;box-shadow:var(--sh-sm);">' +
+           '      <span style="font-size:11px;opacity:0.85;">💰 إجمالي المصروفات:</span> <span id="mexp-grand-total" class="mexp-badge-val" style="color:#34d399;font-weight:900;font-size:14.5px;">0.00 ج.م</span>' +
            '    </div>' +
-           '    <div style="background:var(--bg2);color:var(--tx);border:1px solid var(--bd);padding:8px 14px;border-radius:10px;font-size:12.5px;font-weight:700;">' +
-           '      <span>📅 الأيام المسجلة:</span> <strong id="mexp-days-count" style="color:var(--nv);">0 يوم</strong>' +
+           '    <div class="mexp-badge-card" style="background:var(--bg2);color:var(--tx);border:1px solid var(--bd);padding:6px 14px;border-radius:10px;">' +
+           '      <span style="font-size:11px;color:var(--tx2);">📅 الأيام المسجلة:</span> <strong id="mexp-days-count" class="mexp-badge-val" style="color:var(--nv);font-weight:900;font-size:14px;">0 يوم</strong>' +
            '    </div>' +
            '  </div>' +
-           '  <div class="np" style="display:flex;gap:8px;flex-wrap:wrap;">' +
-           '    <button type="button" class="bt bt-p" style="font-weight:900;padding:8px 16px;" onclick="mexpAddNewDay()">➕ إضافة يوم جديد (📅)</button>' +
-           '    <button type="button" class="bt bt-o" style="font-weight:800;" onclick="mexpSave()">💾 حفظ ومزامنة الشيت</button>' +
-           '    <button type="button" class="bt bt-g" style="font-weight:800;" onclick="mexpPrint()">🖨 طباعة الشيت / PDF</button>' +
+           '  <div class="np mexp-actions-wrap">' +
+           '    <button type="button" class="bt bt-p" style="font-weight:900;" onclick="mexpAddNewDay()">➕ يوم جديد (📅)</button>' +
+           '    <button type="button" class="bt bt-o" style="font-weight:800;" onclick="mexpSave()">💾 حفظ ومزامنة</button>' +
+           '    <button type="button" class="bt bt-g" style="font-weight:800;" onclick="mexpPrint()">🖨 طباعة / PDF</button>' +
            '    <button type="button" class="bt bt-o" style="font-weight:800;" onclick="mexpLoad(true)" title="تحديث البيانات من السيرفر">🔄 تحديث</button>' +
            '  </div>' +
            '</div>';

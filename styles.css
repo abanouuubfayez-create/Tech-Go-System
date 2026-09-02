@@ -4812,19 +4812,83 @@ body.dark-mode .tg-expand-btn:hover {
 }
 
 /* ==========================================================================
-   MONTHLY EXPENSE TABLE (MEXP) - DAILY GROUPED BLOCKS & PRINT STYLING
+   MONTHLY EXPENSE TABLE (MEXP) - DAILY GROUPED BLOCKS & RESPONSIVE STYLING
    ========================================================================== */
+.mexp-ctrl-bar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 14px;
+}
+
+.mexp-summary-bar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin-bottom: 16px;
+}
+
+.mexp-badges-wrap {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.mexp-actions-wrap {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
 .mexp-day-card {
   border: 1.5px solid var(--bd) !important;
   border-radius: 12px !important;
   background: var(--w) !important;
   margin-bottom: 20px !important;
+  overflow: hidden;
+  box-shadow: var(--sh-sm);
   page-break-inside: avoid !important;
+}
+
+.mexp-day-header {
+  background: linear-gradient(135deg, #1e293b, #0f172a);
+  color: #fff;
+  padding: 12px 16px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+.mexp-day-info {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.mexp-day-actions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.mexp-table-scroll {
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  width: 100%;
 }
 
 .mexp-day-card table {
   border-collapse: collapse !important;
   width: 100% !important;
+  min-width: 520px;
   margin: 0 !important;
 }
 
@@ -4861,6 +4925,90 @@ body.dark-mode .tg-expand-btn:hover {
   background: rgba(30, 41, 59, 0.05) !important;
 }
 
+@media (max-width: 768px) {
+  .mexp-ctrl-bar {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 10px;
+  }
+  .mexp-ctrl-item {
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+    align-items: stretch;
+    gap: 6px;
+  }
+  .mexp-ctrl-item input,
+  .mexp-ctrl-item select {
+    width: 100% !important;
+    min-width: 0 !important;
+  }
+  .mexp-summary-bar {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 10px;
+  }
+  .mexp-badges-wrap {
+    display: grid !important;
+    grid-template-columns: 1fr 1fr !important;
+    gap: 8px !important;
+    width: 100% !important;
+  }
+  .mexp-badge-card {
+    padding: 8px 10px !important;
+    font-size: 11px !important;
+    display: flex !important;
+    flex-direction: column !important;
+    align-items: center !important;
+    text-align: center !important;
+    justify-content: center !important;
+    border-radius: 10px !important;
+  }
+  .mexp-badge-val {
+    font-size: 13.5px !important;
+    margin-top: 2px !important;
+  }
+  .mexp-actions-wrap {
+    display: grid !important;
+    grid-template-columns: 1fr 1fr !important;
+    gap: 6px !important;
+    width: 100% !important;
+  }
+  .mexp-actions-wrap .bt {
+    width: 100% !important;
+    padding: 8px 4px !important;
+    font-size: 11px !important;
+    justify-content: center !important;
+    text-align: center !important;
+  }
+  .mexp-day-header {
+    padding: 10px 12px !important;
+    gap: 8px !important;
+  }
+  .mexp-day-info {
+    width: 100% !important;
+    justify-content: space-between !important;
+    gap: 6px !important;
+  }
+  .mexp-day-info input[type="date"] {
+    flex: 1 !important;
+    min-width: 120px !important;
+    padding: 4px 8px !important;
+    font-size: 12px !important;
+  }
+  .mexp-day-actions {
+    width: 100% !important;
+    justify-content: space-between !important;
+    border-top: 1px solid rgba(255,255,255,0.1) !important;
+    padding-top: 8px !important;
+    gap: 6px !important;
+  }
+  .mexp-day-actions .bt {
+    font-size: 11px !important;
+    padding: 5px 8px !important;
+  }
+}
+
 @media print {
   .mexp-day-card {
     border: 1.5px solid #334155 !important;
@@ -4881,13 +5029,6 @@ body.dark-mode .tg-expand-btn:hover {
     display: none !important;
   }
 }
-
-  #mexp-table input {
-    border: none !important;
-    outline: none !important;
-    background: transparent !important;
-    box-shadow: none !important;
-    border-radius: 0 !important;
   }
 
   .SG3, .SC-sec, .FT-footer {
