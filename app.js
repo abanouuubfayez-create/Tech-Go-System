@@ -3591,7 +3591,30 @@ function H(title,sub,en,docId,ext){
     var num=docId?genDocNum(docId):'';
     var today = new Date();
     var ddStr = ('0' + today.getDate()).slice(-2) + '/' + ('0' + (today.getMonth()+1)).slice(-2) + '/' + today.getFullYear();
-    var h='<div class="FL'+(ext?' FL-external':'')+'">';
+
+    // شريط أدوات مدمج بارز في رأس الصفحة فوق النموذج مباشرة
+    var toolbar = '<div class="form-inpage-toolbar np">' +
+                  '  <div class="form-inpage-title"><span>📄</span> <strong>' + escH(title) + '</strong> <span style="font-size:11px; opacity:0.75; font-weight:normal;">(نموذج معتمد)</span></div>' +
+                  '  <div class="form-inpage-btns">' +
+                  '    <button type="button" class="bt btn-inpage-forward" onclick="tgForwardCurrentForm()" title="تحويل وتكليف هذا النموذج لموظف">' +
+                  '      <span>↗️</span> تحويل لموظف' +
+                  '    </button>' +
+                  '    <button type="button" class="bt bt-o" onclick="openPrintPreview()" title="طباعة أو حفظ PDF">' +
+                  '      <span>🖨</span> طباعة' +
+                  '    </button>' +
+                  '    <button type="button" class="bt bt-p" onclick="tgSaveFormDraft(false)" title="حفظ النموذج">' +
+                  '      <span>💾</span> حفظ' +
+                  '    </button>' +
+                  '    <button type="button" class="bt bt-o" onclick="tgLoadFormDrafts()" title="النماذج المحفوظة">' +
+                  '      <span>📂</span> مسودات' +
+                  '    </button>' +
+                  '    <button type="button" class="bt bt-o" onclick="tgClearForm()" title="مسح النموذج">' +
+                  '      <span>🧹</span> مسح' +
+                  '    </button>' +
+                  '  </div>' +
+                  '</div>';
+
+    var h = toolbar + '<div class="FL'+(ext?' FL-external':'')+'">';
     h+='<div class="FL-head">'+
        '<div class="FL-brand">'+
        '<img class="FL-logo" src="'+LOGO_URI+'" alt="Tech Go">'+
@@ -8463,10 +8486,14 @@ window.tgForwardCurrentForm = function() {
     window.openForwardModal(formId, formTitle, docNum, data);
 };
 
+window.openUniversalQuickForwardModal = function() {
+    window.openForwardModal(null, null, null, null);
+};
+
 window.openForwardModal = async function(formId, formTitle, docNum, formData) {
     window._pendingForwardDoc = {
-        formId: formId,
-        formTitle: formTitle,
+        formId: formId || '',
+        formTitle: formTitle || '',
         docNum: docNum || '',
         formData: formData || []
     };
@@ -8511,18 +8538,51 @@ window.openForwardModal = async function(formId, formTitle, docNum, formData) {
         empOptionsHtml += '<option value="' + escH(emp.uid) + '" data-name="' + escH(emp.name) + '" data-email="' + escH(emp.email || '') + '">' + escH(emp.name) + ' (' + escH(emp.jobTitle) + ')</option>';
     });
 
+    // Form Selector if opened globally
+    var formSelectHtml = '';
+    if(!formId) {
+        var formChoices = [
+            { id: 'gen', name: '✉️ الخطابات الإدارية العامة' },
+            { id: 'contract', name: '📄 عقود العمل الرسمية' },
+            { id: 'warn', name: '⚠️ خطابات الإنذار والتحقيق' },
+            { id: 'notice', name: '👁 نماذج لفت النظر' },
+            { id: 'deduction', name: '🚨 إخطار خصم من الراتب' },
+            { id: 'exp', name: '📜 شهادات الخبرة وإخلاء الطرف' },
+            { id: 'sal', name: '💰 شهادات ومفردات الراتب' },
+            { id: 'salrec', name: '🧾 سند استلام الراتب' },
+            { id: 'mexp', name: '💵 شيت المصروفات الشهري' },
+            { id: 'permsheet', name: '🕐 كشف متابعة الإذنات الورقي' },
+            { id: 'task', name: '📋 تكليف بمهمة عمل' },
+            { id: 'proj', name: '📁 نموذج إدارة المشروع' },
+            { id: 'promo', name: '📈 قرار ترقية أو علاوة' },
+            { id: 'leave', name: '🏖 طلب إجازة رسمية' },
+            { id: 'perm', name: '⏱️ إذن حضور / انصراف' }
+        ];
+
+        formSelectHtml = '<div class="fg">' +
+            '<label style="font-size:12.5px; font-weight:800; color:var(--tx); margin-bottom:6px; display:block;">📑 تحديد النموذج أو القسم المراد تحويله:</label>' +
+            '<select id="forwardDocTypeSelect" onchange="tgOnForwardDocTypeChange(this)" style="width:100%; padding:10px 12px; border-radius:10px; border:1.5px solid #0284c7; font-size:12.5px; font-weight:bold; background:var(--bg2); color:var(--tx); cursor:pointer;">' +
+            '<option value="">-- اختر النموذج / القسم --</option>';
+        formChoices.forEach(function(fc) {
+            formSelectHtml += '<option value="' + fc.id + '">' + fc.name + '</option>';
+        });
+        formSelectHtml += '</select></div>';
+    }
+
     var h = '<div class="forward-modal-box" style="direction:rtl; font-family:inherit;">' +
         '<div class="forward-modal-header">' +
-        '  <h3><span>↗️</span> تحويل النموذج / المستند إلى موظف</h3>' +
+        '  <h3><span>🚀</span> تحويل وتفويض مستند / قسم لموظف</h3>' +
         '  <button onclick="closeForwardModal()" style="background:none; border:none; color:#fff; font-size:18px; cursor:pointer; font-weight:bold;">✕</button>' +
         '</div>' +
         '<div class="forward-modal-body">' +
-        '  <div class="forward-doc-summary-badge">' +
-        '    <div style="font-weight:800; font-size:13px; color:var(--tx); display:flex; align-items:center; gap:6px;">' +
-        '      <span>📄</span> <strong>المستند:</strong> ' + escH(formTitle) + (docNum ? (' (' + escH(docNum) + ')') : '') +
-        '    </div>' +
-        '    <span style="font-size:11px; background:#0284c7; color:#fff; padding:2px 8px; border-radius:12px; font-weight:bold;">جاهز للتحويل</span>' +
-        '  </div>' +
+        (formId ? (
+            '  <div class="forward-doc-summary-badge">' +
+            '    <div style="font-weight:800; font-size:13px; color:var(--tx); display:flex; align-items:center; gap:6px;">' +
+            '      <span>📄</span> <strong>المستند الحالي:</strong> ' + escH(formTitle) + (docNum ? (' (' + escH(docNum) + ')') : '') +
+            '    </div>' +
+            '    <span style="font-size:11px; background:#0284c7; color:#fff; padding:2px 8px; border-radius:12px; font-weight:bold;">محدد</span>' +
+            '  </div>'
+        ) : formSelectHtml) +
 
         '  <div class="fg">' +
         '    <label style="font-size:12.5px; font-weight:800; color:var(--tx); margin-bottom:6px; display:block;">👤 تحديد الموظف المستلم:</label>' +
@@ -8583,6 +8643,16 @@ window.openForwardModal = async function(formId, formTitle, docNum, formData) {
 
     modal.innerHTML = h;
     modal.style.display = 'flex';
+};
+
+window.tgOnForwardDocTypeChange = function(sel) {
+    if(!sel || !sel.value) return;
+    var formId = sel.value;
+    var formTitle = T[formId] || formId;
+    if(!window._pendingForwardDoc) window._pendingForwardDoc = {};
+    window._pendingForwardDoc.formId = formId;
+    window._pendingForwardDoc.formTitle = formTitle;
+    window._pendingForwardDoc.docNum = genDocNum(formId);
 };
 
 window.closeForwardModal = function() {
