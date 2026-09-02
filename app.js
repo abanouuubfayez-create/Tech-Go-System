@@ -4941,30 +4941,47 @@ function mexpLoadAssigneeConfig() {
     } catch(e){}
 
     if (typeof db !== 'undefined' && db) {
-        Promise.all([
-            db.collection('users').get().catch(function(){ return { docs: [] }; }),
-            db.collection('employees').get().catch(function(){ return { docs: [] }; })
-        ]).then(function(results) {
+        db.collection('users').get().then(function(snap) {
             var emps = [];
             var seen = new Set();
-            results.forEach(function(snap) {
-                if (snap && snap.docs) {
-                    snap.docs.forEach(function(doc) {
-                        var d = doc.data() || {};
-                        var uid = doc.id;
-                        var name = d.name || d.fullName || d.userName || d.email || uid;
-                        if (!seen.has(uid) && !seen.has(name)) {
-                            seen.add(uid);
-                            seen.add(name);
-                            emps.push({ uid: uid, name: name, email: d.email || '', jobTitle: d.jobTitle || d.dept || '' });
-                        }
-                    });
-                }
-            });
+            if (snap && snap.docs) {
+                snap.docs.forEach(function(doc) {
+                    var d = doc.data() || {};
+                    var uid = doc.id;
+
+                    // Filter ONLY active employees (exclude disabled / inactive / deleted accounts)
+                    if (d.disabled === true || d.status === 'disabled' || d.status === 'inactive' || d.active === false || d.isDeleted === true) return;
+
+                    var rawName = (d.baseName || d.name || d.fullName || d.userName || d.email || uid).trim();
+                    var job = (d.jobTitle || d.dept || '').trim();
+
+                    // Strip accidental repeated job titles from name
+                    var cleanName = rawName;
+                    if (job && cleanName.toLowerCase().endsWith('(' + job.toLowerCase() + ')')) {
+                        cleanName = cleanName.substring(0, cleanName.length - ('(' + job + ')').length).trim();
+                    }
+
+                    // Ignore test accounts if any
+                    if (cleanName.toLowerCase().includes('تست') || cleanName.toLowerCase().startsWith('test')) return;
+
+                    if (!seen.has(uid) && !seen.has(cleanName)) {
+                        seen.add(uid);
+                        seen.add(cleanName);
+                        emps.push({ uid: uid, name: cleanName, email: d.email || '', jobTitle: job });
+                    }
+                });
+            }
             if (emps.length === 0) emps = baselineEmps;
+            
+            // Sort active employees alphabetically
+            emps.sort(function(a, b) {
+                return (a.name || '').localeCompare(b.name || '', 'ar');
+            });
+
             window._staffEmpCache = emps;
             mexpPopulateAssigneeSelect(emps);
-        }).catch(function() {
+        }).catch(function(err) {
+            console.error('mexpLoadAssigneeConfig error:', err);
             mexpPopulateAssigneeSelect(window._staffEmpCache || baselineEmps);
         });
 
@@ -4985,7 +5002,11 @@ function mexpPopulateAssigneeSelect(emps) {
     var curVal = sel.value || (window._mexpConfig && (window._mexpConfig.mexpAssignedUid || window._mexpConfig.assignedUid) ? (window._mexpConfig.mexpAssignedUid || window._mexpConfig.assignedUid) : '');
     var h = '<option value="">-- لم يتم تعيين موظف (الأدمن فقط) --</option>';
     (emps || []).forEach(function(e) {
-        h += '<option value="' + escH(e.uid) + '">' + escH(e.name) + (e.jobTitle ? ' (' + escH(e.jobTitle) + ')' : '') + '</option>';
+        var label = e.name || '';
+        if (e.jobTitle && !label.includes('(' + e.jobTitle + ')')) {
+            label += ' (' + e.jobTitle + ')';
+        }
+        h += '<option value="' + escH(e.uid) + '">' + escH(label) + '</option>';
     });
     sel.innerHTML = h;
     if (curVal) sel.value = curVal;
