@@ -4662,19 +4662,19 @@ function mexpAddNewDay(dayData) {
     dayCard.innerHTML =
         '<div class="mexp-day-header" onclick="mexpToggleDayCard(this, event)">' +
         '  <div class="mexp-day-info">' +
-        '    <button type="button" class="mexp-day-toggle-btn" title="طي أو تمدد بنود هذا اليوم">' +
+        '    <button type="button" class="mexp-day-toggle-btn" onclick="event.preventDefault(); event.stopPropagation(); mexpToggleDayCard(this, event);" title="طي أو تمدد بنود هذا اليوم">' +
         '      <span class="mexp-toggle-icon">▲</span> <span class="mexp-toggle-text">طي</span>' +
         '    </button>' +
         '    <span style="font-size:16px;">📅</span>' +
         '    <label style="font-weight:800; font-size:12.5px; color:#e2e8f0;">تاريخ اليوم:</label>' +
-        '    <input type="date" class="mexp-day-date" value="' + escH(defDate) + '" onchange="mexpUpdateDayHeader(this)">' +
+        '    <input type="date" class="mexp-day-date" value="' + escH(defDate) + '" onchange="mexpUpdateDayHeader(this)" onclick="event.stopPropagation()">' +
         '    <span class="mexp-day-name-badge" style="background:rgba(201,162,39,0.2); color:#fbbf24; border:1px solid rgba(251,191,36,0.35); padding:3px 10px; border-radius:20px; font-size:11.5px; font-weight:800;">' + escH(dayName || 'اليوم') + '</span>' +
         '  </div>' +
         '  <div class="mexp-day-actions">' +
         '    <div class="mexp-day-total-wrap" style="font-size:12px; color:#cbd5e1; font-weight:700;">إجمالي اليوم: <strong class="mexp-day-total" style="color:#34d399; font-size:13.5px; font-weight:900;">0.00 ج.م</strong></div>' +
         '    <div style="display:flex; align-items:center; gap:6px;">' +
-        '      <button type="button" class="bt bt-p" style="padding:5px 12px; font-size:11.5px; font-weight:800; border-radius:6px;" onclick="mexpAddDayItem(this)">➕ بند جديد</button>' +
-        '      <button type="button" class="bt bt-d" style="padding:5px 10px; font-size:11.5px; font-weight:800; border-radius:6px; background:rgba(239,68,68,0.2); color:#fca5a5; border-color:rgba(239,68,68,0.4);" onclick="mexpRemoveDay(this)" title="حذف هذا اليوم بالكامل">🗑 حذف</button>' +
+        '      <button type="button" class="bt bt-p" style="padding:5px 12px; font-size:11.5px; font-weight:800; border-radius:6px;" onclick="event.preventDefault(); event.stopPropagation(); mexpAddDayItem(this);">➕ بند جديد</button>' +
+        '      <button type="button" class="bt bt-d" style="padding:5px 10px; font-size:11.5px; font-weight:800; border-radius:6px; background:rgba(239,68,68,0.2); color:#fca5a5; border-color:rgba(239,68,68,0.4);" onclick="event.preventDefault(); event.stopPropagation(); mexpRemoveDay(this);" title="حذف هذا اليوم بالكامل">🗑 حذف</button>' +
         '    </div>' +
         '  </div>' +
         '</div>' +
@@ -4711,11 +4711,11 @@ function mexpAddNewDay(dayData) {
 function mexpToggleDayCard(el, evt) {
     if (evt) {
         var t = evt.target;
-        if (t && (t.tagName === 'INPUT' || t.classList.contains('mexp-day-date') || t.classList.contains('bt') || t.closest('.bt'))) {
+        if (t && (t.tagName === 'INPUT' || (t.closest && (t.closest('input') || t.closest('.bt'))))) {
             return;
         }
     }
-    var card = el.closest('.mexp-day-card');
+    var card = el.closest ? el.closest('.mexp-day-card') : null;
     if (!card) return;
     card.classList.toggle('collapsed');
     var isCol = card.classList.contains('collapsed');
@@ -4740,8 +4740,58 @@ function mexpToggleAllDays(expand) {
     });
 }
 
+function mexpAddDayItem(btnOrTbody, itemData) {
+    var tbody = null;
+    var card = null;
+    if (btnOrTbody && btnOrTbody.tagName === 'TBODY') {
+        tbody = btnOrTbody;
+        card = tbody.closest('.mexp-day-card');
+    } else if (btnOrTbody) {
+        card = btnOrTbody.closest('.mexp-day-card');
+        if (card) tbody = card.querySelector('.mexp-day-tbody');
+    }
+    if (!tbody) {
+        var allCards = document.querySelectorAll('#mexp-days-container .mexp-day-card');
+        if (allCards.length > 0) {
+            card = allCards[allCards.length - 1];
+            tbody = card.querySelector('.mexp-day-tbody');
+        }
+    }
+    if (!tbody) return;
+
+    if (card) {
+        card.classList.remove('collapsed');
+        var tIcon = card.querySelector('.mexp-toggle-icon');
+        var tText = card.querySelector('.mexp-toggle-text');
+        if (tIcon) tIcon.innerText = '▲';
+        if (tText) tText.innerText = 'طي';
+    }
+
+    var tr = document.createElement('tr');
+    var qtyVal = (itemData && itemData.qty !== undefined && itemData.qty !== null && itemData.qty !== '') ? String(itemData.qty) : '';
+    var priceVal = (itemData && itemData.price !== undefined && itemData.price !== null && itemData.price !== '') ? String(itemData.price) : '';
+    var idx = tbody.children.length + 1;
+
+    tr.innerHTML =
+        '<td class="mexp-idx-td" style="font-weight:bold; font-size:11px; text-align:center;">' +
+        '  <div class="mexp-mobile-row-top">' +
+        '    <span class="mexp-idx-badge" style="font-size:12px; font-weight:800; color:var(--tx); background:rgba(0,0,0,0.06); padding:2px 8px; border-radius:12px;">بند رقم: <b class="mexp-idx">' + idx + '</b></span>' +
+        '    <button type="button" class="bt bt-d" style="padding:4px 8px;font-size:11px;border-radius:6px;" onclick="event.preventDefault(); event.stopPropagation(); mexpDelRow(this);" title="حذف هذا البند">🗑 حذف البند</button>' +
+        '  </div>' +
+        '  <span class="np mexp-desktop-idx-span" style="display:inline-block;">' + idx + '</span>' +
+        '</td>' +
+        '<td class="mexp-spender-td"><div class="mexp-field-group"><label class="mexp-field-label">اسم الصارف:</label><input type="text" class="mexp-spender" autocomplete="off" spellcheck="false" value="' + escH(itemData && itemData.spender || '') + '"></div></td>' +
+        '<td class="mexp-cat-td"><div class="mexp-field-group"><label class="mexp-field-label">النوع / البند:</label><input type="text" class="mexp-cat" autocomplete="off" spellcheck="false" value="' + escH(itemData && itemData.cat || '') + '"></div></td>' +
+        '<td class="mexp-qty-td"><div class="mexp-field-group"><label class="mexp-field-label">العدد:</label><input type="number" min="1" step="1" class="mexp-qty" style="text-align:center; font-weight:700;" autocomplete="off" value="' + escH(qtyVal) + '" oninput="mexpCalc()"></div></td>' +
+        '<td class="mexp-price-td"><div class="mexp-field-group"><label class="mexp-field-label">السعر (ج.م):</label><input type="number" step="0.01" min="0" class="mexp-price" style="text-align:center; font-weight:700;" autocomplete="off" value="' + escH(priceVal) + '" oninput="mexpCalc()"></div></td>' +
+        '<td class="np mexp-del-td" style="text-align:center"><button type="button" class="bt bt-d" style="padding:3px 7px;font-size:11px;border-radius:4px;" onclick="event.preventDefault(); event.stopPropagation(); mexpDelRow(this);" title="حذف هذا البند">✕</button></td>';
+
+    tbody.appendChild(tr);
+    mexpCalc();
+}
+
 function mexpDelRow(btn) {
-    var tr = btn.closest('tr');
+    var tr = btn ? btn.closest('tr') : null;
     var tbody = tr ? tr.closest('tbody') : null;
     if (tr) tr.remove();
     if (tbody) {
