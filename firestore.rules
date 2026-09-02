@@ -236,7 +236,19 @@ service cloud.firestore {
       allow update, delete: if isAnyAdmin() || (isSignedIn() && (resource.data.uid == myUid() || resource.data.createdBy == myUid() || resource.data.assignedTo == myUid() || resource.data.empUid == myUid()));
     }
 
+    match /monthlyReports/{reportId} {
+      allow read: if isSignedIn();
+      allow create: if isSignedIn();
+      allow update, delete: if isAnyAdmin() || (isSignedIn() && (resource.data.uid == myUid() || resource.data.createdBy == myUid() || resource.data.assignedTo == myUid() || resource.data.empUid == myUid()));
+    }
+
     match /monthly_plans/{planId} {
+      allow read: if isSignedIn();
+      allow create: if isSignedIn();
+      allow update, delete: if isAnyAdmin() || (isSignedIn() && (resource.data.uid == myUid() || resource.data.createdBy == myUid() || resource.data.assignedTo == myUid() || resource.data.empUid == myUid()));
+    }
+
+    match /monthlyPlans/{planId} {
       allow read: if isSignedIn();
       allow create: if isSignedIn();
       allow update, delete: if isAnyAdmin() || (isSignedIn() && (resource.data.uid == myUid() || resource.data.createdBy == myUid() || resource.data.assignedTo == myUid() || resource.data.empUid == myUid()));
