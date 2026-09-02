@@ -67,7 +67,7 @@
     <link
         href="https://fonts.googleapis.com/css2?family=Alexandria:wght@300;400;500;600;700;800;900&family=Cairo:wght@400;600;700;800;900&family=Tajawal:wght@400;500;700;800&family=Inter:wght@400;500;600;700&display=swap"
         rel="stylesheet">
-    <link rel="stylesheet" href="styles.css?v=1788339567">
+    <link rel="stylesheet" href="styles.css?v=1788340116">
     <link rel="manifest" href="manifest.json">
     <link rel="icon" type="image/png" sizes="192x192" href="icon-192.png">
     <link rel="apple-touch-icon" href="icon-192.png">
@@ -75,10 +75,10 @@
     <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-storage-compat.js"></script>
-    <script src="firebase-config.js?v=1788339567"></script>
-    <script src="auth.js?v=1788339567"></script>
-    <script src="app.js?v=1788339567"></script>
-    <script src="formsend.js?v=1788339567"></script>
+    <script src="firebase-config.js?v=1788340116"></script>
+    <script src="auth.js?v=1788340116"></script>
+    <script src="app.js?v=1788340116"></script>
+    <script src="formsend.js?v=1788340116"></script>
     <script>
         (function () {
             const theme = localStorage.getItem('tg-theme') || 'light';
@@ -3550,8 +3550,8 @@
         تطوير وتصميم: أبانوب فايز</div>
     <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
-    <script src="theme.js?v=1788339567"></script>
-    <script src="pwa-install.js?v=1788339567"></script>
+    <script src="theme.js?v=1788340116"></script>
+    <script src="pwa-install.js?v=1788340116"></script>
 
 
     <!-- Incoming Meeting Call Modal -->
@@ -4763,87 +4763,159 @@
             box.innerHTML = h;
         };
 
-        // Print Assigned Document Directly
+        // ─── طباعة المستند المحول بدقة القالب الرسمي 100% ──────────────────────────
         window.empPrintAssignedDoc = function(docId) {
             var doc = (window._allEmpAssignedDocs || []).find(function(d){ return d.id === docId; });
             if (!doc) return;
 
-            var rawData = [];
-            try { rawData = JSON.parse(doc.formData || '[]'); } catch(e){}
-
-            var printWin = window.open('', '_blank', 'width=900,height=800');
-            if (!printWin) {
-                alert('⚠️ يرجى السماح بالنوافذ المنبثقة للطباعة.');
-                return;
+            var dataObj = doc.dataObj || {};
+            if ((!dataObj || Object.keys(dataObj).length === 0) && doc.formData) {
+                try {
+                    var parsed = JSON.parse(doc.formData);
+                    if (parsed && typeof parsed === 'object' && !Array.isArray(parsed)) {
+                        dataObj = parsed;
+                    } else if (Array.isArray(parsed)) {
+                        dataObj = {};
+                        parsed.forEach(function(item, idx) {
+                            if (typeof item === 'string' && item.indexOf(':') !== -1) {
+                                var parts = item.split(':');
+                                var k = parts[0].trim();
+                                var v = parts.slice(1).join(':').trim();
+                                dataObj[k] = v;
+                            } else {
+                                dataObj['field_' + idx] = item;
+                            }
+                        });
+                    }
+                } catch(e) {}
             }
 
             var formTitle = doc.formTitle || 'وثيقة رسمية';
-            var docNum = doc.docNum || ('TG-' + new Date().getFullYear() + '-DOC');
-            var dateStr = new Date().toLocaleDateString('ar-EG', { year: 'numeric', month: 'long', day: 'numeric' });
-
-            var fieldsHtml = '<div style="display:flex; flex-direction:column; gap:12px; margin-bottom:24px;">';
-            if (rawData.length > 0) {
-                fieldsHtml += '<table style="width:100%; border-collapse:collapse; font-size:12.5px; border:1px solid #cbd5e1;">';
-                fieldsHtml += '<thead style="background:#f1f5f9;"><tr style="border-bottom:2px solid #cbd5e1;"><th style="padding:10px; text-align:right; width:40%;">البند / الحقل</th><th style="padding:10px; text-align:right;">القيمة والبيانات المسجلة</th></tr></thead><tbody>';
-                rawData.forEach(function(val, idx) {
-                    if (val === true || val === false || val === '' || val === null || val === undefined) return;
-                    var rowBg = (idx % 2 === 0) ? '#ffffff' : '#f8fafc';
-                    fieldsHtml += '<tr style="background:' + rowBg + '; border-bottom:1px solid #e2e8f0;"><td style="padding:8px 10px; font-weight:bold; color:#334155;">بيان رقم (' + (idx + 1) + ')</td><td style="padding:8px 10px; color:#0f172a; font-weight:700;">' + esc(String(val)) + '</td></tr>';
-                });
-                fieldsHtml += '</tbody></table>';
-            } else {
-                fieldsHtml += '<div style="padding:20px; text-align:center; color:#64748b; font-style:italic;">مستند رسمي بدون بنود نصية مسبقة.</div>';
+            var formTpl = doc.formTemplateId || doc.formId || '';
+            if (!formTpl || formTpl === 'req' || formTpl === 'gen') {
+                if (formTitle.indexOf('بيانات الموظف') !== -1) formTpl = 'emp';
+                else if (formTitle.indexOf('إجازة') !== -1) formTpl = 'leave';
+                else if (formTitle.indexOf('إذن') !== -1) formTpl = 'perm';
+                else if (formTitle.indexOf('سلفة') !== -1) formTpl = 'loan';
+                else if (formTitle.indexOf('خبرة') !== -1) formTpl = 'exp';
+                else if (formTitle.indexOf('إخلاء') !== -1) formTpl = 'clr';
+                else if (formTitle.indexOf('استقالة') !== -1) formTpl = 'res';
+                else if (formTitle.indexOf('تقييم') !== -1) formTpl = 'eval';
+                else if (formTitle.indexOf('شكاوى') !== -1) formTpl = 'compsug';
+                else if (formTitle.indexOf('تأخير') !== -1) formTpl = 'delay';
             }
-            fieldsHtml += '</div>';
 
-            var printContent = '<!DOCTYPE html><html lang="ar" dir="rtl"><head><meta charset="UTF-8"><title>' + esc(formTitle) + ' - طباعة</title>' +
-                '<style>' +
-                '  @import url("https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;800;900&display=swap");' +
-                '  body { font-family: "Cairo", Tahoma, sans-serif; direction: rtl; padding: 25px; margin: 0; color: #0f172a; background: #fff; }' +
-                '  .header { display: flex; justify-content: space-between; align-items: center; border-bottom: 2.5px solid #0f172a; padding-bottom: 12px; margin-bottom: 20px; }' +
-                '  .title-box { text-align: center; margin-bottom: 24px; }' +
-                '  .title-box h1 { margin: 0; font-size: 22px; font-weight: 900; color: #0f172a; }' +
-                '  .title-box p { margin: 4px 0 0; font-size: 13px; color: #475569; font-weight: bold; }' +
-                '  .meta-grid { display: flex; justify-content: space-between; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 10px 14px; margin-bottom: 20px; font-size: 12px; font-weight: bold; }' +
-                '  .footer-sig { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 15px; text-align: center; margin-top: 45px; page-break-inside: avoid; }' +
-                '  .sig-col { border-top: 1.5px dashed #64748b; padding-top: 8px; font-size: 12px; font-weight: bold; color: #334155; }' +
-                '  @media print { @page { size: A4; margin: 15mm; } button { display: none !important; } }' +
-                '</style></head><body>' +
-                '<div class="header">' +
-                '  <div><strong style="font-size:16px;">TECH GO · شركة تيك جو</strong><br><small style="color:#64748b;">نظام الإدارة الشامل</small></div>' +
-                '  <div style="text-align:left;"><span style="font-size:12px; color:#475569;">رقم الوثيقة:</span><br><strong style="font-size:14px; color:#0284c7;">' + esc(docNum) + '</strong></div>' +
-                '</div>' +
-                '<div class="title-box">' +
-                '  <h1>' + esc(formTitle) + '</h1>' +
-                '  <p>وثيقة إدارية معتمدة صادرة من النظام</p>' +
-                '</div>' +
-                '<div class="meta-grid">' +
-                '  <div>📅 <strong>تاريخ الإصدار:</strong> ' + dateStr + '</div>' +
-                '  <div>👤 <strong>المسؤول / الموظف المكلف:</strong> ' + esc(doc.assignedToName || '') + '</div>' +
-                '  <div>🏛 <strong>الجهة المُصدرة:</strong> ' + esc(doc.assignedByName || 'الإدارة') + '</div>' +
-                '</div>' +
-                fieldsHtml +
-                (doc.instructions ? ('<div style="background:#fffbeb; border:1px solid #fef3c7; border-radius:8px; padding:10px 14px; font-size:12px; margin-bottom:20px; color:#92400e;"><strong>📌 ملاحظات واعتمادات الإدارة:</strong> ' + esc(doc.instructions) + '</div>') : '') +
-                '<div class="footer-sig">' +
-                '  <div class="sig-col">محرر المستند<br><small style="font-weight:normal; color:#94a3b8;">إعداد ومراجعة</small></div>' +
-                '  <div class="sig-col">الموظف المستلم<br><strong style="color:#0f172a;">' + esc(doc.assignedToName || '') + '</strong></div>' +
-                '  <div class="sig-col">المدير الإداري والتنفيذي<br><small style="font-weight:normal; color:#94a3b8;">اعتماد وإصدار رسمي</small></div>' +
-                '</div>' +
-                '<script>window.onload = function(){ window.print(); };<\/script>' +
-                '</body></html>';
+            // Case 1: Template exists in FS_OFFICIAL (emp, leave, perm, loan, exp, clr, res, eval, compsug, delay, etc.)
+            if (window.FS_OFFICIAL && window.FS_OFFICIAL[formTpl] && typeof window.FS_OFFICIAL[formTpl].print === 'function') {
+                var meta = (window.FS_OFFICIAL_META && window.FS_OFFICIAL_META[formTpl]) ? window.FS_OFFICIAL_META[formTpl] : { sub: formTitle, en: 'OFFICIAL DOCUMENT' };
+                var dh = H('نموذج موظف', formTitle, meta.en || 'EMPLOYEE FORM', formTpl);
+                dh += window.FS_OFFICIAL[formTpl].print(dataObj);
+                if (doc.instructions) {
+                    dh += '<div style="background:rgba(245,158,11,0.08); border:1px solid rgba(245,158,11,0.3); border-radius:8px; padding:10px 14px; margin-top:16px; font-size:12px; color:var(--tx); font-weight:700;">' +
+                          '<strong>📌 ملاحظات واعتمادات الإدارة:</strong> ' + esc(doc.instructions) + '</div>';
+                }
+                if (typeof printDoc === 'function') {
+                    printDoc(dh, formTitle);
+                } else {
+                    tgPrintAssignedDocFallback(formTitle, doc.docNum, dh);
+                }
+                return;
+            }
 
-            printWin.document.open();
-            printWin.document.write(printContent);
-            printWin.document.close();
+            // Case 2: General Official Document Letterhead
+            var h = H('وثيقة رسمية', formTitle, 'OFFICIAL DOCUMENT', 'gen');
+            h += SC('١', 'بيانات المستند والتكليف');
+            h += tgLine('رقم الوثيقة', doc.docNum || 'TG-DOC');
+            h += tgLine('الموظف المكلف', doc.assignedToName || '');
+            h += tgLine('الجهة المصدرة', doc.assignedByName || 'الإدارة');
+            h += tgLine('نوع الإجراء', doc.actionLabel || 'طباعة وتسليم');
+
+            h += SC('٢', 'محتوى وبيانات النموذج');
+            if (dataObj && Object.keys(dataObj).length > 0) {
+                for (var key in dataObj) {
+                    var val = dataObj[key];
+                    if (val === true) val = 'نعم / تم';
+                    if (val === false) val = 'لا';
+                    if (val === '' || val === null || val === undefined) continue;
+                    h += tgLine(key, String(val));
+                }
+            } else {
+                h += tgBlock('وثيقة إدارية معتمدة صادرة من النظام.');
+            }
+
+            if (doc.instructions) {
+                h += SC('٣', 'تعليمات وتوجيهات الإدارة');
+                h += tgBlock(doc.instructions);
+            }
+
+            h += FT(['نسخة للموظف المستلم', 'نسخة للأرشيف والإدارة']);
+            if (typeof printDoc === 'function') {
+                printDoc(h, formTitle);
+            } else {
+                tgPrintAssignedDocFallback(formTitle, doc.docNum, h);
+            }
         };
 
-        // Open Interactive Modal to View & Complete Form
+        function tgPrintAssignedDocFallback(title, num, bodyHtml) {
+            var ifr = document.getElementById('tgPrintFrame');
+            if (ifr) {
+                fetch('styles.css?v=' + Date.now()).then(function(res){ return res.text(); }).then(function(css){
+                    var doc = ifr.contentWindow.document;
+                    var fullHtml = '<!DOCTYPE html><html lang="ar" dir="rtl"><head><meta charset="UTF-8"><title>' + esc(title) + '</title><style>' + css + '</style></head><body>' + bodyHtml + '</body></html>';
+                    doc.open(); doc.write(fullHtml); doc.close();
+                    setTimeout(function(){ ifr.contentWindow.focus(); ifr.contentWindow.print(); }, 500);
+                });
+                return;
+            }
+            var w = window.open('', '_blank', 'width=900,height=800');
+            if (w) {
+                w.document.open();
+                w.document.write('<!DOCTYPE html><html lang="ar" dir="rtl"><head><meta charset="UTF-8"><title>' + esc(title) + '</title><link rel="stylesheet" href="styles.css"></head><body style="padding:20px;">' + bodyHtml + '<script>window.onload=function(){window.print();};<\/script></body></html>');
+                w.document.close();
+            }
+        }
+
+        // ─── استعراض واستكمال النموذج بدقة وحقول القالب الرسمية ───────────────────
         window.empOpenAssignedDocModal = function(docId) {
             var doc = (window._allEmpAssignedDocs || []).find(function(d){ return d.id === docId; });
             if (!doc) return;
 
-            var rawData = [];
-            try { rawData = JSON.parse(doc.formData || '[]'); } catch(e){}
+            var dataObj = doc.dataObj || {};
+            if ((!dataObj || Object.keys(dataObj).length === 0) && doc.formData) {
+                try {
+                    var parsed = JSON.parse(doc.formData);
+                    if (parsed && typeof parsed === 'object' && !Array.isArray(parsed)) {
+                        dataObj = parsed;
+                    } else if (Array.isArray(parsed)) {
+                        dataObj = {};
+                        parsed.forEach(function(item, idx) {
+                            if (typeof item === 'string' && item.indexOf(':') !== -1) {
+                                var parts = item.split(':');
+                                var k = parts[0].trim();
+                                var v = parts.slice(1).join(':').trim();
+                                dataObj[k] = v;
+                            } else {
+                                dataObj['field_' + idx] = item;
+                            }
+                        });
+                    }
+                } catch(e) {}
+            }
+
+            var formTitle = doc.formTitle || 'النموذج المحول';
+            var formTpl = doc.formTemplateId || doc.formId || '';
+            if (!formTpl || formTpl === 'req' || formTpl === 'gen') {
+                if (formTitle.indexOf('بيانات الموظف') !== -1) formTpl = 'emp';
+                else if (formTitle.indexOf('إجازة') !== -1) formTpl = 'leave';
+                else if (formTitle.indexOf('إذن') !== -1) formTpl = 'perm';
+                else if (formTitle.indexOf('سلفة') !== -1) formTpl = 'loan';
+                else if (formTitle.indexOf('خبرة') !== -1) formTpl = 'exp';
+                else if (formTitle.indexOf('إخلاء') !== -1) formTpl = 'clr';
+                else if (formTitle.indexOf('استقالة') !== -1) formTpl = 'res';
+                else if (formTitle.indexOf('تقييم') !== -1) formTpl = 'eval';
+                else if (formTitle.indexOf('شكاوى') !== -1) formTpl = 'compsug';
+                else if (formTitle.indexOf('تأخير') !== -1) formTpl = 'delay';
+            }
 
             var modal = document.getElementById('empAssignedDocDetailModal');
             if (!modal) {
@@ -4853,23 +4925,35 @@
                 document.body.appendChild(modal);
             }
 
-            var fieldsFormHtml = '<div style="display:flex; flex-direction:column; gap:10px; max-height:50vh; overflow-y:auto; padding-left:4px;">';
-            if (rawData.length > 0) {
-                rawData.forEach(function(val, idx) {
-                    if (val === true || val === false) {
-                        fieldsFormHtml += '<label style="display:flex; align-items:center; gap:8px; font-size:12px; font-weight:bold; color:var(--tx); padding:4px 0;"><input type="checkbox" class="emp-asg-inp" data-idx="' + idx + '" ' + (val ? 'checked' : '') + '> خيار رقم (' + (idx + 1) + ')</label>';
-                    } else {
-                        fieldsFormHtml += '<div class="fg"><label style="font-size:11.5px; font-weight:700; color:var(--tx2); margin-bottom:2px; display:block;">حقل بيانات (' + (idx + 1) + '):</label><input type="text" class="emp-asg-inp" data-idx="' + idx + '" value="' + esc(String(val || '')) + '" style="width:100%; padding:8px 10px; border-radius:8px; border:1px solid var(--bd); font-size:12px; background:var(--bg2); color:var(--tx);"></div>';
-                    }
-                });
-            } else {
-                fieldsFormHtml += '<div class="empty-hint">لا توجد حقول نصية مخزنة مسبقاً في هذا النموذج.</div>';
-            }
-            fieldsFormHtml += '</div>';
+            var fieldsFormHtml = '';
+            var isOfficialFill = false;
 
-            var h = '<div class="forward-modal-box" style="direction:rtl; font-family:inherit;">' +
+            // Use official fill template if available
+            if (window.FS_OFFICIAL && window.FS_OFFICIAL[formTpl] && typeof window.FS_OFFICIAL[formTpl].fill === 'function') {
+                isOfficialFill = true;
+                fieldsFormHtml = '<div id="empOfficialFillFormContainer" style="max-height:60vh; overflow-y:auto; padding:10px 4px;">' +
+                    window.FS_OFFICIAL[formTpl].fill() +
+                    '</div>';
+            } else {
+                fieldsFormHtml = '<div style="display:flex; flex-direction:column; gap:12px; max-height:55vh; overflow-y:auto; padding:10px 4px;">';
+                if (dataObj && Object.keys(dataObj).length > 0) {
+                    for (var key in dataObj) {
+                        var val = dataObj[key];
+                        if (typeof val === 'boolean') {
+                            fieldsFormHtml += '<label style="display:flex; align-items:center; gap:8px; font-size:13px; font-weight:bold; color:var(--tx); padding:6px 0;"><input type="checkbox" class="emp-custom-fld" data-key="' + esc(key) + '" ' + (val ? 'checked' : '') + '> ' + esc(key) + '</label>';
+                        } else {
+                            fieldsFormHtml += '<div class="fg"><label style="font-size:12px; font-weight:800; color:var(--tx2); margin-bottom:4px; display:block;">' + esc(key) + ':</label><input type="text" class="emp-custom-fld" data-key="' + esc(key) + '" value="' + esc(String(val || '')) + '" style="width:100%; padding:9px 12px; border-radius:8px; border:1px solid var(--bd); font-size:13px; background:var(--bg2); color:var(--tx); font-weight:bold;"></div>';
+                        }
+                    }
+                } else {
+                    fieldsFormHtml += '<div class="empty-hint">لا توجد حقول بيانات مسبقة. يمكنك تسجيل الملاحظات وإتمام الإجراء.</div>';
+                }
+                fieldsFormHtml += '</div>';
+            }
+
+            var h = '<div class="forward-modal-box" style="direction:rtl; font-family:inherit; max-width:680px;">' +
                 '<div class="forward-modal-header">' +
-                '  <h3><span>📄</span> ' + esc(doc.formTitle || 'النموذج المحول') + '</h3>' +
+                '  <h3><span>📄</span> ' + esc(formTitle) + '</h3>' +
                 '  <button onclick="document.getElementById(\'empAssignedDocDetailModal\').style.display=\'none\'" style="background:none; border:none; color:#fff; font-size:18px; cursor:pointer; font-weight:bold;">✕</button>' +
                 '</div>' +
                 '<div class="forward-modal-body">' +
@@ -4878,13 +4962,13 @@
                 '    <div><strong>المحيل:</strong> ' + esc(doc.assignedByName || 'الإدارة') + '</div>' +
                 '  </div>' +
                 (doc.instructions ? ('  <div class="assigned-instructions-box"><strong>📌 تعليمات الإدارة:</strong> ' + esc(doc.instructions) + '</div>') : '') +
-                '  <div style="font-size:12.5px; font-weight:800; color:var(--tx); margin-top:6px;">✍️ بيانات وحقول النموذج (يمكنك استكمالها أو تعديلها):</div>' +
+                '  <div style="font-size:13px; font-weight:900; color:var(--tx); margin-top:8px; margin-bottom:4px;">✍️ استكمال وتعبئة بيانات النموذج:</div>' +
                 fieldsFormHtml +
-                '  <div style="display:flex; justify-content:space-between; align-items:center; gap:8px; margin-top:8px; border-top:1px solid var(--bd); padding-top:14px; flex-wrap:wrap;">' +
-                '    <button onclick="empPrintAssignedDoc(\'' + doc.id + '\')" class="bt bt-o" style="padding:8px 14px; font-size:12px; font-weight:bold;">🖨 طباعة المستند</button>' +
+                '  <div style="display:flex; justify-content:space-between; align-items:center; gap:8px; margin-top:10px; border-top:1px solid var(--bd); padding-top:14px; flex-wrap:wrap;">' +
+                '    <button onclick="empPrintAssignedDoc(\'' + doc.id + '\')" class="bt bt-o" style="padding:9px 18px; font-size:12.5px; font-weight:bold;">🖨 طباعة رسمية</button>' +
                 '    <div style="display:flex; gap:8px;">' +
-                '      <button onclick="document.getElementById(\'empAssignedDocDetailModal\').style.display=\'none\'" class="bt bt-o" style="padding:8px 14px; font-size:12px; font-weight:bold;">إغلاق</button>' +
-                '      <button onclick="empSaveCompletedForm(\'' + doc.id + '\', this)" class="bt bt-p" style="padding:8px 20px; font-size:12.5px; font-weight:bold; background:linear-gradient(135deg, #0284c7, #0369a1); color:#fff; border-radius:8px;">💾 حفظ التعديلات</button>' +
+                '      <button onclick="document.getElementById(\'empAssignedDocDetailModal\').style.display=\'none\'" class="bt bt-o" style="padding:9px 16px; font-size:12.5px; font-weight:bold;">إغلاق</button>' +
+                '      <button onclick="empSaveCompletedForm(\'' + doc.id + '\', this)" class="bt bt-p" style="padding:9px 24px; font-size:13px; font-weight:bold; background:linear-gradient(135deg, #0284c7, #0369a1); color:#fff; border-radius:8px; box-shadow:0 4px 12px rgba(2,132,199,0.3);">💾 حفظ التعديلات</button>' +
                 '    </div>' +
                 '  </div>' +
                 '</div>' +
@@ -4892,22 +4976,52 @@
 
             modal.innerHTML = h;
             modal.style.display = 'flex';
+
+            // If official template was rendered, pre-populate its data-fid inputs
+            if (isOfficialFill) {
+                var fillContainer = document.getElementById('empOfficialFillFormContainer');
+                if (fillContainer) {
+                    fillContainer.querySelectorAll('[data-fid]').forEach(function(inp) {
+                        var fid = inp.getAttribute('data-fid');
+                        if (dataObj[fid] !== undefined) {
+                            if (inp.type === 'checkbox' || inp.type === 'radio') {
+                                inp.checked = !!dataObj[fid];
+                            } else {
+                                inp.value = dataObj[fid];
+                            }
+                        }
+                    });
+                }
+            }
         };
 
-        // Save Edits to Assigned Doc
+        // ─── حفظ التعديلات على المستند وتحديثه في قاعدة البيانات ────────────────────
         window.empSaveCompletedForm = async function(docId, btn) {
             var doc = (window._allEmpAssignedDocs || []).find(function(d){ return d.id === docId; });
             if (!doc) return;
 
-            var rawData = [];
-            try { rawData = JSON.parse(doc.formData || '[]'); } catch(e){}
+            var updatedDataObj = Object.assign({}, doc.dataObj || {});
 
-            document.querySelectorAll('#empAssignedDocDetailModal .emp-asg-inp').forEach(function(inp) {
-                var idx = parseInt(inp.getAttribute('data-idx'));
-                if (!isNaN(idx)) {
-                    rawData[idx] = (inp.type === 'checkbox') ? inp.checked : inp.value;
-                }
-            });
+            var fillContainer = document.getElementById('empOfficialFillFormContainer');
+            if (fillContainer) {
+                fillContainer.querySelectorAll('[data-fid]').forEach(function(inp) {
+                    var fid = inp.getAttribute('data-fid');
+                    if (inp.type === 'checkbox' || inp.type === 'radio') {
+                        if (inp.checked) updatedDataObj[fid] = true;
+                    } else {
+                        updatedDataObj[fid] = inp.value;
+                    }
+                });
+            } else {
+                document.querySelectorAll('#empAssignedDocDetailModal .emp-custom-fld').forEach(function(inp) {
+                    var key = inp.getAttribute('data-key');
+                    if (inp.type === 'checkbox') {
+                        updatedDataObj[key] = inp.checked;
+                    } else {
+                        updatedDataObj[key] = inp.value;
+                    }
+                });
+            }
 
             if (btn) {
                 btn.disabled = true;
@@ -4916,12 +5030,17 @@
 
             try {
                 await db.collection('assignedDocs').doc(docId).update({
-                    formData: JSON.stringify(rawData),
+                    dataObj: updatedDataObj,
+                    formData: JSON.stringify(updatedDataObj),
                     updatedAt: firebase.firestore.FieldValue.serverTimestamp()
                 });
+                
+                doc.dataObj = updatedDataObj;
+                doc.formData = JSON.stringify(updatedDataObj);
+
                 var modal = document.getElementById('empAssignedDocDetailModal');
                 if (modal) modal.style.display = 'none';
-                alert('✅ تم حفظ التعديلات بنجاح!');
+                alert('✅ تم حفظ تعديلات النموذج بنجاح!');
             } catch(err) {
                 if (btn) {
                     btn.disabled = false;
