@@ -5326,7 +5326,7 @@ function load(id, c) {
         return;
     }
     else if (id === "monthlyreports" || id === "weeklyreports" || id === "wkr") {
-        loadWeeklyReportsAdmin(c);
+        loadWeeklyReportsInbox(c);
         return;
     }
     else if (id === "monthlyplans") {
@@ -14236,68 +14236,7 @@ window.tgGenerateMonthlyFromWeekly = function (targetMonthStr) {
 
 // Admin View for Unified Reports (Weekly & Monthly)
 window.loadWeeklyReportsAdmin = function (container) {
-    if (!container) container = document.getElementById('pg-wkr') || document.getElementById('pg-weeklyreports');
-    if (!container) {
-        var pg = document.querySelector('.pg.a');
-        if (pg) container = pg;
-    }
-    if (!container) return;
-
-    container.innerHTML = `
-        <div class="set-sec">
-            <!-- Centralized Reports Hub Switcher Bar -->
-            <div style="display:flex; gap:10px; flex-wrap:wrap; margin-bottom:22px; background:var(--bg2); padding:10px; border-radius:18px; border:1.5px solid var(--bd); box-shadow:0 4px 15px rgba(0,0,0,0.1);">
-                <button type="button" onclick="go('wkr')" class="bt" style="flex:1; min-width:150px; background:linear-gradient(135deg, #10b981, #059669); color:#ffffff; font-weight:900; font-size:14px; padding:12px; border-radius:12px; border:none; cursor:pointer; box-shadow:0 4px 12px rgba(16,185,129,0.3); display:flex; align-items:center; justify-content:center; gap:8px;">
-                    <span>📊</span> التقارير (أسبوعية وشهرية مدمجة)
-                </button>
-                <button type="button" onclick="go('monthlyplans')" class="bt" style="flex:1; min-width:150px; background:transparent; color:var(--tx); font-weight:800; font-size:14px; padding:12px; border-radius:12px; border:none; cursor:pointer; display:flex; align-items:center; justify-content:center; gap:8px;">
-                    <span>🎯</span> الخطط الشهرية (MP)
-                </button>
-            </div>
-
-            <!-- Page Title & Actions -->
-            <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:16px; margin-bottom:24px; padding-bottom:16px; border-bottom:1.5px solid var(--bd);">
-                <div>
-                    <h2 style="font-size:24px; font-weight:900; color:var(--tx); margin:0 0 6px;">📊 إدارة التقارير (أسبوعية وشهرية مدمجة للإدارة)</h2>
-                    <p style="color:var(--tx2); font-size:14px; margin:0; font-weight:600;">سجل متابعة واعتماد التقارير الأسبوعية والشهرية المقدمة من الموظفين والأقسام.</p>
-                </div>
-                <div style="display:flex; gap:12px; flex-wrap:wrap;">
-                    <button type="button" onclick="sendWeeklyReportReminder()" class="bt" style="background:linear-gradient(135deg, #6366f1, #4f46e5); color:#fff; font-weight:900; font-size:14px; padding:12px 24px; border-radius:50px; box-shadow:0 6px 20px rgba(99,102,241,0.35); border:none; cursor:pointer; display:inline-flex; align-items:center; gap:8px;" id="sysrepReminderBtn">
-                        <span>🔔</span> تذكير الموظفين بالتقرير الأسبوعي (الخميس)
-                    </button>
-                    <button type="button" onclick="tgGenerateMasterExecutiveReportModal()" class="bt" style="background:linear-gradient(135deg, #f59e0b, #d97706); color:#fff; font-weight:900; font-size:14px; padding:12px 24px; border-radius:50px; box-shadow:0 6px 20px rgba(245,158,11,0.35); border:none; cursor:pointer; display:inline-flex; align-items:center; gap:8px;">
-                        <span>✨</span> إنشاء التقرير الشهري التجميعي للإدارة
-                    </button>
-                    <button type="button" onclick="tgOpenNewMonthlyReportModal()" class="bt" style="background:linear-gradient(135deg, #10b981, #059669); color:#fff; font-weight:900; font-size:14px; padding:12px 24px; border-radius:50px; box-shadow:0 6px 20px rgba(16,185,129,0.35); border:none; cursor:pointer; display:inline-flex; align-items:center; gap:8px;">
-                        <span>➕</span> إنشاء تقرير شهري مخصص
-                    </button>
-                </div>
-            </div>
-
-            <!-- Section 1: Monthly Reports (MR) -->
-            <div style="margin-bottom:35px;">
-                <h3 style="font-size:18px; font-weight:900; color:#10b981; margin:0 0 14px; display:flex; align-items:center; gap:8px;">
-                    <span>📄</span> التقارير الشهرية المقدمة من الموظفين (MR)
-                </h3>
-                <div id="mrAdminListInUnified">
-                    <div style="text-align:center; padding:25px; color:var(--tx2); font-weight:bold;">⏳ جاري تحميل التقارير الشهرية...</div>
-                </div>
-            </div>
-
-            <!-- Section 2: Weekly Reports (WR) -->
-            <div>
-                <h3 style="font-size:18px; font-weight:900; color:#0284c7; margin:0 0 14px; display:flex; align-items:center; gap:8px;">
-                    <span>🗓️</span> التقارير الأسبوعية المقدمة من الموظفين (WR)
-                </h3>
-                <div id="wkrAdminList">
-                    <div style="text-align:center; padding:25px; color:var(--tx2); font-weight:bold;">⏳ جاري تحميل التقارير الأسبوعية...</div>
-                </div>
-            </div>
-        </div>
-    `;
-
-    tgRenderMonthlyReportsAdminInUnified();
-    tgRenderWeeklyReportsAdmin();
+    loadWeeklyReportsInbox(container);
 };
 
 window.tgRenderMonthlyReportsAdminInUnified = function (retryCount) {
