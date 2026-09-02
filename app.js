@@ -4529,27 +4529,46 @@ function mexpLoad(showToast){
     try { localData = localRaw ? JSON.parse(localRaw) : null; } catch(e){}
 
     if (typeof db !== 'undefined' && db) {
-        db.collection('mexp_sheets').doc(monthVal).get().then(function(doc) {
-            var days = [];
-            var syncInfo = document.getElementById('mexpSyncInfo');
+        // Try savedForms first, fallback to mexp_sheets
+        db.collection('savedForms').doc('mexp_' + monthVal).get().then(function(doc) {
             if (doc.exists) {
                 var data = doc.data() || {};
+                var days = mexpNormalizeDaysData(data);
                 localStorage.setItem(storageKey, JSON.stringify(data));
+                var syncInfo = document.getElementById('mexpSyncInfo');
                 if (syncInfo && data.updatedBy) {
                     var timeStr = data.updatedAt && data.updatedAt.toDate ? data.updatedAt.toDate().toLocaleTimeString('ar-EG', {hour:'2-digit', minute:'2-digit', day:'numeric', month:'numeric'}) : '';
                     syncInfo.innerHTML = '<span>✅ آخر تحديث تم بواسطة: <b>' + escH(data.updatedBy) + '</b> ' + (timeStr ? '(' + timeStr + ')' : '') + '</span>';
                 }
-                days = mexpNormalizeDaysData(data);
-            } else if (localData) {
-                days = mexpNormalizeDaysData(localData);
-                if (syncInfo) syncInfo.innerHTML = '<span>ℹ️ لا توجد بيانات سابقة على السيرفر لهذا الشهر (شيت جديد)</span>';
+                mexpRenderDays(days);
+                if (showToast && typeof tgShowToast === 'function') tgShowToast('تم تحديث الشيت بنجاح', 'success');
             } else {
-                if (syncInfo) syncInfo.innerHTML = '<span>ℹ️ لا توجد بيانات سابقة على السيرفر لهذا الشهر (شيت جديد)</span>';
+                // Check mexp_sheets fallback
+                db.collection('mexp_sheets').doc(monthVal).get().then(function(doc2) {
+                    var days = [];
+                    var syncInfo = document.getElementById('mexpSyncInfo');
+                    if (doc2.exists) {
+                        var data2 = doc2.data() || {};
+                        localStorage.setItem(storageKey, JSON.stringify(data2));
+                        if (syncInfo && data2.updatedBy) {
+                            var timeStr = data2.updatedAt && data2.updatedAt.toDate ? data2.updatedAt.toDate().toLocaleTimeString('ar-EG', {hour:'2-digit', minute:'2-digit', day:'numeric', month:'numeric'}) : '';
+                            syncInfo.innerHTML = '<span>✅ آخر تحديث تم بواسطة: <b>' + escH(data2.updatedBy) + '</b> ' + (timeStr ? '(' + timeStr + ')' : '') + '</span>';
+                        }
+                        days = mexpNormalizeDaysData(data2);
+                    } else if (localData) {
+                        days = mexpNormalizeDaysData(localData);
+                        if (syncInfo) syncInfo.innerHTML = '<span>ℹ️ شيت جديد (لا توجد بيانات سابقة على السيرفر)</span>';
+                    } else {
+                        if (syncInfo) syncInfo.innerHTML = '<span>ℹ️ شيت جديد (لا توجد بيانات سابقة على السيرفر)</span>';
+                    }
+                    mexpRenderDays(days);
+                    if (showToast && typeof tgShowToast === 'function') tgShowToast('تم تحديث الشيت بنجاح', 'success');
+                }).catch(function() {
+                    mexpRenderDays(mexpNormalizeDaysData(localData));
+                });
             }
-            mexpRenderDays(days);
-            if (showToast && typeof tgShowToast === 'function') tgShowToast('تم تحديث الشيت من السيرفر بنجاح', 'success');
         }).catch(function(err) {
-            console.error('mexpLoad Firestore err:', err);
+            console.error('mexpLoad err:', err);
             mexpRenderDays(mexpNormalizeDaysData(localData));
         });
     } else {
@@ -4862,20 +4881,32 @@ function mexpSave(){
     var updatedByName = (window.TG_USER && TG_USER.name) ? TG_USER.name : 'الأدمن';
 
     if (typeof db !== 'undefined' && db) {
-        db.collection('mexp_sheets').doc(monthVal).set({
+        var sheetDocData = {
+            formId: 'mexp',
             month: monthVal,
             days: days,
             updatedBy: updatedByName,
             updatedAt: firebase.firestore.FieldValue.serverTimestamp()
-        }, { merge: true }).then(function() {
+        };
+
+        db.collection('savedForms').doc('mexp_' + monthVal).set(sheetDocData, { merge: true }).then(function() {
+            db.collection('mexp_sheets').doc(monthVal).set(sheetDocData, { merge: true }).catch(function(){});
             var syncInfo = document.getElementById('mexpSyncInfo');
             if (syncInfo) syncInfo.innerHTML = '<span>✅ تم الحفظ والمزامنة بنجاح على السيرفر بواسطة: <b>' + escH(updatedByName) + '</b></span>';
             if (typeof tgShowToast === 'function') tgShowToast('تم حفظ شيت المصروفات والمزامنة بنجاح', 'success');
             else alert('✅ تم حفظ ومزامنة شيت المصروفات لشهر ' + monthVal);
         }).catch(function(err) {
-            console.error('mexpSave err:', err);
-            if (typeof tgShowToast === 'function') tgShowToast('تم الحفظ محلياً (تعذر رفع السيرفر)', 'warning');
-            else alert('✅ تم حفظ شيت المصروفات محلياً');
+            console.error('mexpSave savedForms err:', err);
+            db.collection('mexp_sheets').doc(monthVal).set(sheetDocData, { merge: true }).then(function() {
+                var syncInfo = document.getElementById('mexpSyncInfo');
+                if (syncInfo) syncInfo.innerHTML = '<span>✅ تم الحفظ والمزامنة بنجاح على السيرفر بواسطة: <b>' + escH(updatedByName) + '</b></span>';
+                if (typeof tgShowToast === 'function') tgShowToast('تم حفظ شيت المصروفات والمزامنة بنجاح', 'success');
+                else alert('✅ تم حفظ ومزامنة شيت المصروفات لشهر ' + monthVal);
+            }).catch(function(err2) {
+                console.error('mexpSave err:', err2);
+                if (typeof tgShowToast === 'function') tgShowToast('تم الحفظ محلياً', 'warning');
+                else alert('✅ تم حفظ شيت المصروفات محلياً');
+            });
         });
     } else {
         if (typeof tgShowToast === 'function') tgShowToast('تم حفظ شيت المصروفات لشهر ' + monthVal, 'success');
@@ -4895,6 +4926,19 @@ function mexpLoadAssigneeConfig() {
         { uid: 'yostina_uid', name: 'يوستينا', jobTitle: 'Graphic Designer' },
         { uid: 'kirlos_uid', name: 'كيرلس', jobTitle: 'Software Developer' }
     ];
+
+    function applyConfig(cfg) {
+        if (!cfg) return;
+        window._mexpConfig = cfg;
+        var targetUid = cfg.mexpAssignedUid || cfg.assignedUid || '';
+        if (targetUid && sel) sel.value = targetUid;
+        localStorage.setItem('tg_mexp_config', JSON.stringify(cfg));
+    }
+
+    try {
+        var cachedCfg = JSON.parse(localStorage.getItem('tg_mexp_config') || '{}');
+        applyConfig(cachedCfg);
+    } catch(e){}
 
     if (typeof db !== 'undefined' && db) {
         Promise.all([
@@ -4924,12 +4968,10 @@ function mexpLoadAssigneeConfig() {
             mexpPopulateAssigneeSelect(window._staffEmpCache || baselineEmps);
         });
 
-        db.collection('system_settings').doc('mexp_config').get().then(function(doc) {
+        db.collection('system').doc('appSettings').get().then(function(doc) {
             if (doc.exists) {
                 var data = doc.data() || {};
-                window._mexpConfig = data;
-                if (data.assignedUid && sel) sel.value = data.assignedUid;
-                localStorage.setItem('tg_mexp_config', JSON.stringify(data));
+                applyConfig(data);
             }
         }).catch(function(e){});
     } else {
@@ -4940,7 +4982,7 @@ function mexpLoadAssigneeConfig() {
 function mexpPopulateAssigneeSelect(emps) {
     var sel = document.getElementById('mexpAssignedEmp');
     if (!sel) return;
-    var curVal = sel.value || (window._mexpConfig && window._mexpConfig.assignedUid ? window._mexpConfig.assignedUid : '');
+    var curVal = sel.value || (window._mexpConfig && (window._mexpConfig.mexpAssignedUid || window._mexpConfig.assignedUid) ? (window._mexpConfig.mexpAssignedUid || window._mexpConfig.assignedUid) : '');
     var h = '<option value="">-- لم يتم تعيين موظف (الأدمن فقط) --</option>';
     (emps || []).forEach(function(e) {
         h += '<option value="' + escH(e.uid) + '">' + escH(e.name) + (e.jobTitle ? ' (' + escH(e.jobTitle) + ')' : '') + '</option>';
@@ -4957,21 +4999,29 @@ function mexpSaveAssignee() {
     var name = selectedOpt ? selectedOpt.text : '';
 
     var config = {
+        mexpAssignedUid: uid,
+        mexpAssignedName: name,
         assignedUid: uid,
         assignedName: name,
-        updatedAt: firebase.firestore.FieldValue.serverTimestamp(),
-        updatedBy: (window.TG_USER && TG_USER.name) ? TG_USER.name : 'الأدمن'
+        mexpAssignedUpdatedAt: firebase.firestore.FieldValue.serverTimestamp(),
+        mexpAssignedUpdatedBy: (window.TG_USER && TG_USER.name) ? TG_USER.name : 'الأدمن'
     };
 
+    window._mexpConfig = config;
+    localStorage.setItem('tg_mexp_config', JSON.stringify(config));
+
     if (typeof db !== 'undefined' && db) {
-        db.collection('system_settings').doc('mexp_config').set(config, { merge: true }).then(function() {
-            window._mexpConfig = config;
-            localStorage.setItem('tg_mexp_config', JSON.stringify(config));
+        db.collection('system').doc('appSettings').set(config, { merge: true }).then(function() {
             if (typeof tgShowToast === 'function') tgShowToast('تم حفظ صلاحية إدارة شيت المصروفات للموظف بنجاح', 'success');
             else alert('✅ تم حفظ صلاحية الموظف المسؤول بنجاح');
         }).catch(function(err) {
-            alert('❌ تعذر الحفظ: ' + err.message);
+            console.error('mexpSaveAssignee error:', err);
+            if (typeof tgShowToast === 'function') tgShowToast('تم حفظ الصلاحية محلياً', 'warning');
+            else alert('⚠️ تم حفظ الصلاحية محلياً');
         });
+    } else {
+        if (typeof tgShowToast === 'function') tgShowToast('تم حفظ الصلاحية محلياً', 'success');
+        else alert('✅ تم حفظ الصلاحية محلياً');
     }
 }
 

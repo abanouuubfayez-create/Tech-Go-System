@@ -67,7 +67,7 @@
     <link
         href="https://fonts.googleapis.com/css2?family=Alexandria:wght@300;400;500;600;700;800;900&family=Cairo:wght@400;600;700;800;900&family=Tajawal:wght@400;500;700;800&family=Inter:wght@400;500;600;700&display=swap"
         rel="stylesheet">
-    <link rel="stylesheet" href="styles.css?v=1788334179">
+    <link rel="stylesheet" href="styles.css?v=1788335477">
     <link rel="manifest" href="manifest.json">
     <link rel="icon" type="image/png" sizes="192x192" href="icon-192.png">
     <link rel="apple-touch-icon" href="icon-192.png">
@@ -75,10 +75,10 @@
     <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-storage-compat.js"></script>
-    <script src="firebase-config.js?v=1788334179"></script>
-    <script src="auth.js?v=1788334179"></script>
-    <script src="app.js?v=1788334179"></script>
-    <script src="formsend.js?v=1788334179"></script>
+    <script src="firebase-config.js?v=1788335477"></script>
+    <script src="auth.js?v=1788335477"></script>
+    <script src="app.js?v=1788335477"></script>
+    <script src="formsend.js?v=1788335477"></script>
     <script>
         (function () {
             const theme = localStorage.getItem('tg-theme') || 'light';
@@ -3544,8 +3544,8 @@
         تطوير وتصميم: أبانوب فايز</div>
     <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
-    <script src="theme.js?v=1788334179"></script>
-    <script src="pwa-install.js?v=1788334179"></script>
+    <script src="theme.js?v=1788335477"></script>
+    <script src="pwa-install.js?v=1788335477"></script>
 
 
     <!-- Incoming Meeting Call Modal -->
@@ -3899,6 +3899,142 @@
             container.innerHTML = bannerHTML;
         }
 
+        // ── تحميل وعرض إعلانات وتكليفات الإدارة الحقيقية في بوابة الموظف ──
+        function loadEmpAnnouncements() {
+            var box = document.getElementById('empAnnouncementsList');
+            var panel = document.getElementById('empAnnouncementsPanel');
+            if (!box || !panel) return;
+            var myUid = (typeof TG_USER !== 'undefined' && TG_USER) ? TG_USER.uid : '';
+
+            var baselineAnnouncements = [
+                {
+                    id: 'admin_ann_delay_2026_08_26',
+                    title: 'تأخير موعد الحضور',
+                    content: 'الحضور الاربعاء 2026-8-26 الساعة 12:00 ظهرا',
+                    audience: 'all',
+                    createdBy: 'ابانوب',
+                    createdByRole: 'أدمن',
+                    date: '2026-08-25',
+                    createdAt: new Date('2026-08-25T14:30:00')
+                }
+            ];
+
+            function annCard(data, isPrivate) {
+                var accentBorder = isPrivate ? '#d97706' : '#0284c7';
+                var audienceBadge = isPrivate 
+                    ? '<span style="background:rgba(245,158,11,0.12); color:#b45309; border:1px solid rgba(245,158,11,0.25); padding:2px 10px; border-radius:20px; font-size:11px; font-weight:800;">👤 خاص بك</span>' 
+                    : '<span style="background:rgba(2,132,199,0.12); color:#0369a1; border:1px solid rgba(2,132,199,0.25); padding:2px 10px; border-radius:20px; font-size:11px; font-weight:800;">📢 عام لكل الموظفين</span>';
+                
+                var h = '<div style="background:var(--w); border:1px solid var(--bd); border-right:4px solid ' + accentBorder + '; border-radius:12px; padding:16px 20px; margin-bottom:12px; box-shadow:0 1px 4px rgba(0,0,0,0.03); direction:rtl;">';
+                h += '<div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px; gap:8px; flex-wrap:wrap;">';
+                h += '  <div style="display:flex; align-items:center; gap:8px;">';
+                h += '    <span style="font-size:16px;">📢</span>';
+                h += '    <div style="font-size:15px; font-weight:800; color:var(--tx);">' + esc(data.title) + '</div>';
+                h += '  </div>';
+                h += '  <div>' + audienceBadge + '</div>';
+                h += '</div>';
+                h += '<div style="font-size:13px; line-height:1.75; color:var(--tx); white-space:pre-wrap; font-weight:600;">' + esc(data.content) + '</div>';
+                h += '<div style="display:flex; justify-content:space-between; align-items:center; margin-top:8px; border-top:1px dashed var(--bd); padding-top:6px; font-size:11px; color:var(--tx3); font-weight:600;">';
+                h += '  <div>👤 ' + esc(data.createdBy) + (data.createdByRole ? ' (' + esc(data.createdByRole) + ')' : '') + '</div>';
+                h += '  <div>📅 ' + esc(data.date || '') + '</div>';
+                h += '</div>';
+                h += '</div>';
+                return h;
+            }
+
+            function renderAnnList(allList) {
+                if (!allList || !allList.length) {
+                    allList = baselineAnnouncements;
+                }
+
+                allList.sort(function(a, b) {
+                    var tA = a.createdAt && a.createdAt.seconds ? a.createdAt.seconds*1000 : (a.createdAt ? new Date(a.createdAt).getTime() : 0);
+                    var tB = b.createdAt && b.createdAt.seconds ? b.createdAt.seconds*1000 : (b.createdAt ? new Date(b.createdAt).getTime() : 0);
+                    return tB - tA;
+                });
+
+                var publicOnes = [];
+                var privateOnes = [];
+                allList.forEach(function(data) {
+                    if (data.audience === 'private') {
+                        if (data.targetUid === myUid) privateOnes.push(data);
+                    } else {
+                        publicOnes.push(data);
+                    }
+                });
+
+                if (!publicOnes.length && !privateOnes.length) {
+                    panel.style.display = 'none';
+                    box.innerHTML = '';
+                    return;
+                }
+                panel.style.display = 'block';
+
+                var h = '';
+                if (privateOnes.length) {
+                    h += '<div style="font-size:13px;font-weight:800;margin:0 0 8px;opacity:.9;color:#fff;">👤 إعلانات وتكليفات خاصة بك</div>';
+                    privateOnes.forEach(function(data){ h += annCard(data, true); });
+                }
+                if (publicOnes.length) {
+                    if (privateOnes.length) h += '<div style="font-size:13px;font-weight:800;margin:14px 0 8px;opacity:.9;color:#fff;">📢 إعلانات عامة</div>';
+                    publicOnes.forEach(function(data){ h += annCard(data, false); });
+                }
+                box.innerHTML = h;
+            }
+
+            // 1. Initial fast render from cache or baseline
+            try {
+                var cached = JSON.parse(localStorage.getItem('techgo_shared_announcements') || '[]');
+                if (cached && cached.length) {
+                    renderAnnList(cached);
+                } else {
+                    renderAnnList(baselineAnnouncements);
+                }
+            } catch(e){
+                renderAnnList(baselineAnnouncements);
+            }
+
+            // 2. Real-time sync with Firestore
+            if (typeof db !== 'undefined' && db && db.collection) {
+                db.collection('announcements').limit(50).onSnapshot(function(snap) {
+                    var list = [];
+                    if (snap && !snap.empty) {
+                        snap.forEach(function(d) {
+                            var data = Object.assign({ id: d.id }, d.data());
+                            if (data.isHidden) return;
+                            list.push(data);
+                        });
+                    }
+
+                    if (!list.length) {
+                        list = baselineAnnouncements;
+                    }
+
+                    try {
+                        localStorage.setItem('techgo_shared_announcements', JSON.stringify(list));
+                    } catch(e){}
+
+                    renderAnnList(list);
+                }, function(err) {
+                    console.warn('Firestore announcements listener notice (using local):', err);
+                    renderAnnList(baselineAnnouncements);
+                });
+            }
+
+            // 3. Listen to cross-tab storage updates
+            window.addEventListener('storage', function(e) {
+                if (e.key === 'techgo_shared_announcements' && e.newValue) {
+                    try {
+                        var updated = JSON.parse(e.newValue);
+                        if (updated && updated.length) renderAnnList(updated);
+                    } catch(err){}
+                }
+            });
+        }
+
+        // Run immediately
+        loadEmpAnnouncements();
+
         function empMexpGetDayName(dateStr) {
             if (!dateStr) return '';
             try {
@@ -3987,22 +4123,39 @@
             try { localData = localRaw ? JSON.parse(localRaw) : null; } catch(e){}
 
             if (typeof db !== 'undefined' && db) {
-                db.collection('mexp_sheets').doc(monthVal).get().then(function(doc) {
-                    var days = [];
-                    var syncInfo = document.getElementById('empMexpSyncInfo');
+                db.collection('savedForms').doc('mexp_' + monthVal).get().then(function(doc) {
                     if (doc.exists) {
                         var data = doc.data() || {};
+                        var days = empNormalizeDaysData(data);
                         localStorage.setItem(storageKey, JSON.stringify(data));
+                        var syncInfo = document.getElementById('empMexpSyncInfo');
                         if (syncInfo && data.updatedBy) {
                             var timeStr = data.updatedAt && data.updatedAt.toDate ? data.updatedAt.toDate().toLocaleTimeString('ar-EG', {hour:'2-digit', minute:'2-digit', day:'numeric', month:'numeric'}) : '';
                             syncInfo.innerHTML = '<span>✅ آخر تحديث تم بواسطة: <b>' + esc(data.updatedBy) + '</b> ' + (timeStr ? '(' + timeStr + ')' : '') + '</span>';
                         }
-                        days = empNormalizeDaysData(data);
-                    } else if (localData) {
-                        days = empNormalizeDaysData(localData);
+                        empMexpRenderDays(days);
+                        if (showToast && typeof tgShowToast === 'function') tgShowToast('تم تحديث الشيت بنجاح', 'success');
+                    } else {
+                        db.collection('mexp_sheets').doc(monthVal).get().then(function(doc2) {
+                            var days = [];
+                            var syncInfo = document.getElementById('empMexpSyncInfo');
+                            if (doc2.exists) {
+                                var data2 = doc2.data() || {};
+                                localStorage.setItem(storageKey, JSON.stringify(data2));
+                                if (syncInfo && data2.updatedBy) {
+                                    var timeStr = data2.updatedAt && data2.updatedAt.toDate ? data2.updatedAt.toDate().toLocaleTimeString('ar-EG', {hour:'2-digit', minute:'2-digit', day:'numeric', month:'numeric'}) : '';
+                                    syncInfo.innerHTML = '<span>✅ آخر تحديث تم بواسطة: <b>' + esc(data2.updatedBy) + '</b> ' + (timeStr ? '(' + timeStr + ')' : '') + '</span>';
+                                }
+                                days = empNormalizeDaysData(data2);
+                            } else if (localData) {
+                                days = empNormalizeDaysData(localData);
+                            }
+                            empMexpRenderDays(days);
+                            if (showToast && typeof tgShowToast === 'function') tgShowToast('تم تحديث الشيت بنجاح', 'success');
+                        }).catch(function() {
+                            empMexpRenderDays(empNormalizeDaysData(localData));
+                        });
                     }
-                    empMexpRenderDays(days);
-                    if (showToast && typeof tgShowToast === 'function') tgShowToast('تم تحديث الشيت من السيرفر بنجاح', 'success');
                 }).catch(function(err) {
                     console.error('empMexpLoadData err:', err);
                     empMexpRenderDays(empNormalizeDaysData(localData));
@@ -4312,26 +4465,75 @@
             var myName = (typeof TG_USER !== 'undefined' && TG_USER && TG_USER.name) ? TG_USER.name : 'الموظف المسؤول';
 
             if (typeof db !== 'undefined' && db) {
-                db.collection('mexp_sheets').doc(monthVal).set({
+                var sheetDocData = {
+                    formId: 'mexp',
                     month: monthVal,
                     days: days,
                     updatedBy: myName,
                     updatedAt: firebase.firestore.FieldValue.serverTimestamp()
-                }, { merge: true }).then(function() {
+                };
+
+                db.collection('savedForms').doc('mexp_' + monthVal).set(sheetDocData, { merge: true }).then(function() {
+                    db.collection('mexp_sheets').doc(monthVal).set(sheetDocData, { merge: true }).catch(function(){});
                     var syncInfo = document.getElementById('empMexpSyncInfo');
                     if (syncInfo) syncInfo.innerHTML = '<span>✅ تم الحفظ والمزامنة بنجاح مع الإدارة بواسطة: <b>' + esc(myName) + '</b></span>';
                     if (typeof tgShowToast === 'function') tgShowToast('تم حفظ شيت المصروفات والمزامنة بنجاح', 'success');
                     else alert('✅ تم حفظ شيت المصروفات والمزامنة بنجاح مع الإدارة');
                 }).catch(function(err) {
-                    console.error('empMexpSaveData err:', err);
-                    if (typeof tgShowToast === 'function') tgShowToast('تم الحفظ محلياً', 'warning');
-                    else alert('✅ تم الحفظ محلياً');
+                    console.error('empMexpSaveData savedForms err:', err);
+                    db.collection('mexp_sheets').doc(monthVal).set(sheetDocData, { merge: true }).then(function() {
+                        var syncInfo = document.getElementById('empMexpSyncInfo');
+                        if (syncInfo) syncInfo.innerHTML = '<span>✅ تم الحفظ والمزامنة بنجاح مع الإدارة بواسطة: <b>' + esc(myName) + '</b></span>';
+                        if (typeof tgShowToast === 'function') tgShowToast('تم حفظ شيت المصروفات والمزامنة بنجاح', 'success');
+                        else alert('✅ تم حفظ شيت المصروفات والمزامنة بنجاح مع الإدارة');
+                    }).catch(function(err2) {
+                        console.error('empMexpSaveData err2:', err2);
+                        if (typeof tgShowToast === 'function') tgShowToast('تم الحفظ محلياً', 'warning');
+                        else alert('✅ تم الحفظ محلياً');
+                    });
                 });
             } else {
                 if (typeof tgShowToast === 'function') tgShowToast('تم حفظ شيت المصروفات لشهر ' + monthVal, 'success');
                 else alert('✅ تم حفظ شيت المصروفات لشهر ' + monthVal);
             }
         };
+
+        function initEmpMexpAccessCheck() {
+            var myUid = (typeof TG_USER !== 'undefined' && TG_USER) ? TG_USER.uid : '';
+            var tab = document.getElementById('empTabMexp');
+            var drawer = document.getElementById('empDrawerMexp');
+
+            function applyAccess(cfg) {
+                var hasAccess = false;
+                var targetUid = (cfg && (cfg.mexpAssignedUid || cfg.assignedUid)) ? (cfg.mexpAssignedUid || cfg.assignedUid) : '';
+                if (targetUid && myUid && targetUid === myUid) {
+                    hasAccess = true;
+                } else if (typeof TG_USER !== 'undefined' && TG_USER && (TG_USER.role === 'admin' || TG_USER.isAdmin || TG_USER.role === 'tech_admin')) {
+                    hasAccess = true;
+                }
+                if (tab) tab.style.display = hasAccess ? 'flex' : 'none';
+                if (drawer) drawer.style.display = hasAccess ? 'flex' : 'none';
+            }
+
+            try {
+                var cachedCfg = JSON.parse(localStorage.getItem('tg_mexp_config') || '{}');
+                applyAccess(cachedCfg);
+            } catch(e){}
+
+            if (window._appSettingsCache) {
+                applyAccess(window._appSettingsCache);
+            }
+
+            if (typeof db !== 'undefined' && db && db.collection) {
+                db.collection('system').doc('appSettings').onSnapshot(function(doc) {
+                    if (doc.exists) {
+                        var cfg = doc.data() || {};
+                        localStorage.setItem('tg_mexp_config', JSON.stringify(cfg));
+                        applyAccess(cfg);
+                    }
+                }, function(e){});
+            }
+        }
 
         // Initialize access check
         initEmpMexpAccessCheck();
