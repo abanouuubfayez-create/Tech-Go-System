@@ -8760,6 +8760,7 @@ window.tgSubmitForwardDoc = async function(btn) {
         // Add In-App Notification
         try {
             await db.collection('notifications').add({
+                toUid: targetUid,
                 targetUid: targetUid,
                 title: '📥 تكليف بنموذج جديد: ' + formTitle,
                 body: 'نوع الإجراء: ' + actionLabel + (instructions ? ' — ' + instructions : ''),
