@@ -5972,6 +5972,9 @@ window.tgExtractNameFromRequest = function(r) {
         if (realName && realName !== 'موظف') return realName;
     }
 
+    return 'موظف';
+};
+
 function loadAllRequestsHub() {
     var container = document.getElementById('allRequestsHubList');
     if(container) container.innerHTML = '<div class="empty-hint">⏳ جارٍ تحميل طلبات الموظفين...</div>';
