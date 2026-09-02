@@ -67,7 +67,7 @@
     <link
         href="https://fonts.googleapis.com/css2?family=Alexandria:wght@300;400;500;600;700;800;900&family=Cairo:wght@400;600;700;800;900&family=Tajawal:wght@400;500;700;800&family=Inter:wght@400;500;600;700&display=swap"
         rel="stylesheet">
-    <link rel="stylesheet" href="styles.css?v=1788344351">
+    <link rel="stylesheet" href="styles.css?v=1788349837">
     <link rel="manifest" href="manifest.json">
     <link rel="icon" type="image/png" sizes="192x192" href="icon-192.png">
     <link rel="apple-touch-icon" href="icon-192.png">
@@ -75,10 +75,10 @@
     <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-storage-compat.js"></script>
-    <script src="firebase-config.js?v=1788344351"></script>
-    <script src="auth.js?v=1788344351"></script>
-    <script src="app.js?v=1788344351"></script>
-    <script src="formsend.js?v=1788344351"></script>
+    <script src="firebase-config.js?v=1788349837"></script>
+    <script src="auth.js?v=1788349837"></script>
+    <script src="app.js?v=1788349837"></script>
+    <script src="formsend.js?v=1788349837"></script>
     <script>
         (function () {
             const theme = localStorage.getItem('tg-theme') || 'light';
@@ -864,8 +864,7 @@
             <div class="emp-tab a" data-pg="proj" onclick="empGo('proj',this)">📁 مشاريعي <span class="tab-badge" id="proj-badge" style="display:none">0</span></div>
             <div class="emp-tab" data-pg="tasks" onclick="empGo('tasks',this)">🗂 مهامي وإنجازاتي <span class="tab-badge" id="tasks-badge" style="display:none">0</span></div>
             <div class="emp-tab" data-pg="assigneddocs" onclick="empGo('assigneddocs',this)">📥 النماذج والتكليفات <span class="tab-badge" id="assigneddocs-badge" style="display:none">0</span></div>
-            <div class="emp-tab" data-pg="wkr" onclick="empGo('wkr',this)">📊 التقارير الأسبوعية</div>
-            <div class="emp-tab" data-pg="monthlyplans" onclick="empGo('monthlyplans',this)">🎯 المستهدفات والخطط العامة</div>
+            <div class="emp-tab" data-pg="wkr" onclick="empGo(\'wkr\',this)">📊 التقارير والخطط الأسبوعية</div>
             <div class="emp-tab" data-pg="docs" onclick="empGo('docs',this)">📄 مستنداتي</div>
             <div class="emp-tab" data-pg="req" onclick="empGo('req',this)">📨 طلباتي</div>
             <div class="emp-tab" id="empTabAtt" data-pg="att" onclick="empGo('att',this)" style="display:none">⏱️ الحضور والانصراف</div>
@@ -879,8 +878,6 @@
     <div class="emp-ct">
         <div class="emp-pg" id="epg-assigneddocs"></div>
         <div class="emp-pg" id="epg-wkr"></div>
-        <div class="emp-pg" id="epg-monthlyreports"></div>
-        <div class="emp-pg" id="epg-monthlyplans"></div>
         <div class="emp-pg" id="epg-mexp"></div>
 
         <!-- الحضور والانصراف -->
@@ -922,11 +919,8 @@
                 </div>
 
                 <div class="emp-quick-actions" style="display:flex; gap:12px; margin-bottom:20px; flex-wrap:wrap;">
-                    <button class="bt emp-quick-btn" onclick="empGo('wkr')" style="flex:1; min-width:160px; background:var(--w); border:1px solid var(--bd); color:var(--tx); font-weight:700; font-size:13px; padding:12px 16px; border-radius:10px; box-shadow:0 1px 4px rgba(0,0,0,0.03); cursor:pointer; display:flex; align-items:center; justify-content:center; gap:8px; transition:all .2s ease;">
-                        <span style="font-size:16px;">📊</span> التقارير الأسبوعية (WR)
-                    </button>
-                    <button class="bt emp-quick-btn" onclick="empGo('monthlyplans')" style="flex:1; min-width:160px; background:var(--w); border:1px solid var(--bd); color:var(--tx); font-weight:700; font-size:13px; padding:12px 16px; border-radius:10px; box-shadow:0 1px 4px rgba(0,0,0,0.03); cursor:pointer; display:flex; align-items:center; justify-content:center; gap:8px; transition:all .2s ease;">
-                        <span style="font-size:16px;">🎯</span> المستهدفات والخطط العامة (MP)
+                    <button class="bt emp-quick-btn" onclick="empGo('wkr')" style="flex:1; min-width:200px; background:var(--w); border:1px solid var(--bd); border-right:4px solid #0284c7; color:var(--tx); font-weight:800; font-size:13.5px; padding:13px 18px; border-radius:12px; box-shadow:0 1px 4px rgba(0,0,0,0.03); cursor:pointer; display:flex; align-items:center; justify-content:center; gap:8px; transition:all .2s ease;">
+                        <span style="font-size:18px;">📊</span> التقارير والخطط الأسبوعية (Weekly Reports & Plans)
                     </button>
                 </div>
 
@@ -2883,80 +2877,11 @@
             return dt.toISOString().split('T')[0];
         }
         function loadMyWeeklyReports() {
-            var box = document.getElementById('myWkrList');
-            db.collection('weeklyReports').where('uid', '==', TG_USER.uid).get().then(function (snap) {
-                if (snap.empty) { box.innerHTML = '<div class="empty-hint">لا توجد تقارير أسبوعية مُرسلة بعد.</div>'; return; }
-                var rows = []; snap.forEach(function (d) { rows.push(Object.assign({ id: d.id }, d.data())); });
-                rows.sort(function (a, b) { return (a.createdAt > b.createdAt) ? -1 : 1; }); // Sort newest first
-                var uniqueRows = [];
-                var seen = {};
-                rows.forEach(function (r) {
-                    if (!seen[r.weekStart]) {
-                        seen[r.weekStart] = true;
-                        uniqueRows.push(r);
-                    }
-                });
-                uniqueRows.sort(function (a, b) { return (a.weekStart < b.weekStart) ? 1 : -1; });
-                window._wkrCache = uniqueRows;
-                var h = '';
-                uniqueRows.forEach(function (r, i) {
-                    var waMsg = encodeURIComponent(
-                        'التقرير الأسبوعي - ' + (TG_USER.name || 'موظف') + '\n' +
-                        'الأسبوع: ' + (r.weekStart || '') + '\n' +
-                        '---\n' + (r.content || '')
-                    );
-                    h += '<div class="ac-row"><div class="ac-t">📆 أسبوع ' + esc(r.weekStart || '') +
-                        ' <button class="bt bt-o" style="padding:2px 8px;font-size:10px;margin-right:8px" onclick="printWeeklyReportDoc(TG_USER,window._wkrCache[' + i + '])">🖨 طباعة</button>' +
-                        ' <a href="https://wa.me/?text=' + waMsg + '" target="_blank" class="bt bt-g" style="padding:2px 8px;font-size:10px;margin-right:8px;display:inline-flex;align-items:center;gap:4px;text-decoration:none">📲 واتساب</a></div>' +
-                        (r.content ? '<div class="ac-meta">' + esc(r.content) + '</div>' : '') + '</div>';
-                });
-                box.innerHTML = h;
-            }).catch(function (err) { box.innerHTML = '<div class="empty-hint" style="color:var(--no)">تعذر التحميل: ' + esc(err.message) + '</div>'; });
+            if (typeof loadWeeklyReportsEmp === 'function') loadWeeklyReportsEmp();
         }
         function submitWeeklyReport() {
-            var btn = event ? event.currentTarget : null;
-            if (btn) btn.disabled = true;
-            var weekStart = document.getElementById('wkrStart').value || sundayOf(new Date());
-            var content = (document.getElementById('wkrContent').value || '').trim();
-            var msg = document.getElementById('wkrMsg');
-            if (!content) {
-                msg.style.color = 'var(--no)'; msg.textContent = 'من فضلك اكتب ملخص الأسبوع.';
-                if (btn) btn.disabled = false;
-                return;
-            }
-
-            db.collection('weeklyReports').where('uid', '==', TG_USER.uid).where('weekStart', '==', weekStart).get().then(function (snap) {
-                if (!snap.empty) {
-                    // Update existing report
-                    var docId = snap.docs[0].id;
-                    return db.collection('weeklyReports').doc(docId).update({
-                        content: content,
-                        createdAt: new Date(),
-                        reviewedByAdmin: false
-                    }).then(function() { return { id: docId }; });
-                } else {
-                    // Create new report
-                    return db.collection('weeklyReports').add({
-                        uid: TG_USER.uid,
-                        name: TG_USER.name || '',
-                        email: TG_USER.email || '',
-                        weekStart: weekStart, content: content,
-                        createdAt: new Date()
-                    });
-                }
-            }).then(function (docRef) {
-                var newReportId = (docRef && docRef.id) ? docRef.id : null;
-                msg.style.color = 'var(--ok)'; msg.textContent = '✅ تم حفظ التقرير بنجاح';
-                document.getElementById('wkrContent').value = '';
-                loadMyWeeklyReports();
-                tgNotifyAdmins('📆 تقرير أسبوعي', (TG_USER.name || 'موظف') + ' قام بتقديم تقريره الأسبوعي', 'weekly-report-new', newReportId ? { reportId: newReportId } : {});
-                if (btn) btn.disabled = false;
-            }).catch(function (err) {
-                msg.style.color = 'var(--no)'; msg.textContent = '❌ ' + err.message;
-                if (btn) btn.disabled = false;
-            });
+            if (typeof tgOpenNewWeeklyReportModal === 'function') tgOpenNewWeeklyReportModal();
         }
-        if (document.getElementById('wkrStart') && typeof sundayOf === 'function') document.getElementById('wkrStart').value = sundayOf(new Date());
 
         // ── حماية الصفحة: لازم تسجيل دخول بصلاحية موظف ──────────────────
         tgRequireAuth('employee', function (u) {
@@ -3550,8 +3475,8 @@
         تطوير وتصميم: أبانوب فايز</div>
     <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
-    <script src="theme.js?v=1788344351"></script>
-    <script src="pwa-install.js?v=1788344351"></script>
+    <script src="theme.js?v=1788349837"></script>
+    <script src="pwa-install.js?v=1788349837"></script>
 
 
     <!-- Incoming Meeting Call Modal -->
@@ -5185,16 +5110,11 @@
                 <div class="drawer-card" data-drawer="wkr" onclick="empGo('wkr'); tgToggleMobileNavDrawer(false);">
                     <div class="drawer-card-icon">📊</div>
                     <div>
-                        <div class="drawer-card-title">التقارير الأسبوعية (WR)</div>
-                        <div class="drawer-card-desc">تقارير نهاية الأسبوع</div>
+                        <div class="drawer-card-title">التقارير والخطط الأسبوعية</div>
+                        <div class="drawer-card-desc">إنجازات الأسبوع وخطة القادم</div>
                     </div>
                 </div>
-                <div class="drawer-card" data-drawer="monthlyplans" onclick="empGo('monthlyplans'); tgToggleMobileNavDrawer(false);">
-                    <div class="drawer-card-icon">🎯</div>
-                    <div>
-                        <div class="drawer-card-title">المستهدفات والخطط (MP)</div>
-                        <div class="drawer-card-desc">الخطط العامة الشهرية</div>
-                    </div>
+            </div>
                 </div>
                 <div class="drawer-card" data-drawer="docs" onclick="empGo('docs'); tgToggleMobileNavDrawer(false);">
                     <div class="drawer-card-icon">📄</div>
