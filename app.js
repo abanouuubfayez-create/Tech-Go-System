@@ -4531,12 +4531,9 @@ function renderMexpRows(rows) {
     if (!tbody) return;
     tbody.innerHTML = '';
     if (!rows || rows.length === 0) {
-        for(var i = 0; i < 25; i++) mexpAddRow();
+        mexpAddRow();
     } else {
         rows.forEach(function(r){ mexpAddRow(r); });
-        while(tbody.children.length < Math.max(25, rows.length + 5)){
-            mexpAddRow();
-        }
     }
     mexpCalc();
     mexpUpdateSpenderSuggestions();
@@ -4547,7 +4544,7 @@ function mexpAddRow(row){
     if(!tbody) return;
     var tr = document.createElement('tr');
     tr.style.height = '34px';
-    var qtyVal = (row && row.qty !== undefined && row.qty !== null && row.qty !== '') ? String(row.qty) : '1';
+    var qtyVal = (row && row.qty !== undefined && row.qty !== null && row.qty !== '') ? String(row.qty) : '';
     var priceVal = (row && row.price !== undefined && row.price !== null && row.price !== '') ? String(row.price) : '';
     var amtVal = (row && row.amt !== undefined && row.amt !== null && row.amt !== '') ? String(row.amt) : '';
     var dateVal = (row && row.date) ? row.date : '';
@@ -4556,9 +4553,9 @@ function mexpAddRow(row){
         '<td class="mexp-idx" style="font-weight:bold; font-size:11px; text-align:center;">' + (tbody.children.length + 1) + '</td>' +
         '<td><input type="text" class="mexp-spender" list="mexp-spenders-list" placeholder="اسم الصارف..." value="' + escH(row && row.spender || '') + '" oninput="mexpUpdateSpenderSuggestions()"></td>' +
         '<td><input type="text" class="mexp-cat" list="mexp-cats-list" placeholder="النوع / البند..." value="' + escH(row && row.cat || '') + '"></td>' +
-        '<td><input type="number" min="1" step="1" class="mexp-qty" style="text-align:center; font-weight:700;" value="' + escH(qtyVal) + '" oninput="mexpRowCalc(this)"></td>' +
-        '<td><input type="number" step="0.01" min="0" class="mexp-price" style="text-align:center;" placeholder="0.00" value="' + escH(priceVal) + '" oninput="mexpRowCalc(this)"></td>' +
-        '<td><input type="number" step="0.01" min="0" class="mexp-amt" readonly style="font-weight:900; color:var(--nv); text-align:center; background:rgba(0,0,0,0.02);" placeholder="0.00" value="' + escH(amtVal) + '" oninput="mexpCalc()"></td>' +
+        '<td><input type="number" min="1" step="1" class="mexp-qty" style="text-align:center; font-weight:700;" placeholder="1" value="' + escH(qtyVal) + '" oninput="mexpRowCalc(this)"></td>' +
+        '<td><input type="number" step="0.01" min="0" class="mexp-price" style="text-align:center;" placeholder="" value="' + escH(priceVal) + '" oninput="mexpRowCalc(this)"></td>' +
+        '<td><input type="number" step="0.01" min="0" class="mexp-amt" readonly style="font-weight:900; color:var(--nv); text-align:center; background:rgba(0,0,0,0.02);" placeholder="" value="' + escH(amtVal) + '" oninput="mexpCalc()"></td>' +
         '<td><input type="date" class="mexp-date" style="font-weight:600; text-align:center;" value="' + escH(dateVal) + '"></td>' +
         '<td class="np" style="text-align:center"><button type="button" class="bt bt-d" style="padding:3px 7px;font-size:11px;border-radius:4px;" onclick="mexpDelRow(this)" title="حذف السطر">✕</button></td>';
     tbody.appendChild(tr);
@@ -4572,7 +4569,7 @@ function mexpRowCalc(el) {
     var pInp = tr.querySelector('.mexp-price');
     var aInp = tr.querySelector('.mexp-amt');
     
-    var q = parseFloat(qInp ? qInp.value : '1');
+    var q = parseFloat(qInp && qInp.value ? qInp.value : '1');
     if (isNaN(q) || q <= 0) q = 1;
     var p = parseFloat(pInp ? pInp.value : '0');
     
@@ -4707,17 +4704,41 @@ function mexpLoadAssigneeConfig() {
     var sel = document.getElementById('mexpAssignedEmp');
     if (!sel) return;
 
+    var baselineEmps = [
+        { uid: 'ebthal_uid', name: 'ابتهال', jobTitle: 'UI/UX Designer' },
+        { uid: 'markos_uid', name: 'م/ مرقس مدحت', jobTitle: 'Senior Backend Developer' },
+        { uid: 'basel_uid', name: 'باسل', jobTitle: 'Frontend Developer' },
+        { uid: 'abanoub_uid', name: 'أبانوب فايز', jobTitle: 'Tech Lead / Admin' },
+        { uid: 'yostina_uid', name: 'يوستينا', jobTitle: 'Graphic Designer' },
+        { uid: 'kirlos_uid', name: 'كيرلس', jobTitle: 'Software Developer' }
+    ];
+
     if (typeof db !== 'undefined' && db) {
-        db.collection('employees').get().then(function(snap) {
+        Promise.all([
+            db.collection('users').get().catch(function(){ return { docs: [] }; }),
+            db.collection('employees').get().catch(function(){ return { docs: [] }; })
+        ]).then(function(results) {
             var emps = [];
-            snap.forEach(function(doc) {
-                var d = doc.data() || {};
-                emps.push({ uid: doc.id, name: d.name || d.fullName || d.email || doc.id, email: d.email || '', jobTitle: d.jobTitle || '' });
+            var seen = new Set();
+            results.forEach(function(snap) {
+                if (snap && snap.docs) {
+                    snap.docs.forEach(function(doc) {
+                        var d = doc.data() || {};
+                        var uid = doc.id;
+                        var name = d.name || d.fullName || d.userName || d.email || uid;
+                        if (!seen.has(uid) && !seen.has(name)) {
+                            seen.add(uid);
+                            seen.add(name);
+                            emps.push({ uid: uid, name: name, email: d.email || '', jobTitle: d.jobTitle || d.dept || '' });
+                        }
+                    });
+                }
             });
+            if (emps.length === 0) emps = baselineEmps;
             window._staffEmpCache = emps;
             mexpPopulateAssigneeSelect(emps);
         }).catch(function() {
-            if (window._staffEmpCache) mexpPopulateAssigneeSelect(window._staffEmpCache);
+            mexpPopulateAssigneeSelect(window._staffEmpCache || baselineEmps);
         });
 
         db.collection('system_settings').doc('mexp_config').get().then(function(doc) {
@@ -4728,8 +4749,8 @@ function mexpLoadAssigneeConfig() {
                 localStorage.setItem('tg_mexp_config', JSON.stringify(data));
             }
         }).catch(function(e){});
-    } else if (window._staffEmpCache) {
-        mexpPopulateAssigneeSelect(window._staffEmpCache);
+    } else {
+        mexpPopulateAssigneeSelect(window._staffEmpCache || baselineEmps);
     }
 }
 

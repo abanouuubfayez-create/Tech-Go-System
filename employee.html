@@ -67,7 +67,7 @@
     <link
         href="https://fonts.googleapis.com/css2?family=Alexandria:wght@300;400;500;600;700;800;900&family=Cairo:wght@400;600;700;800;900&family=Tajawal:wght@400;500;700;800&family=Inter:wght@400;500;600;700&display=swap"
         rel="stylesheet">
-    <link rel="stylesheet" href="styles.css?v=1788333443">
+    <link rel="stylesheet" href="styles.css?v=1788333695">
     <link rel="manifest" href="manifest.json">
     <link rel="icon" type="image/png" sizes="192x192" href="icon-192.png">
     <link rel="apple-touch-icon" href="icon-192.png">
@@ -75,10 +75,10 @@
     <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-storage-compat.js"></script>
-    <script src="firebase-config.js?v=1788333443"></script>
-    <script src="auth.js?v=1788333443"></script>
-    <script src="app.js?v=1788333443"></script>
-    <script src="formsend.js?v=1788333443"></script>
+    <script src="firebase-config.js?v=1788333695"></script>
+    <script src="auth.js?v=1788333695"></script>
+    <script src="app.js?v=1788333695"></script>
+    <script src="formsend.js?v=1788333695"></script>
     <script>
         (function () {
             const theme = localStorage.getItem('tg-theme') || 'light';
@@ -3544,8 +3544,8 @@
         تطوير وتصميم: أبانوب فايز</div>
     <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
-    <script src="theme.js?v=1788333443"></script>
-    <script src="pwa-install.js?v=1788333443"></script>
+    <script src="theme.js?v=1788333695"></script>
+    <script src="pwa-install.js?v=1788333695"></script>
 
 
     <!-- Incoming Meeting Call Modal -->
@@ -4184,12 +4184,9 @@
             if (!tbody) return;
             tbody.innerHTML = '';
             if (!rows || rows.length === 0) {
-                for (var i = 0; i < 20; i++) empMexpAddRow();
+                empMexpAddRow();
             } else {
                 rows.forEach(function(r){ empMexpAddRow(r); });
-                while (tbody.children.length < Math.max(20, rows.length + 5)) {
-                    empMexpAddRow();
-                }
             }
             empMexpCalc();
             empMexpUpdateSpenderSuggestions();
@@ -4200,7 +4197,7 @@
             if (!tbody) return;
             var tr = document.createElement('tr');
             tr.style.height = '34px';
-            var qtyVal = (row && row.qty !== undefined && row.qty !== null && row.qty !== '') ? String(row.qty) : '1';
+            var qtyVal = (row && row.qty !== undefined && row.qty !== null && row.qty !== '') ? String(row.qty) : '';
             var priceVal = (row && row.price !== undefined && row.price !== null && row.price !== '') ? String(row.price) : '';
             var amtVal = (row && row.amt !== undefined && row.amt !== null && row.amt !== '') ? String(row.amt) : '';
             var dateVal = (row && row.date) ? row.date : '';
@@ -4209,9 +4206,9 @@
                 '<td class="mexp-idx" style="font-weight:bold; font-size:11px; text-align:center;">' + (tbody.children.length + 1) + '</td>' +
                 '<td><input type="text" class="mexp-spender" list="emp-mexp-spenders-list" placeholder="اسم الصارف..." value="' + esc(row && row.spender || '') + '" oninput="empMexpUpdateSpenderSuggestions()"></td>' +
                 '<td><input type="text" class="mexp-cat" list="emp-mexp-cats-list" placeholder="النوع / البند..." value="' + esc(row && row.cat || '') + '"></td>' +
-                '<td><input type="number" min="1" step="1" class="mexp-qty" style="text-align:center; font-weight:700;" value="' + esc(qtyVal) + '" oninput="empMexpRowCalc(this)"></td>' +
-                '<td><input type="number" step="0.01" min="0" class="mexp-price" style="text-align:center;" placeholder="0.00" value="' + esc(priceVal) + '" oninput="empMexpRowCalc(this)"></td>' +
-                '<td><input type="number" step="0.01" min="0" class="mexp-amt" readonly style="font-weight:900; color:var(--nv); text-align:center; background:rgba(0,0,0,0.02);" placeholder="0.00" value="' + esc(amtVal) + '" oninput="empMexpCalc()"></td>' +
+                '<td><input type="number" min="1" step="1" class="mexp-qty" style="text-align:center; font-weight:700;" placeholder="1" value="' + esc(qtyVal) + '" oninput="empMexpRowCalc(this)"></td>' +
+                '<td><input type="number" step="0.01" min="0" class="mexp-price" style="text-align:center;" placeholder="" value="' + esc(priceVal) + '" oninput="empMexpRowCalc(this)"></td>' +
+                '<td><input type="number" step="0.01" min="0" class="mexp-amt" readonly style="font-weight:900; color:var(--nv); text-align:center; background:rgba(0,0,0,0.02);" placeholder="" value="' + esc(amtVal) + '" oninput="empMexpCalc()"></td>' +
                 '<td><input type="date" class="mexp-date" style="font-weight:600; text-align:center;" value="' + esc(dateVal) + '"></td>' +
                 '<td class="np" style="text-align:center"><button type="button" class="bt bt-d" style="padding:3px 7px;font-size:11px;border-radius:4px;" onclick="empMexpDelRow(this)" title="حذف السطر">✕</button></td>';
             tbody.appendChild(tr);
@@ -4225,7 +4222,7 @@
             var pInp = tr.querySelector('.mexp-price');
             var aInp = tr.querySelector('.mexp-amt');
             
-            var q = parseFloat(qInp ? qInp.value : '1');
+            var q = parseFloat(qInp && qInp.value ? qInp.value : '1');
             if (isNaN(q) || q <= 0) q = 1;
             var p = parseFloat(pInp ? pInp.value : '0');
             
