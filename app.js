@@ -4462,10 +4462,12 @@ function fmtMoney(n){
     parts[0] = parts[0].replace(/\B(?=(\d{3})+(?!\d))/g, ',');
     return parts.join('.') + ' ج.م';
 }
+
 function mexpKey(){
     var mi = document.getElementById('mexp-month');
     return 'tg_mexp_' + (mi && mi.value ? mi.value : '');
 }
+
 function mexpInit(){
     var mi = document.getElementById('mexp-month');
     if(mi && !mi.value){
@@ -4474,42 +4476,95 @@ function mexpInit(){
     }
     mexpLoad();
 }
-function mexpLoad(){
+
+function mexpLoad(showToast){
     var tbody = document.getElementById('mexp-tbody');
     if(!tbody) return;
+    var mi = document.getElementById('mexp-month');
+    var monthVal = mi && mi.value ? mi.value : '';
+    if (!monthVal) {
+        var d = new Date();
+        monthVal = d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0');
+        if (mi) mi.value = monthVal;
+    }
+
+    tbody.innerHTML = '<tr><td colspan="8" style="text-align:center;padding:24px;color:var(--tx3);font-weight:700;">⏳ جارٍ تحميل بيانات شهر ' + escH(monthVal) + '...</td></tr>';
+
+    // Load assigned employee config
+    mexpLoadAssigneeConfig();
+
+    var storageKey = 'tg_mexp_' + monthVal;
+    var localRaw = localStorage.getItem(storageKey);
+    var localRows = [];
+    try { localRows = localRaw ? JSON.parse(localRaw) : []; } catch(e){}
+
+    // Fetch from Firestore
+    if (typeof db !== 'undefined' && db) {
+        db.collection('mexp_sheets').doc(monthVal).get().then(function(doc) {
+            var rows = [];
+            var syncInfo = document.getElementById('mexpSyncInfo');
+            if (doc.exists) {
+                var data = doc.data() || {};
+                rows = Array.isArray(data.rows) ? data.rows : [];
+                localStorage.setItem(storageKey, JSON.stringify(rows));
+                if (syncInfo && data.updatedBy) {
+                    var timeStr = data.updatedAt && data.updatedAt.toDate ? data.updatedAt.toDate().toLocaleTimeString('ar-EG', {hour:'2-digit', minute:'2-digit', day:'numeric', month:'numeric'}) : '';
+                    syncInfo.innerHTML = '<span>✅ آخر تحديث تم بواسطة: <b>' + escH(data.updatedBy) + '</b> ' + (timeStr ? '(' + timeStr + ')' : '') + '</span>';
+                }
+            } else {
+                rows = localRows;
+                if (syncInfo) syncInfo.innerHTML = '<span>ℹ️ لا توجد بيانات محفوظة مسبقاً لهذا الشهر على السيرفر (شيت جديد)</span>';
+            }
+            renderMexpRows(rows);
+            if (showToast && typeof tgShowToast === 'function') tgShowToast('تم تحديث الشيت من السيرفر بنجاح', 'success');
+        }).catch(function(err) {
+            console.error('mexpLoad Firestore err:', err);
+            renderMexpRows(localRows);
+        });
+    } else {
+        renderMexpRows(localRows);
+    }
+}
+
+function renderMexpRows(rows) {
+    var tbody = document.getElementById('mexp-tbody');
+    if (!tbody) return;
     tbody.innerHTML = '';
-    var raw = localStorage.getItem(mexpKey());
-    var rows = [];
-    try{ rows = raw ? JSON.parse(raw) : []; }catch(e){ rows = []; }
-    if(rows.length === 0){
-        for(var i = 0; i < 40; i++) mexpAddRow();
+    if (!rows || rows.length === 0) {
+        for(var i = 0; i < 25; i++) mexpAddRow();
     } else {
         rows.forEach(function(r){ mexpAddRow(r); });
-        while(tbody.children.length < 40){
+        while(tbody.children.length < Math.max(25, rows.length + 5)){
             mexpAddRow();
         }
     }
     mexpCalc();
+    mexpUpdateSpenderSuggestions();
 }
+
 function mexpAddRow(row){
     var tbody = document.getElementById('mexp-tbody');
     if(!tbody) return;
     var tr = document.createElement('tr');
-    tr.style.height = '32px';
-    var priceVal = (row && row.price !== undefined && row.price !== null) ? String(row.price) : '';
+    tr.style.height = '34px';
+    var qtyVal = (row && row.qty !== undefined && row.qty !== null && row.qty !== '') ? String(row.qty) : '1';
+    var priceVal = (row && row.price !== undefined && row.price !== null && row.price !== '') ? String(row.price) : '';
     var amtVal = (row && row.amt !== undefined && row.amt !== null && row.amt !== '') ? String(row.amt) : '';
-    
+    var dateVal = (row && row.date) ? row.date : '';
+
     tr.innerHTML =
         '<td class="mexp-idx" style="font-weight:bold; font-size:11px; text-align:center;">' + (tbody.children.length + 1) + '</td>' +
-        '<td><input type="text" class="mexp-spender" value="' + escH(row && row.spender || '') + '"></td>' +
-        '<td><input type="text" class="mexp-cat" value="' + escH(row && row.cat || '') + '"></td>' +
-        '<td><input type="number" step="0.01" min="0" class="mexp-price" style="text-align:center;" value="' + escH(priceVal) + '" oninput="mexpRowCalc(this)"></td>' +
-        '<td><input type="number" step="0.01" min="0" class="mexp-amt" style="font-weight:bold; color:var(--nv); text-align:center;" value="' + escH(amtVal) + '" oninput="mexpCalc()"></td>' +
-        '<td><input type="date" class="mexp-date" style="font-weight:bold; text-align:center;" value="' + escH(row && row.date || '') + '"></td>' +
-        '<td><input type="text" class="mexp-notes" value="' + escH(row && row.notes || '') + '"></td>' +
-        '<td class="np" style="text-align:center"><button class="bt bt-d" style="padding:2px 6px;font-size:10px;border-radius:4px;" onclick="mexpDelRow(this)">✕</button></td>';
+        '<td><input type="text" class="mexp-spender" list="mexp-spenders-list" placeholder="اسم الصارف..." value="' + escH(row && row.spender || '') + '" oninput="mexpUpdateSpenderSuggestions()"></td>' +
+        '<td><input type="text" class="mexp-cat" list="mexp-cats-list" placeholder="النوع / البند..." value="' + escH(row && row.cat || '') + '"></td>' +
+        '<td><input type="number" min="1" step="1" class="mexp-qty" style="text-align:center; font-weight:700;" value="' + escH(qtyVal) + '" oninput="mexpRowCalc(this)"></td>' +
+        '<td><input type="number" step="0.01" min="0" class="mexp-price" style="text-align:center;" placeholder="0.00" value="' + escH(priceVal) + '" oninput="mexpRowCalc(this)"></td>' +
+        '<td><input type="number" step="0.01" min="0" class="mexp-amt" readonly style="font-weight:900; color:var(--nv); text-align:center; background:rgba(0,0,0,0.02);" placeholder="0.00" value="' + escH(amtVal) + '" oninput="mexpCalc()"></td>' +
+        '<td><input type="date" class="mexp-date" style="font-weight:600; text-align:center;" value="' + escH(dateVal) + '"></td>' +
+        '<td class="np" style="text-align:center"><button type="button" class="bt bt-d" style="padding:3px 7px;font-size:11px;border-radius:4px;" onclick="mexpDelRow(this)" title="حذف السطر">✕</button></td>';
     tbody.appendChild(tr);
+    mexpUpdateSpenderSuggestions();
 }
+
 function mexpRowCalc(el) {
     var tr = el.closest('tr');
     if(!tr) return;
@@ -4517,55 +4572,205 @@ function mexpRowCalc(el) {
     var pInp = tr.querySelector('.mexp-price');
     var aInp = tr.querySelector('.mexp-amt');
     
-    var q = parseFloat(qInp.value);
-    var p = parseFloat(pInp.value);
+    var q = parseFloat(qInp ? qInp.value : '1');
+    if (isNaN(q) || q <= 0) q = 1;
+    var p = parseFloat(pInp ? pInp.value : '0');
     
-    if(!isNaN(p)) {
-        var count = (!isNaN(q) && q > 0) ? q : 1;
-        aInp.value = (count * p).toFixed(2);
+    if(!isNaN(p) && pInp.value !== '') {
+        aInp.value = (q * p).toFixed(2);
+    } else {
+        aInp.value = '';
     }
     mexpCalc();
 }
+
 function mexpDelRow(btn){
     var tr = btn.closest('tr');
     if(tr) tr.remove();
     mexpReindex();
     mexpCalc();
+    mexpUpdateSpenderSuggestions();
 }
+
 function mexpReindex(){
     document.querySelectorAll('#mexp-tbody tr').forEach(function(tr, i){
         var idxEl = tr.querySelector('.mexp-idx');
         if(idxEl) idxEl.innerText = i + 1;
     });
 }
+
 function mexpCalc(){
     var total = 0, count = 0;
     document.querySelectorAll('#mexp-tbody .mexp-amt').forEach(function(inp){
         var v = parseFloat(inp.value);
         if(!isNaN(v) && v !== 0){ total += v; count++; }
     });
-    var tf = document.getElementById('mexp-total'); if(tf) tf.value = fmtMoney(total);
-    var cf = document.getElementById('mexp-count'); if(cf) cf.value = count;
     var tc = document.getElementById('mexp-total-cell'); if(tc) tc.innerText = fmtMoney(total);
 }
+
+function mexpUpdateSpenderSuggestions() {
+    var datalist = document.getElementById('mexp-spenders-list');
+    if (!datalist) return;
+    var namesSet = new Set();
+
+    // 1. Existing rows in current sheet
+    document.querySelectorAll('#mexp-tbody .mexp-spender').forEach(function(inp) {
+        var v = (inp.value || '').trim();
+        if (v && v.length >= 2) namesSet.add(v);
+    });
+
+    // 2. Staff names
+    if (window._staffEmpCache && Array.isArray(window._staffEmpCache)) {
+        window._staffEmpCache.forEach(function(e) {
+            if (e.name) namesSet.add(e.name.trim());
+        });
+    }
+
+    // 3. Cached historical spenders in localStorage
+    try {
+        var hist = JSON.parse(localStorage.getItem('tg_mexp_spenders_history') || '[]');
+        if (Array.isArray(hist)) {
+            hist.forEach(function(n) { if (n) namesSet.add(n.trim()); });
+        }
+    } catch(e){}
+
+    var html = '';
+    namesSet.forEach(function(name) {
+        html += '<option value="' + escH(name) + '">';
+    });
+    datalist.innerHTML = html;
+}
+
 function mexpSave(){
+    var mi = document.getElementById('mexp-month');
+    var monthVal = mi && mi.value ? mi.value : '';
+    if (!monthVal) return;
+
     var rows = [];
+    var spendersSet = new Set();
     document.querySelectorAll('#mexp-tbody tr').forEach(function(tr){
-        var spender = tr.querySelector('.mexp-spender').value;
-        var cat = tr.querySelector('.mexp-cat').value;
-        var qty = tr.querySelector('.mexp-qty').value;
-        var price = tr.querySelector('.mexp-price').value;
-        var amt = tr.querySelector('.mexp-amt').value;
-        var date = tr.querySelector('.mexp-date').value;
-        var notes = tr.querySelector('.mexp-notes').value;
-        if(spender || cat || qty || price || amt || date || notes){
-            rows.push({spender: spender, cat: cat, qty: qty, price: price, amt: amt, date: date, notes: notes});
+        var spenderInp = tr.querySelector('.mexp-spender');
+        var catInp = tr.querySelector('.mexp-cat');
+        var qtyInp = tr.querySelector('.mexp-qty');
+        var priceInp = tr.querySelector('.mexp-price');
+        var amtInp = tr.querySelector('.mexp-amt');
+        var dateInp = tr.querySelector('.mexp-date');
+
+        var spender = spenderInp ? spenderInp.value.trim() : '';
+        var cat = catInp ? catInp.value.trim() : '';
+        var qty = qtyInp ? qtyInp.value.trim() : '';
+        var price = priceInp ? priceInp.value.trim() : '';
+        var amt = amtInp ? amtInp.value.trim() : '';
+        var date = dateInp ? dateInp.value.trim() : '';
+
+        if(spender || cat || price || amt || date){
+            rows.push({spender: spender, cat: cat, qty: qty || '1', price: price, amt: amt, date: date});
+            if (spender) spendersSet.add(spender);
         }
     });
-    localStorage.setItem(mexpKey(), JSON.stringify(rows));
-    var mi = document.getElementById('mexp-month');
-    alert('✅ تم حفظ شيت المصروفات لشهر ' + (mi ? mi.value : ''));
+
+    var storageKey = 'tg_mexp_' + monthVal;
+    localStorage.setItem(storageKey, JSON.stringify(rows));
+
+    // Save spenders history
+    try {
+        var hist = JSON.parse(localStorage.getItem('tg_mexp_spenders_history') || '[]');
+        spendersSet.forEach(function(s){ if (hist.indexOf(s) === -1) hist.push(s); });
+        localStorage.setItem('tg_mexp_spenders_history', JSON.stringify(hist));
+    } catch(e){}
+
+    var updatedByName = (window.TG_USER && TG_USER.name) ? TG_USER.name : 'الأدمن';
+
+    if (typeof db !== 'undefined' && db) {
+        db.collection('mexp_sheets').doc(monthVal).set({
+            month: monthVal,
+            rows: rows,
+            updatedBy: updatedByName,
+            updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+        }, { merge: true }).then(function() {
+            var syncInfo = document.getElementById('mexpSyncInfo');
+            if (syncInfo) syncInfo.innerHTML = '<span>✅ تم الحفظ والمزامنة بنجاح على السيرفر بواسطة: <b>' + escH(updatedByName) + '</b></span>';
+            if (typeof tgShowToast === 'function') tgShowToast('تم حفظ شيت المصروفات والمزامنة بنجاح', 'success');
+            else alert('✅ تم حفظ ومزامنة شيت المصروفات لشهر ' + monthVal);
+        }).catch(function(err) {
+            console.error('mexpSave err:', err);
+            if (typeof tgShowToast === 'function') tgShowToast('تم الحفظ محلياً (تعذر رفع السيرفر)', 'warning');
+            else alert('✅ تم حفظ شيت المصروفات محلياً');
+        });
+    } else {
+        if (typeof tgShowToast === 'function') tgShowToast('تم حفظ شيت المصروفات لشهر ' + monthVal, 'success');
+        else alert('✅ تم حفظ شيت المصروفات لشهر ' + monthVal);
+    }
 }
+
+function mexpLoadAssigneeConfig() {
+    var sel = document.getElementById('mexpAssignedEmp');
+    if (!sel) return;
+
+    if (typeof db !== 'undefined' && db) {
+        db.collection('employees').get().then(function(snap) {
+            var emps = [];
+            snap.forEach(function(doc) {
+                var d = doc.data() || {};
+                emps.push({ uid: doc.id, name: d.name || d.fullName || d.email || doc.id, email: d.email || '', jobTitle: d.jobTitle || '' });
+            });
+            window._staffEmpCache = emps;
+            mexpPopulateAssigneeSelect(emps);
+        }).catch(function() {
+            if (window._staffEmpCache) mexpPopulateAssigneeSelect(window._staffEmpCache);
+        });
+
+        db.collection('system_settings').doc('mexp_config').get().then(function(doc) {
+            if (doc.exists) {
+                var data = doc.data() || {};
+                window._mexpConfig = data;
+                if (data.assignedUid && sel) sel.value = data.assignedUid;
+                localStorage.setItem('tg_mexp_config', JSON.stringify(data));
+            }
+        }).catch(function(e){});
+    } else if (window._staffEmpCache) {
+        mexpPopulateAssigneeSelect(window._staffEmpCache);
+    }
+}
+
+function mexpPopulateAssigneeSelect(emps) {
+    var sel = document.getElementById('mexpAssignedEmp');
+    if (!sel) return;
+    var curVal = sel.value || (window._mexpConfig && window._mexpConfig.assignedUid ? window._mexpConfig.assignedUid : '');
+    var h = '<option value="">-- لم يتم تعيين موظف (الأدمن فقط) --</option>';
+    (emps || []).forEach(function(e) {
+        h += '<option value="' + escH(e.uid) + '">' + escH(e.name) + (e.jobTitle ? ' (' + escH(e.jobTitle) + ')' : '') + '</option>';
+    });
+    sel.innerHTML = h;
+    if (curVal) sel.value = curVal;
+}
+
+function mexpSaveAssignee() {
+    var sel = document.getElementById('mexpAssignedEmp');
+    if (!sel) return;
+    var uid = sel.value;
+    var selectedOpt = sel.options[sel.selectedIndex];
+    var name = selectedOpt ? selectedOpt.text : '';
+
+    var config = {
+        assignedUid: uid,
+        assignedName: name,
+        updatedAt: firebase.firestore.FieldValue.serverTimestamp(),
+        updatedBy: (window.TG_USER && TG_USER.name) ? TG_USER.name : 'الأدمن'
+    };
+
+    if (typeof db !== 'undefined' && db) {
+        db.collection('system_settings').doc('mexp_config').set(config, { merge: true }).then(function() {
+            window._mexpConfig = config;
+            localStorage.setItem('tg_mexp_config', JSON.stringify(config));
+            if (typeof tgShowToast === 'function') tgShowToast('تم حفظ صلاحية إدارة شيت المصروفات للموظف بنجاح', 'success');
+            else alert('✅ تم حفظ صلاحية الموظف المسؤول بنجاح');
+        }).catch(function(err) {
+            alert('❌ تعذر الحفظ: ' + err.message);
+        });
+    }
+}
+
 window.mexpPrint = function() {
     if(typeof togglePrintKeepData === 'function') togglePrintKeepData(true);
     if(typeof openPrintPreview === 'function') {
@@ -5301,34 +5506,67 @@ function load(id,c){
     else if(id==="mexp"){
         var mexpNum=genDocNum('mexp');
         h=H('شيت المصروفات الشهري','تسجيل وتوثيق حركة المصروفات النقدية للشركة','MONTHLY EXPENSE SHEET','mexp');
-        h+=SC('١','بيانات الشهر');
-        h+='<div class="fr fr3">'+
-           '<div class="fg"><label>الشهر</label><input type="month" id="mexp-month" onchange="mexpLoad()"></div>'+
-           '<div class="fg"><label>عدد الحركات</label><input type="text" id="mexp-count" readonly></div>'+
-           '<div class="fg"><label>إجمالي المصروفات</label><input type="text" id="mexp-total" readonly style="font-weight:900;color:var(--nv)"></div>'+
+        
+        // Month Selector & Admin Access Control Bar (No top total/count boxes)
+        h+='<div class="set-sec" style="margin-bottom:14px;background:var(--w);border:1px solid var(--bd);border-radius:12px;padding:14px 18px;box-shadow:var(--sh-sm);">' +
+           '  <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:14px;">' +
+           '    <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;">' +
+           '      <label style="font-size:13px;font-weight:800;color:var(--tx);">📅 الشهر المستهدف:</label>' +
+           '      <input type="month" id="mexp-month" class="inp" style="padding:7px 14px;font-weight:800;min-width:170px;" onchange="mexpLoad()">' +
+           '    </div>' +
+           '    <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;" id="mexpAssigneeWrap">' +
+           '      <label style="font-size:12.5px;font-weight:800;color:var(--tx2);">👤 الموظف المسؤول عن إدخال الشيت:</label>' +
+           '      <select id="mexpAssignedEmp" class="inp" style="padding:7px 12px;font-size:12px;min-width:210px;font-weight:700;">' +
+           '        <option value="">-- لم يتم تعيين موظف (الأدمن فقط) --</option>' +
+           '      </select>' +
+           '      <button type="button" class="bt bt-p" style="padding:7px 16px;font-size:12px;font-weight:800;" onclick="mexpSaveAssignee()">💾 حفظ الصلاحية</button>' +
+           '    </div>' +
+           '  </div>' +
+           '  <div id="mexpSyncInfo" style="font-size:11.5px;color:var(--tx3);margin-top:10px;display:flex;align-items:center;gap:6px;border-top:1px dashed var(--bd);padding-top:8px;">' +
+           '    <span>🔄 المزامنة مفعلة لحظياً بين الإدارة وبوابة الموظف المسؤول</span>' +
+           '  </div>' +
            '</div>';
-        h+=SC('٢','تفاصيل المصروفات');
-        h+='<div class="np" style="display:flex;gap:8px;margin-bottom:10px;flex-wrap:wrap">'+
-           '<button class="bt bt-p" onclick="mexpAddRow()">➕ إضافة سطر</button>'+
-           '<button class="bt bt-o" onclick="mexpSave()">💾 حفظ بيانات الشهر</button>'+
-           '<button class="bt bt-g" onclick="mexpPrint()">🖨 طباعة الشيت / PDF</button>'+
+
+        h+='<datalist id="mexp-spenders-list"></datalist>';
+        h+='<datalist id="mexp-cats-list">' +
+           '  <option value="بوفيه ومشروبات ضيافة">' +
+           '  <option value="أدوات ومستلزمات مكتبية">' +
+           '  <option value="انتقالات ومواصلات عمل">' +
+           '  <option value="صيانة وتشغيل مرافق">' +
+           '  <option value="فواتير وخدمات إنترنت/مياه/كهرباء">' +
+           '  <option value="مشتريات طارئة للمقر">' +
+           '  <option value="ضيافة واستقبال عملاء">' +
+           '  <option value="مستلزمات طباعة وتجهيز">' +
+           '</datalist>';
+
+        h+='<div class="np" style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;flex-wrap:wrap;gap:8px">' +
+           '  <div style="display:flex;gap:8px;flex-wrap:wrap;">' +
+           '    <button type="button" class="bt bt-p" style="font-weight:800;" onclick="mexpAddRow()">➕ إضافة سطر</button>' +
+           '    <button type="button" class="bt bt-o" style="font-weight:800;" onclick="mexpSave()">💾 حفظ ومزامنة الشيت</button>' +
+           '    <button type="button" class="bt bt-g" style="font-weight:800;" onclick="mexpPrint()">🖨 طباعة الشيت / PDF</button>' +
+           '    <button type="button" class="bt bt-o" style="font-weight:800;" onclick="mexpLoad(true)" title="تحديث البيانات من السيرفر">🔄 تحديث</button>' +
+           '  </div>' +
            '</div>';
-        h+='<table class="dt" id="mexp-table" style="width:100%; border-collapse:collapse;">'+
+
+        h+='<div style="overflow-x:auto;">' +
+           '<table class="dt" id="mexp-table" style="width:100%; border-collapse:collapse;">'+
            '<thead><tr>'+
-           '<th style="width:32px">م</th>'+
-           '<th style="width:18%">اسم الصارف</th>'+
-           '<th style="width:38%">النوع والعدد</th>'+
-           '<th style="width:105px">سعر الصرف (ج.م)</th>'+
-           '<th style="width:105px">الإجمالي (ج.م)</th>'+
-           '<th style="width:115px">التاريخ</th>'+
-           '<th style="width:12%">ملاحظات</th>'+
-           '<th class="np" style="width:30px"></th>'+
+           '<th style="width:36px;text-align:center;">م</th>'+
+           '<th style="width:24%;">اسم الصارف</th>'+
+           '<th style="width:28%;">النوع / البند</th>'+
+           '<th style="width:80px;text-align:center;">العدد</th>'+
+           '<th style="width:110px;text-align:center;">السعر (ج.م)</th>'+
+           '<th style="width:120px;text-align:center;">الإجمالي (ج.م)</th>'+
+           '<th style="width:125px;text-align:center;">التاريخ</th>'+
+           '<th class="np" style="width:36px;text-align:center;"></th>'+
            '</tr></thead>'+
            '<tbody id="mexp-tbody"></tbody>'+
-           '<tfoot><tr><td colspan="4" style="text-align:left;font-weight:800;background:#edf2f7;padding:6px 10px;">إجمالي المصروفات الكلي</td><td id="mexp-total-cell" style="font-weight:900;color:var(--nv);background:#edf2f7;font-size:13px;text-align:center;"></td><td colspan="3" style="background:#edf2f7"></td></tr></tfoot>'+
-           '</table>';
-        h+=SC('٣','الاعتماد والتوقيعات');
-        h+=SG3('أمين الصندوق / المسؤول عن الصرف','تحرير وتوثيق البيانات',
+           '<tfoot><tr><td colspan="5" style="text-align:left;font-weight:800;background:var(--bg2,#edf2f7);padding:8px 12px;font-size:13px;">إجمالي المصروفات الكلي</td><td id="mexp-total-cell" style="font-weight:900;color:var(--nv);background:var(--bg2,#edf2f7);font-size:14px;text-align:center;">0.00 ج.م</td><td colspan="2" style="background:var(--bg2,#edf2f7)"></td></tr></tfoot>'+
+           '</table>' +
+           '</div>';
+
+        h+=SC('٢','الاعتماد والتوقيعات');
+        h+=SG3('المسؤول عن الصرف / أمين الصندوق','تحرير وتوثيق البيانات',
                'المدير الإداري / مدير المشروعات','مراجعة واعتماد',
                'المدير التنفيذي','اعتماد نهائي',
                null,'admin','exec');
