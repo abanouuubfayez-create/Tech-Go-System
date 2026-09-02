@@ -15514,6 +15514,80 @@ window.tgGetWeekCalculation = function(dateInput) {
     };
 };
 
+window.tgInsertBulletPoint = function(textareaId, prefix) {
+    var el = document.getElementById(textareaId);
+    if (!el) return;
+    prefix = prefix || '• ';
+    var start = el.selectionStart;
+    var end = el.selectionEnd;
+    var val = el.value;
+    
+    var before = val.substring(0, start);
+    var after = val.substring(end);
+    var needsNewline = (before.length > 0 && !before.endsWith('\n'));
+    var insertion = (needsNewline ? '\n' : '') + prefix;
+    
+    el.value = before + insertion + after;
+    el.selectionStart = el.selectionEnd = start + insertion.length;
+    el.focus();
+};
+
+window.tgHandleAutoListKeydown = function(e, textarea) {
+    if (e.key === 'Enter') {
+        var cursor = textarea.selectionStart;
+        var text = textarea.value;
+        var lastNewline = text.lastIndexOf('\n', cursor - 1);
+        var currentLine = text.substring(lastNewline + 1, cursor);
+
+        // Bullet check
+        if (/^•\s*$/.test(currentLine)) {
+            e.preventDefault();
+            textarea.value = text.substring(0, lastNewline + (lastNewline === -1 ? 0 : 1)) + text.substring(cursor);
+            textarea.selectionStart = textarea.selectionEnd = Math.max(0, lastNewline + (lastNewline === -1 ? 0 : 1));
+            return;
+        }
+        if (/^•\s+/.test(currentLine)) {
+            e.preventDefault();
+            var insertion = '\n• ';
+            textarea.value = text.substring(0, cursor) + insertion + text.substring(cursor);
+            textarea.selectionStart = textarea.selectionEnd = cursor + insertion.length;
+            return;
+        }
+
+        // Checkbox check
+        if (/^☑️\s*$/.test(currentLine)) {
+            e.preventDefault();
+            textarea.value = text.substring(0, lastNewline + (lastNewline === -1 ? 0 : 1)) + text.substring(cursor);
+            textarea.selectionStart = textarea.selectionEnd = Math.max(0, lastNewline + (lastNewline === -1 ? 0 : 1));
+            return;
+        }
+        if (/^☑️\s+/.test(currentLine)) {
+            e.preventDefault();
+            var insertion = '\n☑️ ';
+            textarea.value = text.substring(0, cursor) + insertion + text.substring(cursor);
+            textarea.selectionStart = textarea.selectionEnd = cursor + insertion.length;
+            return;
+        }
+
+        // Numbered list check
+        var numMatch = currentLine.match(/^(\d+)\.\s+/);
+        if (numMatch) {
+            if (/^\d+\.\s*$/.test(currentLine)) {
+                e.preventDefault();
+                textarea.value = text.substring(0, lastNewline + (lastNewline === -1 ? 0 : 1)) + text.substring(cursor);
+                textarea.selectionStart = textarea.selectionEnd = Math.max(0, lastNewline + (lastNewline === -1 ? 0 : 1));
+                return;
+            }
+            e.preventDefault();
+            var nextNum = parseInt(numMatch[1], 10) + 1;
+            var insertion = '\n' + nextNum + '. ';
+            textarea.value = text.substring(0, cursor) + insertion + text.substring(cursor);
+            textarea.selectionStart = textarea.selectionEnd = cursor + insertion.length;
+            return;
+        }
+    }
+};
+
 window.tgOpenNewWeeklyReportModal = function(editId) {
     var existingDoc = null;
     if (editId && window._allWeeklyReports) {
@@ -15533,7 +15607,7 @@ window.tgOpenNewWeeklyReportModal = function(editId) {
     modal.style.display = 'flex';
 
     modal.innerHTML = `
-        <div style="background:var(--w); border:1px solid var(--bd); border-radius:20px; width:100%; max-width:640px; padding:26px 28px; direction:rtl; font-family:inherit; color:var(--tx); box-shadow:0 20px 40px rgba(0,0,0,0.3); max-height:90vh; overflow-y:auto; position:relative;">
+        <div style="background:var(--w); border:1px solid var(--bd); border-radius:20px; width:100%; max-width:660px; padding:26px 28px; direction:rtl; font-family:inherit; color:var(--tx); box-shadow:0 20px 40px rgba(0,0,0,0.3); max-height:92vh; overflow-y:auto; position:relative;">
             <div style="display:flex; justify-content:space-between; align-items:center; border-bottom:1.5px solid var(--bd); padding-bottom:14px; margin-bottom:18px;">
                 <div style="display:flex; align-items:center; gap:8px;">
                     <span style="font-size:22px;">📊</span>
@@ -15558,26 +15632,61 @@ window.tgOpenNewWeeklyReportModal = function(editId) {
 
                 <!-- 1. ما تم إنجازه هذا الأسبوع -->
                 <div style="margin-bottom:18px;">
-                    <label style="display:block; font-size:13.5px; font-weight:800; color:var(--tx); margin-bottom:6px;">
-                        <span style="color:#0284c7;">📌</span> ما تم إنجازه هذا الأسبوع (الإنجازات والمهام المكتملة): <span style="color:red;">*</span>
-                    </label>
-                    <textarea id="wkrModalAccomplishments" class="inp" rows="4" style="width:100%; padding:10px 14px; font-size:13px; line-height:1.6; font-weight:600; resize:vertical;" placeholder="• تفاصيل المهام والمشاريع المنجزة خلال هذا الأسبوع...&#10;• أي مخرجات أو تسليمات تمت بنجاح..." required>${existingDoc ? escH(existingDoc.accomplishments || existingDoc.content || '') : ''}</textarea>
+                    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:6px; flex-wrap:wrap; gap:6px;">
+                        <label style="font-size:13.5px; font-weight:800; color:var(--tx);">
+                            <span style="color:#0284c7;">📌</span> ما تم إنجازه هذا الأسبوع (الإنجازات والمهام المكتملة): <span style="color:red;">*</span>
+                        </label>
+                        <div style="display:flex; gap:4px;">
+                            <button type="button" onclick="tgInsertBulletPoint('wkrModalAccomplishments', '• ')" class="bt bt-o" style="padding:2px 8px; font-size:11px; font-weight:800; border-radius:12px;" title="إضافة نقطة">
+                                • نقطة
+                            </button>
+                            <button type="button" onclick="tgInsertBulletPoint('wkrModalAccomplishments', '1. ')" class="bt bt-o" style="padding:2px 8px; font-size:11px; font-weight:800; border-radius:12px;" title="إضافة ترقيم">
+                                🔢 1. 2.
+                            </button>
+                            <button type="button" onclick="tgInsertBulletPoint('wkrModalAccomplishments', '☑️ ')" class="bt bt-o" style="padding:2px 8px; font-size:11px; font-weight:800; border-radius:12px;" title="إضافة مهمة منجزة">
+                                ☑️ مهمة
+                            </button>
+                        </div>
+                    </div>
+                    <textarea id="wkrModalAccomplishments" class="inp" rows="4" onkeydown="tgHandleAutoListKeydown(event, this)" style="width:100%; padding:10px 14px; font-size:13px; line-height:1.7; font-weight:600; resize:vertical;" placeholder="• تفاصيل المهام والمشاريع المنجزة خلال هذا الأسبوع...&#10;• أي مخرجات أو تسليمات تمت بنجاح..." required>${existingDoc ? (existingDoc.accomplishments || existingDoc.content || '') : ''}</textarea>
+                    <div style="font-size:11px; color:var(--tx3); margin-top:2px;">💡 اضغط Enter بعد أي نقطة لإنشاء النقطة التالية تلقائياً.</div>
                 </div>
 
                 <!-- 2. خطة ومستهدفات الأسبوع القادم -->
                 <div style="margin-bottom:18px;">
-                    <label style="display:block; font-size:13.5px; font-weight:800; color:var(--tx); margin-bottom:6px;">
-                        <span style="color:#10b981;">🎯</span> خطة ومستهدفات الأسبوع القادم: <span style="color:red;">*</span>
-                    </label>
-                    <textarea id="wkrModalNextWeekPlan" class="inp" rows="4" style="width:100%; padding:10px 14px; font-size:13px; line-height:1.6; font-weight:600; resize:vertical;" placeholder="• أولويات العمل المخطط تنفيذها الأسبوع القادم...&#10;• المشاريع والمهام المستهدفة..." required>${existingDoc ? escH(existingDoc.nextWeekPlan || existingDoc.plan || '') : ''}</textarea>
+                    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:6px; flex-wrap:wrap; gap:6px;">
+                        <label style="font-size:13.5px; font-weight:800; color:var(--tx);">
+                            <span style="color:#10b981;">🎯</span> خطة ومستهدفات الأسبوع القادم: <span style="color:red;">*</span>
+                        </label>
+                        <div style="display:flex; gap:4px;">
+                            <button type="button" onclick="tgInsertBulletPoint('wkrModalNextWeekPlan', '• ')" class="bt bt-o" style="padding:2px 8px; font-size:11px; font-weight:800; border-radius:12px;" title="إضافة نقطة">
+                                • نقطة
+                            </button>
+                            <button type="button" onclick="tgInsertBulletPoint('wkrModalNextWeekPlan', '1. ')" class="bt bt-o" style="padding:2px 8px; font-size:11px; font-weight:800; border-radius:12px;" title="إضافة ترقيم">
+                                🔢 1. 2.
+                            </button>
+                            <button type="button" onclick="tgInsertBulletPoint('wkrModalNextWeekPlan', '🎯 ')" class="bt bt-o" style="padding:2px 8px; font-size:11px; font-weight:800; border-radius:12px;" title="إضافة هدف">
+                                🎯 هدف
+                            </button>
+                        </div>
+                    </div>
+                    <textarea id="wkrModalNextWeekPlan" class="inp" rows="4" onkeydown="tgHandleAutoListKeydown(event, this)" style="width:100%; padding:10px 14px; font-size:13px; line-height:1.7; font-weight:600; resize:vertical;" placeholder="• أولويات العمل المخطط تنفيذها الأسبوع القادم...&#10;• المشاريع والمهام المستهدفة..." required>${existingDoc ? (existingDoc.nextWeekPlan || existingDoc.plan || '') : ''}</textarea>
+                    <div style="font-size:11px; color:var(--tx3); margin-top:2px;">💡 اضغط Enter بعد أي نقطة لإنشاء النقطة التالية تلقائياً.</div>
                 </div>
 
                 <!-- 3. التحديات والمعوقات (اختياري) -->
                 <div style="margin-bottom:22px;">
-                    <label style="display:block; font-size:13px; font-weight:800; color:var(--tx); margin-bottom:6px;">
-                        <span style="color:#d97706;">💡</span> معوقات أو ملاحظات أو دعم مطلوب من الإدارة (اختياري):
-                    </label>
-                    <textarea id="wkrModalChallenges" class="inp" rows="2" style="width:100%; padding:8px 12px; font-size:13px; line-height:1.6; font-weight:600; resize:vertical;" placeholder="• أي تحديات واجهتك أو مساعدة تحتاجها من الفريق أو الإدارة...">${existingDoc ? escH(existingDoc.challenges || '') : ''}</textarea>
+                    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:6px; flex-wrap:wrap; gap:6px;">
+                        <label style="font-size:13px; font-weight:800; color:var(--tx);">
+                            <span style="color:#d97706;">💡</span> معوقات أو ملاحظات أو دعم مطلوب من الإدارة (اختياري):
+                        </label>
+                        <div style="display:flex; gap:4px;">
+                            <button type="button" onclick="tgInsertBulletPoint('wkrModalChallenges', '• ')" class="bt bt-o" style="padding:2px 8px; font-size:11px; font-weight:800; border-radius:12px;">
+                                • نقطة
+                            </button>
+                        </div>
+                    </div>
+                    <textarea id="wkrModalChallenges" class="inp" rows="2" onkeydown="tgHandleAutoListKeydown(event, this)" style="width:100%; padding:8px 12px; font-size:13px; line-height:1.7; font-weight:600; resize:vertical;" placeholder="• أي تحديات واجهتك أو مساعدة تحتاجها من الفريق أو الإدارة...">${existingDoc ? (existingDoc.challenges || '') : ''}</textarea>
                 </div>
 
                 <!-- Buttons -->
