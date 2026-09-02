@@ -67,7 +67,7 @@
     <link
         href="https://fonts.googleapis.com/css2?family=Alexandria:wght@300;400;500;600;700;800;900&family=Cairo:wght@400;600;700;800;900&family=Tajawal:wght@400;500;700;800&family=Inter:wght@400;500;600;700&display=swap"
         rel="stylesheet">
-    <link rel="stylesheet" href="styles.css?v=1788349837">
+    <link rel="stylesheet" href="styles.css?v=1788350087">
     <link rel="manifest" href="manifest.json">
     <link rel="icon" type="image/png" sizes="192x192" href="icon-192.png">
     <link rel="apple-touch-icon" href="icon-192.png">
@@ -75,10 +75,10 @@
     <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-storage-compat.js"></script>
-    <script src="firebase-config.js?v=1788349837"></script>
-    <script src="auth.js?v=1788349837"></script>
-    <script src="app.js?v=1788349837"></script>
-    <script src="formsend.js?v=1788349837"></script>
+    <script src="firebase-config.js?v=1788350087"></script>
+    <script src="auth.js?v=1788350087"></script>
+    <script src="app.js?v=1788350087"></script>
+    <script src="formsend.js?v=1788350087"></script>
     <script>
         (function () {
             const theme = localStorage.getItem('tg-theme') || 'light';
@@ -3475,8 +3475,8 @@
         تطوير وتصميم: أبانوب فايز</div>
     <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
-    <script src="theme.js?v=1788349837"></script>
-    <script src="pwa-install.js?v=1788349837"></script>
+    <script src="theme.js?v=1788350087"></script>
+    <script src="pwa-install.js?v=1788350087"></script>
 
 
     <!-- Incoming Meeting Call Modal -->
@@ -5037,6 +5037,531 @@
             }
         };
 
+
+        // ══════════════════════════════════════════════════════════════════════
+        //  WEEKLY REPORTS & PLANS ENGINE (EMPLOYEE PORTAL)
+        // ══════════════════════════════════════════════════════════════════════
+        window.loadWeeklyReportsEmp = function(container) {
+            if (!container) container = document.getElementById('epg-wkr');
+            if (!container) return;
+
+            var isThursday = (new Date().getDay() === 4);
+            var thursdayNotice = isThursday ? `
+                <div style="background:linear-gradient(135deg, #78350f, #451a03); border:2px solid #f59e0b; border-radius:16px; padding:18px 22px; margin-bottom:22px; display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:14px; box-shadow:0 10px 30px rgba(120,53,15,0.4); color:#ffffff;">
+                    <div>
+                        <div style="font-size:16.5px; font-weight:900; color:#fef08a; display:flex; align-items:center; gap:8px; text-shadow:0 1px 3px rgba(0,0,0,0.6);">
+                            🚨 تذكير يوم الخميس بالتقرير والخطة الأسبوعية
+                        </div>
+                        <p style="margin:6px 0 0; font-size:13.5px; color:#fef3c7; font-weight:700; line-height:1.5; text-shadow:0 1px 2px rgba(0,0,0,0.5);">
+                            تنبيه هام: اليوم الخميس وهو الموعد الرسمي المعتمد لإرسال التقرير الأسبوعي وخطة الأسبوع القادم.
+                        </p>
+                    </div>
+                    <button type="button" onclick="tgOpenNewWeeklyReportModal()" style="background:linear-gradient(135deg, #f59e0b, #d97706); color:#ffffff; font-weight:900; font-size:14px; padding:11px 24px; border-radius:30px; border:none; cursor:pointer; box-shadow:0 4px 15px rgba(245,158,11,0.5); text-shadow:0 1px 2px rgba(0,0,0,0.3);">
+                        ⚡ تقديم التقرير والخطة الآن
+                    </button>
+                </div>
+            ` : '';
+
+            container.innerHTML = `
+                <div class="set-sec" style="background:var(--w); border:1px solid var(--bd); border-radius:16px; padding:20px; box-shadow:var(--sh-sm);">
+                    ${thursdayNotice}
+                    <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:15px; margin-bottom:24px; border-bottom:1.5px solid var(--bd); padding-bottom:18px;">
+                        <div>
+                            <h2 style="font-size:22px; font-weight:900; color:var(--tx); margin:0 0 6px; display:flex; align-items:center; gap:8px;">
+                                <span>📊</span> التقارير والخطط الأسبوعية
+                            </h2>
+                            <p style="color:var(--tx2); font-size:13.5px; margin:0; font-weight:600;">
+                                توثيق إنجازاتك خلال الأسبوع وخطة أهدافك للأسبوع القادم مع متابعة اعتماد الإدارة والتوجيهات المباشرة.
+                            </p>
+                        </div>
+                        <div>
+                            <button type="button" onclick="tgOpenNewWeeklyReportModal()" class="bt" style="background:linear-gradient(135deg, #0284c7, #0369a1); color:#fff; font-weight:900; font-size:13.5px; padding:11px 24px; border-radius:30px; box-shadow:0 4px 15px rgba(2,132,199,0.35); border:none; cursor:pointer; display:inline-flex; align-items:center; gap:8px;">
+                                <span style="font-size:16px;">➕</span> كتابة تقرير وخطة أسبوعية
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- سجل التقارير الأسبوعية -->
+                    <div>
+                        <div style="font-size:16px; font-weight:900; color:var(--tx); margin-bottom:14px; display:flex; align-items:center; gap:6px;">
+                            <span>🗓️</span> سجل تقاريرك وخططك الأسبوعية
+                        </div>
+                        <div id="wrEmpList">
+                            <div style="text-align:center; padding:30px; color:var(--tx3); font-weight:bold;">⏳ جاري جلب تقاريرك...</div>
+                        </div>
+                    </div>
+                </div>
+            `;
+
+            tgRenderWeeklyReportsEmp();
+        };
+
+        window.tgGetWeekCalculation = function(dateInput) {
+            var d = dateInput ? new Date(dateInput) : new Date();
+            var day = d.getDay(); // 0: Sun, 1: Mon, ... 4: Thu, 5: Fri, 6: Sat
+            var sun = new Date(d);
+            sun.setDate(d.getDate() - day);
+            var thu = new Date(sun);
+            thu.setDate(sun.getDate() + 4);
+
+            var pad = function(n) { return (n < 10 ? '0' : '') + n; };
+            var toIso = function(dt) { return dt.getFullYear() + '-' + pad(dt.getMonth() + 1) + '-' + pad(dt.getDate()); };
+
+            var arMonths = ['يناير', 'فبراير', 'مارس', 'أبريل', 'مايو', 'يونيو', 'يوليو', 'أغسطس', 'سبتمبر', 'أكتوبر', 'نوفمبر', 'ديسمبر'];
+            var label = 'الأحد ' + sun.getDate() + ' ' + arMonths[sun.getMonth()] + ' إلى الخميس ' + thu.getDate() + ' ' + arMonths[thu.getMonth()] + ' ' + thu.getFullYear();
+
+            return {
+                startDate: toIso(sun),
+                endDate: toIso(thu),
+                label: label
+            };
+        };
+
+        window.tgOpenNewWeeklyReportModal = function(editId) {
+            var existingDoc = null;
+            if (editId && window._allWeeklyReports) {
+                existingDoc = window._allWeeklyReports.find(function(x){ return x.id === editId; });
+            }
+
+            var defWeek = tgGetWeekCalculation(existingDoc ? existingDoc.weekStart : null);
+
+            var modal = document.getElementById('tgWeeklyReportModalOverlay');
+            if (!modal) {
+                modal = document.createElement('div');
+                modal.id = 'tgWeeklyReportModalOverlay';
+                modal.className = 'modal-backdrop';
+                modal.style.cssText = 'position:fixed; top:0; left:0; right:0; bottom:0; background:rgba(0,0,0,0.7); z-index:999999; display:flex; align-items:center; justify-content:center; padding:16px; backdrop-filter:blur(5px); overflow-y:auto;';
+                document.body.appendChild(modal);
+            }
+            modal.style.display = 'flex';
+
+            modal.innerHTML = `
+                <div style="background:var(--w); border:1px solid var(--bd); border-radius:20px; width:100%; max-width:640px; padding:26px 28px; direction:rtl; font-family:inherit; color:var(--tx); box-shadow:0 20px 40px rgba(0,0,0,0.3); max-height:90vh; overflow-y:auto; position:relative;">
+                    <div style="display:flex; justify-content:space-between; align-items:center; border-bottom:1.5px solid var(--bd); padding-bottom:14px; margin-bottom:18px;">
+                        <div style="display:flex; align-items:center; gap:8px;">
+                            <span style="font-size:22px;">📊</span>
+                            <h3 style="margin:0; font-size:18px; font-weight:900; color:var(--tx);">
+                                ${existingDoc ? '✏️ تعديل التقرير والخطة الأسبوعية' : '📝 كتابة التقرير والخطة الأسبوعية'}
+                            </h3>
+                        </div>
+                        <button type="button" onclick="document.getElementById('tgWeeklyReportModalOverlay').style.display='none'" style="background:none; border:none; color:var(--tx3); font-size:20px; font-weight:bold; cursor:pointer; padding:4px 8px;">✕</button>
+                    </div>
+
+                    <form id="tgWeeklyReportForm" onsubmit="event.preventDefault(); tgSubmitWeeklyReportAndPlan('${editId || ''}');">
+                        <!-- اختيار الأسبوع -->
+                        <div style="margin-bottom:18px; background:var(--bg); padding:14px 16px; border-radius:12px; border:1px solid var(--bd);">
+                            <label style="display:block; font-size:13px; font-weight:800; color:var(--tx); margin-bottom:6px;">
+                                📅 أسبوع العمل (بداية الأسبوع من الأحد):
+                            </label>
+                            <input type="date" id="wkrModalWeekStart" class="inp" value="${existingDoc ? (existingDoc.weekStart || defWeek.startDate) : defWeek.startDate}" onchange="var w = tgGetWeekCalculation(this.value); document.getElementById('wkrModalWeekLabelPreview').textContent = w.label;" style="font-weight:800; padding:8px 12px; width:100%; margin-bottom:6px;" required />
+                            <div style="font-size:12px; color:#0284c7; font-weight:800;" id="wkrModalWeekLabelPreview">
+                                ${existingDoc ? (existingDoc.weekLabel || defWeek.label) : defWeek.label}
+                            </div>
+                        </div>
+
+                        <!-- 1. ما تم إنجازه هذا الأسبوع -->
+                        <div style="margin-bottom:18px;">
+                            <label style="display:block; font-size:13.5px; font-weight:800; color:var(--tx); margin-bottom:6px;">
+                                <span style="color:#0284c7;">📌</span> ما تم إنجازه هذا الأسبوع (الإنجازات والمهام المكتملة): <span style="color:red;">*</span>
+                            </label>
+                            <textarea id="wkrModalAccomplishments" class="inp" rows="4" style="width:100%; padding:10px 14px; font-size:13px; line-height:1.6; font-weight:600; resize:vertical;" placeholder="• تفاصيل المهام والمشاريع المنجزة خلال هذا الأسبوع...&#10;• أي مخرجات أو تسليمات تمت بنجاح..." required>${existingDoc ? (existingDoc.accomplishments || existingDoc.content || '') : ''}</textarea>
+                        </div>
+
+                        <!-- 2. خطة ومستهدفات الأسبوع القادم -->
+                        <div style="margin-bottom:18px;">
+                            <label style="display:block; font-size:13.5px; font-weight:800; color:var(--tx); margin-bottom:6px;">
+                                <span style="color:#10b981;">🎯</span> خطة ومستهدفات الأسبوع القادم: <span style="color:red;">*</span>
+                            </label>
+                            <textarea id="wkrModalNextWeekPlan" class="inp" rows="4" style="width:100%; padding:10px 14px; font-size:13px; line-height:1.6; font-weight:600; resize:vertical;" placeholder="• أولويات العمل المخطط تنفيذها الأسبوع القادم...&#10;• المشاريع والمهام المستهدفة..." required>${existingDoc ? (existingDoc.nextWeekPlan || existingDoc.plan || '') : ''}</textarea>
+                        </div>
+
+                        <!-- 3. التحديات والمعوقات (اختياري) -->
+                        <div style="margin-bottom:22px;">
+                            <label style="display:block; font-size:13px; font-weight:800; color:var(--tx); margin-bottom:6px;">
+                                <span style="color:#d97706;">💡</span> معوقات أو ملاحظات أو دعم مطلوب من الإدارة (اختياري):
+                            </label>
+                            <textarea id="wkrModalChallenges" class="inp" rows="2" style="width:100%; padding:8px 12px; font-size:13px; line-height:1.6; font-weight:600; resize:vertical;" placeholder="• أي تحديات واجهتك أو مساعدة تحتاجها من الفريق أو الإدارة...">${existingDoc ? (existingDoc.challenges || '') : ''}</textarea>
+                        </div>
+
+                        <!-- Buttons -->
+                        <div style="display:flex; gap:10px; justify-content:flex-end;">
+                            <button type="button" onclick="document.getElementById('tgWeeklyReportModalOverlay').style.display='none'" class="bt bt-o" style="padding:10px 20px; font-weight:800; font-size:13px;">إلغاء</button>
+                            <button type="submit" id="btnSubmitWeeklyReportModal" class="bt" style="background:linear-gradient(135deg, #0284c7, #0369a1); color:#fff; font-weight:900; font-size:13.5px; padding:10px 28px; border-radius:8px; border:none; cursor:pointer; box-shadow:0 4px 15px rgba(2,132,199,0.35);">
+                                🚀 إرسال التقرير والخطة للإدارة
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            `;
+        };
+
+        window.tgSubmitWeeklyReportAndPlan = function(editId) {
+            var btn = document.getElementById('btnSubmitWeeklyReportModal');
+            if (btn) { btn.disabled = true; btn.textContent = '⏳ جاري الحفظ والإرسال...'; }
+
+            var weekStartVal = document.getElementById('wkrModalWeekStart').value;
+            var weekCalc = tgGetWeekCalculation(weekStartVal);
+            var accomplishments = (document.getElementById('wkrModalAccomplishments').value || '').trim();
+            var nextWeekPlan = (document.getElementById('wkrModalNextWeekPlan').value || '').trim();
+            var challenges = (document.getElementById('wkrModalChallenges').value || '').trim();
+
+            if (!accomplishments || !nextWeekPlan) {
+                alert('من فضلك أكمل كتابة ما تم إنجازه وخطة الأسبوع القادم.');
+                if (btn) { btn.disabled = false; btn.textContent = '🚀 إرسال التقرير والخطة للإدارة'; }
+                return;
+            }
+
+            var u = window.TG_USER || {};
+            var myUid = u.uid || (window.firebase && firebase.auth && firebase.auth().currentUser ? firebase.auth().currentUser.uid : '');
+            var empName = u.name || u.email || 'موظف';
+            var empJob = u.jobTitle || '';
+
+            var payload = {
+                uid: myUid,
+                createdBy: myUid,
+                empUid: myUid,
+                empName: empName,
+                name: empName,
+                empEmail: u.email || '',
+                email: u.email || '',
+                empJob: empJob,
+                weekStart: weekCalc.startDate,
+                weekEnd: weekCalc.endDate,
+                weekLabel: weekCalc.label,
+                accomplishments: accomplishments,
+                content: accomplishments,
+                nextWeekPlan: nextWeekPlan,
+                plan: nextWeekPlan,
+                challenges: challenges,
+                status: 'submitted',
+                reviewedByAdmin: false,
+                updatedAt: new Date()
+            };
+
+            var savePromise;
+            if (editId) {
+                savePromise = Promise.all([
+                    db.collection('weekly_reports').doc(editId).update(payload).catch(function(){}),
+                    db.collection('weeklyReports').doc(editId).update(payload).catch(function(){})
+                ]);
+            } else {
+                payload.createdAt = new Date();
+                savePromise = db.collection('weekly_reports').add(payload).then(function(docRef) {
+                    return db.collection('weeklyReports').doc(docRef.id).set(payload).then(function(){ return docRef; });
+                });
+            }
+
+            savePromise.then(function(docRef) {
+                var repId = editId || (docRef ? docRef.id : '');
+                
+                // Notify Admins
+                db.collection('admin_notifications').add({
+                    title: '📊 تقرير وخطة أسبوعية جديدة',
+                    body: 'قام ' + empName + ' بتقديم تقريره وخطة عمله لـ ' + weekCalc.label,
+                    tag: 'weekly-report-new',
+                    empUid: myUid,
+                    empName: empName,
+                    reportId: repId,
+                    read: false,
+                    createdAt: new Date()
+                }).catch(function(e){ console.warn("Admin notif issue:", e); });
+
+                var modal = document.getElementById('tgWeeklyReportModalOverlay');
+                if (modal) modal.style.display = 'none';
+
+                alert('✅ تم إرسال تقريرك وخطتك للإدارة بنجاح!');
+                tgRenderWeeklyReportsEmp();
+            }).catch(function(err) {
+                alert('تعذر حفظ التقرير: ' + err.message);
+                if (btn) { btn.disabled = false; btn.textContent = '🚀 إرسال التقرير والخطة للإدارة'; }
+            });
+        };
+
+        window.tgRenderWeeklyReportsEmp = function () {
+            var listEl = document.getElementById('wrEmpList');
+            if (!listEl) return;
+
+            var targetDb = window.db || (typeof db !== 'undefined' ? db : (window.firebase ? firebase.firestore() : null));
+            if (!targetDb) return;
+
+            var u = window.TG_USER || {};
+            var myUid = u.uid || (window.firebase && firebase.auth && firebase.auth().currentUser ? firebase.auth().currentUser.uid : '');
+
+            var queries = [
+                targetDb.collection('weekly_reports').get().catch(function () { return { docs: [] }; }),
+                targetDb.collection('weeklyReports').get().catch(function () { return { docs: [] }; })
+            ];
+
+            if (myUid) {
+                queries.push(
+                    targetDb.collection('weekly_reports').where('uid', '==', myUid).get().catch(function () { return { docs: [] }; }),
+                    targetDb.collection('weeklyReports').where('uid', '==', myUid).get().catch(function () { return { docs: [] }; })
+                );
+            }
+
+            Promise.all(queries).then(function (results) {
+                var reports = [];
+                var seenIds = {};
+
+                results.forEach(function (snap) {
+                    if (snap && snap.docs) {
+                        snap.docs.forEach(function (doc) {
+                            if (!seenIds[doc.id]) {
+                                var d = doc.data();
+                                d.id = doc.id;
+                                if (d.uid === myUid || d.createdBy === myUid || d.empUid === myUid || d.email === u.email) {
+                                    seenIds[doc.id] = true;
+                                    reports.push(d);
+                                }
+                            }
+                        });
+                    }
+                });
+
+                reports.sort(function (a, b) {
+                    var tA = a.createdAt && a.createdAt.seconds ? a.createdAt.seconds * 1000 : (a.createdAt ? new Date(a.createdAt).getTime() : 0);
+                    var tB = b.createdAt && b.createdAt.seconds ? b.createdAt.seconds * 1000 : (b.createdAt ? new Date(b.createdAt).getTime() : 0);
+                    return tB - tA;
+                });
+
+                window._allWeeklyReports = reports;
+
+                if (reports.length === 0) {
+                    listEl.innerHTML = `
+                        <div style="background:var(--bg); border:1.5px dashed var(--bd); padding:35px 20px; text-align:center; border-radius:14px; color:var(--tx); font-weight:800; display:flex; flex-direction:column; align-items:center; gap:12px;">
+                            <div style="font-size:36px;">📝</div>
+                            <div style="font-size:15px; color:var(--tx);">لم تقم بتقديم أي تقارير أو خطط أسبوعية بعد.</div>
+                            <button type="button" onclick="tgOpenNewWeeklyReportModal()" class="bt" style="background:linear-gradient(135deg, #0284c7, #0369a1); color:#fff; font-weight:900; font-size:13.5px; padding:10px 24px; border-radius:30px; box-shadow:0 4px 15px rgba(2,132,199,0.35); border:none; cursor:pointer;">
+                                ⚡ كتابة أول تقرير وخطة أسبوعية
+                            </button>
+                        </div>
+                    `;
+                    return;
+                }
+
+                var html = '';
+                reports.forEach(function (r) {
+                    var isApproved = (r.status === 'approved' || r.reviewedByAdmin);
+                    var statusBadge = isApproved 
+                        ? '<span style="background:rgba(16,185,129,0.15); color:#10b981; border:1px solid rgba(16,185,129,0.3); font-weight:800; padding:4px 14px; border-radius:20px; font-size:11.5px;">✅ معتمد من الإدارة</span>'
+                        : '<span style="background:rgba(245,158,11,0.15); color:#d97706; border:1px solid rgba(245,158,11,0.3); font-weight:800; padding:4px 14px; border-radius:20px; font-size:11.5px;">⏳ قيد المراجعة</span>';
+
+                    var dateStr = '';
+                    if (r.createdAt) {
+                        var dt = r.createdAt.seconds ? new Date(r.createdAt.seconds * 1000) : new Date(r.createdAt);
+                        dateStr = dt.toLocaleDateString('ar-EG') + ' ' + dt.toLocaleTimeString('ar-EG', { hour: '2-digit', minute: '2-digit' });
+                    }
+
+                    html += `
+                        <div style="background:var(--w); border:1px solid var(--bd); border-right:4px solid ${isApproved ? '#10b981' : '#0284c7'}; border-radius:14px; padding:18px 20px; box-shadow:0 1px 4px rgba(0,0,0,0.03); direction:rtl; margin-bottom:14px;">
+                            <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px; margin-bottom:12px; border-bottom:1px dashed var(--bd); padding-bottom:10px;">
+                                <div>
+                                    <h4 style="margin:0; font-size:15.5px; font-weight:900; color:var(--tx);">
+                                        📅 ${esc(r.weekLabel || ('أسبوع: ' + (r.weekStart || '')))}
+                                    </h4>
+                                    <div style="font-size:11.5px; color:var(--tx3); font-weight:600; margin-top:3px;">🕒 قُدم بتاريخ: ${dateStr}</div>
+                                </div>
+                                <div>${statusBadge}</div>
+                            </div>
+
+                            <!-- Accomplishments -->
+                            ${(r.accomplishments || r.content || r.summary) ? `
+                                <div style="margin-bottom:10px; background:var(--bg); border:1px solid var(--bd); border-radius:10px; padding:12px 14px;">
+                                    <div style="color:#0284c7; font-size:12.5px; font-weight:800; margin-bottom:4px; display:flex; align-items:center; gap:6px;">
+                                        <span>📌</span> ما تم إنجازه هذا الأسبوع:
+                                    </div>
+                                    <div style="font-size:13.5px; color:var(--tx); line-height:1.7; font-weight:600; white-space:pre-wrap;">${esc(r.accomplishments || r.content || r.summary)}</div>
+                                </div>
+                            ` : ''}
+
+                            <!-- Next Week Plan -->
+                            ${(r.nextWeekPlan || r.plan || r.plannedTasks) ? `
+                                <div style="margin-bottom:10px; background:var(--bg); border:1px solid var(--bd); border-radius:10px; padding:12px 14px;">
+                                    <div style="color:#10b981; font-size:12.5px; font-weight:800; margin-bottom:4px; display:flex; align-items:center; gap:6px;">
+                                        <span>🎯</span> خطة ومستهدفات الأسبوع القادم:
+                                    </div>
+                                    <div style="font-size:13.5px; color:var(--tx); line-height:1.7; font-weight:600; white-space:pre-wrap;">${esc(r.nextWeekPlan || r.plan || r.plannedTasks)}</div>
+                                </div>
+                            ` : ''}
+
+                            <!-- Challenges -->
+                            ${r.challenges ? `
+                                <div style="margin-bottom:10px; background:rgba(245,158,11,0.06); border:1px solid rgba(245,158,11,0.25); border-radius:10px; padding:10px 14px;">
+                                    <div style="color:#d97706; font-size:12.5px; font-weight:800; margin-bottom:4px; display:flex; align-items:center; gap:6px;">
+                                        <span>💡</span> التحديات أو الملاحظات:
+                                    </div>
+                                    <div style="font-size:13px; color:var(--tx); line-height:1.6; font-weight:600; white-space:pre-wrap;">${esc(r.challenges)}</div>
+                                </div>
+                            ` : ''}
+
+                            <!-- Admin Feedback -->
+                            ${(r.adminFeedback || r.adminNotes) ? `
+                                <div style="margin-bottom:10px; background:rgba(16,185,129,0.08); border:1px solid rgba(16,185,129,0.3); border-radius:10px; padding:10px 14px;">
+                                    <div style="color:#10b981; font-size:12.5px; font-weight:800; margin-bottom:4px; display:flex; align-items:center; gap:6px;">
+                                        <span>💬</span> توجيه وملاحظة الإدارة: <span style="color:var(--tx3); font-size:11px; font-weight:normal;">(${esc(r.reviewedBy || 'الإدارة')})</span>
+                                    </div>
+                                    <div style="font-size:13px; color:var(--tx); line-height:1.6; font-weight:700; white-space:pre-wrap;">${esc(r.adminFeedback || r.adminNotes)}</div>
+                                </div>
+                            ` : ''}
+
+                            <!-- Actions -->
+                            <div style="display:flex; justify-content:flex-end; gap:8px; align-items:center; margin-top:10px; border-top:1px dashed var(--bd); padding-top:8px;">
+                                ${!isApproved ? `
+                                    <button type="button" onclick="tgOpenNewWeeklyReportModal('${r.id}')" class="bt bt-o" style="font-size:12px; padding:5px 14px; font-weight:800; border-radius:20px;">
+                                        ✏️ تعديل
+                                    </button>
+                                    <button type="button" onclick="tgDeleteWeeklyReport('${r.id}')" class="bt bt-o" style="border-color:#ef4444; color:#ef4444; font-size:12px; padding:5px 12px; font-weight:800; border-radius:20px;">
+                                        🗑 حذف
+                                    </button>
+                                ` : ''}
+                                <button type="button" onclick="tgPrintWeeklyReport('${r.id}')" class="bt bt-o" style="font-size:12px; padding:5px 14px; font-weight:800; border-radius:20px;">
+                                    🖨 طباعة رسمية
+                                </button>
+                            </div>
+                        </div>
+                    `;
+                });
+
+                listEl.innerHTML = html;
+            }).catch(function (err) {
+                console.error("Error loading emp weekly reports:", err);
+                listEl.innerHTML = '<div class="empty-hint" style="color:var(--no)">تعذر جلب التقارير: ' + esc(err.message) + '</div>';
+            });
+        };
+
+        window.printWeeklyReportDoc = function(u, r) {
+            if (!u) u = window.TG_USER || {};
+            if (!r) r = {};
+            var empName = u.name || r.empName || r.name || 'موظف';
+            var empEmail = u.email || r.empEmail || r.email || '';
+            var empJob = u.jobTitle || r.empJob || r.jobTitle || '';
+            var weekText = r.weekLabel || ('أسبوع: ' + (r.weekStart || ''));
+            if (r.weekEnd) weekText += ' إلى ' + r.weekEnd;
+
+            var statusText = (r.status === 'approved' || r.reviewedByAdmin) ? '✅ معتمد وموافق عليه من الإدارة العامة' : '⏳ قيد المراجعة والاعتماد';
+
+            var printHtml = `<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <title>تقرير وخطة أسبوعية - ${empName}</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;800;900&display=swap');
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body { font-family: 'Cairo', sans-serif; background: #fff; color: #1e293b; padding: 30px; font-size: 13.5px; line-height: 1.6; }
+        .doc-header { border-bottom: 2.5px solid #0f172a; padding-bottom: 16px; margin-bottom: 24px; display: flex; justify-content: space-between; align-items: center; }
+        .doc-title { font-size: 20px; font-weight: 900; color: #0f172a; margin-bottom: 4px; }
+        .doc-sub { font-size: 12px; color: #64748b; font-weight: 700; }
+        .logo-box { text-align: left; font-size: 18px; font-weight: 900; color: #0284c7; }
+        .info-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; background: #f8fafc; border: 1.5px solid #e2e8f0; border-radius: 10px; padding: 14px 18px; margin-bottom: 20px; }
+        .info-item { font-size: 13px; }
+        .info-item strong { color: #0f172a; font-weight: 800; }
+        .section-box { margin-bottom: 20px; border: 1.5px solid #e2e8f0; border-radius: 10px; overflow: hidden; }
+        .section-header { background: #f1f5f9; padding: 10px 16px; font-size: 14px; font-weight: 800; color: #0f172a; border-bottom: 1.5px solid #e2e8f0; display: flex; align-items: center; gap: 8px; }
+        .section-content { padding: 14px 18px; white-space: pre-wrap; font-size: 13.5px; line-height: 1.8; color: #334155; font-weight: 600; }
+        .feedback-box { background: #ecfdf5; border: 1.5px solid #a7f3d0; border-radius: 10px; padding: 14px 18px; margin-bottom: 20px; color: #065f46; }
+        .signatures { display: grid; grid-template-columns: 1fr 1fr; gap: 30px; margin-top: 40px; padding-top: 20px; border-top: 1.5px dashed #cbd5e1; }
+        .sig-box { text-align: center; }
+        .sig-title { font-weight: 800; font-size: 13px; color: #475569; margin-bottom: 50px; }
+        .sig-line { border-bottom: 1.5px solid #94a3b8; width: 70%; margin: 0 auto; }
+        @media print {
+            body { padding: 15px; }
+            @page { margin: 1.2cm; size: A4 portrait; }
+        }
+    </style>
+</head>
+<body>
+    <div class="doc-header">
+        <div>
+            <div class="doc-title">📊 التقرير والخطة الأسبوعية</div>
+            <div class="doc-sub">نظام إدارة وتوثيق أداء فرق العمل — شركة تيك جو</div>
+        </div>
+        <div class="logo-box">
+            TECH GO SYSTEM<br>
+            <span style="font-size:11px; color:#64748b; font-weight:600;">Performance Management</span>
+        </div>
+    </div>
+
+    <div class="info-grid">
+        <div class="info-item"><strong>اسم الموظف:</strong> ${empName}</div>
+        <div class="info-item"><strong>المسمى الوظيفي:</strong> ${empJob || 'موظف'}</div>
+        <div class="info-item"><strong>أسبوع العمل:</strong> ${weekText}</div>
+        <div class="info-item"><strong>حالة الاعتماد:</strong> ${statusText}</div>
+    </div>
+
+    <div class="section-box">
+        <div class="section-header">📌 ما تم إنجازه هذا الأسبوع (الإنجازات والمهام المكتملة)</div>
+        <div class="section-content">${r.accomplishments || r.content || r.summary || 'لا يوجد'}</div>
+    </div>
+
+    <div class="section-box">
+        <div class="section-header">🎯 خطة ومستهدفات الأسبوع القادم</div>
+        <div class="section-content">${r.nextWeekPlan || r.plan || r.plannedTasks || 'لا يوجد'}</div>
+    </div>
+
+    ${r.challenges ? `
+    <div class="section-box">
+        <div class="section-header">💡 التحديات والمعوقات والملاحظات</div>
+        <div class="section-content">${r.challenges}</div>
+    </div>
+    ` : ''}
+
+    ${(r.adminFeedback || r.adminNotes) ? `
+    <div class="feedback-box">
+        <strong style="display:block; margin-bottom:6px; font-size:13.5px;">💬 توجيهات وملاحظات الإدارة:</strong>
+        <div style="font-weight:700; white-space:pre-wrap;">${r.adminFeedback || r.adminNotes}</div>
+        ${r.reviewedBy ? `<div style="font-size:11px; margin-top:6px; opacity:0.8;">معتمد بواسطة: ${r.reviewedBy}</div>` : ''}
+    </div>
+    ` : ''}
+
+    <div class="signatures">
+        <div class="sig-box">
+            <div class="sig-title">توقيع الموظف</div>
+            <div class="sig-line"></div>
+        </div>
+        <div class="sig-box">
+            <div class="sig-title">اعتماد الإدارة العامة</div>
+            <div class="sig-line"></div>
+        </div>
+    </div>
+
+    <script>
+        window.onload = function() {
+            setTimeout(function() { window.print(); }, 300);
+        };
+    <\/script>
+</body>
+</html>`;
+
+            var printWin = window.open('', '_blank', 'width=850,height=900');
+            if (printWin) {
+                printWin.document.open();
+                printWin.document.write(printHtml);
+                printWin.document.close();
+            } else {
+                alert('يرجى السماح بالنوافذ المنبثقة (Popups) للطباعة.');
+            }
+        };
+
+        window.tgPrintWeeklyReport = function(id) {
+            var r = (window._allWeeklyReports || []).find(function(x){ return x.id === id; });
+            if (!r) return;
+            printWeeklyReportDoc(window.TG_USER || {}, r);
+        };
+
+        window.tgDeleteWeeklyReport = function(id) {
+            if (!confirm('هل أنت متأكد من حذف هذا التقرير؟')) return;
+            Promise.all([
+                db.collection('weekly_reports').doc(id).delete().catch(function(){}),
+                db.collection('weeklyReports').doc(id).delete().catch(function(){})
+            ]).then(function(){
+                alert('🗑 تم حذف التقرير بنجاح');
+                tgRenderWeeklyReportsEmp();
+            }).catch(function(err){
+                alert('تعذر الحذف: ' + err.message);
+            });
+        };
+
         // ══════════════════════════════════════════
         //  MOBILE ALL-SECTIONS DRAWER CONTROLLER
         // ══════════════════════════════════════════
@@ -5113,8 +5638,6 @@
                         <div class="drawer-card-title">التقارير والخطط الأسبوعية</div>
                         <div class="drawer-card-desc">إنجازات الأسبوع وخطة القادم</div>
                     </div>
-                </div>
-            </div>
                 </div>
                 <div class="drawer-card" data-drawer="docs" onclick="empGo('docs'); tgToggleMobileNavDrawer(false);">
                     <div class="drawer-card-icon">📄</div>
