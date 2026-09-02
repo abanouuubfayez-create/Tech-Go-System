@@ -486,7 +486,8 @@ var T={
     aiadvisor:"المستشار الذكي",
     wkr:"التقارير الأسبوعية والشهرية",
     monthlyplans:"المستهدفات والخطط العامة",
-    permsheet:"كشف متابعة الإذنات الورقي"
+    permsheet:"كشف متابعة الإذنات الورقي",
+    assigneddocs:"النماذج والتكليفات المحولة"
 };
 
 // ─── DOCUMENT NUMBERING ───────────────────────────────────────────────────
@@ -495,7 +496,7 @@ var DCODES={
     notice:'NTC', warn:'WRN', deduction:'DED', term:'TRM', inv:'INV', exp:'EXP', clr:'CLR', gen:'GEN',
     task:'TSK', sal:'SAL', salrec:'REC', comp:'CMP', proj:'PRJ', mexp:'MEXP',
     res:'RES', promo:'PRM', contract:'CTR', raise:'RAI',
-    wkr:'WKR', ach:'ACH', req:'REQ'
+    wkr:'WKR', ach:'ACH', req:'REQ', assigneddocs:'ASG'
 };
 function genDocNum(type){
     if(!type||!DCODES[type])return '';
@@ -8433,6 +8434,422 @@ function tgDeleteSavedForm(docId, btn) {
         alert('❌ تعذر الحذف: '+err.message);
     });
 }
+
+// ════════════════════════════════════════════════════════════════════════════
+// ── نظام تحويل وتفويض النماذج والمستندات للموظفين (Universal Forward System)
+// ════════════════════════════════════════════════════════════════════════════
+
+window.tgForwardCurrentForm = function() {
+    var activePg = document.querySelector('.pg.a');
+    if(!activePg) return;
+    var formId = activePg.id.replace('pg-', '');
+    if(formId === 'dash' || formId === 'account' || formId === 'livetrack' || formId === 'empdocs' || formId === 'announcements') {
+        alert('يرجى فتح نموذج أو استمارة أولاً لتحويلها للموظف.');
+        return;
+    }
+
+    var formTitle = T[formId] || formId;
+    var numFld = activePg.querySelector('.doc-num-fld, .FL-docnum, #docNum, [id*="DocNum"]');
+    var docNum = (numFld && numFld.value) ? numFld.value.trim() : '';
+
+    var inputs = activePg.querySelectorAll('input, textarea, select');
+    var data = [];
+    inputs.forEach(function(inp) {
+        if(inp.type === 'file' || inp.type === 'button' || inp.type === 'submit') return;
+        var val = (inp.type === 'checkbox' || inp.type === 'radio') ? inp.checked : inp.value;
+        data.push(val);
+    });
+
+    window.openForwardModal(formId, formTitle, docNum, data);
+};
+
+window.openForwardModal = async function(formId, formTitle, docNum, formData) {
+    window._pendingForwardDoc = {
+        formId: formId,
+        formTitle: formTitle,
+        docNum: docNum || '',
+        formData: formData || []
+    };
+
+    var modal = document.getElementById('forwardDocModal');
+    if(!modal) {
+        modal = document.createElement('div');
+        modal.id = 'forwardDocModal';
+        modal.className = 'forward-modal-overlay';
+        document.body.appendChild(modal);
+    }
+
+    var emps = [];
+    try {
+        if(window.db) {
+            var snap = await db.collection('users').get();
+            snap.forEach(function(doc) {
+                var d = doc.data();
+                var empName = d.name || d.displayName;
+                var role = (d.role || '').toLowerCase();
+                var active = d.active !== false && d.disabled !== true;
+                if(empName && active && !empName.toLowerCase().includes('test') && !empName.includes('تست')) {
+                    emps.push({
+                        uid: doc.id,
+                        name: empName,
+                        email: d.email || '',
+                        jobTitle: d.jobTitle || (role === 'admin' ? 'مدير إداري' : 'موظف')
+                    });
+                }
+            });
+        }
+    } catch(e) {
+        console.warn('Error fetching employees for forward:', e);
+    }
+
+    if(emps.length === 0 && window.EMPLOYEES && window.EMPLOYEES.length > 0) {
+        emps = window.EMPLOYEES.map(function(e){ return { uid: e.uid || '', name: e.name || e, jobTitle: 'موظف' }; });
+    }
+
+    var empOptionsHtml = '<option value="">-- اختر الموظف المستلم --</option>';
+    emps.forEach(function(emp) {
+        empOptionsHtml += '<option value="' + escH(emp.uid) + '" data-name="' + escH(emp.name) + '" data-email="' + escH(emp.email || '') + '">' + escH(emp.name) + ' (' + escH(emp.jobTitle) + ')</option>';
+    });
+
+    var h = '<div class="forward-modal-box" style="direction:rtl; font-family:inherit;">' +
+        '<div class="forward-modal-header">' +
+        '  <h3><span>↗️</span> تحويل النموذج / المستند إلى موظف</h3>' +
+        '  <button onclick="closeForwardModal()" style="background:none; border:none; color:#fff; font-size:18px; cursor:pointer; font-weight:bold;">✕</button>' +
+        '</div>' +
+        '<div class="forward-modal-body">' +
+        '  <div class="forward-doc-summary-badge">' +
+        '    <div style="font-weight:800; font-size:13px; color:var(--tx); display:flex; align-items:center; gap:6px;">' +
+        '      <span>📄</span> <strong>المستند:</strong> ' + escH(formTitle) + (docNum ? (' (' + escH(docNum) + ')') : '') +
+        '    </div>' +
+        '    <span style="font-size:11px; background:#0284c7; color:#fff; padding:2px 8px; border-radius:12px; font-weight:bold;">جاهز للتحويل</span>' +
+        '  </div>' +
+
+        '  <div class="fg">' +
+        '    <label style="font-size:12.5px; font-weight:800; color:var(--tx); margin-bottom:6px; display:block;">👤 تحديد الموظف المستلم:</label>' +
+        '    <select id="forwardTargetEmpSelect" style="width:100%; padding:10px 12px; border-radius:10px; border:1.5px solid var(--bd); font-size:12.5px; font-weight:bold; background:var(--bg2); color:var(--tx); cursor:pointer;">' +
+        empOptionsHtml +
+        '    </select>' +
+        '  </div>' +
+
+        '  <div>' +
+        '    <label style="font-size:12.5px; font-weight:800; color:var(--tx); margin-bottom:8px; display:block;">🎯 نوع التكليف / الإجراء المطلوب من الموظف:</label>' +
+        '    <div class="forward-type-grid">' +
+        '      <div class="forward-type-card selected" onclick="tgSelectForwardType(this, \'print\', \'طباعة وتسليم\')">' +
+        '        <div class="forward-type-icon">🖨</div>' +
+        '        <div><div class="forward-type-title">طباعة وتسليم</div><div class="forward-type-desc">تكليف بطباعة المستند رسمياً وتسليمه للمراجع</div></div>' +
+        '      </div>' +
+        '      <div class="forward-type-card" onclick="tgSelectForwardType(this, \'fill\', \'استكمال وتعبئة بيانات\')">' +
+        '        <div class="forward-type-icon">✍️</div>' +
+        '        <div><div class="forward-type-title">استكمال وتعبئة بيانات</div><div class="forward-type-desc">فتح النموذج وملء الحقول المتبقية وحفظها</div></div>' +
+        '      </div>' +
+        '      <div class="forward-type-card" onclick="tgSelectForwardType(this, \'review\', \'مراجعة وتدقيق\')">' +
+        '        <div class="forward-type-icon">🔍</div>' +
+        '        <div><div class="forward-type-title">مراجعة وتدقيق</div><div class="forward-type-desc">فحص محتوى المستند والتأكد من دقته واعتماده</div></div>' +
+        '      </div>' +
+        '      <div class="forward-type-card" onclick="tgSelectForwardType(this, \'manage\', \'مسؤولية ومتابعة\')">' +
+        '        <div class="forward-type-icon">📁</div>' +
+        '        <div><div class="forward-type-title">مسؤولية ومتابعة</div><div class="forward-type-desc">تفويض تولي إدارة ومتابعة هذا الملف بالكامل</div></div>' +
+        '      </div>' +
+        '    </div>' +
+        '    <input type="hidden" id="forwardActionType" value="print">' +
+        '    <input type="hidden" id="forwardActionLabel" value="طباعة وتسليم">' +
+        '  </div>' +
+
+        '  <div style="display:grid; grid-template-columns:1fr 1fr; gap:12px;">' +
+        '    <div class="fg">' +
+        '      <label style="font-size:12px; font-weight:700; color:var(--tx); margin-bottom:4px; display:block;">الأولوية:</label>' +
+        '      <select id="forwardPriority" style="width:100%; padding:8px 10px; border-radius:8px; border:1px solid var(--bd); font-size:12px; font-weight:bold; background:var(--bg2); color:var(--tx);">' +
+        '        <option value="normal">عادية (Normal)</option>' +
+        '        <option value="urgent">🚨 عاجلة وفورية (Urgent)</option>' +
+        '      </select>' +
+        '    </div>' +
+        '    <div class="fg">' +
+        '      <label style="font-size:12px; font-weight:700; color:var(--tx); margin-bottom:4px; display:block;">تاريخ الاستحقاق (اختياري):</label>' +
+        '      <input type="date" id="forwardDeadline" style="width:100%; padding:8px 10px; border-radius:8px; border:1px solid var(--bd); font-size:12px; font-weight:bold; background:var(--bg2); color:var(--tx);">' +
+        '    </div>' +
+        '  </div>' +
+
+        '  <div class="fg">' +
+        '    <label style="font-size:12px; font-weight:700; color:var(--tx); margin-bottom:4px; display:block;">📝 ملاحظات أو تعليمات خاصة للموظف:</label>' +
+        '    <textarea id="forwardInstructions" rows="3" placeholder="مثال: يرجى طباعة نسختين وتوقيعها من الإدارة وتسليمها لقسم الحسابات اليوم..." style="width:100%; padding:10px 12px; border-radius:8px; border:1px solid var(--bd); font-size:12px; line-height:1.5; background:var(--bg2); color:var(--tx); font-family:inherit;"></textarea>' +
+        '  </div>' +
+
+        '  <div style="display:flex; justify-content:flex-end; gap:10px; margin-top:6px; border-top:1px solid var(--bd); padding-top:14px;">' +
+        '    <button onclick="closeForwardModal()" class="bt bt-o" style="padding:9px 18px; font-size:12.5px; font-weight:bold;">إلغاء</button>' +
+        '    <button onclick="tgSubmitForwardDoc(this)" class="bt bt-p" style="padding:9px 24px; font-size:13px; font-weight:800; background:linear-gradient(135deg, #0284c7, #0369a1); color:#fff; border-radius:10px; box-shadow:0 4px 14px rgba(2, 132, 199, 0.35);">🚀 تحويل وتكليف الموظف الآن</button>' +
+        '  </div>' +
+        '</div>' +
+        '</div>';
+
+    modal.innerHTML = h;
+    modal.style.display = 'flex';
+};
+
+window.closeForwardModal = function() {
+    var modal = document.getElementById('forwardDocModal');
+    if(modal) modal.style.display = 'none';
+};
+
+window.tgSelectForwardType = function(card, type, label) {
+    document.querySelectorAll('.forward-type-card').forEach(function(c){ c.classList.remove('selected'); });
+    card.classList.add('selected');
+    var tInp = document.getElementById('forwardActionType');
+    var lInp = document.getElementById('forwardActionLabel');
+    if(tInp) tInp.value = type;
+    if(lInp) lInp.value = label;
+};
+
+window.tgSubmitForwardDoc = async function(btn) {
+    var sel = document.getElementById('forwardTargetEmpSelect');
+    if(!sel || !sel.value) {
+        alert('⚠️ يرجى اختيار الموظف المستلم للنموذج أولاً.');
+        return;
+    }
+
+    var targetUid = sel.value;
+    var selectedOpt = sel.options[sel.selectedIndex];
+    var targetName = selectedOpt ? selectedOpt.getAttribute('data-name') : 'موظف';
+    var targetEmail = selectedOpt ? selectedOpt.getAttribute('data-email') : '';
+
+    var actionType = document.getElementById('forwardActionType') ? document.getElementById('forwardActionType').value : 'print';
+    var actionLabel = document.getElementById('forwardActionLabel') ? document.getElementById('forwardActionLabel').value : 'طباعة وتسليم';
+    var priority = document.getElementById('forwardPriority') ? document.getElementById('forwardPriority').value : 'normal';
+    var deadline = document.getElementById('forwardDeadline') ? document.getElementById('forwardDeadline').value : '';
+    var instructions = document.getElementById('forwardInstructions') ? document.getElementById('forwardInstructions').value.trim() : '';
+
+    var pending = window._pendingForwardDoc || {};
+    var formId = pending.formId || 'gen';
+    var formTitle = pending.formTitle || 'نموذج';
+    var docNum = pending.docNum || '';
+    var formData = pending.formData || [];
+
+    if(btn) {
+        btn.disabled = true;
+        btn.innerHTML = '⏳ جارٍ التحويل...';
+    }
+
+    try {
+        var myUid = (window.TG_USER && TG_USER.uid) ? TG_USER.uid : 'admin';
+        var myName = (window.TG_USER && (TG_USER.displayName || TG_USER.name)) ? (TG_USER.displayName || TG_USER.name) : 'الإدارة';
+
+        var docPayload = {
+            formId: formId,
+            formTitle: formTitle,
+            docNum: docNum,
+            formData: JSON.stringify(formData),
+            assignedToUid: targetUid,
+            assignedToName: targetName,
+            assignedToEmail: targetEmail,
+            assignedByUid: myUid,
+            assignedByName: myName,
+            actionType: actionType,
+            actionLabel: actionLabel,
+            priority: priority,
+            deadline: deadline,
+            instructions: instructions,
+            status: 'pending',
+            createdAt: firebase.firestore.FieldValue.serverTimestamp(),
+            completedAt: null
+        };
+
+        var docRef = await db.collection('assignedDocs').add(docPayload);
+
+        // Send Push Notification to employee
+        if(typeof tgSendPushToUser === 'function') {
+            var pushBody = 'قام ' + myName + ' بتحويل مستند «' + formTitle + '» إليك (' + actionLabel + ')' + (instructions ? ' • ' + instructions : '');
+            tgSendPushToUser(targetUid, '📥 تكليف بنموذج جديد: ' + formTitle, pushBody, 'assigned_doc');
+        }
+
+        // Add In-App Notification
+        try {
+            await db.collection('notifications').add({
+                targetUid: targetUid,
+                title: '📥 تكليف بنموذج جديد: ' + formTitle,
+                body: 'نوع الإجراء: ' + actionLabel + (instructions ? ' — ' + instructions : ''),
+                type: 'assigned_doc',
+                docId: docRef.id,
+                read: false,
+                createdAt: firebase.firestore.FieldValue.serverTimestamp()
+            });
+        } catch(e) {}
+
+        closeForwardModal();
+        if(typeof tgToast === 'function') {
+            tgToast('✅ تم تحويل النموذج للموظف بنجاح وإرسال إشعار فوري له!', 'ok');
+        } else {
+            alert('✅ تم تحويل النموذج للموظف بنجاح وإرسال إشعار فوري له!');
+        }
+
+        // Refresh admin list if currently on assigneddocs page
+        if(document.getElementById('pg-assigneddocs') && document.getElementById('pg-assigneddocs').classList.contains('a')) {
+            loadAssignedDocsAdmin();
+        }
+
+    } catch(err) {
+        console.error('Forward doc error:', err);
+        alert('❌ حدث خطأ أثناء تحويل النموذج: ' + err.message);
+        if(btn) {
+            btn.disabled = false;
+            btn.innerHTML = '🚀 تحويل وتكليف الموظف الآن';
+        }
+    }
+};
+
+// ── ADMIN ASSIGNED DOCS VIEW ──────────────────────────────────────────────
+window.loadAssignedDocsAdmin = async function(container) {
+    if(!container) container = document.getElementById('pg-assigneddocs');
+    if(!container) return;
+
+    container.innerHTML = '<div class="set-sec">' +
+        '<div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:12px; margin-bottom:16px;">' +
+        '  <div>' +
+        '    <div class="set-sec-title" style="margin:0; font-size:17px; font-weight:800; color:var(--tx);">📥 سجل النماذج والتكليفات المحولة للموظفين</div>' +
+        '    <div class="set-hint" style="margin-top:4px;">متابعة فورية لكافة الاستمارات والنماذج التي تم تحويلها للموظفين وإجراءات طباعتها واستكمالها.</div>' +
+        '  </div>' +
+        '  <div style="display:flex; align-items:center; gap:8px;">' +
+        '    <button onclick="loadAssignedDocsAdmin()" class="bt bt-o" style="font-size:12px; font-weight:bold; padding:6px 12px;">🔄 تحديث السجل</button>' +
+        '  </div>' +
+        '</div>' +
+        '<div style="display:flex; gap:8px; margin-bottom:16px; flex-wrap:wrap;">' +
+        '  <button class="req-date-chip active" onclick="tgFilterAdminAssignedDocs(\'\', this)">الكل <span class="chip-count" id="asgCountAll">0</span></button>' +
+        '  <button class="req-date-chip" onclick="tgFilterAdminAssignedDocs(\'pending\', this)">⏳ قيد الانتظار <span class="chip-count" id="asgCountPending">0</span></button>' +
+        '  <button class="req-date-chip" onclick="tgFilterAdminAssignedDocs(\'completed\', this)">✅ تم الإنجاز والطباعة <span class="chip-count" id="asgCountCompleted">0</span></button>' +
+        '  <button class="req-date-chip" onclick="tgFilterAdminAssignedDocs(\'print\', this)">🖨 تكليفات الطباعة <span class="chip-count" id="asgCountPrint">0</span></button>' +
+        '</div>' +
+        '<div id="adminAssignedDocsListContainer"><div class="empty-hint">⏳ جارٍ تحميل السجل...</div></div>' +
+        '</div>';
+
+    try {
+        var snap = await db.collection('assignedDocs').orderBy('createdAt', 'desc').limit(100).get();
+        window._allAdminAssignedDocs = [];
+        snap.forEach(function(d){
+            var item = d.data();
+            item.id = d.id;
+            window._allAdminAssignedDocs.push(item);
+        });
+
+        tgRenderAdminAssignedDocs(window._allAdminAssignedDocs, '');
+    } catch(err) {
+        console.error('Error loading assigned docs:', err);
+        var box = document.getElementById('adminAssignedDocsListContainer');
+        if(box) box.innerHTML = '<div class="empty-hint" style="color:var(--no);">❌ تعذر تحميل السجل: ' + escH(err.message) + '</div>';
+    }
+};
+
+window.tgFilterAdminAssignedDocs = function(filterType, btn) {
+    document.querySelectorAll('.req-date-chip').forEach(function(b){ b.classList.remove('active'); });
+    if(btn) btn.classList.add('active');
+    tgRenderAdminAssignedDocs(window._allAdminAssignedDocs || [], filterType);
+};
+
+window.tgRenderAdminAssignedDocs = function(list, filter) {
+    var box = document.getElementById('adminAssignedDocsListContainer');
+    if(!box) return;
+
+    var countAll = list.length;
+    var countPending = list.filter(function(d){ return d.status === 'pending' || d.status === 'in_progress'; }).length;
+    var countCompleted = list.filter(function(d){ return d.status === 'completed'; }).length;
+    var countPrint = list.filter(function(d){ return d.actionType === 'print'; }).length;
+
+    if(document.getElementById('asgCountAll')) document.getElementById('asgCountAll').textContent = countAll;
+    if(document.getElementById('asgCountPending')) document.getElementById('asgCountPending').textContent = countPending;
+    if(document.getElementById('asgCountCompleted')) document.getElementById('asgCountCompleted').textContent = countCompleted;
+    if(document.getElementById('asgCountPrint')) document.getElementById('asgCountPrint').textContent = countPrint;
+
+    var filtered = list;
+    if(filter === 'pending') {
+        filtered = list.filter(function(d){ return d.status === 'pending' || d.status === 'in_progress'; });
+    } else if(filter === 'completed') {
+        filtered = list.filter(function(d){ return d.status === 'completed'; });
+    } else if(filter === 'print') {
+        filtered = list.filter(function(d){ return d.actionType === 'print'; });
+    }
+
+    if(filtered.length === 0) {
+        box.innerHTML = '<div class="empty-hint" style="padding:30px; font-size:13px;">لا توجد نماذج محولة مطابقة للتصفية الحالية.</div>';
+        return;
+    }
+
+    var h = '<div class="assigned-docs-grid">';
+    filtered.forEach(function(doc) {
+        var isUrgent = doc.priority === 'urgent';
+        var isCompleted = doc.status === 'completed';
+        var dateStr = doc.createdAt && doc.createdAt.toDate ? doc.createdAt.toDate().toLocaleString('ar-EG') : '';
+        var actCls = 'act-' + (doc.actionType || 'print');
+        var stCls = 'st-' + (doc.status || 'pending');
+        var stLabel = isCompleted ? '✅ تم التنفيذ والإنجاز' : '⏳ قيد الانتظار';
+
+        h += '<div class="assigned-doc-card ' + (isUrgent ? 'priority-urgent' : '') + '">' +
+            '  <div class="assigned-doc-header">' +
+            '    <div>' +
+            '      <div class="assigned-doc-title">📄 ' + escH(doc.formTitle || 'نموذج') + (doc.docNum ? (' <span style="font-size:11px; opacity:0.75;">(' + escH(doc.docNum) + ')</span>') : '') + '</div>' +
+            '      <div class="assigned-doc-meta">' +
+            '        <span>👤 المحال إليه: <strong>' + escH(doc.assignedToName || 'موظف') + '</strong></span>' +
+            '        <span>📅 ' + dateStr + '</span>' +
+            '      </div>' +
+            '    </div>' +
+            '    <div style="display:flex; flex-direction:column; align-items:flex-end; gap:4px;">' +
+            '      <span class="assigned-action-badge ' + actCls + '">' + escH(doc.actionLabel || 'طباعة وتسليم') + '</span>' +
+            '      <span class="assigned-status-badge ' + stCls + '">' + stLabel + '</span>' +
+            '    </div>' +
+            '  </div>';
+
+        if(doc.instructions) {
+            h += '  <div class="assigned-instructions-box"><strong>📌 التعليمات:</strong> ' + escH(doc.instructions) + '</div>';
+        }
+
+        h += '  <div class="assigned-doc-footer-actions">' +
+            '    <button class="bt bt-p" onclick="tgAdminOpenAssignedDoc(\'' + doc.formId + '\', \'' + doc.id + '\')">👁 فتح بالنموذج</button>' +
+            '    <button class="bt bt-d" onclick="tgAdminDeleteAssignedDoc(\'' + doc.id + '\', this)">🗑 حذف التكليف</button>' +
+            '  </div>' +
+            '</div>';
+    });
+    h += '</div>';
+
+    box.innerHTML = h;
+};
+
+window.tgAdminOpenAssignedDoc = function(formId, docId) {
+    var doc = (window._allAdminAssignedDocs || []).find(function(d){ return d.id === docId; });
+    if(!doc) return;
+    go(formId);
+    setTimeout(function() {
+        try {
+            var data = JSON.parse(doc.formData || '[]');
+            var activePg = document.getElementById('pg-' + formId);
+            if(!activePg) return;
+            var inputs = activePg.querySelectorAll('input, textarea, select');
+            var dataIdx = 0;
+            inputs.forEach(function(inp) {
+                if(inp.type === 'file' || inp.type === 'button' || inp.type === 'submit') return;
+                if(data[dataIdx] !== undefined) {
+                    if(inp.type === 'checkbox' || inp.type === 'radio') inp.checked = data[dataIdx];
+                    else inp.value = data[dataIdx];
+                    inp.dispatchEvent(new Event('input', { bubbles: true }));
+                }
+                dataIdx++;
+            });
+            tgToast('✅ تم فتح النموذج المحول ببياناته', 'ok');
+        } catch(e) {
+            console.error('Error applying assigned doc data:', e);
+        }
+    }, 300);
+};
+
+window.tgAdminDeleteAssignedDoc = async function(docId, btn) {
+    if(!confirm('هل أنت متأكد من حذف هذا التكليف؟')) return;
+    if(btn) btn.disabled = true;
+    try {
+        await db.collection('assignedDocs').doc(docId).delete();
+        window._allAdminAssignedDocs = (window._allAdminAssignedDocs || []).filter(function(d){ return d.id !== docId; });
+        tgRenderAdminAssignedDocs(window._allAdminAssignedDocs, '');
+        tgToast('✅ تم حذف التكليف', 'ok');
+    } catch(err) {
+        if(btn) btn.disabled = false;
+        alert('❌ تعذر الحذف: ' + err.message);
+    }
+};
+
 
 // ── ADMIN ATTENDANCE & CALENDAR ──────────────────────────────────────────
 function loadAdminAttendance() {

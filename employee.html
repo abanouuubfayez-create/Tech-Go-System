@@ -67,7 +67,7 @@
     <link
         href="https://fonts.googleapis.com/css2?family=Alexandria:wght@300;400;500;600;700;800;900&family=Cairo:wght@400;600;700;800;900&family=Tajawal:wght@400;500;700;800&family=Inter:wght@400;500;600;700&display=swap"
         rel="stylesheet">
-    <link rel="stylesheet" href="styles.css?v=1788337496">
+    <link rel="stylesheet" href="styles.css?v=1788338364">
     <link rel="manifest" href="manifest.json">
     <link rel="icon" type="image/png" sizes="192x192" href="icon-192.png">
     <link rel="apple-touch-icon" href="icon-192.png">
@@ -75,10 +75,10 @@
     <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-storage-compat.js"></script>
-    <script src="firebase-config.js?v=1788337496"></script>
-    <script src="auth.js?v=1788337496"></script>
-    <script src="app.js?v=1788337496"></script>
-    <script src="formsend.js?v=1788337496"></script>
+    <script src="firebase-config.js?v=1788338364"></script>
+    <script src="auth.js?v=1788338364"></script>
+    <script src="app.js?v=1788338364"></script>
+    <script src="formsend.js?v=1788338364"></script>
     <script>
         (function () {
             const theme = localStorage.getItem('tg-theme') || 'light';
@@ -863,6 +863,7 @@
         <div class="emp-nav" id="empNavPills">
             <div class="emp-tab a" data-pg="proj" onclick="empGo('proj',this)">📁 مشاريعي <span class="tab-badge" id="proj-badge" style="display:none">0</span></div>
             <div class="emp-tab" data-pg="tasks" onclick="empGo('tasks',this)">🗂 مهامي وإنجازاتي <span class="tab-badge" id="tasks-badge" style="display:none">0</span></div>
+            <div class="emp-tab" data-pg="assigneddocs" onclick="empGo('assigneddocs',this)">📥 النماذج والتكليفات <span class="tab-badge" id="assigneddocs-badge" style="display:none">0</span></div>
             <div class="emp-tab" data-pg="wkr" onclick="empGo('wkr',this)">📊 التقارير الأسبوعية</div>
             <div class="emp-tab" data-pg="monthlyplans" onclick="empGo('monthlyplans',this)">🎯 المستهدفات والخطط العامة</div>
             <div class="emp-tab" data-pg="docs" onclick="empGo('docs',this)">📄 مستنداتي</div>
@@ -876,6 +877,7 @@
     </div>
 
     <div class="emp-ct">
+        <div class="emp-pg" id="epg-assigneddocs"></div>
         <div class="emp-pg" id="epg-wkr"></div>
         <div class="emp-pg" id="epg-monthlyreports"></div>
         <div class="emp-pg" id="epg-monthlyplans"></div>
@@ -1347,6 +1349,10 @@
             }
             if (id === 'mexp') {
                 if (typeof empLoadMexpPage === 'function') empLoadMexpPage(epg);
+            }
+            if (id === 'assigneddocs') {
+                if (typeof empLoadAssignedDocsPage === 'function') empLoadAssignedDocsPage(epg);
+                else setTimeout(function(){ if (typeof empLoadAssignedDocsPage === 'function') empLoadAssignedDocsPage(epg); }, 300);
             }
         }
 
@@ -3544,8 +3550,8 @@
         تطوير وتصميم: أبانوب فايز</div>
     <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
-    <script src="theme.js?v=1788337496"></script>
-    <script src="pwa-install.js?v=1788337496"></script>
+    <script src="theme.js?v=1788338364"></script>
+    <script src="pwa-install.js?v=1788338364"></script>
 
 
     <!-- Incoming Meeting Call Modal -->
@@ -4591,6 +4597,375 @@
         // Initialize access check
         initEmpMexpAccessCheck();
 
+        // ════════════════════════════════════════════════════════════════════════
+        // ── نظام النماذج والتكليفات المحولة للموظف (Universal Assigned Docs)
+        // ════════════════════════════════════════════════════════════════════════
+
+        window._allEmpAssignedDocs = [];
+
+        function updateAssignedDocsBadge(n) {
+            var el = document.getElementById('assigneddocs-badge');
+            if (!el) return;
+            if (n > 0) {
+                el.style.display = 'inline-block';
+                el.textContent = n;
+            } else {
+                el.style.display = 'none';
+                el.textContent = '0';
+            }
+            if (typeof updateSmartTabTitle === 'function') updateSmartTabTitle();
+        }
+
+        function initAssignedDocsListener() {
+            if (typeof TG_USER === 'undefined' || !TG_USER || !TG_USER.uid) {
+                setTimeout(initAssignedDocsListener, 500);
+                return;
+            }
+
+            if (typeof db !== 'undefined' && db && db.collection) {
+                db.collection('assignedDocs').where('assignedToUid', '==', TG_USER.uid)
+                    .onSnapshot(function(snap) {
+                        window._allEmpAssignedDocs = [];
+                        var pendingCount = 0;
+                        snap.forEach(function(doc) {
+                            var d = doc.data();
+                            d.id = doc.id;
+                            window._allEmpAssignedDocs.push(d);
+                            if (d.status === 'pending' || d.status === 'in_progress') {
+                                pendingCount++;
+                            }
+                        });
+
+                        window._allEmpAssignedDocs.sort(function(a, b) {
+                            var ta = a.createdAt && a.createdAt.toMillis ? a.createdAt.toMillis() : 0;
+                            var tb = b.createdAt && b.createdAt.toMillis ? b.createdAt.toMillis() : 0;
+                            return tb - ta;
+                        });
+
+                        updateAssignedDocsBadge(pendingCount);
+
+                        // If user is currently on the assigneddocs page, re-render
+                        var pageEl = document.getElementById('epg-assigneddocs');
+                        if (pageEl && pageEl.classList.contains('a')) {
+                            empRenderAssignedDocs(window._allEmpAssignedDocs, window._currentEmpAssignedFilter || '');
+                        }
+                    }, function(err) {
+                        console.warn('Assigned docs listener error:', err);
+                    });
+            }
+        }
+
+        initAssignedDocsListener();
+
+        window.empLoadAssignedDocsPage = function(container) {
+            if (!container) container = document.getElementById('epg-assigneddocs');
+            if (!container) return;
+
+            window._currentEmpAssignedFilter = '';
+
+            container.innerHTML = '<div class="set-sec" style="margin-bottom:20px;">' +
+                '<div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:12px; margin-bottom:16px;">' +
+                '  <div>' +
+                '    <div class="set-sec-title" style="margin:0; font-size:18px; font-weight:800; color:var(--tx);">📥 النماذج والمستندات المحولة إليك</div>' +
+                '    <div class="set-hint" style="margin-top:4px;">كافة الاستمارات والنماذج والملفات التي حولتها الإدارة إليك للطباعة، الاستكمال، أو المراجعة.</div>' +
+                '  </div>' +
+                '</div>' +
+                '<div style="display:flex; gap:8px; margin-bottom:18px; flex-wrap:wrap;">' +
+                '  <button class="req-date-chip active" onclick="empFilterAssignedDocs(\'\', this)">الكل <span class="chip-count" id="empAsgCountAll">0</span></button>' +
+                '  <button class="req-date-chip" onclick="empFilterAssignedDocs(\'pending\', this)">⏳ مطلوب تنفيذها <span class="chip-count" id="empAsgCountPending">0</span></button>' +
+                '  <button class="req-date-chip" onclick="empFilterAssignedDocs(\'completed\', this)">✅ تم الإنجاز والطباعة <span class="chip-count" id="empAsgCountCompleted">0</span></button>' +
+                '  <button class="req-date-chip" onclick="empFilterAssignedDocs(\'print\', this)">🖨 تكليفات الطباعة <span class="chip-count" id="empAsgCountPrint">0</span></button>' +
+                '</div>' +
+                '<div id="empAssignedDocsListContainer"><div class="empty-hint">⏳ جارٍ تحميل النماذج...</div></div>' +
+                '</div>';
+
+            empRenderAssignedDocs(window._allEmpAssignedDocs || [], '');
+        };
+
+        window.empFilterAssignedDocs = function(filterType, btn) {
+            window._currentEmpAssignedFilter = filterType;
+            document.querySelectorAll('#epg-assigneddocs .req-date-chip').forEach(function(b){ b.classList.remove('active'); });
+            if (btn) btn.classList.add('active');
+            empRenderAssignedDocs(window._allEmpAssignedDocs || [], filterType);
+        };
+
+        window.empRenderAssignedDocs = function(list, filter) {
+            var box = document.getElementById('empAssignedDocsListContainer');
+            if (!box) return;
+
+            var countAll = list.length;
+            var countPending = list.filter(function(d){ return d.status === 'pending' || d.status === 'in_progress'; }).length;
+            var countCompleted = list.filter(function(d){ return d.status === 'completed'; }).length;
+            var countPrint = list.filter(function(d){ return d.actionType === 'print'; }).length;
+
+            if (document.getElementById('empAsgCountAll')) document.getElementById('empAsgCountAll').textContent = countAll;
+            if (document.getElementById('empAsgCountPending')) document.getElementById('empAsgCountPending').textContent = countPending;
+            if (document.getElementById('empAsgCountCompleted')) document.getElementById('empAsgCountCompleted').textContent = countCompleted;
+            if (document.getElementById('empAsgCountPrint')) document.getElementById('empAsgCountPrint').textContent = countPrint;
+
+            var filtered = list;
+            if (filter === 'pending') {
+                filtered = list.filter(function(d){ return d.status === 'pending' || d.status === 'in_progress'; });
+            } else if (filter === 'completed') {
+                filtered = list.filter(function(d){ return d.status === 'completed'; });
+            } else if (filter === 'print') {
+                filtered = list.filter(function(d){ return d.actionType === 'print'; });
+            }
+
+            if (filtered.length === 0) {
+                box.innerHTML = '<div class="empty-hint" style="padding:36px; font-size:13.5px;">🎉 لا توجد نماذج أو تكليفات معلقة حالياً في هذا القسم.</div>';
+                return;
+            }
+
+            var h = '<div class="assigned-docs-grid">';
+            filtered.forEach(function(doc) {
+                var isUrgent = doc.priority === 'urgent';
+                var isCompleted = doc.status === 'completed';
+                var dateStr = doc.createdAt && doc.createdAt.toDate ? doc.createdAt.toDate().toLocaleString('ar-EG') : '';
+                var actCls = 'act-' + (doc.actionType || 'print');
+                var stCls = 'st-' + (doc.status || 'pending');
+                var stLabel = isCompleted ? '✅ تم التنفيذ والإنجاز' : '⏳ قيد التنفيذ والمتابعة';
+
+                h += '<div class="assigned-doc-card ' + (isUrgent ? 'priority-urgent' : '') + '">' +
+                    '  <div class="assigned-doc-header">' +
+                    '    <div>' +
+                    '      <div class="assigned-doc-title">📄 ' + esc(doc.formTitle || 'نموذج') + (doc.docNum ? (' <span style="font-size:11px; opacity:0.8;">(' + esc(doc.docNum) + ')</span>') : '') + '</div>' +
+                    '      <div class="assigned-doc-meta">' +
+                    '        <span>👤 المحيل: <strong>' + esc(doc.assignedByName || 'الإدارة') + '</strong></span>' +
+                    '        <span>📅 ' + dateStr + '</span>' +
+                    '      </div>' +
+                    '    </div>' +
+                    '    <div style="display:flex; flex-direction:column; align-items:flex-end; gap:4px;">' +
+                    '      <span class="assigned-action-badge ' + actCls + '">' + esc(doc.actionLabel || 'طباعة وتسليم') + '</span>' +
+                    '      <span class="assigned-status-badge ' + stCls + '">' + stLabel + '</span>' +
+                    '    </div>' +
+                    '  </div>';
+
+                if (doc.instructions) {
+                    h += '  <div class="assigned-instructions-box"><strong>📌 تعليمات الإدارة:</strong> ' + esc(doc.instructions) + '</div>';
+                }
+
+                h += '  <div class="assigned-doc-footer-actions">' +
+                    '    <button class="bt bt-p" onclick="empPrintAssignedDoc(\'' + doc.id + '\')">🖨 طباعة رسمية</button>' +
+                    '    <button class="bt bt-o" onclick="empOpenAssignedDocModal(\'' + doc.id + '\')">👁 استعراض / استكمال</button>';
+
+                if (!isCompleted) {
+                    h += '    <button class="bt bt-g" onclick="empMarkAssignedDocCompleted(\'' + doc.id + '\', this)" style="background:rgba(16,185,129,0.12); color:#10b981; border-color:rgba(16,185,129,0.3);">✅ تم الإنجاز والطباعة</button>';
+                } else {
+                    h += '    <button class="bt" disabled style="opacity:0.6; background:var(--bg2); color:var(--tx2);">🎉 مكتمل</button>';
+                }
+
+                h += '  </div>' +
+                    '</div>';
+            });
+            h += '</div>';
+
+            box.innerHTML = h;
+        };
+
+        // Print Assigned Document Directly
+        window.empPrintAssignedDoc = function(docId) {
+            var doc = (window._allEmpAssignedDocs || []).find(function(d){ return d.id === docId; });
+            if (!doc) return;
+
+            var rawData = [];
+            try { rawData = JSON.parse(doc.formData || '[]'); } catch(e){}
+
+            var printWin = window.open('', '_blank', 'width=900,height=800');
+            if (!printWin) {
+                alert('⚠️ يرجى السماح بالنوافذ المنبثقة للطباعة.');
+                return;
+            }
+
+            var formTitle = doc.formTitle || 'وثيقة رسمية';
+            var docNum = doc.docNum || ('TG-' + new Date().getFullYear() + '-DOC');
+            var dateStr = new Date().toLocaleDateString('ar-EG', { year: 'numeric', month: 'long', day: 'numeric' });
+
+            var fieldsHtml = '<div style="display:flex; flex-direction:column; gap:12px; margin-bottom:24px;">';
+            if (rawData.length > 0) {
+                fieldsHtml += '<table style="width:100%; border-collapse:collapse; font-size:12.5px; border:1px solid #cbd5e1;">';
+                fieldsHtml += '<thead style="background:#f1f5f9;"><tr style="border-bottom:2px solid #cbd5e1;"><th style="padding:10px; text-align:right; width:40%;">البند / الحقل</th><th style="padding:10px; text-align:right;">القيمة والبيانات المسجلة</th></tr></thead><tbody>';
+                rawData.forEach(function(val, idx) {
+                    if (val === true || val === false || val === '' || val === null || val === undefined) return;
+                    var rowBg = (idx % 2 === 0) ? '#ffffff' : '#f8fafc';
+                    fieldsHtml += '<tr style="background:' + rowBg + '; border-bottom:1px solid #e2e8f0;"><td style="padding:8px 10px; font-weight:bold; color:#334155;">بيان رقم (' + (idx + 1) + ')</td><td style="padding:8px 10px; color:#0f172a; font-weight:700;">' + esc(String(val)) + '</td></tr>';
+                });
+                fieldsHtml += '</tbody></table>';
+            } else {
+                fieldsHtml += '<div style="padding:20px; text-align:center; color:#64748b; font-style:italic;">مستند رسمي بدون بنود نصية مسبقة.</div>';
+            }
+            fieldsHtml += '</div>';
+
+            var printContent = '<!DOCTYPE html><html lang="ar" dir="rtl"><head><meta charset="UTF-8"><title>' + esc(formTitle) + ' - طباعة</title>' +
+                '<style>' +
+                '  @import url("https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;800;900&display=swap");' +
+                '  body { font-family: "Cairo", Tahoma, sans-serif; direction: rtl; padding: 25px; margin: 0; color: #0f172a; background: #fff; }' +
+                '  .header { display: flex; justify-content: space-between; align-items: center; border-bottom: 2.5px solid #0f172a; padding-bottom: 12px; margin-bottom: 20px; }' +
+                '  .title-box { text-align: center; margin-bottom: 24px; }' +
+                '  .title-box h1 { margin: 0; font-size: 22px; font-weight: 900; color: #0f172a; }' +
+                '  .title-box p { margin: 4px 0 0; font-size: 13px; color: #475569; font-weight: bold; }' +
+                '  .meta-grid { display: flex; justify-content: space-between; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 10px 14px; margin-bottom: 20px; font-size: 12px; font-weight: bold; }' +
+                '  .footer-sig { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 15px; text-align: center; margin-top: 45px; page-break-inside: avoid; }' +
+                '  .sig-col { border-top: 1.5px dashed #64748b; padding-top: 8px; font-size: 12px; font-weight: bold; color: #334155; }' +
+                '  @media print { @page { size: A4; margin: 15mm; } button { display: none !important; } }' +
+                '</style></head><body>' +
+                '<div class="header">' +
+                '  <div><strong style="font-size:16px;">TECH GO · شركة تيك جو</strong><br><small style="color:#64748b;">نظام الإدارة الشامل</small></div>' +
+                '  <div style="text-align:left;"><span style="font-size:12px; color:#475569;">رقم الوثيقة:</span><br><strong style="font-size:14px; color:#0284c7;">' + esc(docNum) + '</strong></div>' +
+                '</div>' +
+                '<div class="title-box">' +
+                '  <h1>' + esc(formTitle) + '</h1>' +
+                '  <p>وثيقة إدارية معتمدة صادرة من النظام</p>' +
+                '</div>' +
+                '<div class="meta-grid">' +
+                '  <div>📅 <strong>تاريخ الإصدار:</strong> ' + dateStr + '</div>' +
+                '  <div>👤 <strong>المسؤول / الموظف المكلف:</strong> ' + esc(doc.assignedToName || '') + '</div>' +
+                '  <div>🏛 <strong>الجهة المُصدرة:</strong> ' + esc(doc.assignedByName || 'الإدارة') + '</div>' +
+                '</div>' +
+                fieldsHtml +
+                (doc.instructions ? ('<div style="background:#fffbeb; border:1px solid #fef3c7; border-radius:8px; padding:10px 14px; font-size:12px; margin-bottom:20px; color:#92400e;"><strong>📌 ملاحظات واعتمادات الإدارة:</strong> ' + esc(doc.instructions) + '</div>') : '') +
+                '<div class="footer-sig">' +
+                '  <div class="sig-col">محرر المستند<br><small style="font-weight:normal; color:#94a3b8;">إعداد ومراجعة</small></div>' +
+                '  <div class="sig-col">الموظف المستلم<br><strong style="color:#0f172a;">' + esc(doc.assignedToName || '') + '</strong></div>' +
+                '  <div class="sig-col">المدير الإداري والتنفيذي<br><small style="font-weight:normal; color:#94a3b8;">اعتماد وإصدار رسمي</small></div>' +
+                '</div>' +
+                '<script>window.onload = function(){ window.print(); };<\/script>' +
+                '</body></html>';
+
+            printWin.document.open();
+            printWin.document.write(printContent);
+            printWin.document.close();
+        };
+
+        // Open Interactive Modal to View & Complete Form
+        window.empOpenAssignedDocModal = function(docId) {
+            var doc = (window._allEmpAssignedDocs || []).find(function(d){ return d.id === docId; });
+            if (!doc) return;
+
+            var rawData = [];
+            try { rawData = JSON.parse(doc.formData || '[]'); } catch(e){}
+
+            var modal = document.getElementById('empAssignedDocDetailModal');
+            if (!modal) {
+                modal = document.createElement('div');
+                modal.id = 'empAssignedDocDetailModal';
+                modal.className = 'forward-modal-overlay';
+                document.body.appendChild(modal);
+            }
+
+            var fieldsFormHtml = '<div style="display:flex; flex-direction:column; gap:10px; max-height:50vh; overflow-y:auto; padding-left:4px;">';
+            if (rawData.length > 0) {
+                rawData.forEach(function(val, idx) {
+                    if (val === true || val === false) {
+                        fieldsFormHtml += '<label style="display:flex; align-items:center; gap:8px; font-size:12px; font-weight:bold; color:var(--tx); padding:4px 0;"><input type="checkbox" class="emp-asg-inp" data-idx="' + idx + '" ' + (val ? 'checked' : '') + '> خيار رقم (' + (idx + 1) + ')</label>';
+                    } else {
+                        fieldsFormHtml += '<div class="fg"><label style="font-size:11.5px; font-weight:700; color:var(--tx2); margin-bottom:2px; display:block;">حقل بيانات (' + (idx + 1) + '):</label><input type="text" class="emp-asg-inp" data-idx="' + idx + '" value="' + esc(String(val || '')) + '" style="width:100%; padding:8px 10px; border-radius:8px; border:1px solid var(--bd); font-size:12px; background:var(--bg2); color:var(--tx);"></div>';
+                    }
+                });
+            } else {
+                fieldsFormHtml += '<div class="empty-hint">لا توجد حقول نصية مخزنة مسبقاً في هذا النموذج.</div>';
+            }
+            fieldsFormHtml += '</div>';
+
+            var h = '<div class="forward-modal-box" style="direction:rtl; font-family:inherit;">' +
+                '<div class="forward-modal-header">' +
+                '  <h3><span>📄</span> ' + esc(doc.formTitle || 'النموذج المحول') + '</h3>' +
+                '  <button onclick="document.getElementById(\'empAssignedDocDetailModal\').style.display=\'none\'" style="background:none; border:none; color:#fff; font-size:18px; cursor:pointer; font-weight:bold;">✕</button>' +
+                '</div>' +
+                '<div class="forward-modal-body">' +
+                '  <div class="forward-doc-summary-badge">' +
+                '    <div><strong>نوع التكليف:</strong> ' + esc(doc.actionLabel || 'طباعة وتسليم') + '</div>' +
+                '    <div><strong>المحيل:</strong> ' + esc(doc.assignedByName || 'الإدارة') + '</div>' +
+                '  </div>' +
+                (doc.instructions ? ('  <div class="assigned-instructions-box"><strong>📌 تعليمات الإدارة:</strong> ' + esc(doc.instructions) + '</div>') : '') +
+                '  <div style="font-size:12.5px; font-weight:800; color:var(--tx); margin-top:6px;">✍️ بيانات وحقول النموذج (يمكنك استكمالها أو تعديلها):</div>' +
+                fieldsFormHtml +
+                '  <div style="display:flex; justify-content:space-between; align-items:center; gap:8px; margin-top:8px; border-top:1px solid var(--bd); padding-top:14px; flex-wrap:wrap;">' +
+                '    <button onclick="empPrintAssignedDoc(\'' + doc.id + '\')" class="bt bt-o" style="padding:8px 14px; font-size:12px; font-weight:bold;">🖨 طباعة المستند</button>' +
+                '    <div style="display:flex; gap:8px;">' +
+                '      <button onclick="document.getElementById(\'empAssignedDocDetailModal\').style.display=\'none\'" class="bt bt-o" style="padding:8px 14px; font-size:12px; font-weight:bold;">إغلاق</button>' +
+                '      <button onclick="empSaveCompletedForm(\'' + doc.id + '\', this)" class="bt bt-p" style="padding:8px 20px; font-size:12.5px; font-weight:bold; background:linear-gradient(135deg, #0284c7, #0369a1); color:#fff; border-radius:8px;">💾 حفظ التعديلات</button>' +
+                '    </div>' +
+                '  </div>' +
+                '</div>' +
+                '</div>';
+
+            modal.innerHTML = h;
+            modal.style.display = 'flex';
+        };
+
+        // Save Edits to Assigned Doc
+        window.empSaveCompletedForm = async function(docId, btn) {
+            var doc = (window._allEmpAssignedDocs || []).find(function(d){ return d.id === docId; });
+            if (!doc) return;
+
+            var rawData = [];
+            try { rawData = JSON.parse(doc.formData || '[]'); } catch(e){}
+
+            document.querySelectorAll('#empAssignedDocDetailModal .emp-asg-inp').forEach(function(inp) {
+                var idx = parseInt(inp.getAttribute('data-idx'));
+                if (!isNaN(idx)) {
+                    rawData[idx] = (inp.type === 'checkbox') ? inp.checked : inp.value;
+                }
+            });
+
+            if (btn) {
+                btn.disabled = true;
+                btn.innerHTML = '⏳ جارٍ الحفظ...';
+            }
+
+            try {
+                await db.collection('assignedDocs').doc(docId).update({
+                    formData: JSON.stringify(rawData),
+                    updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+                });
+                var modal = document.getElementById('empAssignedDocDetailModal');
+                if (modal) modal.style.display = 'none';
+                alert('✅ تم حفظ التعديلات بنجاح!');
+            } catch(err) {
+                if (btn) {
+                    btn.disabled = false;
+                    btn.innerHTML = '💾 حفظ التعديلات';
+                }
+                alert('❌ تعذر الحفظ: ' + err.message);
+            }
+        };
+
+        // Mark Assigned Document as Completed
+        window.empMarkAssignedDocCompleted = async function(docId, btn) {
+            var doc = (window._allEmpAssignedDocs || []).find(function(d){ return d.id === docId; });
+            if (!doc) return;
+
+            if (!confirm('هل قمت بتنفيذ وإنجاز هذا التكليف بالكامل (طباعة / تسليم / مراجعة)؟')) return;
+
+            if (btn) btn.disabled = true;
+
+            try {
+                await db.collection('assignedDocs').doc(docId).update({
+                    status: 'completed',
+                    completedAt: firebase.firestore.FieldValue.serverTimestamp()
+                });
+
+                // Notify Admin
+                if (typeof db !== 'undefined' && db && db.collection) {
+                    try {
+                        await db.collection('admin_notifications').add({
+                            title: '✅ تم إنجاز النموذج المحول: ' + (doc.formTitle || ''),
+                            body: 'قام الموظف ' + (TG_USER.displayName || TG_USER.name || 'موظف') + ' بإنجاز التكليف (' + (doc.actionLabel || 'طباعة وتسليم') + ').',
+                            type: 'assigned_doc_completed',
+                            docId: docId,
+                            createdAt: firebase.firestore.FieldValue.serverTimestamp()
+                        });
+                    } catch(e) {}
+                }
+
+                alert('🎉 تم تأكيد إنجاز التكليف بنجاح وتم إشعار الإدارة!');
+            } catch(err) {
+                if (btn) btn.disabled = false;
+                alert('❌ تعذر التحديث: ' + err.message);
+            }
+        };
+
         // ══════════════════════════════════════════
         //  MOBILE ALL-SECTIONS DRAWER CONTROLLER
         // ══════════════════════════════════════════
@@ -4652,6 +5027,13 @@
                     <div>
                         <div class="drawer-card-title">مهامي وإنجازاتي</div>
                         <div class="drawer-card-desc">إدارة وتحديث المهام</div>
+                    </div>
+                </div>
+                <div class="drawer-card" data-drawer="assigneddocs" onclick="empGo('assigneddocs'); tgToggleMobileNavDrawer(false);">
+                    <div class="drawer-card-icon">📥</div>
+                    <div>
+                        <div class="drawer-card-title">النماذج والتكليفات</div>
+                        <div class="drawer-card-desc">المستندات والطباعة المحولة</div>
                     </div>
                 </div>
                 <div class="drawer-card" data-drawer="wkr" onclick="empGo('wkr'); tgToggleMobileNavDrawer(false);">
