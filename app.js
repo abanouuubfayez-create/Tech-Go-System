@@ -4720,15 +4720,14 @@ function mexpAddDayItem(btnOrTbody, itemData) {
 
     tr.innerHTML =
         '<td class="mexp-idx" style="font-weight:bold; font-size:11px; text-align:center;">' + (tbody.children.length + 1) + '</td>' +
-        '<td><input type="text" class="mexp-spender" list="mexp-spenders-list" placeholder="اسم الصارف..." value="' + escH(itemData && itemData.spender || '') + '" oninput="mexpUpdateSpenderSuggestions()"></td>' +
-        '<td><input type="text" class="mexp-cat" list="mexp-cats-list" placeholder="النوع / البند..." value="' + escH(itemData && itemData.cat || '') + '"></td>' +
-        '<td><input type="number" min="1" step="1" class="mexp-qty" style="text-align:center; font-weight:700;" placeholder="1" value="' + escH(qtyVal) + '" oninput="mexpCalc()"></td>' +
-        '<td><input type="number" step="0.01" min="0" class="mexp-price" style="text-align:center; font-weight:700;" placeholder="0.00" value="' + escH(priceVal) + '" oninput="mexpCalc()"></td>' +
+        '<td><input type="text" class="mexp-spender" autocomplete="off" spellcheck="false" value="' + escH(itemData && itemData.spender || '') + '"></td>' +
+        '<td><input type="text" class="mexp-cat" autocomplete="off" spellcheck="false" value="' + escH(itemData && itemData.cat || '') + '"></td>' +
+        '<td><input type="number" min="1" step="1" class="mexp-qty" style="text-align:center; font-weight:700;" autocomplete="off" value="' + escH(qtyVal) + '" oninput="mexpCalc()"></td>' +
+        '<td><input type="number" step="0.01" min="0" class="mexp-price" style="text-align:center; font-weight:700;" autocomplete="off" value="' + escH(priceVal) + '" oninput="mexpCalc()"></td>' +
         '<td class="np" style="text-align:center"><button type="button" class="bt bt-d" style="padding:3px 7px;font-size:11px;border-radius:4px;" onclick="mexpDelRow(this)" title="حذف هذا البند">✕</button></td>';
 
     tbody.appendChild(tr);
     mexpCalc();
-    mexpUpdateSpenderSuggestions();
 }
 
 function mexpUpdateDayHeader(dateInp) {
@@ -5819,18 +5818,6 @@ function load(id,c){
            '    <button type="button" class="bt bt-o" style="font-weight:800;" onclick="mexpLoad(true)" title="تحديث البيانات من السيرفر">🔄 تحديث</button>' +
            '  </div>' +
            '</div>';
-
-        h+='<datalist id="mexp-spenders-list"></datalist>';
-        h+='<datalist id="mexp-cats-list">' +
-           '  <option value="بوفيه ومشروبات ضيافة">' +
-           '  <option value="أدوات ومستلزمات مكتبية">' +
-           '  <option value="انتقالات ومواصلات عمل">' +
-           '  <option value="صيانة وتشغيل مرافق">' +
-           '  <option value="فواتير وخدمات إنترنت/مياه/كهرباء">' +
-           '  <option value="مشتريات طارئة للمقر">' +
-           '  <option value="ضيافة واستقبال عملاء">' +
-           '  <option value="مستلزمات طباعة وتجهيز">' +
-           '</datalist>';
 
         // Days Container
         h+='<div id="mexp-days-container"></div>';

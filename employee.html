@@ -67,7 +67,7 @@
     <link
         href="https://fonts.googleapis.com/css2?family=Alexandria:wght@300;400;500;600;700;800;900&family=Cairo:wght@400;600;700;800;900&family=Tajawal:wght@400;500;700;800&family=Inter:wght@400;500;600;700&display=swap"
         rel="stylesheet">
-    <link rel="stylesheet" href="styles.css?v=1788335648">
+    <link rel="stylesheet" href="styles.css?v=1788335841">
     <link rel="manifest" href="manifest.json">
     <link rel="icon" type="image/png" sizes="192x192" href="icon-192.png">
     <link rel="apple-touch-icon" href="icon-192.png">
@@ -75,10 +75,10 @@
     <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-storage-compat.js"></script>
-    <script src="firebase-config.js?v=1788335648"></script>
-    <script src="auth.js?v=1788335648"></script>
-    <script src="app.js?v=1788335648"></script>
-    <script src="formsend.js?v=1788335648"></script>
+    <script src="firebase-config.js?v=1788335841"></script>
+    <script src="auth.js?v=1788335841"></script>
+    <script src="app.js?v=1788335841"></script>
+    <script src="formsend.js?v=1788335841"></script>
     <script>
         (function () {
             const theme = localStorage.getItem('tg-theme') || 'light';
@@ -3544,8 +3544,8 @@
         تطوير وتصميم: أبانوب فايز</div>
     <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
-    <script src="theme.js?v=1788335648"></script>
-    <script src="pwa-install.js?v=1788335648"></script>
+    <script src="theme.js?v=1788335841"></script>
+    <script src="pwa-install.js?v=1788335841"></script>
 
 
     <!-- Incoming Meeting Call Modal -->
@@ -4090,18 +4090,7 @@
                 '  </div>' +
                 '</div>';
 
-            h += '<datalist id="emp-mexp-spenders-list"></datalist>';
-            h += '<datalist id="emp-cats-list">' +
-                '  <option value="بوفيه ومشروبات ضيافة">' +
-                '  <option value="أدوات ومستلزمات مكتبية">' +
-                '  <option value="انتقالات ومواصلات عمل">' +
-                '  <option value="صيانة وتشغيل مرافق">' +
-                '  <option value="فواتير وخدمات إنترنت/مياه/كهرباء">' +
-                '  <option value="مشتريات طارئة للمقر">' +
-                '  <option value="ضيافة واستقبال عملاء">' +
-                '  <option value="مستلزمات طباعة وتجهيز">' +
-                '</datalist>';
-
+            // Days Container
             h += '<div id="emp-mexp-days-container"></div>';
 
             container.innerHTML = h;
@@ -4305,15 +4294,14 @@
 
             tr.innerHTML =
                 '<td class="mexp-idx" style="font-weight:bold; font-size:11px; text-align:center;">' + (tbody.children.length + 1) + '</td>' +
-                '<td><input type="text" class="mexp-spender" list="emp-mexp-spenders-list" placeholder="اسم الصارف..." value="' + esc(itemData && itemData.spender || '') + '" oninput="empMexpUpdateSpenderSuggestions()"></td>' +
-                '<td><input type="text" class="mexp-cat" list="emp-cats-list" placeholder="النوع / البند..." value="' + esc(itemData && itemData.cat || '') + '"></td>' +
-                '<td><input type="number" min="1" step="1" class="mexp-qty" style="text-align:center; font-weight:700;" placeholder="1" value="' + esc(qtyVal) + '" oninput="empMexpCalc()"></td>' +
-                '<td><input type="number" step="0.01" min="0" class="mexp-price" style="text-align:center; font-weight:700;" placeholder="0.00" value="' + esc(priceVal) + '" oninput="empMexpCalc()"></td>' +
+                '<td><input type="text" class="mexp-spender" autocomplete="off" spellcheck="false" value="' + esc(itemData && itemData.spender || '') + '"></td>' +
+                '<td><input type="text" class="mexp-cat" autocomplete="off" spellcheck="false" value="' + esc(itemData && itemData.cat || '') + '"></td>' +
+                '<td><input type="number" min="1" step="1" class="mexp-qty" style="text-align:center; font-weight:700;" autocomplete="off" value="' + esc(qtyVal) + '" oninput="empMexpCalc()"></td>' +
+                '<td><input type="number" step="0.01" min="0" class="mexp-price" style="text-align:center; font-weight:700;" autocomplete="off" value="' + esc(priceVal) + '" oninput="empMexpCalc()"></td>' +
                 '<td class="np" style="text-align:center"><button type="button" class="bt bt-d" style="padding:3px 7px;font-size:11px;border-radius:4px;" onclick="empMexpDelRow(this)" title="حذف هذا البند">✕</button></td>';
 
             tbody.appendChild(tr);
             empMexpCalc();
-            empMexpUpdateSpenderSuggestions();
         };
 
         window.empMexpUpdateDayHeader = function(dateInp) {
