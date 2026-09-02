@@ -67,7 +67,7 @@
     <link
         href="https://fonts.googleapis.com/css2?family=Alexandria:wght@300;400;500;600;700;800;900&family=Cairo:wght@400;600;700;800;900&family=Tajawal:wght@400;500;700;800&family=Inter:wght@400;500;600;700&display=swap"
         rel="stylesheet">
-    <link rel="stylesheet" href="styles.css?v=1788336283">
+    <link rel="stylesheet" href="styles.css?v=1788336722">
     <link rel="manifest" href="manifest.json">
     <link rel="icon" type="image/png" sizes="192x192" href="icon-192.png">
     <link rel="apple-touch-icon" href="icon-192.png">
@@ -75,10 +75,10 @@
     <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-storage-compat.js"></script>
-    <script src="firebase-config.js?v=1788336283"></script>
-    <script src="auth.js?v=1788336283"></script>
-    <script src="app.js?v=1788336283"></script>
-    <script src="formsend.js?v=1788336283"></script>
+    <script src="firebase-config.js?v=1788336722"></script>
+    <script src="auth.js?v=1788336722"></script>
+    <script src="app.js?v=1788336722"></script>
+    <script src="formsend.js?v=1788336722"></script>
     <script>
         (function () {
             const theme = localStorage.getItem('tg-theme') || 'light';
@@ -3544,8 +3544,8 @@
         تطوير وتصميم: أبانوب فايز</div>
     <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
-    <script src="theme.js?v=1788336283"></script>
-    <script src="pwa-install.js?v=1788336283"></script>
+    <script src="theme.js?v=1788336722"></script>
+    <script src="pwa-install.js?v=1788336722"></script>
 
 
     <!-- Incoming Meeting Call Modal -->
@@ -4087,6 +4087,8 @@
                 '    <button type="button" class="bt bt-p" style="font-weight:900;" onclick="empMexpAddNewDay()">➕ يوم جديد (📅)</button>' +
                 '    <button type="button" class="bt bt-o" style="font-weight:800;" onclick="empMexpSaveData()">💾 حفظ ومزامنة</button>' +
                 '    <button type="button" class="bt bt-o" style="font-weight:800;" onclick="empMexpLoadData(true)" title="تحديث من السيرفر">🔄 تحديث</button>' +
+                '    <button type="button" class="bt bt-o" style="font-size:11.5px;font-weight:700;" onclick="empMexpToggleAllDays(false)" title="طي كافة الأيام المسجلة">🔽 طي الكل</button>' +
+                '    <button type="button" class="bt bt-o" style="font-size:11.5px;font-weight:700;" onclick="empMexpToggleAllDays(true)" title="توسيع كافة الأيام المسجلة">🔼 تمدد الكل</button>' +
                 '  </div>' +
                 '</div>';
 
@@ -4234,33 +4236,38 @@
             dayCard.className = 'mexp-day-card';
 
             dayCard.innerHTML =
-                '<div class="mexp-day-header">' +
+                '<div class="mexp-day-header" onclick="empMexpToggleDayCard(this, event)">' +
                 '  <div class="mexp-day-info">' +
+                '    <button type="button" class="mexp-day-toggle-btn" onclick="empMexpToggleDayCard(this, event)" title="طي أو تمدد بنود هذا اليوم">' +
+                '      <span class="mexp-toggle-icon">▲</span> <span class="mexp-toggle-text">طي</span>' +
+                '    </button>' +
                 '    <span style="font-size:16px;">📅</span>' +
                 '    <label style="font-weight:800; font-size:12.5px; color:#e2e8f0;">تاريخ اليوم:</label>' +
-                '    <input type="date" class="mexp-day-date" value="' + esc(defDate) + '" onchange="empMexpUpdateDayHeader(this)" style="padding:4px 10px; border-radius:8px; border:1px solid #475569; background:#0f172a; color:#fff; font-weight:800; font-size:12.5px; outline:none; cursor:pointer;">' +
+                '    <input type="date" class="mexp-day-date" value="' + esc(defDate) + '" onchange="empMexpUpdateDayHeader(this)" onclick="event.stopPropagation()" style="padding:4px 10px; border-radius:8px; border:1px solid #475569; background:#0f172a; color:#fff; font-weight:800; font-size:12.5px; outline:none; cursor:pointer;">' +
                 '    <span class="mexp-day-name-badge" style="background:rgba(201,162,39,0.2); color:#fbbf24; border:1px solid rgba(251,191,36,0.35); padding:3px 10px; border-radius:20px; font-size:11.5px; font-weight:800;">' + esc(dayName || 'اليوم') + '</span>' +
                 '  </div>' +
                 '  <div class="mexp-day-actions">' +
                 '    <div class="mexp-day-total-wrap" style="font-size:12px; color:#cbd5e1; font-weight:700;">إجمالي اليوم: <strong class="mexp-day-total" style="color:#34d399; font-size:13.5px; font-weight:900;">0.00 ج.م</strong></div>' +
                 '    <div style="display:flex; align-items:center; gap:6px;">' +
-                '      <button type="button" class="bt bt-p" style="padding:5px 12px; font-size:11.5px; font-weight:800; border-radius:6px;" onclick="empMexpAddDayItem(this)">➕ بند جديد</button>' +
-                '      <button type="button" class="bt bt-d" style="padding:5px 10px; font-size:11.5px; font-weight:800; border-radius:6px; background:rgba(239,68,68,0.2); color:#fca5a5; border-color:rgba(239,68,68,0.4);" onclick="empMexpRemoveDay(this)" title="حذف هذا اليوم بالكامل">🗑 حذف</button>' +
+                '      <button type="button" class="bt bt-p" style="padding:5px 12px; font-size:11.5px; font-weight:800; border-radius:6px;" onclick="event.stopPropagation(); empMexpAddDayItem(this)">➕ بند جديد</button>' +
+                '      <button type="button" class="bt bt-d" style="padding:5px 10px; font-size:11.5px; font-weight:800; border-radius:6px; background:rgba(239,68,68,0.2); color:#fca5a5; border-color:rgba(239,68,68,0.4);" onclick="event.stopPropagation(); empMexpRemoveDay(this)" title="حذف هذا اليوم بالكامل">🗑 حذف</button>' +
                 '    </div>' +
                 '  </div>' +
                 '</div>' +
-                '<div class="mexp-table-scroll">' +
-                '  <table class="dt" style="width:100%; border-collapse:collapse; margin:0;">' +
-                '    <thead><tr>' +
-                '      <th style="width:36px; text-align:center;">م</th>' +
-                '      <th style="width:34%;">اسم الصارف</th>' +
-                '      <th style="width:38%;">النوع / البند</th>' +
-                '      <th style="width:80px; text-align:center;">العدد</th>' +
-                '      <th style="width:115px; text-align:center;">السعر (ج.م)</th>' +
-                '      <th class="np" style="width:36px; text-align:center;"></th>' +
-                '    </tr></thead>' +
-                '    <tbody class="mexp-day-tbody"></tbody>' +
-                '  </table>' +
+                '<div class="mexp-day-body">' +
+                '  <div class="mexp-table-scroll">' +
+                '    <table class="dt" style="width:100%; border-collapse:collapse; margin:0;">' +
+                '      <thead><tr>' +
+                '        <th style="width:36px; text-align:center;">م</th>' +
+                '        <th style="width:34%;">اسم الصارف</th>' +
+                '        <th style="width:38%;">النوع / البند</th>' +
+                '        <th style="width:80px; text-align:center;">العدد</th>' +
+                '        <th style="width:115px; text-align:center;">السعر (ج.م)</th>' +
+                '        <th class="np" style="width:36px; text-align:center;"></th>' +
+                '      </tr></thead>' +
+                '      <tbody class="mexp-day-tbody"></tbody>' +
+                '    </table>' +
+                '  </div>' +
                 '</div>';
 
             container.appendChild(dayCard);
@@ -4277,28 +4284,75 @@
             empMexpCalc();
         };
 
+        window.empMexpToggleDayCard = function(el, evt) {
+            if (evt && evt.target && (evt.target.tagName === 'INPUT' || evt.target.tagName === 'BUTTON' || evt.target.closest('button') || evt.target.closest('input'))) {
+                if (!evt.target.classList.contains('mexp-day-toggle-btn') && !evt.target.closest('.mexp-day-toggle-btn')) {
+                    return;
+                }
+            }
+            var card = el.closest('.mexp-day-card');
+            if (!card) return;
+            card.classList.toggle('collapsed');
+            var isCol = card.classList.contains('collapsed');
+            var tIcon = card.querySelector('.mexp-toggle-icon');
+            var tText = card.querySelector('.mexp-toggle-text');
+            if (tIcon) tIcon.innerText = isCol ? '▼' : '▲';
+            if (tText) tText.innerText = isCol ? 'عرض' : 'طي';
+        };
+
+        window.empMexpToggleAllDays = function(expand) {
+            document.querySelectorAll('#emp-mexp-days-container .mexp-day-card').forEach(function(card){
+                if (expand) {
+                    card.classList.remove('collapsed');
+                } else {
+                    card.classList.add('collapsed');
+                }
+                var isCol = card.classList.contains('collapsed');
+                var tIcon = card.querySelector('.mexp-toggle-icon');
+                var tText = card.querySelector('.mexp-toggle-text');
+                if (tIcon) tIcon.innerText = isCol ? '▼' : '▲';
+                if (tText) tText.innerText = isCol ? 'عرض' : 'طي';
+            });
+        };
+
         window.empMexpAddDayItem = function(btnOrTbody, itemData) {
             var tbody = null;
+            var card = null;
             if (btnOrTbody && btnOrTbody.tagName === 'TBODY') {
                 tbody = btnOrTbody;
+                card = tbody.closest('.mexp-day-card');
             } else if (btnOrTbody) {
-                var card = btnOrTbody.closest('.mexp-day-card');
+                card = btnOrTbody.closest('.mexp-day-card');
                 if (card) tbody = card.querySelector('.mexp-day-tbody');
             }
             if (!tbody) return;
 
+            if (card && card.classList.contains('collapsed')) {
+                card.classList.remove('collapsed');
+                var tIcon = card.querySelector('.mexp-toggle-icon');
+                var tText = card.querySelector('.mexp-toggle-text');
+                if (tIcon) tIcon.innerText = '▲';
+                if (tText) tText.innerText = 'طي';
+            }
+
             var tr = document.createElement('tr');
-            tr.style.height = '34px';
             var qtyVal = (itemData && itemData.qty !== undefined && itemData.qty !== null && itemData.qty !== '') ? String(itemData.qty) : '';
             var priceVal = (itemData && itemData.price !== undefined && itemData.price !== null && itemData.price !== '') ? String(itemData.price) : '';
+            var idx = tbody.children.length + 1;
 
             tr.innerHTML =
-                '<td class="mexp-idx" style="font-weight:bold; font-size:11px; text-align:center;">' + (tbody.children.length + 1) + '</td>' +
-                '<td><input type="text" class="mexp-spender" autocomplete="off" spellcheck="false" value="' + esc(itemData && itemData.spender || '') + '"></td>' +
-                '<td><input type="text" class="mexp-cat" autocomplete="off" spellcheck="false" value="' + esc(itemData && itemData.cat || '') + '"></td>' +
-                '<td><input type="number" min="1" step="1" class="mexp-qty" style="text-align:center; font-weight:700;" autocomplete="off" value="' + esc(qtyVal) + '" oninput="empMexpCalc()"></td>' +
-                '<td><input type="number" step="0.01" min="0" class="mexp-price" style="text-align:center; font-weight:700;" autocomplete="off" value="' + esc(priceVal) + '" oninput="empMexpCalc()"></td>' +
-                '<td class="np" style="text-align:center"><button type="button" class="bt bt-d" style="padding:3px 7px;font-size:11px;border-radius:4px;" onclick="empMexpDelRow(this)" title="حذف هذا البند">✕</button></td>';
+                '<td class="mexp-idx-td" style="font-weight:bold; font-size:11px; text-align:center;">' +
+                '  <div class="mexp-mobile-row-top">' +
+                '    <span class="mexp-idx-badge" style="font-size:12px; font-weight:800; color:var(--tx); background:rgba(0,0,0,0.06); padding:2px 8px; border-radius:12px;">بند رقم: <b class="mexp-idx">' + idx + '</b></span>' +
+                '    <button type="button" class="bt bt-d" style="padding:4px 8px;font-size:11px;border-radius:6px;" onclick="empMexpDelRow(this)" title="حذف هذا البند">🗑 حذف البند</button>' +
+                '  </div>' +
+                '  <span class="np mexp-desktop-idx-span" style="display:inline-block;">' + idx + '</span>' +
+                '</td>' +
+                '<td class="mexp-spender-td"><div class="mexp-field-group"><label class="mexp-field-label">اسم الصارف:</label><input type="text" class="mexp-spender" autocomplete="off" spellcheck="false" value="' + esc(itemData && itemData.spender || '') + '"></div></td>' +
+                '<td class="mexp-cat-td"><div class="mexp-field-group"><label class="mexp-field-label">النوع / البند:</label><input type="text" class="mexp-cat" autocomplete="off" spellcheck="false" value="' + esc(itemData && itemData.cat || '') + '"></div></td>' +
+                '<td class="mexp-qty-td"><div class="mexp-field-group"><label class="mexp-field-label">العدد:</label><input type="number" min="1" step="1" class="mexp-qty" style="text-align:center; font-weight:700;" autocomplete="off" value="' + esc(qtyVal) + '" oninput="empMexpCalc()"></div></td>' +
+                '<td class="mexp-price-td"><div class="mexp-field-group"><label class="mexp-field-label">السعر (ج.م):</label><input type="number" step="0.01" min="0" class="mexp-price" style="text-align:center; font-weight:700;" autocomplete="off" value="' + esc(priceVal) + '" oninput="empMexpCalc()"></div></td>' +
+                '<td class="np mexp-del-td" style="text-align:center"><button type="button" class="bt bt-d" style="padding:3px 7px;font-size:11px;border-radius:4px;" onclick="empMexpDelRow(this)" title="حذف هذا البند">✕</button></td>';
 
             tbody.appendChild(tr);
             empMexpCalc();
@@ -4320,7 +4374,6 @@
                 if (confirm('هل أنت متأكد من حذف يوم (' + (dStr || '') + ') بكافة بنوده ومصروفاته؟')) {
                     card.remove();
                     empMexpCalc();
-                    empMexpUpdateSpenderSuggestions();
                 }
             }
         };
@@ -4332,11 +4385,12 @@
             if (tbody) {
                 tbody.querySelectorAll('tr').forEach(function(r, i){
                     var idxEl = r.querySelector('.mexp-idx');
-                    if(idxEl) idxEl.innerText = i + 1;
+                    if (idxEl) idxEl.innerText = i + 1;
+                    var dtIdx = r.querySelector('.mexp-desktop-idx-span');
+                    if (dtIdx) dtIdx.innerText = i + 1;
                 });
             }
             empMexpCalc();
-            empMexpUpdateSpenderSuggestions();
         };
 
         function empMexpCalc() {

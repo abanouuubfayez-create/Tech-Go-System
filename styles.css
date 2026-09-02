@@ -4848,21 +4848,57 @@ body.dark-mode .tg-expand-btn:hover {
   border: 1.5px solid var(--bd) !important;
   border-radius: 12px !important;
   background: var(--w) !important;
-  margin-bottom: 20px !important;
+  margin-bottom: 16px !important;
   overflow: hidden;
   box-shadow: var(--sh-sm);
+  transition: all 0.25s ease;
   page-break-inside: avoid !important;
 }
 
 .mexp-day-header {
   background: linear-gradient(135deg, #1e293b, #0f172a);
   color: #fff;
-  padding: 12px 16px;
+  padding: 10px 14px;
   display: flex;
   justify-content: space-between;
   align-items: center;
   flex-wrap: wrap;
-  gap: 12px;
+  gap: 10px;
+  cursor: pointer;
+  user-select: none;
+  transition: background 0.2s ease;
+}
+
+.mexp-day-header:hover {
+  background: linear-gradient(135deg, #243248, #111c33);
+}
+
+.mexp-day-toggle-btn {
+  background: rgba(255, 255, 255, 0.12);
+  color: #fff;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 6px;
+  padding: 4px 8px;
+  font-size: 11px;
+  font-weight: 800;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.mexp-day-toggle-btn:hover {
+  background: rgba(255, 255, 255, 0.22);
+}
+
+.mexp-day-card.collapsed .mexp-day-body {
+  display: none !important;
+}
+
+.mexp-toggle-icon {
+  display: inline-block;
+  transition: transform 0.2s ease;
 }
 
 .mexp-day-info {
@@ -4877,6 +4913,12 @@ body.dark-mode .tg-expand-btn:hover {
   align-items: center;
   gap: 10px;
   flex-wrap: wrap;
+}
+
+.mexp-day-body {
+  padding: 0;
+  background: var(--w);
+  transition: all 0.25s ease;
 }
 
 .mexp-table-scroll {
@@ -4923,6 +4965,14 @@ body.dark-mode .tg-expand-btn:hover {
 
 .mexp-day-card td input:focus {
   background: rgba(30, 41, 59, 0.05) !important;
+}
+
+.mexp-mobile-row-top {
+  display: none;
+}
+
+.mexp-field-label {
+  display: none;
 }
 
 @media (max-width: 768px) {
@@ -4992,8 +5042,8 @@ body.dark-mode .tg-expand-btn:hover {
   }
   .mexp-day-info input[type="date"] {
     flex: 1 !important;
-    min-width: 120px !important;
-    padding: 4px 8px !important;
+    min-width: 110px !important;
+    padding: 4px 6px !important;
     font-size: 12px !important;
   }
   .mexp-day-actions {
@@ -5009,7 +5059,121 @@ body.dark-mode .tg-expand-btn:hover {
   }
 }
 
+/* ── Mobile Vertical Card Rows (< 640px) ── */
+@media (max-width: 640px) {
+  .mexp-table-scroll table,
+  .mexp-table-scroll thead,
+  .mexp-table-scroll tbody,
+  .mexp-table-scroll th,
+  .mexp-table-scroll td,
+  .mexp-table-scroll tr {
+    display: block;
+    width: 100% !important;
+    min-width: 0 !important;
+  }
+
+  .mexp-table-scroll thead {
+    display: none !important;
+  }
+
+  .mexp-day-tbody {
+    padding: 10px;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+  }
+
+  .mexp-day-tbody tr {
+    background: #f8fafc !important;
+    border: 1.5px solid #e2e8f0 !important;
+    border-radius: 10px !important;
+    padding: 10px 12px !important;
+    height: auto !important;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.03);
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  .mexp-mobile-row-top {
+    display: flex !important;
+    justify-content: space-between;
+    align-items: center;
+    border-bottom: 1px dashed var(--bd);
+    padding-bottom: 6px;
+  }
+
+  .mexp-del-td {
+    display: none !important;
+  }
+
+  .mexp-field-label {
+    display: block !important;
+    font-size: 11.5px;
+    font-weight: 800;
+    color: var(--tx2);
+    margin-bottom: 3px;
+  }
+
+  .mexp-field-group {
+    display: flex;
+    flex-direction: column;
+  }
+
+  .mexp-day-tbody tr td {
+    border: none !important;
+    padding: 0 !important;
+    height: auto !important;
+    background: transparent !important;
+  }
+
+  .mexp-day-tbody tr td input {
+    background: #ffffff !important;
+    border: 1px solid var(--bd) !important;
+    border-radius: 6px !important;
+    padding: 7px 10px !important;
+    font-size: 13px !important;
+    height: 36px !important;
+    width: 100% !important;
+    box-sizing: border-box !important;
+  }
+
+  .mexp-day-tbody tr td input:focus {
+    border-color: var(--p) !important;
+    background: #fff !important;
+    box-shadow: 0 0 0 2px rgba(16,185,129,0.15) !important;
+  }
+}
+
 @media print {
+  .mexp-day-card.collapsed .mexp-day-body {
+    display: block !important;
+  }
+  .mexp-day-toggle-btn {
+    display: none !important;
+  }
+  .mexp-table-scroll table {
+    display: table !important;
+  }
+  .mexp-table-scroll thead {
+    display: table-header-group !important;
+  }
+  .mexp-table-scroll tbody {
+    display: table-row-group !important;
+  }
+  .mexp-table-scroll tr {
+    display: table-row !important;
+  }
+  .mexp-table-scroll td,
+  .mexp-table-scroll th {
+    display: table-cell !important;
+  }
+  .mexp-mobile-row-top {
+    display: none !important;
+  }
+  .mexp-field-label {
+    display: none !important;
+  }
   .mexp-day-card {
     border: 1.5px solid #334155 !important;
     margin-bottom: 16px !important;
