@@ -67,7 +67,7 @@
     <link
         href="https://fonts.googleapis.com/css2?family=Alexandria:wght@300;400;500;600;700;800;900&family=Cairo:wght@400;600;700;800;900&family=Tajawal:wght@400;500;700;800&family=Inter:wght@400;500;600;700&display=swap"
         rel="stylesheet">
-    <link rel="stylesheet" href="styles.css?v=1788333801">
+    <link rel="stylesheet" href="styles.css?v=1788333861">
     <link rel="manifest" href="manifest.json">
     <link rel="icon" type="image/png" sizes="192x192" href="icon-192.png">
     <link rel="apple-touch-icon" href="icon-192.png">
@@ -75,10 +75,10 @@
     <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-storage-compat.js"></script>
-    <script src="firebase-config.js?v=1788333801"></script>
-    <script src="auth.js?v=1788333801"></script>
-    <script src="app.js?v=1788333801"></script>
-    <script src="formsend.js?v=1788333801"></script>
+    <script src="firebase-config.js?v=1788333861"></script>
+    <script src="auth.js?v=1788333861"></script>
+    <script src="app.js?v=1788333861"></script>
+    <script src="formsend.js?v=1788333861"></script>
     <script>
         (function () {
             const theme = localStorage.getItem('tg-theme') || 'light';
@@ -3544,8 +3544,8 @@
         تطوير وتصميم: أبانوب فايز</div>
     <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
-    <script src="theme.js?v=1788333801"></script>
-    <script src="pwa-install.js?v=1788333801"></script>
+    <script src="theme.js?v=1788333861"></script>
+    <script src="pwa-install.js?v=1788333861"></script>
 
 
     <!-- Incoming Meeting Call Modal -->
@@ -4191,6 +4191,22 @@
             empMexpUpdateSpenderSuggestions();
         }
 
+        function empMexpGetLastDate() {
+            var dateInps = document.querySelectorAll('#emp-mexp-tbody .mexp-date');
+            for (var i = dateInps.length - 1; i >= 0; i--) {
+                if (dateInps[i].value) return dateInps[i].value;
+            }
+            var mi = document.getElementById('emp-mexp-month');
+            var d = new Date();
+            var curMonth = d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0');
+            if (mi && mi.value === curMonth) {
+                return d.toISOString().split('T')[0];
+            } else if (mi && mi.value) {
+                return mi.value + '-01';
+            }
+            return d.toISOString().split('T')[0];
+        }
+
         window.empMexpAddRow = function(row) {
             var tbody = document.getElementById('emp-mexp-tbody');
             if (!tbody) return;
@@ -4198,15 +4214,15 @@
             tr.style.height = '34px';
             var qtyVal = (row && row.qty !== undefined && row.qty !== null && row.qty !== '') ? String(row.qty) : '';
             var priceVal = (row && row.price !== undefined && row.price !== null && row.price !== '') ? String(row.price) : '';
-            var dateVal = (row && row.date) ? row.date : '';
+            var dateVal = (row && row.date) ? row.date : empMexpGetLastDate();
 
             tr.innerHTML =
                 '<td class="mexp-idx" style="font-weight:bold; font-size:11px; text-align:center;">' + (tbody.children.length + 1) + '</td>' +
                 '<td><input type="text" class="mexp-spender" list="emp-mexp-spenders-list" placeholder="اسم الصارف..." value="' + esc(row && row.spender || '') + '" oninput="empMexpUpdateSpenderSuggestions()"></td>' +
-                '<td><input type="text" class="mexp-cat" list="emp-mexp-cats-list" placeholder="النوع / البند..." value="' + esc(row && row.cat || '') + '"></td>' +
+                '<td><input type="text" class="mexp-cat" list="emp-cats-list" placeholder="النوع / البند..." value="' + esc(row && row.cat || '') + '"></td>' +
                 '<td><input type="number" min="1" step="1" class="mexp-qty" style="text-align:center; font-weight:700;" placeholder="1" value="' + esc(qtyVal) + '" oninput="empMexpCalc()"></td>' +
                 '<td><input type="number" step="0.01" min="0" class="mexp-price" style="text-align:center; font-weight:700;" placeholder="0.00" value="' + esc(priceVal) + '" oninput="empMexpCalc()"></td>' +
-                '<td><input type="date" class="mexp-date" style="font-weight:600; text-align:center;" value="' + esc(dateVal) + '"></td>' +
+                '<td><input type="date" class="mexp-date" style="font-weight:600; text-align:center;" value="' + esc(dateVal) + '" title="تاريخ اليوم (يُورث تلقائياً دون الحاجة لإعادة كتابته كل مرة)"></td>' +
                 '<td class="np" style="text-align:center"><button type="button" class="bt bt-d" style="padding:3px 7px;font-size:11px;border-radius:4px;" onclick="empMexpDelRow(this)" title="حذف السطر">✕</button></td>';
             tbody.appendChild(tr);
             empMexpUpdateSpenderSuggestions();

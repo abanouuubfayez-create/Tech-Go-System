@@ -4539,6 +4539,22 @@ function renderMexpRows(rows) {
     mexpUpdateSpenderSuggestions();
 }
 
+function mexpGetLastDate() {
+    var dateInps = document.querySelectorAll('#mexp-tbody .mexp-date');
+    for (var i = dateInps.length - 1; i >= 0; i--) {
+        if (dateInps[i].value) return dateInps[i].value;
+    }
+    var mi = document.getElementById('mexp-month');
+    var d = new Date();
+    var curMonth = d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0');
+    if (mi && mi.value === curMonth) {
+        return d.toISOString().split('T')[0];
+    } else if (mi && mi.value) {
+        return mi.value + '-01';
+    }
+    return d.toISOString().split('T')[0];
+}
+
 function mexpAddRow(row){
     var tbody = document.getElementById('mexp-tbody');
     if(!tbody) return;
@@ -4546,7 +4562,7 @@ function mexpAddRow(row){
     tr.style.height = '34px';
     var qtyVal = (row && row.qty !== undefined && row.qty !== null && row.qty !== '') ? String(row.qty) : '';
     var priceVal = (row && row.price !== undefined && row.price !== null && row.price !== '') ? String(row.price) : '';
-    var dateVal = (row && row.date) ? row.date : '';
+    var dateVal = (row && row.date) ? row.date : mexpGetLastDate();
 
     tr.innerHTML =
         '<td class="mexp-idx" style="font-weight:bold; font-size:11px; text-align:center;">' + (tbody.children.length + 1) + '</td>' +
@@ -4554,7 +4570,7 @@ function mexpAddRow(row){
         '<td><input type="text" class="mexp-cat" list="mexp-cats-list" placeholder="النوع / البند..." value="' + escH(row && row.cat || '') + '"></td>' +
         '<td><input type="number" min="1" step="1" class="mexp-qty" style="text-align:center; font-weight:700;" placeholder="1" value="' + escH(qtyVal) + '" oninput="mexpCalc()"></td>' +
         '<td><input type="number" step="0.01" min="0" class="mexp-price" style="text-align:center; font-weight:700;" placeholder="0.00" value="' + escH(priceVal) + '" oninput="mexpCalc()"></td>' +
-        '<td><input type="date" class="mexp-date" style="font-weight:600; text-align:center;" value="' + escH(dateVal) + '"></td>' +
+        '<td><input type="date" class="mexp-date" style="font-weight:600; text-align:center;" value="' + escH(dateVal) + '" title="تاريخ اليوم (يُورث تلقائياً دون الحاجة لإعادة كتابته كل مرة)"></td>' +
         '<td class="np" style="text-align:center"><button type="button" class="bt bt-d" style="padding:3px 7px;font-size:11px;border-radius:4px;" onclick="mexpDelRow(this)" title="حذف السطر">✕</button></td>';
     tbody.appendChild(tr);
     mexpUpdateSpenderSuggestions();
