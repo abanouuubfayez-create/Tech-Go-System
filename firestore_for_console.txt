@@ -1,3 +1,7 @@
+// -------------------------------------------------------------------
+// قواعد أمان Firestore
+// انسخ من سطر rules_version لآخر الملف والصقه في Firebase Console
+// -------------------------------------------------------------------
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
@@ -139,13 +143,6 @@ service cloud.firestore {
       allow delete: if isAnyAdmin();
     }
 
-    // التقارير الأسبوعية
-    match /weeklyReports/{repId} {
-      allow read: if isAnyAdmin() || (isSignedIn() && resource.data.uid == myUid());
-      allow create: if isSignedIn() && request.resource.data.uid == myUid();
-      allow update, delete: if isAnyAdmin() || (isSignedIn() && resource.data.uid == myUid());
-    }
-
     // الإشعارات (Push Notifications عبر Firestore)
     match /notifications/{notifId} {
       // المستلم يقرأ إشعاراته فقط
@@ -276,3 +273,4 @@ service cloud.firestore {
     }
   }
 }
+

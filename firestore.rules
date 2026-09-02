@@ -143,13 +143,6 @@ service cloud.firestore {
       allow delete: if isAnyAdmin();
     }
 
-    // التقارير الأسبوعية
-    match /weeklyReports/{repId} {
-      allow read: if isAnyAdmin() || (isSignedIn() && resource.data.uid == myUid());
-      allow create: if isSignedIn() && request.resource.data.uid == myUid();
-      allow update, delete: if isAnyAdmin() || (isSignedIn() && resource.data.uid == myUid());
-    }
-
     // الإشعارات (Push Notifications عبر Firestore)
     match /notifications/{notifId} {
       // المستلم يقرأ إشعاراته فقط
