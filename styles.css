@@ -4892,6 +4892,59 @@ body.dark-mode .tg-expand-btn:hover {
   background: rgba(255, 255, 255, 0.22);
 }
 
+.mexp-day-card.collapsed {
+  margin-bottom: 8px !important;
+  border-radius: 10px !important;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.06) !important;
+  border-color: #334155 !important;
+}
+
+.mexp-day-card.collapsed .mexp-day-header {
+  padding: 8px 14px !important;
+  min-height: 40px !important;
+  border-radius: 9px !important;
+  gap: 8px !important;
+  justify-content: space-between !important;
+  flex-direction: row !important;
+  align-items: center !important;
+}
+
+.mexp-day-card.collapsed .mexp-day-info {
+  width: auto !important;
+  gap: 6px !important;
+}
+
+.mexp-day-card.collapsed .mexp-day-actions {
+  width: auto !important;
+  border-top: none !important;
+  padding-top: 0 !important;
+  gap: 8px !important;
+}
+
+.mexp-day-card.collapsed .mexp-day-actions-btns {
+  display: none !important;
+}
+
+.mexp-day-card.collapsed .mexp-day-date {
+  display: none !important;
+}
+
+.mexp-day-card.collapsed .mexp-day-date-label {
+  display: none !important;
+}
+
+.mexp-day-card.collapsed .mexp-day-date-text {
+  display: inline-block !important;
+  font-weight: 800;
+  font-size: 13px;
+  color: #ffffff;
+  letter-spacing: 0.3px;
+}
+
+.mexp-day-date-text {
+  display: none;
+}
+
 .mexp-day-card.collapsed .mexp-day-body {
   display: none !important;
 }

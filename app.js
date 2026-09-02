@@ -4665,14 +4665,15 @@ function mexpAddNewDay(dayData) {
         '    <button type="button" class="mexp-day-toggle-btn" onclick="event.preventDefault(); event.stopPropagation(); mexpToggleDayCard(this, event);" title="طي أو تمدد بنود هذا اليوم">' +
         '      <span class="mexp-toggle-icon">▲</span> <span class="mexp-toggle-text">طي</span>' +
         '    </button>' +
-        '    <span style="font-size:16px;">📅</span>' +
-        '    <label style="font-weight:800; font-size:12.5px; color:#e2e8f0;">تاريخ اليوم:</label>' +
+        '    <span style="font-size:15px;">📅</span>' +
+        '    <label class="mexp-day-date-label" style="font-weight:800; font-size:12.5px; color:#e2e8f0;">تاريخ اليوم:</label>' +
         '    <input type="date" class="mexp-day-date" value="' + escH(defDate) + '" onchange="mexpUpdateDayHeader(this)" onclick="event.stopPropagation()">' +
-        '    <span class="mexp-day-name-badge" style="background:rgba(201,162,39,0.2); color:#fbbf24; border:1px solid rgba(251,191,36,0.35); padding:3px 10px; border-radius:20px; font-size:11.5px; font-weight:800;">' + escH(dayName || 'اليوم') + '</span>' +
+        '    <span class="mexp-day-date-text">' + escH(defDate) + '</span>' +
+        '    <span class="mexp-day-name-badge" style="background:rgba(201,162,39,0.2); color:#fbbf24; border:1px solid rgba(251,191,36,0.35); padding:2px 8px; border-radius:14px; font-size:11.5px; font-weight:800;">' + escH(dayName || 'اليوم') + '</span>' +
         '  </div>' +
         '  <div class="mexp-day-actions">' +
         '    <div class="mexp-day-total-wrap" style="font-size:12px; color:#cbd5e1; font-weight:700;">إجمالي اليوم: <strong class="mexp-day-total" style="color:#34d399; font-size:13.5px; font-weight:900;">0.00 ج.م</strong></div>' +
-        '    <div style="display:flex; align-items:center; gap:6px;">' +
+        '    <div class="mexp-day-actions-btns" style="display:flex; align-items:center; gap:6px;">' +
         '      <button type="button" class="bt bt-p" style="padding:5px 12px; font-size:11.5px; font-weight:800; border-radius:6px;" onclick="event.preventDefault(); event.stopPropagation(); mexpAddDayItem(this);">➕ بند جديد</button>' +
         '      <button type="button" class="bt bt-d" style="padding:5px 10px; font-size:11.5px; font-weight:800; border-radius:6px; background:rgba(239,68,68,0.2); color:#fca5a5; border-color:rgba(239,68,68,0.4);" onclick="event.preventDefault(); event.stopPropagation(); mexpRemoveDay(this);" title="حذف هذا اليوم بالكامل">🗑 حذف</button>' +
         '    </div>' +
@@ -4811,6 +4812,8 @@ function mexpUpdateDayHeader(dateInp) {
     if (!card) return;
     var badge = card.querySelector('.mexp-day-name-badge');
     if (badge) badge.innerText = mexpGetDayName(dateInp.value) || 'اليوم';
+    var dateTxt = card.querySelector('.mexp-day-date-text');
+    if (dateTxt) dateTxt.innerText = dateInp.value || '';
 }
 
 function mexpRemoveDay(btn) {
