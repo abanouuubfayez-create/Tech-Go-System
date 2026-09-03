@@ -5703,11 +5703,11 @@ window.mexpShowModalWithData = function (dateVal, items, isEdit, dayIdx) {
         '  </div>' +
         '</div>' +
         '<div class="mexp-modal-foot">' +
-        '  <div style="display:flex;align-items:center;gap:8px;">' +
-        (isEdit ? '    <button type="button" class="bt bt-d" style="padding:9px 16px;font-size:12px;font-weight:800;border-radius:10px;background:rgba(239,68,68,0.15);color:#ef4444;border-color:rgba(239,68,68,0.3);" onclick="mexpModalDeleteCurrentDay()">🗑 حذف هذا اليوم</button>' : '') +
+        '  <button type="button" class="bt bt-p mexp-modal-save-btn" style="padding:10px 28px;font-size:13.5px;font-weight:900;background:linear-gradient(135deg, #059669, #047857);color:#fff;border-radius:10px;box-shadow:0 4px 14px rgba(5,150,105,0.35);" onclick="mexpModalSaveDay()">💾 حفظ اليوم ومزامنة الشيت فوراً</button>' +
+        '  <div class="mexp-modal-foot-actions" style="display:flex;align-items:center;gap:8px;">' +
         '    <button type="button" class="bt bt-o" style="padding:9px 20px;font-size:12.5px;font-weight:800;border-radius:10px;" onclick="mexpCloseDayModal()">إلغاء</button>' +
+        (isEdit ? '    <button type="button" class="bt bt-d" style="padding:9px 16px;font-size:12px;font-weight:800;border-radius:10px;background:rgba(239,68,68,0.15);color:#ef4444;border-color:rgba(239,68,68,0.3);" onclick="mexpModalDeleteCurrentDay()">🗑 حذف هذا اليوم</button>' : '') +
         '  </div>' +
-        '  <button type="button" class="bt bt-p" style="padding:10px 28px;font-size:13.5px;font-weight:900;background:linear-gradient(135deg, #059669, #047857);color:#fff;border-radius:10px;box-shadow:0 4px 14px rgba(5,150,105,0.35);" onclick="mexpModalSaveDay()">💾 حفظ اليوم ومزامنة الشيت فوراً</button>' +
         '</div>' +
         '</div>';
 
@@ -5723,13 +5723,36 @@ window.mexpModalBuildRowHtml = function (idx, item) {
     var price = item && item.price ? item.price : '';
     var subtotal = (parseFloat(qty || '1') * parseFloat(price || '0')) || 0;
     return '<tr>' +
-        '<td class="mexp-modal-idx" style="font-weight:bold;font-size:12px;text-align:center;color:var(--tx2);">' + idx + '</td>' +
-        '<td><input type="text" class="mexp-modal-spender" list="mexpModalSpendersDatalist" placeholder="اسم الصارف..." value="' + escH(spender) + '"></td>' +
-        '<td><input type="text" class="mexp-modal-cat" placeholder="مثلاً: بوفيه، مواصلات، صيانة..." value="' + escH(cat) + '"></td>' +
-        '<td><input type="number" min="1" step="1" class="mexp-modal-qty" value="' + escH(qty) + '" style="text-align:center;font-weight:700;" oninput="mexpModalCalc()"></td>' +
-        '<td><input type="number" min="0" step="0.01" class="mexp-modal-price" value="' + escH(price) + '" style="text-align:center;font-weight:700;" oninput="mexpModalCalc()"></td>' +
-        '<td class="mexp-modal-subtotal" style="text-align:center;font-weight:900;color:#059669;font-size:13.5px;">' + subtotal.toFixed(2) + '</td>' +
-        '<td style="text-align:center;"><button type="button" class="bt bt-d" style="padding:4px 8px;font-size:12px;border-radius:6px;background:rgba(239,68,68,0.12);color:#ef4444;border-color:rgba(239,68,68,0.25);" onclick="mexpModalDelRow(this)" title="حذف هذا البند">✕</button></td>' +
+        '<td class="mexp-modal-idx-td">' +
+        '  <div class="mexp-modal-card-mobile-top">' +
+        '    <span class="mexp-modal-idx-pill">بند رقم #<b class="mexp-modal-idx-num">' + idx + '</b></span>' +
+        '    <span class="mexp-modal-mobile-subtotal-badge">💰 الإجمالي: <strong class="mexp-modal-subtotal">' + subtotal.toFixed(2) + '</strong> ج.م</span>' +
+        '    <button type="button" class="mexp-modal-del-btn-mobile" onclick="mexpModalDelRow(this)" title="حذف هذا البند">🗑 حذف</button>' +
+        '  </div>' +
+        '  <span class="mexp-modal-desktop-idx">' + idx + '</span>' +
+        '</td>' +
+        '<td class="mexp-modal-spender-td">' +
+        '  <label class="mexp-modal-field-lbl">👤 اسم الصارف:</label>' +
+        '  <input type="text" class="mexp-modal-spender" list="mexpModalSpendersDatalist" placeholder="اكتب اسم الصارف..." value="' + escH(spender) + '">' +
+        '</td>' +
+        '<td class="mexp-modal-cat-td">' +
+        '  <label class="mexp-modal-field-lbl">📝 بيان المصروف / النوع:</label>' +
+        '  <input type="text" class="mexp-modal-cat" placeholder="مثلاً: بوفيه، مواصلات، صيانة، أدوات..." value="' + escH(cat) + '">' +
+        '</td>' +
+        '<td class="mexp-modal-qty-td">' +
+        '  <label class="mexp-modal-field-lbl">🔢 العدد / الكمية:</label>' +
+        '  <input type="number" min="1" step="1" class="mexp-modal-qty" value="' + escH(qty) + '" style="text-align:center;font-weight:700;" oninput="mexpModalCalc()">' +
+        '</td>' +
+        '<td class="mexp-modal-price-td">' +
+        '  <label class="mexp-modal-field-lbl">💵 السعر للوحدة (ج.م):</label>' +
+        '  <input type="number" min="0" step="0.01" class="mexp-modal-price" value="' + escH(price) + '" style="text-align:center;font-weight:700;" oninput="mexpModalCalc()">' +
+        '</td>' +
+        '<td class="mexp-modal-subtotal-td">' +
+        '  <span class="mexp-modal-subtotal-val"><strong class="mexp-modal-subtotal">' + subtotal.toFixed(2) + '</strong> ج.م</span>' +
+        '</td>' +
+        '<td class="mexp-modal-del-td" style="text-align:center;">' +
+        '  <button type="button" class="bt bt-d" style="padding:4px 8px;font-size:12px;border-radius:6px;background:rgba(239,68,68,0.12);color:#ef4444;border-color:rgba(239,68,68,0.25);" onclick="mexpModalDelRow(this)" title="حذف هذا البند">✕</button>' +
+        '</td>' +
         '</tr>';
 };
 
@@ -5751,8 +5774,9 @@ window.mexpModalDelRow = function (btn) {
     if (tr) tr.remove();
     if (tbody) {
         tbody.querySelectorAll('tr').forEach(function (r, i) {
-            var idxEl = r.querySelector('.mexp-modal-idx');
-            if (idxEl) idxEl.innerText = i + 1;
+            r.querySelectorAll('.mexp-modal-idx, .mexp-modal-desktop-idx, .mexp-modal-idx-num').forEach(function (idxEl) {
+                idxEl.innerText = i + 1;
+            });
         });
     }
     mexpModalCalc();
@@ -5785,11 +5809,12 @@ window.mexpModalCalc = function () {
         tbody.querySelectorAll('tr').forEach(function (tr) {
             var qInp = tr.querySelector('.mexp-modal-qty');
             var pInp = tr.querySelector('.mexp-modal-price');
-            var subEl = tr.querySelector('.mexp-modal-subtotal');
             var q = parseFloat(qInp ? qInp.value : '1') || 1;
             var p = parseFloat(pInp ? pInp.value : '0') || 0;
             var sub = q * p;
-            if (subEl) subEl.innerText = sub.toFixed(2);
+            tr.querySelectorAll('.mexp-modal-subtotal').forEach(function(subEl) {
+                subEl.innerText = sub.toFixed(2);
+            });
             var spenderInp = tr.querySelector('.mexp-modal-spender');
             var catInp = tr.querySelector('.mexp-modal-cat');
             if ((spenderInp && spenderInp.value.trim()) || (catInp && catInp.value.trim()) || p > 0) {
@@ -6884,13 +6909,13 @@ function load(id, c) {
 
         // Actions Toolbar
         h += '<div class="mexp-toolbar np">' +
-            '  <div style="display:flex;align-items:center;gap:8px;">' +
-            '    <button type="button" class="bt bt-p" style="font-weight:900;padding:8px 18px;font-size:13px;background:linear-gradient(135deg, #059669, #047857);color:#fff;border-radius:10px;box-shadow:0 4px 12px rgba(5,150,105,0.3);" onclick="mexpOpenNewDayModal()">➕ تسجيل يوم جديد (Pop-up 📅)</button>' +
-            '    <button type="button" class="bt bt-o" style="font-weight:800;padding:8px 16px;" onclick="mexpSave()">💾 حفظ ومزامنة</button>' +
+            '  <div class="mexp-toolbar-primary">' +
+            '    <button type="button" class="bt bt-p mexp-btn-add" onclick="mexpOpenNewDayModal()">➕ تسجيل يوم جديد (Pop-up 📅)</button>' +
+            '    <button type="button" class="bt bt-o mexp-btn-save" onclick="mexpSave()">💾 حفظ ومزامنة</button>' +
             '  </div>' +
-            '  <div class="mexp-actions-wrap">' +
-            '    <button type="button" class="bt bt-g" style="font-weight:800;padding:8px 16px;" onclick="mexpPrint()">🖨 طباعة الشيت الرسمي</button>' +
-            '    <button type="button" class="bt bt-o" style="font-weight:800;padding:8px 14px;" onclick="mexpLoad(true)" title="تحديث البيانات من السيرفر">🔄 تحديث</button>' +
+            '  <div class="mexp-toolbar-secondary">' +
+            '    <button type="button" class="bt bt-g mexp-btn-print" onclick="mexpPrint()">🖨 طباعة الشيت الرسمي</button>' +
+            '    <button type="button" class="bt bt-o mexp-btn-refresh" onclick="mexpLoad(true)" title="تحديث البيانات من السيرفر">🔄 تحديث</button>' +
             '  </div>' +
             '</div>';
 

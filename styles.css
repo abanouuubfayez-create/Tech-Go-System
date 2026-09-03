@@ -4911,11 +4911,37 @@ body.dark-mode .tg-expand-btn:hover {
   border-radius: 12px;
 }
 
-.mexp-actions-wrap {
+.mexp-toolbar-primary,
+.mexp-toolbar-secondary {
   display: flex;
   align-items: center;
   gap: 8px;
   flex-wrap: wrap;
+}
+
+.mexp-btn-add {
+  font-weight: 900 !important;
+  padding: 8px 18px !important;
+  font-size: 13px !important;
+  background: linear-gradient(135deg, #059669, #047857) !important;
+  color: #fff !important;
+  border-radius: 10px !important;
+  box-shadow: 0 4px 12px rgba(5, 150, 105, 0.3) !important;
+}
+
+.mexp-btn-save {
+  font-weight: 800 !important;
+  padding: 8px 16px !important;
+}
+
+.mexp-btn-print {
+  font-weight: 800 !important;
+  padding: 8px 16px !important;
+}
+
+.mexp-btn-refresh {
+  font-weight: 800 !important;
+  padding: 8px 14px !important;
 }
 
 /* ── Day Cards Grid ── */
@@ -5181,16 +5207,17 @@ body.dark-mode .tg-expand-btn:hover {
 }
 
 #mexpModalTable th, #empMexpModalTable th {
-  padding: 10px 10px;
+  padding: 10px 12px;
   font-weight: 800;
   background: var(--nv);
   color: #fff;
   font-size: 12px;
   border-bottom: 2px solid var(--bd);
+  text-align: right;
 }
 
 #mexpModalTable td, #empMexpModalTable td {
-  padding: 8px 8px;
+  padding: 8px 10px;
   vertical-align: middle;
   border-bottom: 1px solid var(--bd);
   background: var(--w);
@@ -5198,7 +5225,7 @@ body.dark-mode .tg-expand-btn:hover {
 
 #mexpModalTable input, #empMexpModalTable input {
   width: 100%;
-  padding: 8px 10px;
+  padding: 8px 12px;
   border: 1.5px solid var(--bd);
   border-radius: 8px;
   background: var(--bg2);
@@ -5217,39 +5244,226 @@ body.dark-mode .tg-expand-btn:hover {
   box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.2);
 }
 
-/* ── Mobile Item Stack inside Modal ── */
+.mexp-modal-field-lbl {
+  display: none;
+}
+
+.mexp-modal-card-mobile-top {
+  display: none;
+}
+
+.mexp-modal-desktop-idx {
+  display: inline-block;
+  font-weight: bold;
+  font-size: 12px;
+  color: var(--tx2);
+  text-align: center;
+  width: 100%;
+}
+
+.mexp-modal-subtotal-val {
+  font-weight: 900;
+  color: #059669;
+  font-size: 13.5px;
+  text-align: center;
+  display: block;
+}
+
+.mexp-modal-del-btn-mobile {
+  padding: 4px 10px;
+  font-size: 11.5px;
+  font-weight: 800;
+  border-radius: 6px;
+  background: rgba(239, 68, 68, 0.12);
+  color: #ef4444;
+  border: 1px solid rgba(239, 68, 68, 0.3);
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.mexp-modal-del-btn-mobile:hover {
+  background: #ef4444;
+  color: #fff;
+}
+
+/* ── Mobile Layout (< 680px) ── */
 @media (max-width: 680px) {
-  .mexp-modal-body {
-    padding: 12px 14px;
+  /* Controls & Toolbar on Mobile */
+  .mexp-ctrl-bar {
+    flex-direction: column !important;
+    align-items: stretch !important;
+    gap: 10px !important;
   }
-  #mexpModalTable, #empMexpModalTable,
-  #mexpModalTable thead, #empMexpModalTable thead,
-  #mexpModalTable tbody, #empMexpModalTable tbody,
-  #mexpModalTable tr, #empMexpModalTable tr,
-  #mexpModalTable td, #empMexpModalTable td {
-    display: block !important;
+  .mexp-ctrl-item {
+    width: 100% !important;
+    min-width: 0 !important;
+    box-sizing: border-box !important;
+  }
+  .mexp-ctrl-item select,
+  .mexp-ctrl-item input {
+    min-width: 0 !important;
     width: 100% !important;
     box-sizing: border-box !important;
+  }
+  
+  .mexp-toolbar {
+    flex-direction: column !important;
+    align-items: stretch !important;
+    padding: 10px 12px !important;
+    gap: 8px !important;
+  }
+  .mexp-toolbar-primary,
+  .mexp-toolbar-secondary {
+    display: grid !important;
+    grid-template-columns: 1fr 1fr !important;
+    width: 100% !important;
+    gap: 8px !important;
+  }
+  .mexp-btn-add {
+    grid-column: 1 / -1 !important;
+    width: 100% !important;
+    text-align: center !important;
+    justify-content: center !important;
+    padding: 11px 14px !important;
+    font-size: 13.5px !important;
+  }
+  .mexp-btn-save,
+  .mexp-btn-print,
+  .mexp-btn-refresh {
+    width: 100% !important;
+    justify-content: center !important;
+    text-align: center !important;
+    padding: 9px 10px !important;
+    font-size: 12px !important;
+    white-space: nowrap !important;
+  }
+
+  /* Modal Dialog & Items on Mobile */
+  .mexp-modal-card {
+    border-radius: 16px !important;
+    max-height: 94vh !important;
+    margin: 4px !important;
+  }
+  .mexp-modal-body {
+    padding: 10px 12px !important;
+  }
+  
+  #mexpModalTable, #empMexpModalTable,
+  #mexpModalTable tbody, #empMexpModalTable tbody {
+    display: block !important;
+    width: 100% !important;
   }
   #mexpModalTable thead, #empMexpModalTable thead {
     display: none !important;
   }
+  
   #mexpModalTable tbody tr, #empMexpModalTable tbody tr {
-    background: var(--bg2) !important;
+    display: grid !important;
+    grid-template-columns: 1fr 1fr !important;
+    gap: 10px 12px !important;
+    background: var(--w) !important;
     border: 1.5px solid var(--bd) !important;
-    border-radius: 12px !important;
-    padding: 12px 14px !important;
-    margin-bottom: 12px !important;
-    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.03) !important;
+    border-radius: 14px !important;
+    padding: 14px 14px !important;
+    margin-bottom: 14px !important;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04) !important;
+    box-sizing: border-box !important;
   }
+  [data-theme='dark'] #mexpModalTable tbody tr,
+  [data-theme='dark'] #empMexpModalTable tbody tr {
+    background: rgba(255, 255, 255, 0.03) !important;
+    border-color: rgba(255, 255, 255, 0.12) !important;
+  }
+  
   #mexpModalTable td, #empMexpModalTable td {
+    display: block !important;
+    width: 100% !important;
     border: none !important;
-    padding: 4px 0 !important;
+    padding: 0 !important;
+    background: transparent !important;
+    box-sizing: border-box !important;
   }
-  .mexp-modal-mobile-row {
-    display: flex;
-    gap: 8px;
-    align-items: center;
+  
+  .mexp-modal-idx-td {
+    grid-column: 1 / -1 !important;
+  }
+  .mexp-modal-spender-td {
+    grid-column: 1 / -1 !important;
+  }
+  .mexp-modal-cat-td {
+    grid-column: 1 / -1 !important;
+  }
+  .mexp-modal-qty-td {
+    grid-column: 1 / 2 !important;
+  }
+  .mexp-modal-price-td {
+    grid-column: 2 / 3 !important;
+  }
+  .mexp-modal-subtotal-td,
+  .mexp-modal-del-td {
+    display: none !important;
+  }
+  
+  .mexp-modal-field-lbl {
+    display: flex !important;
+    align-items: center !important;
+    gap: 5px !important;
+    font-size: 11.5px !important;
+    font-weight: 800 !important;
+    color: var(--tx) !important;
+    margin-bottom: 4px !important;
+  }
+  .mexp-modal-desktop-idx {
+    display: none !important;
+  }
+  .mexp-modal-card-mobile-top {
+    display: flex !important;
+    justify-content: space-between !important;
+    align-items: center !important;
+    margin-bottom: 2px !important;
+    padding-bottom: 8px !important;
+    border-bottom: 1.5px dashed var(--bd) !important;
+  }
+  .mexp-modal-idx-pill {
+    font-size: 11.5px !important;
+    font-weight: 800 !important;
+    color: var(--tx) !important;
+    background: var(--bg3, rgba(0, 0, 0, 0.07)) !important;
+    padding: 3px 8px !important;
+    border-radius: 8px !important;
+  }
+  .mexp-modal-mobile-subtotal-badge {
+    font-size: 12px !important;
+    font-weight: 800 !important;
+    color: #059669 !important;
+    background: rgba(16, 185, 129, 0.12) !important;
+    padding: 3px 8px !important;
+    border-radius: 8px !important;
+  }
+
+  /* Modal Footer on Mobile */
+  .mexp-modal-foot {
+    flex-direction: column !important;
+    align-items: stretch !important;
+    padding: 12px 14px !important;
+    gap: 8px !important;
+  }
+  .mexp-modal-save-btn {
+    width: 100% !important;
+    justify-content: center !important;
+    padding: 12px 16px !important;
+    font-size: 14px !important;
+    font-weight: 900 !important;
+  }
+  .mexp-modal-foot-actions {
+    display: flex !important;
+    width: 100% !important;
+    gap: 8px !important;
+  }
+  .mexp-modal-foot-actions button {
+    flex: 1 !important;
+    justify-content: center !important;
+    padding: 9px 12px !important;
   }
 }
 
