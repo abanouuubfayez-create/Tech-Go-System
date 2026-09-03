@@ -29,6 +29,7 @@ service cloud.firestore {
 
     // مستند حالة النظام
     match /system/meta {
+      
       allow read: if true;
       allow create: if isSignedIn() && request.resource.data.setupDone == true;
       allow update: if isSignedIn() && resource.data.setupDone != true
@@ -161,9 +162,14 @@ service cloud.firestore {
       allow create, update, delete: if isAnyAdmin();
     }
 
-    // النماذج المحفوظة (المسودات) للأدمن
+    // النماذج المحفوظة (المسودات) للأدمن، وشيت المصروفات الشهري للموظف المسؤول المسجل
     match /savedForms/{formId} {
-      allow read, write: if isAnyAdmin();
+      allow read, write: if isAnyAdmin() || (isSignedIn() && formId.matches('^mexp_.*'));
+    }
+
+    // حركة شيت المصروفات الشهرية المباشرة
+    match /mexp_sheets/{monthId} {
+      allow read, write: if isSignedIn();
     }
 
     // نماذج تُرسل لموظف مُحدَّد ليملأها ويعيدها للأدمن (📨 إرسال نموذج للموظف)

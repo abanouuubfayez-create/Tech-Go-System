@@ -5473,16 +5473,28 @@ function mexpPopulateAssigneeSelect(emps) {
     var sel = document.getElementById('mexpAssignedEmp');
     if (!sel) return;
     var curVal = sel.value || (window._mexpConfig && (window._mexpConfig.mexpAssignedUid || window._mexpConfig.assignedUid) ? (window._mexpConfig.mexpAssignedUid || window._mexpConfig.assignedUid) : '');
+    var targetName = (window._mexpConfig && (window._mexpConfig.mexpAssignedName || window._mexpConfig.assignedName)) ? (window._mexpConfig.mexpAssignedName || window._mexpConfig.assignedName).trim() : '';
     var h = '<option value="">-- لم يتم تعيين موظف (الأدمن فقط) --</option>';
     (emps || []).forEach(function (e) {
         var label = e.name || '';
         if (e.jobTitle && !label.includes('(' + e.jobTitle + ')')) {
             label += ' (' + e.jobTitle + ')';
         }
-        h += '<option value="' + escH(e.uid) + '">' + escH(label) + '</option>';
+        h += '<option value="' + escH(e.uid) + '" data-email="' + escH(e.email || '') + '">' + escH(label) + '</option>';
     });
     sel.innerHTML = h;
-    if (curVal) sel.value = curVal;
+    if (curVal) {
+        sel.value = curVal;
+    }
+    if (!sel.value && targetName) {
+        for (var i = 0; i < sel.options.length; i++) {
+            var optText = sel.options[i].text.trim();
+            if (optText === targetName || optText.includes(targetName) || targetName.includes(optText)) {
+                sel.selectedIndex = i;
+                break;
+            }
+        }
+    }
 }
 
 function mexpSaveAssignee() {
@@ -5491,12 +5503,19 @@ function mexpSaveAssignee() {
     var uid = sel.value;
     var selectedOpt = sel.options[sel.selectedIndex];
     var name = selectedOpt ? selectedOpt.text : '';
+    var email = selectedOpt ? selectedOpt.getAttribute('data-email') : '';
+    if (!email && window._staffEmpCache) {
+        var empMatch = window._staffEmpCache.find(function (e) { return e.uid === uid || (e.name && name.includes(e.name)); });
+        if (empMatch) email = empMatch.email || '';
+    }
 
     var config = {
         mexpAssignedUid: uid,
         mexpAssignedName: name,
+        mexpAssignedEmail: email || '',
         assignedUid: uid,
         assignedName: name,
+        assignedEmail: email || '',
         mexpAssignedUpdatedAt: firebase.firestore.FieldValue.serverTimestamp(),
         mexpAssignedUpdatedBy: (window.TG_USER && TG_USER.name) ? TG_USER.name : 'الأدمن'
     };

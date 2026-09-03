@@ -67,7 +67,7 @@
     <link
         href="https://fonts.googleapis.com/css2?family=Alexandria:wght@300;400;500;600;700;800;900&family=Cairo:wght@400;600;700;800;900&family=Tajawal:wght@400;500;700;800&family=Inter:wght@400;500;600;700&display=swap"
         rel="stylesheet">
-    <link rel="stylesheet" href="styles.css?v=1788352506">
+    <link rel="stylesheet" href="styles.css?v=1788421588">
     <link rel="manifest" href="manifest.json">
     <link rel="icon" type="image/png" sizes="192x192" href="icon-192.png">
     <link rel="apple-touch-icon" href="icon-192.png">
@@ -75,10 +75,10 @@
     <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-storage-compat.js"></script>
-    <script src="firebase-config.js?v=1788352506"></script>
-    <script src="auth.js?v=1788352506"></script>
-    <script src="app.js?v=1788352506"></script>
-    <script src="formsend.js?v=1788352506"></script>
+    <script src="firebase-config.js?v=1788421588"></script>
+    <script src="auth.js?v=1788421588"></script>
+    <script src="app.js?v=1788421588"></script>
+    <script src="formsend.js?v=1788421588"></script>
     <script>
         (function () {
             const theme = localStorage.getItem('tg-theme') || 'light';
@@ -2940,6 +2940,7 @@
                 navigator.serviceWorker.register('./sw.js').catch(function () { });
             }
             if (typeof loadMyDocs === 'function') loadMyDocs();
+            if (typeof initEmpMexpAccessCheck === 'function') initEmpMexpAccessCheck();
 
             // Auto-expand textareas
             document.addEventListener('input', function (e) {
@@ -3475,8 +3476,8 @@
         تطوير وتصميم: أبانوب فايز</div>
     <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
-    <script src="theme.js?v=1788352506"></script>
-    <script src="pwa-install.js?v=1788352506"></script>
+    <script src="theme.js?v=1788421588"></script>
+    <script src="pwa-install.js?v=1788421588"></script>
 
 
     <!-- Incoming Meeting Call Modal -->
@@ -3817,7 +3818,7 @@
                 '    </div>' +
                 '    <div style="display:flex; align-items:center; gap:8px;">' +
                 '      <span style="background:rgba(245,158,11,0.12); color:#b45309; border:1px solid rgba(245,158,11,0.25); padding:2px 10px; border-radius:20px; font-size:11px; font-weight:800;">' + daysLabel + '</span>' +
-                '      <button type="button" onclick="tgDismissHolidayBanner('' + target.date + '')" style="background:none; border:none; color:var(--tx3); font-size:16px; cursor:pointer; padding:2px 6px; font-weight:bold;" title="إخفاء الإشعار">✕</button>' +
+                '      <button type="button" onclick="tgDismissHolidayBanner(\'' + target.date + '\')" style="background:none; border:none; color:var(--tx3); font-size:16px; cursor:pointer; padding:2px 6px; font-weight:bold;" title="إخفاء الإشعار">✕</button>' +
                 '    </div>' +
                 '  </div>' +
                 '  <div style="font-size:13px; line-height:1.75; color:var(--tx); font-weight:600;">' +
@@ -3860,7 +3861,7 @@
                 h += '    <div style="font-size:15px; font-weight:800; color:var(--tx);">' + esc(data.title) + '</div>';
                 h += '  </div>';
                 h += '  <div style="display:flex; align-items:center; gap:8px;">' + audienceBadge + 
-                     '    <button type="button" onclick="tgDismissEmpAnnouncement('' + esc(data.id) + '', this)" style="background:none; border:none; color:var(--tx3); font-size:14px; cursor:pointer; padding:2px 6px; font-weight:bold; border-radius:4px;" title="إخفاء / تمت القراءة">✕</button>' +
+                     '    <button type="button" onclick="tgDismissEmpAnnouncement(\'' + esc(data.id) + '\', this)" style="background:none; border:none; color:var(--tx3); font-size:14px; cursor:pointer; padding:2px 6px; font-weight:bold; border-radius:4px;" title="إخفاء / تمت القراءة">✕</button>' +
                      '  </div>';
                 h += '</div>';
                 h += '<div style="font-size:13px; line-height:1.75; color:var(--tx); white-space:pre-wrap; font-weight:600;">' + esc(data.content) + '</div>';
@@ -4510,18 +4511,37 @@
         };
 
         function initEmpMexpAccessCheck() {
-            var myUid = (typeof TG_USER !== 'undefined' && TG_USER) ? TG_USER.uid : '';
             var tab = document.getElementById('empTabMexp');
             var drawer = document.getElementById('empDrawerMexp');
 
             function applyAccess(cfg) {
+                var user = (typeof TG_USER !== 'undefined' && TG_USER) ? TG_USER : null;
+                var currentUid = user ? (user.uid || '') : '';
+                var currentEmail = user ? (user.email || '').toLowerCase().trim() : '';
+                var currentName = user ? (user.name || '').trim() : '';
+
                 var hasAccess = false;
                 var targetUid = (cfg && (cfg.mexpAssignedUid || cfg.assignedUid)) ? (cfg.mexpAssignedUid || cfg.assignedUid) : '';
-                if (targetUid && myUid && targetUid === myUid) {
-                    hasAccess = true;
-                } else if (typeof TG_USER !== 'undefined' && TG_USER && (TG_USER.role === 'admin' || TG_USER.isAdmin || TG_USER.role === 'tech_admin')) {
-                    hasAccess = true;
+                var targetName = (cfg && (cfg.mexpAssignedName || cfg.assignedName)) ? (cfg.mexpAssignedName || cfg.assignedName).trim() : '';
+                var targetEmail = (cfg && (cfg.mexpAssignedEmail || cfg.assignedEmail)) ? (cfg.mexpAssignedEmail || cfg.assignedEmail).toLowerCase().trim() : '';
+
+                if (user) {
+                    if (user.role === 'admin' || user.isAdmin || user.role === 'tech_admin') {
+                        hasAccess = true;
+                    } else if (targetUid && currentUid && targetUid === currentUid) {
+                        hasAccess = true;
+                    } else if (targetEmail && currentEmail && targetEmail === currentEmail) {
+                        hasAccess = true;
+                    } else if (targetName && currentName && (
+                        targetName === currentName ||
+                        targetName.includes(currentName) ||
+                        currentName.includes(targetName) ||
+                        (targetName.includes('كيرلس') && (currentName.includes('كيرلس') || currentEmail.includes('kirlos') || currentEmail.includes('kerolos')))
+                    )) {
+                        hasAccess = true;
+                    }
                 }
+
                 if (tab) tab.style.display = hasAccess ? 'flex' : 'none';
                 if (drawer) drawer.style.display = hasAccess ? 'flex' : 'none';
             }
@@ -4535,17 +4555,20 @@
                 applyAccess(window._appSettingsCache);
             }
 
-            if (typeof db !== 'undefined' && db && db.collection) {
+            if (!window._mexpAccessListenerInit && typeof db !== 'undefined' && db && db.collection) {
+                window._mexpAccessListenerInit = true;
                 db.collection('system').doc('appSettings').onSnapshot(function(doc) {
                     if (doc.exists) {
                         var cfg = doc.data() || {};
                         localStorage.setItem('tg_mexp_config', JSON.stringify(cfg));
+                        window._appSettingsCache = Object.assign(window._appSettingsCache || {}, cfg);
                         applyAccess(cfg);
                     }
                 }, function(e){});
             }
         }
 
+        window.initEmpMexpAccessCheck = initEmpMexpAccessCheck;
         // Initialize access check
         initEmpMexpAccessCheck();
 
@@ -4575,35 +4598,41 @@
             }
 
             if (typeof db !== 'undefined' && db && db.collection) {
+                var handleDocsSnap = function(snap) {
+                    var map = {};
+                    (window._allEmpAssignedDocs || []).forEach(function(d){ map[d.id] = d; });
+                    snap.forEach(function(doc) {
+                        var d = doc.data();
+                        d.id = doc.id;
+                        map[d.id] = d;
+                    });
+                    var list = Object.values(map);
+                    list.sort(function(a, b) {
+                        var ta = a.createdAt && a.createdAt.toMillis ? a.createdAt.toMillis() : 0;
+                        var tb = b.createdAt && b.createdAt.toMillis ? b.createdAt.toMillis() : 0;
+                        return tb - ta;
+                    });
+                    window._allEmpAssignedDocs = list;
+
+                    var pendingCount = list.filter(function(d){ return d.status === 'pending' || d.status === 'in_progress'; }).length;
+                    updateAssignedDocsBadge(pendingCount);
+
+                    // If user is currently on the assigneddocs page, re-render
+                    var pageEl = document.getElementById('epg-assigneddocs');
+                    if (pageEl && pageEl.classList.contains('a')) {
+                        empRenderAssignedDocs(window._allEmpAssignedDocs, window._currentEmpAssignedFilter || '');
+                    }
+                };
+
                 db.collection('assignedDocs').where('assignedToUid', '==', TG_USER.uid)
-                    .onSnapshot(function(snap) {
-                        window._allEmpAssignedDocs = [];
-                        var pendingCount = 0;
-                        snap.forEach(function(doc) {
-                            var d = doc.data();
-                            d.id = doc.id;
-                            window._allEmpAssignedDocs.push(d);
-                            if (d.status === 'pending' || d.status === 'in_progress') {
-                                pendingCount++;
-                            }
-                        });
-
-                        window._allEmpAssignedDocs.sort(function(a, b) {
-                            var ta = a.createdAt && a.createdAt.toMillis ? a.createdAt.toMillis() : 0;
-                            var tb = b.createdAt && b.createdAt.toMillis ? b.createdAt.toMillis() : 0;
-                            return tb - ta;
-                        });
-
-                        updateAssignedDocsBadge(pendingCount);
-
-                        // If user is currently on the assigneddocs page, re-render
-                        var pageEl = document.getElementById('epg-assigneddocs');
-                        if (pageEl && pageEl.classList.contains('a')) {
-                            empRenderAssignedDocs(window._allEmpAssignedDocs, window._currentEmpAssignedFilter || '');
-                        }
-                    }, function(err) {
+                    .onSnapshot(handleDocsSnap, function(err) {
                         console.warn('Assigned docs listener error:', err);
                     });
+
+                if (TG_USER.email) {
+                    db.collection('assignedDocs').where('assignedToEmail', '==', TG_USER.email)
+                        .onSnapshot(handleDocsSnap, function(err) {});
+                }
             }
         }
 
@@ -4917,7 +4946,11 @@
                 '  <div style="font-size:13px; font-weight:900; color:var(--tx); margin-top:8px; margin-bottom:4px;">✍️ استكمال وتعبئة بيانات النموذج:</div>' +
                 fieldsFormHtml +
                 '  <div style="display:flex; justify-content:space-between; align-items:center; gap:8px; margin-top:10px; border-top:1px solid var(--bd); padding-top:14px; flex-wrap:wrap;">' +
-                '    <button onclick="empPrintAssignedDoc(\'' + doc.id + '\')" class="bt bt-o" style="padding:9px 18px; font-size:12.5px; font-weight:bold;">🖨 طباعة رسمية</button>' +
+                '    <div style="display:flex; gap:8px; flex-wrap:wrap;">' +
+                '      <button onclick="empPrintAssignedDoc(\'' + doc.id + '\')" class="bt bt-o" style="padding:9px 18px; font-size:12.5px; font-weight:bold;">🖨 طباعة رسمية</button>' +
+                ((doc.formId === 'mexp' || formTpl === 'mexp' || (doc.formTitle && doc.formTitle.indexOf('مصروف') !== -1)) ?
+                    '      <button onclick="document.getElementById(\'empAssignedDocDetailModal\').style.display=\'none\'; empGo(\'mexp\');" class="bt bt-p" style="padding:9px 18px; font-size:12.5px; font-weight:800; background:linear-gradient(135deg, #059669, #047857); color:#fff; border-radius:8px;">💵 فتح شيت المصروفات للعمل عليه</button>' : '') +
+                '    </div>' +
                 '    <div style="display:flex; gap:8px;">' +
                 '      <button onclick="document.getElementById(\'empAssignedDocDetailModal\').style.display=\'none\'" class="bt bt-o" style="padding:9px 16px; font-size:12.5px; font-weight:bold;">إغلاق</button>' +
                 '      <button onclick="empSaveCompletedForm(\'' + doc.id + '\', this)" class="bt bt-p" style="padding:9px 24px; font-size:13px; font-weight:bold; background:linear-gradient(135deg, #0284c7, #0369a1); color:#fff; border-radius:8px; box-shadow:0 4px 12px rgba(2,132,199,0.3);">💾 حفظ التعديلات</button>' +
