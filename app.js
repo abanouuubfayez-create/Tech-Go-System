@@ -4128,11 +4128,11 @@ function renderWeeklyReportsInbox() {
                 <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px; border-top:1.5px dashed var(--bd); padding-top:14px; margin-top:12px;">
                     <div style="display:flex; gap:10px; flex-wrap:wrap;">
                         ${!isApproved ? `
-                            <button type="button" class="bt" style="background:linear-gradient(135deg,#10b981,#059669); color:#fff; font-weight:900; font-size:13px; padding:8px 20px; border-radius:30px; border:none; cursor:pointer; box-shadow:0 3px 12px rgba(16,185,129,0.35); display:inline-flex; align-items:center; gap:6px;" onclick="tgApproveWeeklyReport('${r.id}', '${r._collection || 'weeklyReports'}', '${r.uid}', '${escH(r.weekLabel || r.weekStart || '')}', this)">
+                            <button type="button" class="bt" style="background:linear-gradient(135deg,#10b981,#059669); color:#fff; font-weight:900; font-size:13px; padding:8px 20px; border-radius:30px; border:none; cursor:pointer; box-shadow:0 3px 12px rgba(16,185,129,0.35); display:inline-flex; align-items:center; gap:6px;" onclick="tgApproveWeeklyReport('${r.id}', '${r._collection || 'weeklyReports'}', '${r.uid}', '', this)">
                                 <span>✔</span> اعتماد وموافقة
                             </button>
                         ` : ''}
-                        <button type="button" class="bt bt-o" style="font-weight:800; font-size:13px; padding:8px 18px; border-radius:30px; display:inline-flex; align-items:center; gap:6px;" onclick="tgAddFeedbackToWeeklyReport('${r.id}', '${r._collection || 'weeklyReports'}', '${r.uid}', '${escH(r.weekLabel || r.weekStart || '')}')">
+                        <button type="button" class="bt bt-o" style="font-weight:800; font-size:13px; padding:8px 18px; border-radius:30px; display:inline-flex; align-items:center; gap:6px;" onclick="tgAddFeedbackToWeeklyReport('${r.id}', '${r._collection || 'weeklyReports'}', '${r.uid}')">
                             <span>💬</span> كتابة توجيه / ملاحظة
                         </button>
                         <button type="button" class="bt bt-o" style="font-weight:800; font-size:13px; padding:8px 18px; border-radius:30px; display:inline-flex; align-items:center; gap:6px;" onclick="printWeeklyReportInboxItem(${i})">
@@ -4319,49 +4319,127 @@ window.printWeeklyReportDoc = function(u, r) {
     }
 };
 
-function tgApproveWeeklyReport(id, colName, uid, weekLabel, btn) {
-    if (btn) { btn.disabled = true; btn.textContent = '⏳ ...'; }
-    var currentAdminName = (window.TG_USER && window.TG_USER.name) ? window.TG_USER.name : 'الإدارة العامة';
-    
-    var col = colName || 'weekly_reports';
+window.tgApproveWeeklyReport = function(id, colName, uid, weekLabel, btn) {
+    if (!id) return;
+    var targetDb = window.db || (typeof db !== 'undefined' ? db : (window.firebase ? firebase.firestore() : null));
+    if (!targetDb) {
+        alert('تعذر الاتصال بقاعدة البيانات.');
+        return;
+    }
+
+    if (colName && typeof colName === 'object' && colName.nodeType) {
+        btn = colName;
+        colName = null;
+    }
+
+    if (btn) {
+        btn.disabled = true;
+        btn.innerHTML = '<span>⏳</span> جاري الاعتماد...';
+    }
+
+    var currentAdminName = (window.TG_USER && (window.TG_USER.name || window.TG_USER.displayName)) 
+        ? (window.TG_USER.name || window.TG_USER.displayName) 
+        : 'الإدارة العامة';
+
+    var cached = (window._wkrInboxData || []).find(function (x) { return x.id === id; })
+        || (window._allWeeklyReports || []).find(function (x) { return x.id === id; });
+    if (cached) {
+        if (!uid) uid = cached.uid;
+        if (!weekLabel) weekLabel = cached.weekLabel || cached.weekStart || '';
+        if (!colName) colName = cached._collection;
+    }
+
     var updateData = {
         status: 'approved',
         reviewedByAdmin: true,
         reviewedBy: currentAdminName,
-        reviewedAt: new Date()
+        reviewedAt: new Date(),
+        adminNotes: 'تم الاعتماد رسمياً من الإدارة.'
     };
 
-    Promise.all([
-        db.collection('weekly_reports').doc(id).update(updateData).catch(function(){}),
-        db.collection('weeklyReports').doc(id).update(updateData).catch(function(){})
-    ]).then(function () {
-        // Send real-time notification to employee
+    var p1 = targetDb.collection('weekly_reports').doc(id).set(updateData, { merge: true }).catch(function (e) {
+        console.warn('weekly_reports update err:', e);
+    });
+    var p2 = targetDb.collection('weeklyReports').doc(id).set(updateData, { merge: true }).catch(function (e) {
+        console.warn('weeklyReports update err:', e);
+    });
+
+    Promise.all([p1, p2]).then(function () {
         if (uid) {
-            db.collection('notifications').add({
+            targetDb.collection('notifications').add({
                 toUid: uid,
                 title: '✅ تم اعتماد تقريرك الأسبوعي',
                 body: 'اعتمدت الإدارة تقريرك وخطة عملك لـ ' + (weekLabel || 'هذا الأسبوع') + ' بنجاح.',
                 tag: 'weekly-report-approved',
                 read: false,
                 createdAt: new Date()
-            }).catch(function(e){ console.warn("Notif send error:", e); });
+            }).catch(function (e) { console.warn("Notif send error:", e); });
         }
 
-        if (typeof tgToast === 'function') tgToast('✅ تم اعتماد التقرير وإشعار الموظف بنجاح!', 'ok');
-        loadWeeklyReportsInbox();
-    }).catch(function (err) {
-        if (btn) { btn.disabled = false; btn.textContent = '✔ اعتماد وموافقة'; }
-        if (typeof tgToast === 'function') tgToast('❌ تعذر الاعتماد: ' + err.message, 'err');
-    });
-}
+        if (cached) {
+            Object.assign(cached, updateData);
+        }
+        if (window._wkrInboxData) {
+            window._wkrInboxData.forEach(function (r) {
+                if (r.id === id) Object.assign(r, updateData);
+            });
+        }
+        if (window._allWeeklyReports) {
+            window._allWeeklyReports.forEach(function (r) {
+                if (r.id === id) Object.assign(r, updateData);
+            });
+        }
 
-function tgAddFeedbackToWeeklyReport(id, colName, uid, weekLabel) {
+        if (typeof tgToast === 'function') {
+            tgToast('✅ تم اعتماد التقرير وإشعار الموظف بنجاح!', 'ok');
+        } else if (typeof tgShowToast === 'function') {
+            tgShowToast('✅ تم اعتماد التقرير وإشعار الموظف بنجاح!');
+        } else {
+            alert('✅ تم اعتماد التقرير بنجاح!');
+        }
+
+        if (typeof renderWeeklyReportsInbox === 'function' && document.getElementById('wkrInboxList')) {
+            renderWeeklyReportsInbox();
+        }
+        if (typeof tgRenderWeeklyReportsAdmin === 'function' && document.getElementById('wkrAdminList')) {
+            tgRenderWeeklyReportsAdmin();
+        }
+    }).catch(function (err) {
+        if (btn) {
+            btn.disabled = false;
+            btn.innerHTML = '<span>✔</span> اعتماد وموافقة';
+        }
+        var msg = err ? err.message : 'خطأ غير معروف';
+        if (typeof tgToast === 'function') tgToast('❌ تعذر الاعتماد: ' + msg, 'err');
+        else alert('❌ تعذر الاعتماد: ' + msg);
+    });
+};
+
+window.tgAddFeedbackToWeeklyReport = function(id, colName, uid, weekLabel) {
+    if (!id) return;
     var feedback = prompt('اكتب توجيه أو ملاحظة الإدارة للموظف بخصوص هذا التقرير:');
     if (feedback === null) return;
     feedback = (feedback || '').trim();
     if (!feedback) return;
 
-    var currentAdminName = (window.TG_USER && window.TG_USER.name) ? window.TG_USER.name : 'الإدارة العامة';
+    var targetDb = window.db || (typeof db !== 'undefined' ? db : (window.firebase ? firebase.firestore() : null));
+    if (!targetDb) {
+        alert('تعذر الاتصال بقاعدة البيانات.');
+        return;
+    }
+
+    var cached = (window._wkrInboxData || []).find(function (x) { return x.id === id; })
+        || (window._allWeeklyReports || []).find(function (x) { return x.id === id; });
+    if (cached) {
+        if (!uid) uid = cached.uid;
+        if (!weekLabel) weekLabel = cached.weekLabel || cached.weekStart || '';
+        if (!colName) colName = cached._collection;
+    }
+
+    var currentAdminName = (window.TG_USER && (window.TG_USER.name || window.TG_USER.displayName)) 
+        ? (window.TG_USER.name || window.TG_USER.displayName) 
+        : 'الإدارة العامة';
+
     var updateData = {
         adminFeedback: feedback,
         adminNotes: feedback,
@@ -4370,57 +4448,200 @@ function tgAddFeedbackToWeeklyReport(id, colName, uid, weekLabel) {
         feedbackAt: new Date()
     };
 
-    Promise.all([
-        db.collection('weekly_reports').doc(id).update(updateData).catch(function(){}),
-        db.collection('weeklyReports').doc(id).update(updateData).catch(function(){})
-    ]).then(function () {
-        // Send real-time notification to employee
+    var p1 = targetDb.collection('weekly_reports').doc(id).set(updateData, { merge: true }).catch(function (e) {
+        console.warn('weekly_reports feedback err:', e);
+    });
+    var p2 = targetDb.collection('weeklyReports').doc(id).set(updateData, { merge: true }).catch(function (e) {
+        console.warn('weeklyReports feedback err:', e);
+    });
+
+    Promise.all([p1, p2]).then(function () {
         if (uid) {
-            db.collection('notifications').add({
+            targetDb.collection('notifications').add({
                 toUid: uid,
                 title: '💬 توجيه جديد من الإدارة',
                 body: 'بخصوص تقرير ' + (weekLabel || 'الأسبوع') + ': ' + feedback,
                 tag: 'weekly-report-feedback',
                 read: false,
                 createdAt: new Date()
-            }).catch(function(e){ console.warn("Notif send error:", e); });
+            }).catch(function (e) { console.warn("Notif send error:", e); });
         }
 
-        if (typeof tgToast === 'function') tgToast('✅ تم حفظ التوجيه وإرساله للموظف بنجاح!', 'ok');
-        loadWeeklyReportsInbox();
-    }).catch(function (err) {
-        if (typeof tgToast === 'function') tgToast('❌ تعذر حفظ الملاحظة: ' + err.message, 'err');
-    });
-}
+        if (cached) {
+            Object.assign(cached, updateData);
+        }
+        if (window._wkrInboxData) {
+            window._wkrInboxData.forEach(function (r) {
+                if (r.id === id) Object.assign(r, updateData);
+            });
+        }
+        if (window._allWeeklyReports) {
+            window._allWeeklyReports.forEach(function (r) {
+                if (r.id === id) Object.assign(r, updateData);
+            });
+        }
 
-function tgAdminDeleteWeeklyReport(id, colName) {
+        if (typeof tgToast === 'function') {
+            tgToast('✅ تم حفظ التوجيه وإرساله للموظف بنجاح!', 'ok');
+        } else if (typeof tgShowToast === 'function') {
+            tgShowToast('✅ تم حفظ التوجيه وإرساله للموظف بنجاح!');
+        } else {
+            alert('✅ تم حفظ التوجيه بنجاح!');
+        }
+
+        if (typeof renderWeeklyReportsInbox === 'function' && document.getElementById('wkrInboxList')) {
+            renderWeeklyReportsInbox();
+        }
+        if (typeof tgRenderWeeklyReportsAdmin === 'function' && document.getElementById('wkrAdminList')) {
+            tgRenderWeeklyReportsAdmin();
+        }
+    }).catch(function (err) {
+        var msg = err ? err.message : 'خطأ غير معروف';
+        if (typeof tgToast === 'function') tgToast('❌ تعذر حفظ الملاحظة: ' + msg, 'err');
+        else alert('❌ تعذر حفظ الملاحظة: ' + msg);
+    });
+};
+
+window.tgDeleteWeeklyReportAdmin = window.tgAdminDeleteWeeklyReport = window.tgDeleteWeeklyReport = function(id, colName) {
+    if (!id) return;
     if (!confirm('هل أنت متأكد من حذف هذا التقرير نهائياً؟')) return;
-    Promise.all([
-        db.collection('weekly_reports').doc(id).delete().catch(function(){}),
-        db.collection('weeklyReports').doc(id).delete().catch(function(){})
-    ]).then(function () {
-        if (typeof tgToast === 'function') tgToast('🗑 تم حذف التقرير بنجاح', 'ok');
-        loadWeeklyReportsInbox();
-    }).catch(function (err) {
-        alert('تعذر الحذف: ' + err.message);
-    });
-}
 
-function tgSendWeeklyReportReminderToEmployees() {
+    var targetDb = window.db || (typeof db !== 'undefined' ? db : (window.firebase ? firebase.firestore() : null));
+    if (!targetDb) {
+        alert('تعذر الاتصال بقاعدة البيانات.');
+        return;
+    }
+
+    var p1 = targetDb.collection('weekly_reports').doc(id).delete().catch(function (e) {
+        console.warn('Delete weekly_reports err:', e);
+    });
+    var p2 = targetDb.collection('weeklyReports').doc(id).delete().catch(function (e) {
+        console.warn('Delete weeklyReports err:', e);
+    });
+
+    Promise.all([p1, p2]).then(function () {
+        if (window._wkrInboxData) {
+            window._wkrInboxData = window._wkrInboxData.filter(function (r) { return r.id !== id; });
+        }
+        if (window._wkrInboxFiltered) {
+            window._wkrInboxFiltered = window._wkrInboxFiltered.filter(function (r) { return r.id !== id; });
+        }
+        if (window._allWeeklyReports) {
+            window._allWeeklyReports = window._allWeeklyReports.filter(function (r) { return r.id !== id; });
+        }
+
+        if (typeof tgToast === 'function') {
+            tgToast('🗑 تم حذف التقرير بنجاح', 'ok');
+        } else if (typeof tgShowToast === 'function') {
+            tgShowToast('🗑 تم حذف التقرير بنجاح');
+        } else {
+            alert('🗑 تم حذف التقرير بنجاح');
+        }
+
+        if (typeof renderWeeklyReportsInbox === 'function' && document.getElementById('wkrInboxList')) {
+            renderWeeklyReportsInbox();
+        }
+        if (typeof tgRenderWeeklyReportsAdmin === 'function' && document.getElementById('wkrAdminList')) {
+            tgRenderWeeklyReportsAdmin();
+        }
+        if (typeof tgRenderWeeklyReportsEmp === 'function') {
+            tgRenderWeeklyReportsEmp();
+        }
+        if (typeof loadWeeklyReportsEmp === 'function') {
+            loadWeeklyReportsEmp();
+        }
+    }).catch(function (err) {
+        var msg = err ? err.message : 'خطأ غير معروف';
+        if (typeof tgToast === 'function') tgToast('❌ تعذر الحذف: ' + msg, 'err');
+        else alert('❌ تعذر الحذف: ' + msg);
+    });
+};
+
+window.tgRejectWeeklyReportModal = function(reportId) {
+    if (!reportId) return;
+    var note = prompt("ادخل ملاحظات التعديل للموظف:");
+    if (note === null) return;
+    note = (note || '').trim();
+    if (!note) return;
+
+    var targetDb = window.db || (typeof db !== 'undefined' ? db : (window.firebase ? firebase.firestore() : null));
+    if (!targetDb) {
+        alert('تعذر الاتصال بقاعدة البيانات.');
+        return;
+    }
+
+    var cached = (window._wkrInboxData || []).find(function (x) { return x.id === reportId; })
+        || (window._allWeeklyReports || []).find(function (x) { return x.id === reportId; });
+
+    var updateData = {
+        status: 'rejected',
+        adminNotes: note,
+        adminFeedback: note,
+        reviewedAt: new Date()
+    };
+
+    var p1 = targetDb.collection('weekly_reports').doc(reportId).set(updateData, { merge: true }).catch(function () { });
+    var p2 = targetDb.collection('weeklyReports').doc(reportId).set(updateData, { merge: true }).catch(function () { });
+
+    Promise.all([p1, p2]).then(function () {
+        if (cached && cached.uid) {
+            targetDb.collection('notifications').add({
+                toUid: cached.uid,
+                title: '✏️ ملاحظات تعديل على التقرير الأسبوعي',
+                body: 'طلب تعديل التقرير: ' + note,
+                tag: 'weekly-report-rejected',
+                read: false,
+                createdAt: new Date()
+            }).catch(function () { });
+        }
+
+        if (cached) Object.assign(cached, updateData);
+        if (window._wkrInboxData) {
+            window._wkrInboxData.forEach(function (r) {
+                if (r.id === reportId) Object.assign(r, updateData);
+            });
+        }
+        if (window._allWeeklyReports) {
+            window._allWeeklyReports.forEach(function (r) {
+                if (r.id === reportId) Object.assign(r, updateData);
+            });
+        }
+
+        if (typeof tgToast === 'function') tgToast('✏️ تمت إعادة التقرير للموظف للتعديل', 'ok');
+        else if (typeof tgShowToast === 'function') tgShowToast('✏️ تمت إعادة التقرير للموظف للتعديل');
+
+        if (typeof renderWeeklyReportsInbox === 'function' && document.getElementById('wkrInboxList')) {
+            renderWeeklyReportsInbox();
+        }
+        if (typeof tgRenderWeeklyReportsAdmin === 'function' && document.getElementById('wkrAdminList')) {
+            tgRenderWeeklyReportsAdmin();
+        }
+    });
+};
+
+window.tgSendWeeklyReportReminderToEmployees = function() {
     if (!confirm('هل ترغب في إرسال إشعار تذكير فوري لكافة الموظفين بتقديم التقرير والخطة الأسبوعية؟')) return;
-    
-    db.collection('users').where('role', '==', 'employee').get().then(function(snap) {
+
+    var targetDb = window.db || (typeof db !== 'undefined' ? db : (window.firebase ? firebase.firestore() : null));
+    if (!targetDb) {
+        alert('تعذر الاتصال بقاعدة البيانات.');
+        return;
+    }
+
+    targetDb.collection('users').get().then(function(snap) {
         if (snap.empty) {
-            alert('لا يوجد موظفين مسجلين حالياً.');
+            alert('لا يوجد موظفون مسجلون حالياً.');
             return;
         }
 
-        var batch = db.batch();
+        var batch = targetDb.batch();
         var count = 0;
         snap.forEach(function(doc) {
             var u = doc.data();
-            if (u.disabled !== true && u.active !== false) {
-                var notifRef = db.collection('notifications').doc();
+            var isEmp = (u.role === 'employee' || !u.role || u.role === 'staff');
+            var isActive = (u.active !== false && u.disabled !== true && u.status !== 'disabled' && u.isArchived !== true);
+            if (isEmp && isActive) {
+                var notifRef = targetDb.collection('notifications').doc();
                 batch.set(notifRef, {
                     toUid: doc.id,
                     title: '🚨 تذكير بتقديم التقرير والخطة الأسبوعية',
@@ -4433,14 +4654,19 @@ function tgSendWeeklyReportReminderToEmployees() {
             }
         });
 
+        if (count === 0) {
+            alert('لا يوجد موظفون مفعلون لإرسال التذكير لهم.');
+            return;
+        }
+
         return batch.commit().then(function() {
             if (typeof tgToast === 'function') tgToast('🔔 تم إرسال تذكير فوري لـ ' + count + ' موظف بنجاح!', 'ok');
-            else alert('تم إرسال تذكير لـ ' + count + ' موظف بنجاح.');
+            else alert('🔔 تم إرسال تذكير فوري لـ ' + count + ' موظف بنجاح!');
         });
     }).catch(function(err) {
-        alert('تعذر إرسال التذكيرات: ' + err.message);
+        alert('تعذر إرسال التذكيرات: ' + (err ? err.message : ''));
     });
-}
+};
 
 function printAchievementDoc(u, a) {
     var h = H('توثيق إنجاز', 'إنجاز مُسجّل من الموظف', 'ACHIEVEMENT RECORD', 'ach');
@@ -15631,50 +15857,7 @@ window.tgSubmitWeeklyReport = function (e) {
     });
 };
 
-window.tgApproveWeeklyReport = function (reportId) {
-    if (!window.db || !reportId) return;
-    db.collection('weekly_reports').doc(reportId).update({
-        status: 'approved',
-        adminNotes: 'تم الاعتماد رسمياً من الإدارة.'
-    }).then(function () {
-        if (typeof tgShowToast === 'function') tgShowToast('✅ تم اعتماد التقرير الأسبوعي!');
-        if (typeof tgRenderWeeklyReportsAdmin === 'function') tgRenderWeeklyReportsAdmin();
-    });
-};
-
-window.tgRejectWeeklyReportModal = function (reportId) {
-    var note = prompt("ادخل ملاحظات التعديل للموظف:");
-    if (note === null) return;
-    db.collection('weekly_reports').doc(reportId).update({
-        status: 'rejected',
-        adminNotes: note
-    }).then(function () {
-        if (typeof tgShowToast === 'function') tgShowToast('إعادة التقرير الأسبوعي للموظف للتعديل.');
-        if (typeof tgRenderWeeklyReportsAdmin === 'function') tgRenderWeeklyReportsAdmin();
-    });
-};
-
-window.tgDeleteWeeklyReport = function (reportId) {
-    if (!reportId) return;
-    if (!confirm("هل أنت تأكد من رغبتك في حذف هذا التقرير الأسبوعي نهائياً؟")) return;
-
-    if (window._allWeeklyReports) {
-        window._allWeeklyReports = window._allWeeklyReports.filter(function (r) { return r.id !== reportId; });
-    }
-
-    var p1 = db.collection('weekly_reports').doc(reportId).delete().catch(function () { });
-    var p2 = db.collection('weeklyReports').doc(reportId).delete().catch(function () { });
-
-    Promise.all([p1, p2]).then(function () {
-        if (typeof tgShowToast === 'function') tgShowToast('🗑 تم حذف التقرير الأسبوعي بنجاح!');
-        else alert('🗑 تم حذف التقرير الأسبوعي بنجاح!');
-
-        if (typeof tgRenderWeeklyReportsAdmin === 'function') tgRenderWeeklyReportsAdmin();
-        if (typeof loadWeeklyReportsEmp === 'function') loadWeeklyReportsEmp();
-    }).catch(function (err) {
-        alert("حدث خطأ أثناء الحذف: " + (err ? err.message : ''));
-    });
-};
+// Note: tgApproveWeeklyReport, tgRejectWeeklyReportModal, and tgDeleteWeeklyReport are defined globally as unified handlers earlier in app.js.
 
 window.tgPrintWeeklyReport = function (reportId) {
     if (!reportId) return;
@@ -16453,19 +16636,6 @@ window.tgPrintWeeklyReport = function(id) {
     var r = (window._allWeeklyReports || []).find(function(x){ return x.id === id; });
     if (!r) return;
     printWeeklyReportDoc(window.TG_USER || {}, r);
-};
-
-window.tgDeleteWeeklyReport = function(id) {
-    if (!confirm('هل أنت متأكد من حذف هذا التقرير؟')) return;
-    Promise.all([
-        db.collection('weekly_reports').doc(id).delete().catch(function(){}),
-        db.collection('weeklyReports').doc(id).delete().catch(function(){})
-    ]).then(function(){
-        if (typeof tgToast === 'function') tgToast('🗑 تم حذف التقرير', 'ok');
-        tgRenderWeeklyReportsEmp();
-    }).catch(function(err){
-        alert('تعذر الحذف: ' + err.message);
-    });
 };
 
 window.tgRenderMonthlyReportsEmp = function (retryCount) {
