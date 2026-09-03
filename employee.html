@@ -67,7 +67,7 @@
     <link
         href="https://fonts.googleapis.com/css2?family=Alexandria:wght@300;400;500;600;700;800;900&family=Cairo:wght@400;600;700;800;900&family=Tajawal:wght@400;500;700;800&family=Inter:wght@400;500;600;700&display=swap"
         rel="stylesheet">
-    <link rel="stylesheet" href="styles.css?v=1788434610">
+    <link rel="stylesheet" href="styles.css?v=1788446331">
     <link rel="manifest" href="manifest.json">
     <link rel="icon" type="image/png" sizes="192x192" href="icon-192.png">
     <link rel="apple-touch-icon" href="icon-192.png">
@@ -75,10 +75,10 @@
     <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-storage-compat.js"></script>
-    <script src="firebase-config.js?v=1788434610"></script>
-    <script src="auth.js?v=1788434610"></script>
-    <script src="app.js?v=1788434610"></script>
-    <script src="formsend.js?v=1788434610"></script>
+    <script src="firebase-config.js?v=1788446331"></script>
+    <script src="auth.js?v=1788446331"></script>
+    <script src="app.js?v=1788446331"></script>
+    <script src="formsend.js?v=1788446331"></script>
     <script>
         (function () {
             const theme = localStorage.getItem('tg-theme') || 'light';
@@ -3457,10 +3457,12 @@
             else if (tag === 'name-change' || tag === 'achievement-new') clickTab('ach');
             else if (tag === 'project-new' || tag === 'project-update' || tag === 'project-status' || tag === 'project-progress' || tag === 'project-note' || tag === 'project-completed') clickTab('proj');
             else if (tag === 'task-new' || tag === 'task-update' || tag === 'task-status') clickTab('tasks');
-            else if (tag === 'weekly-report-new' || tag === 'weekly-report-reminder' || tag === 'monthly-report-new' || tag === 'monthly-plan-new') {
+            else if (tag === 'weekly-report-new' || tag === 'weekly-report-reminder' || tag === 'weekly-report-approved' || tag === 'weekly-report-feedback' || tag === 'weekly-report-rejected' || tag === 'monthly-report-new' || tag === 'monthly-report-approved' || tag === 'monthly-report-rejected' || tag === 'monthly-plan-new') {
                 clickTab('wkr');
+                if (typeof loadWeeklyReportsEmp === 'function') loadWeeklyReportsEmp();
+                if (typeof tgRenderWeeklyReportsEmp === 'function') tgRenderWeeklyReportsEmp();
                 if (typeof tgOpenReportDetailsModal === 'function') {
-                    tgOpenReportDetailsModal(id, 'weekly_reports');
+                    tgOpenReportDetailsModal(id, (tag.indexOf('monthly') !== -1 ? 'monthly_reports' : 'weekly_reports'));
                 }
             }
             else if (tag === 'emp-doc-personal' || tag === 'emp-doc-direct') clickTab('docs');
@@ -3476,8 +3478,8 @@
         تطوير وتصميم: أبانوب فايز</div>
     <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
-    <script src="theme.js?v=1788434610"></script>
-    <script src="pwa-install.js?v=1788434610"></script>
+    <script src="theme.js?v=1788446331"></script>
+    <script src="pwa-install.js?v=1788446331"></script>
 
 
     <!-- Incoming Meeting Call Modal -->
@@ -5793,22 +5795,43 @@ window.empMexpLoadData = function(showToast) {
             savePromise.then(function(docRef) {
                 var repId = editId || (docRef ? docRef.id : '');
                 
-                // Notify Admins
+                var notifTitle = '📊 تقرير وخطة أسبوعية جديدة';
+                var notifBody = 'قام ' + empName + ' بتقديم تقريره وخطة عمله لـ ' + weekCalc.label;
+                var notifTag = 'weekly-report-new';
+                var notifExtra = {
+                    reportId: repId,
+                    empUid: myUid,
+                    empName: empName,
+                    weekLabel: weekCalc.label,
+                    collection: 'weeklyReports'
+                };
+
+                // 1. إرسال إشعار فوري لجميع المدراء (يدخل في جرس الإشعارات والإشعارات المنبثقة)
+                if (typeof tgNotifyAdmins === 'function') {
+                    tgNotifyAdmins(notifTitle, notifBody, notifTag, notifExtra);
+                } else if (typeof tgNotifyAdminsReportSubmitted === 'function') {
+                    tgNotifyAdminsReportSubmitted(notifTitle, empName, 'تقريره وخطة عمله لـ ' + weekCalc.label, notifTag, repId);
+                }
+
+                // 2. تسجيل الإشعار في مجموعة admin_notifications أيضاً لدعم التنبيهات المباشرة
                 db.collection('admin_notifications').add({
-                    title: '📊 تقرير وخطة أسبوعية جديدة',
-                    body: 'قام ' + empName + ' بتقديم تقريره وخطة عمله لـ ' + weekCalc.label,
-                    tag: 'weekly-report-new',
+                    title: notifTitle,
+                    body: notifBody,
+                    tag: notifTag,
                     empUid: myUid,
                     empName: empName,
                     reportId: repId,
+                    weekLabel: weekCalc.label,
                     read: false,
+                    seen: false,
                     createdAt: new Date()
                 }).catch(function(e){ console.warn("Admin notif issue:", e); });
 
                 var modal = document.getElementById('tgWeeklyReportModalOverlay');
                 if (modal) modal.style.display = 'none';
 
-                alert('✅ تم إرسال تقريرك وخطتك للإدارة بنجاح!');
+                if (typeof tgToast === 'function') tgToast('✅ تم إرسال تقريرك وخطتك للإدارة بنجاح!', 'ok');
+                else alert('✅ تم إرسال تقريرك وخطتك للإدارة بنجاح!');
                 tgRenderWeeklyReportsEmp();
             }).catch(function(err) {
                 alert('تعذر حفظ التقرير: ' + err.message);

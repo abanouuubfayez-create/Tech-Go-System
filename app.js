@@ -4319,6 +4319,41 @@ window.printWeeklyReportDoc = function(u, r) {
     }
 };
 
+window.tgResolveReportUid = function(r, passedUid) {
+    if (passedUid && passedUid !== 'undefined' && passedUid !== 'null') {
+        return passedUid;
+    }
+    if (!r) return '';
+    if (r.uid && r.uid !== 'undefined' && r.uid !== 'null') return r.uid;
+    if (r.empUid && r.empUid !== 'undefined' && r.empUid !== 'null') return r.empUid;
+    if (r.createdBy && r.createdBy !== 'undefined' && r.createdBy !== 'null') return r.createdBy;
+    if (r.userId && r.userId !== 'undefined' && r.userId !== 'null') return r.userId;
+    if (r.employeeUid && r.employeeUid !== 'undefined' && r.employeeUid !== 'null') return r.employeeUid;
+    if (r.targetUid && r.targetUid !== 'undefined' && r.targetUid !== 'null') return r.targetUid;
+
+    var email = (r.empEmail || r.email || '').trim().toLowerCase();
+    var name = (r.empName || r.name || '').trim();
+    var users = window._wkrInboxUsers || window._usersCache || window._allEmployeesCache;
+    if (users) {
+        if (Array.isArray(users)) {
+            var found = users.find(function(u) {
+                return (email && u.email && u.email.trim().toLowerCase() === email) ||
+                       (name && u.name && u.name.trim() === name);
+            });
+            if (found && (found.uid || found.id)) return found.uid || found.id;
+        } else if (typeof users === 'object') {
+            for (var k in users) {
+                var u = users[k];
+                if ((email && u.email && u.email.trim().toLowerCase() === email) ||
+                    (name && u.name && u.name.trim() === name)) {
+                    return k || u.uid || u.id;
+                }
+            }
+        }
+    }
+    return '';
+};
+
 window.tgApproveWeeklyReport = function(id, colName, uid, weekLabel, btn) {
     if (!id) return;
     var targetDb = window.db || (typeof db !== 'undefined' ? db : (window.firebase ? firebase.firestore() : null));
@@ -4343,10 +4378,10 @@ window.tgApproveWeeklyReport = function(id, colName, uid, weekLabel, btn) {
 
     var cached = (window._wkrInboxData || []).find(function (x) { return x.id === id; })
         || (window._allWeeklyReports || []).find(function (x) { return x.id === id; });
-    if (cached) {
-        if (!uid) uid = cached.uid;
-        if (!weekLabel) weekLabel = cached.weekLabel || cached.weekStart || '';
-        if (!colName) colName = cached._collection;
+    
+    var targetUid = tgResolveReportUid(cached, uid);
+    if (!weekLabel && cached) {
+        weekLabel = cached.weekLabel || cached.weekStart || '';
     }
 
     var updateData = {
@@ -4365,15 +4400,27 @@ window.tgApproveWeeklyReport = function(id, colName, uid, weekLabel, btn) {
     });
 
     Promise.all([p1, p2]).then(function () {
-        if (uid) {
-            targetDb.collection('notifications').add({
-                toUid: uid,
-                title: '✅ تم اعتماد تقريرك الأسبوعي',
-                body: 'اعتمدت الإدارة تقريرك وخطة عملك لـ ' + (weekLabel || 'هذا الأسبوع') + ' بنجاح.',
-                tag: 'weekly-report-approved',
-                read: false,
-                createdAt: new Date()
-            }).catch(function (e) { console.warn("Notif send error:", e); });
+        if (targetUid) {
+            if (typeof tgSendPushToUser === 'function') {
+                tgSendPushToUser(
+                    targetUid,
+                    '✅ تم اعتماد تقريرك الأسبوعي',
+                    'اعتمدت الإدارة تقريرك وخطة عملك لـ ' + (weekLabel || 'هذا الأسبوع') + ' بنجاح.',
+                    'weekly-report-approved',
+                    { reportId: id, weekLabel: weekLabel, collection: 'weekly_reports' }
+                );
+            } else {
+                targetDb.collection('notifications').add({
+                    toUid: targetUid,
+                    title: '✅ تم اعتماد تقريرك الأسبوعي',
+                    body: 'اعتمدت الإدارة تقريرك وخطة عملك لـ ' + (weekLabel || 'هذا الأسبوع') + ' بنجاح.',
+                    tag: 'weekly-report-approved',
+                    reportId: id,
+                    read: false,
+                    seen: false,
+                    createdAt: firebase.firestore.FieldValue.serverTimestamp()
+                }).catch(function (e) { console.warn("Notif send error:", e); });
+            }
         }
 
         if (cached) {
@@ -4430,10 +4477,10 @@ window.tgAddFeedbackToWeeklyReport = function(id, colName, uid, weekLabel) {
 
     var cached = (window._wkrInboxData || []).find(function (x) { return x.id === id; })
         || (window._allWeeklyReports || []).find(function (x) { return x.id === id; });
-    if (cached) {
-        if (!uid) uid = cached.uid;
-        if (!weekLabel) weekLabel = cached.weekLabel || cached.weekStart || '';
-        if (!colName) colName = cached._collection;
+    
+    var targetUid = tgResolveReportUid(cached, uid);
+    if (!weekLabel && cached) {
+        weekLabel = cached.weekLabel || cached.weekStart || '';
     }
 
     var currentAdminName = (window.TG_USER && (window.TG_USER.name || window.TG_USER.displayName)) 
@@ -4456,15 +4503,27 @@ window.tgAddFeedbackToWeeklyReport = function(id, colName, uid, weekLabel) {
     });
 
     Promise.all([p1, p2]).then(function () {
-        if (uid) {
-            targetDb.collection('notifications').add({
-                toUid: uid,
-                title: '💬 توجيه جديد من الإدارة',
-                body: 'بخصوص تقرير ' + (weekLabel || 'الأسبوع') + ': ' + feedback,
-                tag: 'weekly-report-feedback',
-                read: false,
-                createdAt: new Date()
-            }).catch(function (e) { console.warn("Notif send error:", e); });
+        if (targetUid) {
+            if (typeof tgSendPushToUser === 'function') {
+                tgSendPushToUser(
+                    targetUid,
+                    '💬 توجيه جديد من الإدارة',
+                    'بخصوص تقرير ' + (weekLabel || 'الأسبوع') + ': ' + feedback,
+                    'weekly-report-feedback',
+                    { reportId: id, weekLabel: weekLabel, feedback: feedback, collection: 'weekly_reports' }
+                );
+            } else {
+                targetDb.collection('notifications').add({
+                    toUid: targetUid,
+                    title: '💬 توجيه جديد من الإدارة',
+                    body: 'بخصوص تقرير ' + (weekLabel || 'الأسبوع') + ': ' + feedback,
+                    tag: 'weekly-report-feedback',
+                    reportId: id,
+                    read: false,
+                    seen: false,
+                    createdAt: firebase.firestore.FieldValue.serverTimestamp()
+                }).catch(function (e) { console.warn("Notif send error:", e); });
+            }
         }
 
         if (cached) {
@@ -4559,7 +4618,7 @@ window.tgDeleteWeeklyReportAdmin = window.tgAdminDeleteWeeklyReport = window.tgD
 
 window.tgRejectWeeklyReportModal = function(reportId) {
     if (!reportId) return;
-    var note = prompt("ادخل ملاحظات التعديل للموظف:");
+    var note = prompt("ادخل ملاحظات وطلب التعديل للموظف بخصوص هذا التقرير الأسبوعي:");
     if (note === null) return;
     note = (note || '').trim();
     if (!note) return;
@@ -4573,6 +4632,8 @@ window.tgRejectWeeklyReportModal = function(reportId) {
     var cached = (window._wkrInboxData || []).find(function (x) { return x.id === reportId; })
         || (window._allWeeklyReports || []).find(function (x) { return x.id === reportId; });
 
+    var targetUid = tgResolveReportUid(cached);
+
     var updateData = {
         status: 'rejected',
         adminNotes: note,
@@ -4584,15 +4645,27 @@ window.tgRejectWeeklyReportModal = function(reportId) {
     var p2 = targetDb.collection('weeklyReports').doc(reportId).set(updateData, { merge: true }).catch(function () { });
 
     Promise.all([p1, p2]).then(function () {
-        if (cached && cached.uid) {
-            targetDb.collection('notifications').add({
-                toUid: cached.uid,
-                title: '✏️ ملاحظات تعديل على التقرير الأسبوعي',
-                body: 'طلب تعديل التقرير: ' + note,
-                tag: 'weekly-report-rejected',
-                read: false,
-                createdAt: new Date()
-            }).catch(function () { });
+        if (targetUid) {
+            if (typeof tgSendPushToUser === 'function') {
+                tgSendPushToUser(
+                    targetUid,
+                    '✏️ ملاحظات تعديل على التقرير الأسبوعي',
+                    'طلب تعديل التقرير: ' + note,
+                    'weekly-report-rejected',
+                    { reportId: reportId, note: note, collection: 'weekly_reports' }
+                );
+            } else {
+                targetDb.collection('notifications').add({
+                    toUid: targetUid,
+                    title: '✏️ ملاحظات تعديل على التقرير الأسبوعي',
+                    body: 'طلب تعديل التقرير: ' + note,
+                    tag: 'weekly-report-rejected',
+                    reportId: reportId,
+                    read: false,
+                    seen: false,
+                    createdAt: firebase.firestore.FieldValue.serverTimestamp()
+                }).catch(function () { });
+            }
         }
 
         if (cached) Object.assign(cached, updateData);
@@ -4648,7 +4721,8 @@ window.tgSendWeeklyReportReminderToEmployees = function() {
                     body: 'تذكير رسمي من الإدارة: يرجى كتابة وتقديم تقرير إنجازاتك وخطة الأسبوع القادم.',
                     tag: 'weekly-report-reminder',
                     read: false,
-                    createdAt: new Date()
+                    seen: false,
+                    createdAt: firebase.firestore.FieldValue.serverTimestamp()
                 });
                 count++;
             }
@@ -13273,17 +13347,32 @@ window.tgSubmitMonthlyReport = function (e) {
 
 window.tgApproveMonthlyReport = function (reportId) {
     if (!window.db || !reportId) return;
-    var p1 = db.collection('monthly_reports').doc(reportId).update({
+    var targetDb = window.db || (typeof db !== 'undefined' ? db : (window.firebase ? firebase.firestore() : null));
+    var p1 = targetDb.collection('monthly_reports').doc(reportId).update({
         status: 'approved',
         adminNotes: 'تم الاعتماد رسمياً من الإدارة.'
     }).catch(function () { });
-    var p2 = db.collection('monthlyReports').doc(reportId).update({
+    var p2 = targetDb.collection('monthlyReports').doc(reportId).update({
         status: 'approved',
         adminNotes: 'تم الاعتماد رسمياً من الإدارة.'
     }).catch(function () { });
 
+    targetDb.collection('monthly_reports').doc(reportId).get().then(function (doc) {
+        var data = doc.exists ? doc.data() : {};
+        var targetUid = tgResolveReportUid(data);
+        if (targetUid && typeof tgSendPushToUser === 'function') {
+            tgSendPushToUser(
+                targetUid,
+                '✅ تم اعتماد تقريرك الشهري',
+                'اعتمدت الإدارة تقريرك الشهري لشهر ' + (data.monthYear || '') + ' بنجاح.',
+                'monthly-report-approved',
+                { reportId: reportId, monthYear: data.monthYear, collection: 'monthly_reports' }
+            );
+        }
+    }).catch(function () { });
+
     Promise.all([p1, p2]).then(function () {
-        if (typeof tgShowToast === 'function') tgShowToast('✅ تم اعتماد التقرير الشهري بنجاح!');
+        if (typeof tgShowToast === 'function') tgShowToast('✅ تم اعتماد التقرير الشهري وإشعار الموظف بنجاح!');
         else alert('✅ تم اعتماد التقرير الشهري بنجاح!');
 
         if (typeof tgRenderMonthlyReportsAdminInUnified === 'function') tgRenderMonthlyReportsAdminInUnified();
@@ -13297,14 +13386,31 @@ window.tgRejectMonthlyReportModal = function (reportId) {
     if (!window.db || !reportId) return;
     var note = prompt("ادخل ملاحظات التعديل للموظف حول التقرير الشهري:");
     if (note === null) return;
+    note = (note || '').trim();
+    if (!note) return;
 
-    var p1 = db.collection('monthly_reports').doc(reportId).update({
+    var targetDb = window.db || (typeof db !== 'undefined' ? db : (window.firebase ? firebase.firestore() : null));
+    var p1 = targetDb.collection('monthly_reports').doc(reportId).update({
         status: 'rejected',
         adminNotes: note
     }).catch(function () { });
-    var p2 = db.collection('monthlyReports').doc(reportId).update({
+    var p2 = targetDb.collection('monthlyReports').doc(reportId).update({
         status: 'rejected',
         adminNotes: note
+    }).catch(function () { });
+
+    targetDb.collection('monthly_reports').doc(reportId).get().then(function (doc) {
+        var data = doc.exists ? doc.data() : {};
+        var targetUid = tgResolveReportUid(data);
+        if (targetUid && typeof tgSendPushToUser === 'function') {
+            tgSendPushToUser(
+                targetUid,
+                '✏️ ملاحظات تعديل على التقرير الشهري',
+                'طلب تعديل التقرير الشهري: ' + note,
+                'monthly-report-rejected',
+                { reportId: reportId, note: note, collection: 'monthly_reports' }
+            );
+        }
     }).catch(function () { });
 
     Promise.all([p1, p2]).then(function () {
@@ -16534,21 +16640,37 @@ window.tgSubmitWeeklyReportAndPlan = function(editId) {
     savePromise.then(function(docRef) {
         var repId = editId || (docRef ? docRef.id : '');
         
-        // Notify Admins
+        var notifTitle = '📊 تقرير وخطة أسبوعية جديدة';
+        var notifBody = 'قام ' + empName + ' بتقديم تقريره وخطة عمله لـ ' + weekCalc.label;
+        var notifTag = 'weekly-report-new';
+        var notifExtra = {
+            reportId: repId,
+            empUid: myUid,
+            empName: empName,
+            weekLabel: weekCalc.label,
+            collection: 'weeklyReports'
+        };
+
+        // 1. إرسال إشعار فوري لجميع المدراء (يدخل في جرس الإشعارات والإشعارات المنبثقة)
+        if (typeof tgNotifyAdmins === 'function') {
+            tgNotifyAdmins(notifTitle, notifBody, notifTag, notifExtra);
+        } else if (typeof tgNotifyAdminsReportSubmitted === 'function') {
+            tgNotifyAdminsReportSubmitted(notifTitle, empName, 'تقريره وخطة عمله لـ ' + weekCalc.label, notifTag, repId);
+        }
+
+        // 2. تسجيل الإشعار في مجموعة admin_notifications أيضاً لدعم التنبيهات المباشرة
         db.collection('admin_notifications').add({
-            title: '📊 تقرير وخطة أسبوعية جديدة',
-            body: 'قام ' + empName + ' بتقديم تقريره وخطة عمله لـ ' + weekCalc.label,
-            tag: 'weekly-report-new',
+            title: notifTitle,
+            body: notifBody,
+            tag: notifTag,
             empUid: myUid,
             empName: empName,
             reportId: repId,
+            weekLabel: weekCalc.label,
             read: false,
+            seen: false,
             createdAt: new Date()
         }).catch(function(e){ console.warn("Admin notif issue:", e); });
-
-        if (typeof tgNotifyAdmins === 'function') {
-            tgNotifyAdmins('📊 تقرير وخطة أسبوعية جديدة', 'قام ' + empName + ' بتقديم تقريره وخطة عمله لـ ' + weekCalc.label, 'weekly-report-new', { reportId: repId });
-        }
 
         var modal = document.getElementById('tgWeeklyReportModalOverlay');
         if (modal) modal.style.display = 'none';

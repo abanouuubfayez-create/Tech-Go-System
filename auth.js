@@ -201,6 +201,51 @@ function tgBroadcastPush(title, body, tag, excludeUid, extraData) {
     }).catch(function () { });
 }
 
+// إرسال إشعار لجميع مدراء النظام (Admins & Tech Admins)
+function tgNotifyAdmins(title, body, tag, extraData) {
+    if (!db || typeof tgSendPushToUser !== 'function') return;
+    
+    var sendToUids = function(adminUids) {
+        if (!adminUids || !adminUids.length) return;
+        var uniqueUids = Array.from(new Set(adminUids));
+        uniqueUids.forEach(function(adminId) {
+            tgSendPushToUser(adminId, title, body, tag, extraData || {});
+        });
+    };
+
+    db.collection('users').where('role', 'in', ['admin', 'tech_admin']).get().then(function (snap) {
+        if (!snap.empty) {
+            var uids = [];
+            snap.forEach(function (d) { uids.push(d.id); });
+            sendToUids(uids);
+        } else {
+            db.collection('users').get().then(function (allSnap) {
+                var uids = [];
+                allSnap.forEach(function (d) {
+                    var dat = d.data() || {};
+                    if (dat.role === 'admin' || dat.role === 'tech_admin' || dat.isAdmin === true) {
+                        uids.push(d.id);
+                    }
+                });
+                sendToUids(uids);
+            }).catch(function () { });
+        }
+    }).catch(function (err) {
+        console.warn('tgNotifyAdmins query fallback:', err);
+        db.collection('users').get().then(function (allSnap) {
+            var uids = [];
+            allSnap.forEach(function (d) {
+                var dat = d.data() || {};
+                if (dat.role === 'admin' || dat.role === 'tech_admin' || dat.isAdmin === true) {
+                    uids.push(d.id);
+                }
+            });
+            sendToUids(uids);
+        }).catch(function () { });
+    });
+}
+window.tgNotifyAdmins = tgNotifyAdmins;
+
 // استماع للإشعارات الواردة للمستخدم الحالي (يقرأه من onSnapshot عند فتح البوابة)
 var _tgMyNotifUnsub = null;
 var _tgMyNotifShownIds = {}; // درع إضافي: يمنع إعادة عرض نفس الإشعار مرتين في نفس الجلسة حتى لو فشل تحديث Firestore
@@ -254,35 +299,83 @@ function tgListenMyNotifications(uid) {
         }, function () { });
 }
 
-// ─── مركز الإشعارات (Facebook-style) — للأدمن فقط ─────────────────────────
+// ─── مركز الإشعارات (Facebook-style) ─────────────────────────
 // يستمع لكل إشعارات المستخدم (مقروءة وغير مقروءة) ويستدعي onUpdate(list, unreadCount) في كل تحديث
 var _tgNotifCenterUnsub = null;
+var _tgAdminNotifCenterUnsub = null;
 function tgListenNotifCenter(uid, onUpdate) {
     if (!uid || typeof onUpdate !== 'function') return;
     if (_tgNotifCenterUnsub) { _tgNotifCenterUnsub(); _tgNotifCenterUnsub = null; }
-    // بدون orderBy لتفادي الحاجة لفهرس مركّب — الترتيب يتم في العميل
+    if (_tgAdminNotifCenterUnsub) { _tgAdminNotifCenterUnsub(); _tgAdminNotifCenterUnsub = null; }
+
+    var userNotifs = [];
+    var adminNotifs = [];
+    var isAdmin = window.TG_USER && (window.TG_USER.role === 'admin' || window.TG_USER.role === 'tech_admin');
+
+    function mergeAndPublish() {
+        var map = {};
+        var combined = [];
+        var unread = 0;
+
+        userNotifs.forEach(function (n) {
+            var k = (n.tag && n.reportId) ? (n.tag + '_' + n.reportId) : n.id;
+            map[k] = n;
+        });
+
+        adminNotifs.forEach(function (n) {
+            var k = (n.tag && n.reportId) ? (n.tag + '_' + n.reportId) : n.id;
+            if (!map[k]) {
+                map[k] = n;
+            }
+        });
+
+        Object.keys(map).forEach(function (k) {
+            var d = map[k];
+            if (!d.read) unread++;
+            combined.push(d);
+        });
+
+        combined.sort(function (a, b) {
+            var ta = (a.createdAt && a.createdAt.toMillis) ? a.createdAt.toMillis() : (a.createdAt ? new Date(a.createdAt).getTime() : 0);
+            var tb = (b.createdAt && b.createdAt.toMillis) ? b.createdAt.toMillis() : (b.createdAt ? new Date(b.createdAt).getTime() : 0);
+            return tb - ta;
+        });
+
+        onUpdate(combined.slice(0, 50), unread);
+    }
+
     _tgNotifCenterUnsub = db.collection('notifications').where('toUid', '==', uid)
         .onSnapshot(function (snap) {
-            var list = [];
-            var unread = 0;
+            userNotifs = [];
             snap.forEach(function (doc) {
                 var d = doc.data();
                 d.id = doc.id;
-                if (!d.read) unread++;
-                list.push(d);
+                userNotifs.push(d);
             });
-            list.sort(function (a, b) {
-                var ta = (a.createdAt && a.createdAt.toMillis) ? a.createdAt.toMillis() : (a.createdAt ? new Date(a.createdAt).getTime() : 0);
-                var tb = (b.createdAt && b.createdAt.toMillis) ? b.createdAt.toMillis() : (b.createdAt ? new Date(b.createdAt).getTime() : 0);
-                return tb - ta;
-            });
-            onUpdate(list.slice(0, 40), unread);
+            mergeAndPublish();
         }, function () { });
+
+    if (isAdmin) {
+        try {
+            _tgAdminNotifCenterUnsub = db.collection('admin_notifications').limit(40)
+                .onSnapshot(function (snap) {
+                    adminNotifs = [];
+                    snap.forEach(function (doc) {
+                        var d = doc.data();
+                        d.id = doc.id;
+                        d._isAdminNotif = true;
+                        adminNotifs.push(d);
+                    });
+                    mergeAndPublish();
+                }, function () { });
+        } catch (e) { }
+    }
 }
 
 function tgMarkNotifRead(notifId) {
     if (!notifId) return;
     db.collection('notifications').doc(notifId).update({ read: true, seen: true }).catch(function () { });
+    db.collection('admin_notifications').doc(notifId).update({ read: true, seen: true }).catch(function () { });
 }
 
 function tgMarkAllNotifsRead(uid) {
@@ -296,13 +389,22 @@ function tgMarkAllNotifsRead(uid) {
                     count++;
                 }
             });
-            console.log('Marked ' + count + ' notifications as read.');
+            console.log('Marked ' + count + ' user notifications as read.');
         }).catch(function (e) { console.error('Mark all read error:', e); });
+
+    if (window.TG_USER && (window.TG_USER.role === 'admin' || window.TG_USER.role === 'tech_admin')) {
+        db.collection('admin_notifications').where('read', '==', false).get().then(function (snap) {
+            snap.forEach(function (doc) {
+                db.collection('admin_notifications').doc(doc.id).update({ read: true, seen: true }).catch(function () { });
+            });
+        }).catch(function () { });
+    }
 }
 
 function tgDeleteNotif(notifId) {
     if (!notifId) return;
     db.collection('notifications').doc(notifId).delete().catch(function () { });
+    db.collection('admin_notifications').doc(notifId).delete().catch(function () { });
 }
 
 // هل المستخدم الحالي لديه صلاحية الأدمن الكاملة؟
