@@ -738,7 +738,7 @@ function go(id, nav, force) {
     }
 
     var c = document.getElementById("pg-" + id);
-    if (id !== "dash" && (c.innerHTML.trim() === "" || id === "wkr")) { load(id, c); upCN(); setD(c) }
+    if (id !== "dash" && (c.innerHTML.trim() === "" || id === "wkr" || id === "mexp" || force)) { load(id, c); upCN(); setD(c) }
     // Reset global table filter
     var gf = document.getElementById("globalTableFilter");
     if (gf) { gf.value = ""; tgFilterVisibleTables(""); }
@@ -5106,15 +5106,6 @@ function fmtMoney(n) {
 function mexpKey() {
     var mi = document.getElementById('mexp-month');
     return 'tg_mexp_' + (mi && mi.value ? mi.value : '');
-}
-
-function mexpInit() {
-    var mi = document.getElementById('mexp-month');
-    if (mi && !mi.value) {
-        var d = new Date();
-        mi.value = d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0');
-    }
-    mexpLoad();
 }
 
 // ─── MONTHLY EXPENSE SHEET (mexp) - DAILY GROUPED ARCHITECTURE ───────────
