@@ -5274,243 +5274,178 @@ function mexpRenderDays(days) {
     if (!container) return;
     container.innerHTML = '';
 
-    if (!days || days.length === 0) {
-        mexpAddNewDay();
+    window._mexpDaysData = Array.isArray(days) ? days : [];
+
+    // Sort days chronologically
+    window._mexpDaysData.sort(function (a, b) {
+        return (a.date || '').localeCompare(b.date || '');
+    });
+
+    if (window._mexpDaysData.length === 0) {
+        // Render Empty Guide Card
+        var emptyCard = document.createElement('div');
+        emptyCard.className = 'mexp-add-day-card';
+        emptyCard.onclick = function () { mexpOpenNewDayModal(); };
+        emptyCard.innerHTML =
+            '<div class="mexp-add-day-icon">➕</div>' +
+            '<div style="font-size:15px;font-weight:900;">تسجيل أول يوم في الشهر (Pop-up 📅)</div>' +
+            '<span style="font-size:11.5px;opacity:0.8;">لا توجد أيام مسجلة بعد. اضغط هنا لتوثيق اليوم الأول ومصروفاته.</span>';
+        container.appendChild(emptyCard);
     } else {
-        days.forEach(function (d, idx) {
-            mexpAddNewDay(d, idx);
+        window._mexpDaysData.forEach(function (d, idx) {
+            var dDate = d.date || '';
+            var dayName = (typeof mexpGetDayName === 'function') ? mexpGetDayName(dDate) : '';
+            var items = (d.items || []).filter(function (it) {
+                return (it.spender && it.spender.trim()) || (it.cat && it.cat.trim()) || (parseFloat(it.price || 0) > 0);
+            });
+
+            var dayTotal = 0;
+            items.forEach(function (it) {
+                var q = parseFloat(it.qty || '1') || 1;
+                var p = parseFloat(it.price || '0') || 0;
+                dayTotal += (q * p);
+            });
+
+            var snippetsHtml = '';
+            if (items.length > 0) {
+                var previewItems = items.slice(0, 2);
+                snippetsHtml = previewItems.map(function (it) {
+                    var sp = it.spender ? escH(it.spender) + ': ' : '';
+                    var ct = it.cat ? escH(it.cat) : 'مصروف';
+                    var pr = parseFloat(it.price || 0) > 0 ? ' (' + parseFloat(it.price).toFixed(2) + ' ج.م)' : '';
+                    return '<div class="mexp-day-item-snippet">• ' + sp + ct + pr + '</div>';
+                }).join('');
+                if (items.length > 2) {
+                    snippetsHtml += '<div style="font-size:10.5px;color:#0284c7;font-weight:700;">+ ' + (items.length - 2) + ' بنود إضافية...</div>';
+                }
+            } else {
+                snippetsHtml = '<div style="font-size:11px;color:var(--tx3);font-style:italic;">لم يتم إدخال بنود بعد</div>';
+            }
+
+            var card = document.createElement('div');
+            card.className = 'mexp-day-card';
+            card.setAttribute('data-day-idx', idx);
+            card.title = 'اضغط لتعديل وتفاصيل مصروفات هذا اليوم';
+            card.onclick = function () { mexpEditDayModal(idx); };
+
+            card.innerHTML =
+                '<div class="mexp-day-card-top">' +
+                '  <div class="mexp-day-badge-wrap">' +
+                '    <span class="mexp-day-name-tag">📅 ' + escH(dayName || 'اليوم') + '</span>' +
+                '    <span class="mexp-day-date-str">' + escH(dDate) + '</span>' +
+                '  </div>' +
+                '  <button type="button" class="mexp-day-del-btn" onclick="event.stopPropagation(); mexpRemoveDay(' + idx + ');" title="حذف هذا اليوم بالكامل">🗑</button>' +
+                '</div>' +
+                '<div class="mexp-day-card-body">' +
+                '  <div class="mexp-day-total-badge">' +
+                '    <span style="font-size:11.5px;font-weight:700;opacity:0.85;">إجمالي اليوم:</span>' +
+                '    <span>' + fmtMoney(dayTotal) + '</span>' +
+                '  </div>' +
+                '  <div class="mexp-day-card-items-preview">' + snippetsHtml + '</div>' +
+                '</div>' +
+                '<div class="mexp-day-card-foot">' +
+                '  <span class="mexp-day-count-tag">📋 ' + items.length + ' ' + (items.length === 1 ? 'بند مسجل' : (items.length === 2 ? 'بندان' : 'بنود')) + '</span>' +
+                '  <span class="mexp-day-edit-hint">✏️ تعديل / إضافة ↗</span>' +
+                '</div>';
+
+            container.appendChild(card);
         });
+
+        // Add "+ New Day" Card at the end of the grid
+        var addCard = document.createElement('div');
+        addCard.className = 'mexp-add-day-card';
+        addCard.onclick = function () { mexpOpenNewDayModal(); };
+        addCard.innerHTML =
+            '<div class="mexp-add-day-icon">➕</div>' +
+            '<div>تسجيل يوم جديد (Pop-up 📅)</div>' +
+            '<span style="font-size:11px;opacity:0.75;font-weight:600;">انقر لفتح نافذة التوثيق</span>';
+        container.appendChild(addCard);
     }
+
     mexpCalc();
     mexpUpdateSpenderSuggestions();
+    mexpUpdatePrintContainer();
 }
 
 function mexpAddNewDay(dayData, dayIdx) {
-    var container = document.getElementById('mexp-days-container');
-    if (!container) return;
-
-    var mi = document.getElementById('mexp-month');
-    var monthVal = mi && mi.value ? mi.value : '';
-    var d = new Date();
-    var todayStr = d.toISOString().split('T')[0];
-    var defDate = todayStr;
-
+    // Helper to add day and re-render
+    window._mexpDaysData = window._mexpDaysData || [];
     if (dayData && dayData.date) {
-        defDate = dayData.date;
-    } else {
-        var existingDates = document.querySelectorAll('#mexp-days-container .mexp-day-date');
-        if (existingDates.length > 0) {
-            var lastVal = existingDates[existingDates.length - 1].value;
-            if (lastVal) {
-                var lastD = new Date(lastVal);
-                lastD.setDate(lastD.getDate() + 1);
-                defDate = lastD.toISOString().split('T')[0];
-            }
-        } else if (monthVal) {
-            defDate = monthVal + '-01';
-        }
+        window._mexpDaysData.push(dayData);
     }
-
-    var dayName = mexpGetDayName(defDate);
-    var dayCard = document.createElement('div');
-    dayCard.className = 'mexp-day-card';
-    if (dayIdx !== undefined) dayCard.setAttribute('data-day-idx', dayIdx);
-
-    dayCard.innerHTML =
-        '<div class="mexp-day-header" onclick="mexpToggleDayCard(this, event)">' +
-        '  <div class="mexp-day-info">' +
-        '    <button type="button" class="mexp-day-toggle-btn" onclick="event.preventDefault(); event.stopPropagation(); mexpToggleDayCard(this, event);" title="طي أو تمدد بنود هذا اليوم">' +
-        '      <span class="mexp-toggle-icon">▲</span> <span class="mexp-toggle-text">طي</span>' +
-        '    </button>' +
-        '    <span style="font-size:15px;">📅</span>' +
-        '    <label class="mexp-day-date-label" style="font-weight:800; font-size:12.5px; color:#e2e8f0;">تاريخ اليوم:</label>' +
-        '    <input type="date" class="mexp-day-date" value="' + escH(defDate) + '" onchange="mexpUpdateDayHeader(this)" onclick="event.stopPropagation()">' +
-        '    <span class="mexp-day-date-text">' + escH(defDate) + '</span>' +
-        '    <span class="mexp-day-name-badge" style="background:rgba(201,162,39,0.2); color:#fbbf24; border:1px solid rgba(251,191,36,0.35); padding:2px 8px; border-radius:14px; font-size:11.5px; font-weight:800;">' + escH(dayName || 'اليوم') + '</span>' +
-        '  </div>' +
-        '  <div class="mexp-day-actions">' +
-        '    <div class="mexp-day-total-wrap" style="font-size:12px; color:#cbd5e1; font-weight:700;">إجمالي اليوم: <strong class="mexp-day-total" style="color:#34d399; font-size:13.5px; font-weight:900;">0.00 ج.م</strong></div>' +
-        '    <div class="mexp-day-actions-btns" style="display:flex; align-items:center; gap:6px;">' +
-        '      <button type="button" class="bt bt-o" style="padding:5px 12px; font-size:11.5px; font-weight:800; border-radius:6px; background:rgba(255,255,255,0.12); color:#fff; border-color:rgba(255,255,255,0.3);" onclick="event.preventDefault(); event.stopPropagation(); mexpEditDayModal(this);" title="تعديل هذا اليوم في نافذة منبثقة"><span style="font-size:12px;">✏️</span> تعديل (Pop-up)</button>' +
-        '      <button type="button" class="bt bt-p" style="padding:5px 12px; font-size:11.5px; font-weight:800; border-radius:6px;" onclick="event.preventDefault(); event.stopPropagation(); mexpAddDayItem(this);">➕ بند جديد</button>' +
-        '      <button type="button" class="bt bt-d" style="padding:5px 10px; font-size:11.5px; font-weight:800; border-radius:6px; background:rgba(239,68,68,0.2); color:#fca5a5; border-color:rgba(239,68,68,0.4);" onclick="event.preventDefault(); event.stopPropagation(); mexpRemoveDay(this);" title="حذف هذا اليوم بالكامل">🗑 حذف</button>' +
-        '    </div>' +
-        '  </div>' +
-        '</div>' +
-        '<div class="mexp-day-body">' +
-        '  <div class="mexp-table-scroll">' +
-        '    <table class="dt" style="width:100%; border-collapse:collapse; margin:0;">' +
-        '      <thead><tr>' +
-        '        <th style="width:36px; text-align:center;">م</th>' +
-        '        <th style="width:34%;">اسم الصارف</th>' +
-        '        <th style="width:38%;">النوع / البند</th>' +
-        '        <th style="width:80px; text-align:center;">العدد</th>' +
-        '        <th style="width:115px; text-align:center;">السعر (ج.م)</th>' +
-        '        <th class="np" style="width:36px; text-align:center;"></th>' +
-        '      </tr></thead>' +
-        '      <tbody class="mexp-day-tbody"></tbody>' +
-        '    </table>' +
-        '  </div>' +
-        '</div>';
-
-    container.appendChild(dayCard);
-    var tbody = dayCard.querySelector('.mexp-day-tbody');
-
-    if (dayData && Array.isArray(dayData.items) && dayData.items.length > 0) {
-        dayData.items.forEach(function (item) {
-            mexpAddDayItem(tbody, item);
-        });
-    } else {
-        mexpAddDayItem(tbody);
-    }
-
-    mexpCalc();
+    mexpRenderDays(window._mexpDaysData);
 }
 
 function mexpToggleDayCard(el, evt) {
-    if (evt) {
-        var t = evt.target;
-        if (t && (t.tagName === 'INPUT' || (t.closest && (t.closest('input') || t.closest('.bt'))))) {
-            return;
-        }
-    }
-    var card = el.closest ? el.closest('.mexp-day-card') : null;
-    if (!card) return;
-    card.classList.toggle('collapsed');
-    var isCol = card.classList.contains('collapsed');
-    var tIcon = card.querySelector('.mexp-toggle-icon');
-    var tText = card.querySelector('.mexp-toggle-text');
-    if (tIcon) tIcon.innerText = isCol ? '▼' : '▲';
-    if (tText) tText.innerText = isCol ? 'عرض' : 'طي';
+    // Kept for backward compatibility
 }
 
 function mexpToggleAllDays(expand) {
-    document.querySelectorAll('#mexp-days-container .mexp-day-card').forEach(function (card) {
-        if (expand) {
-            card.classList.remove('collapsed');
-        } else {
-            card.classList.add('collapsed');
-        }
-        var isCol = card.classList.contains('collapsed');
-        var tIcon = card.querySelector('.mexp-toggle-icon');
-        var tText = card.querySelector('.mexp-toggle-text');
-        if (tIcon) tIcon.innerText = isCol ? '▼' : '▲';
-        if (tText) tText.innerText = isCol ? 'عرض' : 'طي';
-    });
+    // Kept for backward compatibility
 }
 
 function mexpAddDayItem(btnOrTbody, itemData) {
-    var tbody = null;
-    var card = null;
-    if (btnOrTbody && btnOrTbody.tagName === 'TBODY') {
-        tbody = btnOrTbody;
-        card = tbody.closest('.mexp-day-card');
-    } else if (btnOrTbody) {
-        card = btnOrTbody.closest('.mexp-day-card');
-        if (card) tbody = card.querySelector('.mexp-day-tbody');
-    }
-    if (!tbody) {
-        var allCards = document.querySelectorAll('#mexp-days-container .mexp-day-card');
-        if (allCards.length > 0) {
-            card = allCards[allCards.length - 1];
-            tbody = card.querySelector('.mexp-day-tbody');
-        }
-    }
-    if (!tbody) return;
-
-    if (card) {
-        card.classList.remove('collapsed');
-        var tIcon = card.querySelector('.mexp-toggle-icon');
-        var tText = card.querySelector('.mexp-toggle-text');
-        if (tIcon) tIcon.innerText = '▲';
-        if (tText) tText.innerText = 'طي';
-    }
-
-    var tr = document.createElement('tr');
-    var qtyVal = (itemData && itemData.qty !== undefined && itemData.qty !== null && itemData.qty !== '') ? String(itemData.qty) : '';
-    var priceVal = (itemData && itemData.price !== undefined && itemData.price !== null && itemData.price !== '') ? String(itemData.price) : '';
-    var idx = tbody.children.length + 1;
-
-    tr.innerHTML =
-        '<td class="mexp-idx-td" style="font-weight:bold; font-size:11px; text-align:center;">' +
-        '  <div class="mexp-mobile-row-top">' +
-        '    <span class="mexp-idx-badge" style="font-size:12px; font-weight:800; color:var(--tx); background:rgba(0,0,0,0.06); padding:2px 8px; border-radius:12px;">بند رقم: <b class="mexp-idx">' + idx + '</b></span>' +
-        '    <button type="button" class="bt bt-d" style="padding:4px 8px;font-size:11px;border-radius:6px;" onclick="event.preventDefault(); event.stopPropagation(); mexpDelRow(this);" title="حذف هذا البند">🗑 حذف البند</button>' +
-        '  </div>' +
-        '  <span class="np mexp-desktop-idx-span" style="display:inline-block;">' + idx + '</span>' +
-        '</td>' +
-        '<td class="mexp-spender-td"><div class="mexp-field-group"><label class="mexp-field-label">اسم الصارف:</label><input type="text" class="mexp-spender" autocomplete="off" spellcheck="false" value="' + escH(itemData && itemData.spender || '') + '"></div></td>' +
-        '<td class="mexp-cat-td"><div class="mexp-field-group"><label class="mexp-field-label">النوع / البند:</label><input type="text" class="mexp-cat" autocomplete="off" spellcheck="false" value="' + escH(itemData && itemData.cat || '') + '"></div></td>' +
-        '<td class="mexp-qty-td"><div class="mexp-field-group"><label class="mexp-field-label">العدد:</label><input type="number" min="1" step="1" class="mexp-qty" style="text-align:center; font-weight:700;" autocomplete="off" value="' + escH(qtyVal) + '" oninput="mexpCalc()"></div></td>' +
-        '<td class="mexp-price-td"><div class="mexp-field-group"><label class="mexp-field-label">السعر (ج.م):</label><input type="number" step="0.01" min="0" class="mexp-price" style="text-align:center; font-weight:700;" autocomplete="off" value="' + escH(priceVal) + '" oninput="mexpCalc()"></div></td>' +
-        '<td class="np mexp-del-td" style="text-align:center"><button type="button" class="bt bt-d" style="padding:3px 7px;font-size:11px;border-radius:4px;" onclick="event.preventDefault(); event.stopPropagation(); mexpDelRow(this);" title="حذف هذا البند">✕</button></td>';
-
-    tbody.appendChild(tr);
-    mexpCalc();
+    // Kept for backward compatibility
 }
 
 function mexpDelRow(btn) {
-    var tr = btn ? btn.closest('tr') : null;
-    var tbody = tr ? tr.closest('tbody') : null;
-    if (tr) tr.remove();
-    if (tbody) {
-        tbody.querySelectorAll('tr').forEach(function (r, i) {
-            var idxEl = r.querySelector('.mexp-idx');
-            if (idxEl) idxEl.innerText = i + 1;
-            var dtIdx = r.querySelector('.mexp-desktop-idx-span');
-            if (dtIdx) dtIdx.innerText = i + 1;
-        });
-    }
-    mexpCalc();
+    // Kept for backward compatibility
 }
 
 function mexpUpdateDayHeader(dateInp) {
-    if (!dateInp) return;
-    var card = dateInp.closest('.mexp-day-card');
-    if (!card) return;
-    var badge = card.querySelector('.mexp-day-name-badge');
-    if (badge) badge.innerText = mexpGetDayName(dateInp.value) || 'اليوم';
-    var dateTxt = card.querySelector('.mexp-day-date-text');
-    if (dateTxt) dateTxt.innerText = dateInp.value || '';
+    // Kept for backward compatibility
 }
 
-function mexpRemoveDay(btn) {
-    var card = btn.closest('.mexp-day-card');
-    if (card) {
-        var dateInp = card.querySelector('.mexp-day-date');
-        var dStr = dateInp ? dateInp.value : '';
-        if (confirm('هل أنت متأكد من حذف يوم (' + (dStr || '') + ') بكافة بنوده ومصروفاته؟')) {
-            card.remove();
-            mexpCalc();
-            mexpSave();
-        }
+function mexpRemoveDay(identifier) {
+    window._mexpDaysData = window._mexpDaysData || [];
+    var targetIdx = -1;
+    if (typeof identifier === 'number') {
+        targetIdx = identifier;
+    } else if (typeof identifier === 'string') {
+        targetIdx = window._mexpDaysData.findIndex(function (d) { return d.date === identifier; });
+    }
+
+    if (targetIdx < 0 || targetIdx >= window._mexpDaysData.length) return;
+    var dStr = window._mexpDaysData[targetIdx].date;
+    if (confirm('هل أنت متأكد من حذف يوم (' + (dStr || '') + ') بكافة بنوده ومصروفاته؟')) {
+        window._mexpDaysData.splice(targetIdx, 1);
+        mexpRenderDays(window._mexpDaysData);
+        mexpSave();
+        if (typeof tgToast === 'function') tgToast('🗑 تم حذف اليوم بنجاح', 'ok');
+        else if (typeof tgShowToast === 'function') tgShowToast('🗑 تم حذف اليوم بنجاح');
     }
 }
 
 function mexpCalc() {
     var grandTotal = 0;
     var daysCount = 0;
+    var itemsCount = 0;
 
-    document.querySelectorAll('#mexp-days-container .mexp-day-card').forEach(function (card) {
-        daysCount++;
-        var dayTotal = 0;
-        card.querySelectorAll('.mexp-day-tbody tr').forEach(function (tr) {
-            var qInp = tr.querySelector('.mexp-qty');
-            var pInp = tr.querySelector('.mexp-price');
-            var q = parseFloat(qInp ? qInp.value : '1') || 1;
-            var p = parseFloat(pInp ? pInp.value : '0') || 0;
-            dayTotal += (q * p);
+    (window._mexpDaysData || []).forEach(function (d) {
+        var dayItems = (d.items || []).filter(function (it) {
+            return (it.spender && it.spender.trim()) || (it.cat && it.cat.trim()) || (parseFloat(it.price || 0) > 0);
         });
-        var dayTotalEl = card.querySelector('.mexp-day-total');
-        if (dayTotalEl) dayTotalEl.innerText = dayTotal.toFixed(2) + ' ج.م';
-        grandTotal += dayTotal;
+
+        if (d.date || dayItems.length > 0) {
+            daysCount++;
+        }
+
+        dayItems.forEach(function (it) {
+            var q = parseFloat(it.qty || '1') || 1;
+            var p = parseFloat(it.price || '0') || 0;
+            grandTotal += (q * p);
+            itemsCount++;
+        });
     });
 
     var gt = document.getElementById('mexp-grand-total');
-    if (gt) gt.innerText = grandTotal.toFixed(2) + ' ج.م';
+    if (gt) gt.innerText = fmtMoney(grandTotal);
 
     var dc = document.getElementById('mexp-days-count');
     if (dc) dc.innerText = daysCount + ' يوم';
+
+    var ic = document.getElementById('mexp-items-count');
+    if (ic) ic.innerText = itemsCount + ' بند';
 }
 
 function mexpUpdateSpenderSuggestions() {
@@ -5518,9 +5453,11 @@ function mexpUpdateSpenderSuggestions() {
     if (!datalist) return;
     var namesSet = new Set();
 
-    document.querySelectorAll('.mexp-day-tbody .mexp-spender').forEach(function (inp) {
-        var v = (inp.value || '').trim();
-        if (v && v.length >= 2) namesSet.add(v);
+    (window._mexpDaysData || []).forEach(function (d) {
+        (d.items || []).forEach(function (it) {
+            var v = (it.spender || '').trim();
+            if (v && v.length >= 2) namesSet.add(v);
+        });
     });
 
     if (window._staffEmpCache && Array.isArray(window._staffEmpCache)) {
@@ -5543,21 +5480,131 @@ function mexpUpdateSpenderSuggestions() {
     datalist.innerHTML = html;
 }
 
+// ─── OFFICIAL PRINT ENGINE (MEXP) ───────────────────────────────────
+function mexpUpdatePrintContainer() {
+    var printContainer = document.getElementById('mexp-print-container');
+    if (!printContainer) return;
+    var mi = document.getElementById('mexp-month');
+    var monthVal = mi && mi.value ? mi.value : '';
+    var assigneeSel = document.getElementById('mexpAssignedEmp');
+    var assigneeName = (assigneeSel && assigneeSel.selectedIndex >= 0 && assigneeSel.value) ? assigneeSel.options[assigneeSel.selectedIndex].text : 'الإدارة العامة';
+
+    var days = window._mexpDaysData || [];
+    var grandTotal = 0;
+    var totalItems = 0;
+    var rowsHtml = '';
+    var serial = 1;
+
+    days.forEach(function (d) {
+        var dDate = d.date || '';
+        var dName = (typeof mexpGetDayName === 'function') ? mexpGetDayName(dDate) : '';
+        var dayItems = (d.items || []).filter(function (it) {
+            return (it.spender && it.spender.trim()) || (it.cat && it.cat.trim()) || (parseFloat(it.price || 0) > 0);
+        });
+
+        if (dayItems.length === 0) return;
+
+        var dayTotal = 0;
+        dayItems.forEach(function (it, itIdx) {
+            var q = parseFloat(it.qty || '1') || 1;
+            var p = parseFloat(it.price || '0') || 0;
+            var sub = q * p;
+            dayTotal += sub;
+            grandTotal += sub;
+            totalItems++;
+
+            rowsHtml += '<tr>' +
+                '<td style="text-align:center;font-weight:bold;">' + (serial++) + '</td>' +
+                '<td style="text-align:center;font-weight:800;white-space:nowrap;">' + escH(dDate) + (dName ? '<br><span style="font-size:10px;color:#475569;">' + escH(dName) + '</span>' : '') + '</td>' +
+                '<td style="font-weight:700;">' + escH(it.spender || '-') + '</td>' +
+                '<td>' + escH(it.cat || '-') + '</td>' +
+                '<td style="text-align:center;font-weight:700;">' + q + '</td>' +
+                '<td style="text-align:center;font-weight:700;">' + p.toFixed(2) + '</td>' +
+                '<td style="text-align:center;font-weight:900;color:#0f172a;">' + sub.toFixed(2) + '</td>' +
+                '</tr>';
+        });
+
+        if (dayItems.length > 1) {
+            rowsHtml += '<tr style="background:#f1f5f9;font-weight:800;">' +
+                '<td colspan="6" style="text-align:left;padding-left:14px;font-size:10.5px;color:#334155;">مجموع يوم ' + escH(dDate) + ' (' + escH(dName) + '):</td>' +
+                '<td style="text-align:center;font-weight:900;color:#0f172a;">' + dayTotal.toFixed(2) + ' ج.م</td>' +
+                '</tr>';
+        }
+    });
+
+    if (totalItems === 0) {
+        rowsHtml = '<tr><td colspan="7" style="text-align:center;padding:24px;color:#64748b;font-weight:700;">لا توجد مصروفات مسجلة لهذا الشهر حتى الآن.</td></tr>';
+    }
+
+    var h = '<div style="direction:rtl;padding:10px;font-family:\'Alexandria\',\'Inter\',sans-serif;">' +
+        '  <div style="display:flex;justify-content:space-between;align-items:center;border-bottom:2.5px solid #0f172a;padding-bottom:12px;margin-bottom:16px;">' +
+        '    <div>' +
+        '      <h2 style="margin:0;font-size:18px;font-weight:900;color:#0f172a;">شركة تيك جو للحلول التقنية والأنظمة الذكية</h2>' +
+        '      <div style="font-size:14px;font-weight:800;color:#334155;margin-top:3px;">كشف وحركة المصروفات النقدية الشهري الرسمي (MONTHLY EXPENSES)</div>' +
+        '      <div style="font-size:11px;color:#64748b;margin-top:2px;">شهر: <b>' + escH(monthVal) + '</b> | تاريخ الاستخراج: <b>' + new Date().toLocaleDateString('ar-EG') + '</b></div>' +
+        '    </div>' +
+        '    <div style="text-align:left;border:1.5px solid #cbd5e1;padding:8px 14px;border-radius:8px;background:#f8fafc;">' +
+        '      <div style="font-size:10.5px;color:#64748b;font-weight:700;">المسؤول عن الصرف:</div>' +
+        '      <div style="font-size:13px;font-weight:900;color:#0f172a;margin-top:2px;">' + escH(assigneeName) + '</div>' +
+        '    </div>' +
+        '  </div>' +
+        '  <table class="mexp-print-table" style="width:100%;border-collapse:collapse;">' +
+        '    <thead>' +
+        '      <tr>' +
+        '        <th style="width:35px;text-align:center;">م</th>' +
+        '        <th style="width:115px;text-align:center;">التاريخ واليوم</th>' +
+        '        <th style="width:160px;text-align:right;">اسم الصارف</th>' +
+        '        <th style="text-align:right;">النوع / بيان المصروف</th>' +
+        '        <th style="width:65px;text-align:center;">العدد</th>' +
+        '        <th style="width:100px;text-align:center;">السعر (ج.م)</th>' +
+        '        <th style="width:115px;text-align:center;">الإجمالي (ج.م)</th>' +
+        '      </tr>' +
+        '    </thead>' +
+        '    <tbody>' + rowsHtml + '</tbody>' +
+        '    <tfoot>' +
+        '      <tr style="background:#f8fafc;border-top:2.5px solid #0f172a;font-weight:900;">' +
+        '        <td colspan="6" style="text-align:left;padding:10px 14px;font-size:13px;color:#0f172a;">💰 إجمالي مصروفات الشهر الكامل (' + totalItems + ' بند):</td>' +
+        '        <td style="text-align:center;font-size:14px;color:#0f172a;padding:10px 8px;font-weight:900;">' + fmtMoney(grandTotal) + '</td>' +
+        '      </tr>' +
+        '    </tfoot>' +
+        '  </table>' +
+        '  <div style="margin-top:28px;display:flex;justify-content:space-between;text-align:center;page-break-inside:avoid;gap:16px;">' +
+        '    <div style="flex:1;border:1px solid #cbd5e1;border-radius:8px;padding:12px;background:#f8fafc;">' +
+        '      <div style="font-size:11.5px;font-weight:800;color:#334155;">المسؤول عن الصرف / العهدة</div>' +
+        '      <div style="font-size:11px;color:#64748b;margin-top:2px;">' + escH(assigneeName) + '</div>' +
+        '      <div style="margin-top:35px;border-top:1px dashed #94a3b8;font-size:11px;color:#94a3b8;padding-top:4px;">التوقيع: .....................</div>' +
+        '    </div>' +
+        '    <div style="flex:1;border:1px solid #cbd5e1;border-radius:8px;padding:12px;background:#f8fafc;">' +
+        '      <div style="font-size:11.5px;font-weight:800;color:#334155;">المدير الإداري / المشروعات</div>' +
+        '      <div style="font-size:11px;color:#64748b;margin-top:2px;">مراجعة واعتماد التدقيق</div>' +
+        '      <div style="margin-top:35px;border-top:1px dashed #94a3b8;font-size:11px;color:#94a3b8;padding-top:4px;">التوقيع: .....................</div>' +
+        '    </div>' +
+        '    <div style="flex:1;border:1px solid #cbd5e1;border-radius:8px;padding:12px;background:#f8fafc;">' +
+        '      <div style="font-size:11.5px;font-weight:800;color:#334155;">المدير التنفيذي (CEO)</div>' +
+        '      <div style="font-size:11px;color:#64748b;margin-top:2px;">الاعتماد المالي النهائي</div>' +
+        '      <div style="margin-top:35px;border-top:1px dashed #94a3b8;font-size:11px;color:#94a3b8;padding-top:4px;">التوقيع: .....................</div>' +
+        '    </div>' +
+        '  </div>' +
+        '</div>';
+
+    printContainer.innerHTML = h;
+}
+
 // ─── DAY POPUP MODAL (ADMIN) ───────────────────────────────────────
-window._mexpEditingCard = null;
+window._mexpEditingDayIdx = null;
 window._mexpModalOpen = false;
 
 window.mexpOpenNewDayModal = function () {
-    window._mexpEditingCard = null;
+    window._mexpEditingDayIdx = null;
     var mi = document.getElementById('mexp-month');
     var monthVal = mi && mi.value ? mi.value : '';
     var d = new Date();
     var todayStr = d.toISOString().split('T')[0];
     var defDate = todayStr;
 
-    var existingDates = document.querySelectorAll('#mexp-days-container .mexp-day-date');
-    if (existingDates.length > 0) {
-        var lastVal = existingDates[existingDates.length - 1].value;
+    var days = window._mexpDaysData || [];
+    if (days.length > 0) {
+        var lastVal = days[days.length - 1].date;
         if (lastVal) {
             var lastD = new Date(lastVal);
             lastD.setDate(lastD.getDate() + 1);
@@ -5567,37 +5614,32 @@ window.mexpOpenNewDayModal = function () {
         defDate = monthVal + '-01';
     }
 
-    mexpShowModalWithData(defDate, [{ spender: '', cat: '', qty: '1', price: '' }], false);
+    mexpShowModalWithData(defDate, [{ spender: '', cat: '', qty: '1', price: '' }], false, null);
 };
 
-window.mexpEditDayModal = function (btn) {
-    var card = btn ? btn.closest('.mexp-day-card') : null;
-    if (!card) return;
-    window._mexpEditingCard = card;
-
-    var dateInp = card.querySelector('.mexp-day-date');
-    var dateVal = dateInp ? dateInp.value : '';
-
-    var items = [];
-    card.querySelectorAll('.mexp-day-tbody tr').forEach(function (tr) {
-        var spender = (tr.querySelector('.mexp-spender') ? tr.querySelector('.mexp-spender').value : '').trim();
-        var cat = (tr.querySelector('.mexp-cat') ? tr.querySelector('.mexp-cat').value : '').trim();
-        var qty = (tr.querySelector('.mexp-qty') ? tr.querySelector('.mexp-qty').value : '1').trim() || '1';
-        var price = (tr.querySelector('.mexp-price') ? tr.querySelector('.mexp-price').value : '').trim();
-        if (spender || cat || price) {
-            items.push({ spender: spender, cat: cat, qty: qty, price: price });
+window.mexpEditDayModal = function (dayIdxOrBtn) {
+    var dayIdx = null;
+    if (typeof dayIdxOrBtn === 'number') {
+        dayIdx = dayIdxOrBtn;
+    } else if (dayIdxOrBtn && dayIdxOrBtn.closest) {
+        var card = dayIdxOrBtn.closest('.mexp-day-card');
+        if (card && card.getAttribute('data-day-idx')) {
+            dayIdx = parseInt(card.getAttribute('data-day-idx'), 10);
         }
-    });
-
-    if (items.length === 0) {
-        items.push({ spender: '', cat: '', qty: '1', price: '' });
     }
 
-    mexpShowModalWithData(dateVal, items, true);
+    if (dayIdx === null || dayIdx === undefined) return;
+    var day = (window._mexpDaysData || [])[dayIdx];
+    if (!day) return;
+
+    window._mexpEditingDayIdx = dayIdx;
+    var items = (day.items && day.items.length > 0) ? JSON.parse(JSON.stringify(day.items)) : [{ spender: '', cat: '', qty: '1', price: '' }];
+    mexpShowModalWithData(day.date, items, true, dayIdx);
 };
 
-window.mexpShowModalWithData = function (dateVal, items, isEdit) {
+window.mexpShowModalWithData = function (dateVal, items, isEdit, dayIdx) {
     window._mexpModalOpen = true;
+    window._mexpEditingDayIdx = (dayIdx !== undefined) ? dayIdx : null;
     var modal = document.getElementById('mexpDayModal');
     if (!modal) {
         modal = document.createElement('div');
@@ -5620,58 +5662,61 @@ window.mexpShowModalWithData = function (dateVal, items, isEdit) {
 
     var h = '<div class="mexp-modal-card">' +
         '<div class="mexp-modal-head">' +
-        '  <div style="display:flex;align-items:center;gap:10px;">' +
-        '    <span style="font-size:24px;">📅</span>' +
+        '  <div style="display:flex;align-items:center;gap:12px;">' +
+        '    <div style="font-size:26px;background:rgba(255,255,255,0.12);width:44px;height:44px;border-radius:12px;display:flex;align-items:center;justify-content:center;">📅</div>' +
         '    <div>' +
         '      <div style="font-size:16px;font-weight:900;color:#fff;">' + (isEdit ? '✏️ تعديل مصروفات اليوم' : '➕ تسجيل وتوثيق مصروفات يوم جديد') + '</div>' +
         '      <div style="font-size:11.5px;opacity:0.85;margin-top:2px;">نافذة سريعة مع المزامنة اللحظية الفورية بين الإدارة وكيرلس</div>' +
         '    </div>' +
         '  </div>' +
-        '  <button type="button" onclick="mexpCloseDayModal()" style="background:rgba(255,255,255,0.15);border:none;color:#fff;font-size:18px;cursor:pointer;width:32px;height:32px;border-radius:50%;display:flex;align-items:center;justify-content:center;">✕</button>' +
+        '  <button type="button" onclick="mexpCloseDayModal()" style="background:rgba(255,255,255,0.15);border:none;color:#fff;font-size:16px;cursor:pointer;width:34px;height:34px;border-radius:50%;display:flex;align-items:center;justify-content:center;transition:background 0.2s;" title="إغلاق النافذة">✕</button>' +
         '</div>' +
         '<div class="mexp-modal-body">' +
-        '  <div style="background:var(--bg2);border:1px solid var(--bd);border-radius:12px;padding:12px 16px;margin-bottom:14px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;">' +
-        '    <div style="display:flex;align-items:center;gap:10px;flex:1;min-width:260px;">' +
-        '      <label style="font-size:13px;font-weight:800;color:var(--tx);white-space:nowrap;">📆 تاريخ اليوم:</label>' +
-        '      <input type="date" id="mexpModalDate" class="inp" style="padding:7px 12px;font-weight:800;font-size:13px;" value="' + escH(dateVal) + '" onchange="mexpModalDateChanged()">' +
-        '      <span id="mexpModalDayName" style="background:rgba(201,162,39,0.18);color:#d97706;border:1px solid rgba(217,119,6,0.3);padding:4px 12px;border-radius:14px;font-size:12px;font-weight:800;">' + escH(dayName || 'اليوم') + '</span>' +
+        '  <div style="background:var(--bg2);border:1.5px solid var(--bd);border-radius:12px;padding:12px 16px;margin-bottom:16px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px;">' +
+        '    <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;">' +
+        '      <label style="font-size:13px;font-weight:900;color:var(--tx);white-space:nowrap;">📆 تاريخ اليوم:</label>' +
+        '      <input type="date" id="mexpModalDate" class="inp" style="padding:7px 12px;font-weight:800;font-size:13px;border-radius:8px;border:1.5px solid var(--bd);" value="' + escH(dateVal) + '" onchange="mexpModalDateChanged()">' +
+        '      <span id="mexpModalDayName" class="mexp-day-name-tag" style="font-size:12.5px;padding:4px 14px;">' + escH(dayName || 'اليوم') + '</span>' +
         '    </div>' +
         '    <div style="display:flex;align-items:center;gap:6px;">' +
-        '      <button type="button" class="bt bt-o" style="padding:5px 12px;font-size:11.5px;font-weight:700;border-radius:6px;" onclick="mexpModalSetQuickDate(0)">📅 اليوم</button>' +
-        '      <button type="button" class="bt bt-o" style="padding:5px 12px;font-size:11.5px;font-weight:700;border-radius:6px;" onclick="mexpModalSetQuickDate(-1)">⏪ أمس</button>' +
+        '      <button type="button" class="bt bt-o" style="padding:6px 12px;font-size:12px;font-weight:800;border-radius:8px;" onclick="mexpModalSetQuickDate(0)">📅 اليوم</button>' +
+        '      <button type="button" class="bt bt-o" style="padding:6px 12px;font-size:12px;font-weight:800;border-radius:8px;" onclick="mexpModalSetQuickDate(-1)">⏪ أمس</button>' +
         '    </div>' +
         '  </div>' +
         '  <datalist id="mexpModalSpendersDatalist">' + dlOptions + '</datalist>' +
-        '  <div style="border:1px solid var(--bd);border-radius:12px;overflow:hidden;background:var(--w);">' +
-        '    <div style="padding:10px 14px;background:var(--bg2);border-bottom:1px solid var(--bd);display:flex;align-items:center;justify-content:space-between;">' +
-        '      <strong style="font-size:13px;color:var(--tx);">📋 بنود المصروفات المسجلة لهذا اليوم:</strong>' +
-        '      <button type="button" class="bt bt-p" style="padding:5px 14px;font-size:12px;font-weight:800;border-radius:8px;" onclick="mexpModalAddRow()">➕ إضافة بند</button>' +
+        '  <div style="border:1.5px solid var(--bd);border-radius:14px;overflow:hidden;background:var(--w);box-shadow:0 1px 4px rgba(0,0,0,0.03);">' +
+        '    <div style="padding:12px 16px;background:var(--bg2);border-bottom:1.5px solid var(--bd);display:flex;align-items:center;justify-content:space-between;">' +
+        '      <strong style="font-size:13.5px;color:var(--tx);font-weight:900;">📋 بنود المصروفات المسجلة لهذا اليوم:</strong>' +
+        '      <button type="button" class="bt bt-p" style="padding:6px 16px;font-size:12px;font-weight:900;border-radius:8px;" onclick="mexpModalAddRow()">➕ إضافة بند</button>' +
         '    </div>' +
-        '    <div style="overflow-x:auto;max-height:360px;overflow-y:auto;">' +
-        '      <table class="dt" style="width:100%;margin:0;border-collapse:collapse;" id="mexpModalTable">' +
+        '    <div style="overflow-x:auto;max-height:360px;overflow-y:auto;padding:8px;">' +
+        '      <table id="mexpModalTable">' +
         '        <thead>' +
-        '          <tr style="background:var(--nv);color:#fff;font-size:11.5px;">' +
-        '            <th style="width:36px;text-align:center;">م</th>' +
-        '            <th style="min-width:140px;">اسم الصارف</th>' +
-        '            <th style="min-width:160px;">النوع / البيان</th>' +
-        '            <th style="width:75px;text-align:center;">العدد</th>' +
-        '            <th style="width:105px;text-align:center;">السعر (ج.م)</th>' +
-        '            <th style="width:100px;text-align:center;">الإجمالي</th>' +
-        '            <th style="width:36px;text-align:center;"></th>' +
+        '          <tr>' +
+        '            <th style="width:40px;text-align:center;">م</th>' +
+        '            <th style="width:28%;">اسم الصارف</th>' +
+        '            <th style="width:34%;">النوع / البيان</th>' +
+        '            <th style="width:80px;text-align:center;">العدد</th>' +
+        '            <th style="width:110px;text-align:center;">السعر (ج.م)</th>' +
+        '            <th style="width:105px;text-align:center;">الإجمالي</th>' +
+        '            <th style="width:40px;text-align:center;"></th>' +
         '          </tr>' +
         '        </thead>' +
         '        <tbody id="mexpModalTbody">' + rowsHtml + '</tbody>' +
         '      </table>' +
         '    </div>' +
         '  </div>' +
-        '  <div style="margin-top:14px;display:flex;align-items:center;justify-content:space-between;background:var(--nv);color:#fff;padding:12px 18px;border-radius:12px;box-shadow:var(--sh-sm);flex-wrap:wrap;gap:10px;">' +
-        '    <div style="font-size:12.5px;opacity:0.9;">🔢 عدد البنود: <strong id="mexpModalItemsCount" style="color:#fbbf24;font-size:14px;">0</strong></div>' +
-        '    <div style="font-size:13px;">💰 إجمالي مصروفات اليوم: <strong id="mexpModalGrandTotal" style="color:#34d399;font-size:16px;margin-right:6px;">0.00 ج.م</strong></div>' +
+        '  <div style="margin-top:14px;display:flex;align-items:center;justify-content:space-between;background:linear-gradient(135deg,#0f172a,#1e293b);color:#fff;padding:12px 20px;border-radius:12px;box-shadow:var(--sh-sm);flex-wrap:wrap;gap:10px;">' +
+        '    <div style="font-size:13px;opacity:0.9;font-weight:700;">🔢 عدد البنود: <strong id="mexpModalItemsCount" style="color:#fbbf24;font-size:15px;margin-right:4px;">0</strong></div>' +
+        '    <div style="font-size:13.5px;font-weight:700;">💰 إجمالي مصروفات اليوم: <strong id="mexpModalGrandTotal" style="color:#34d399;font-size:17px;margin-right:6px;font-weight:900;">0.00 ج.م</strong></div>' +
         '  </div>' +
         '</div>' +
         '<div class="mexp-modal-foot">' +
-        '  <button type="button" class="bt bt-o" style="padding:9px 20px;font-size:12.5px;font-weight:700;" onclick="mexpCloseDayModal()">إلغاء</button>' +
-        '  <button type="button" class="bt bt-p" style="padding:9px 26px;font-size:13px;font-weight:800;background:linear-gradient(135deg, #059669, #047857);color:#fff;border-radius:10px;box-shadow:0 4px 14px rgba(5,150,105,0.35);" onclick="mexpModalSaveDay()">💾 حفظ اليوم ومزامنة الشيت فوراً</button>' +
+        '  <div style="display:flex;align-items:center;gap:8px;">' +
+        (isEdit ? '    <button type="button" class="bt bt-d" style="padding:9px 16px;font-size:12px;font-weight:800;border-radius:10px;background:rgba(239,68,68,0.15);color:#ef4444;border-color:rgba(239,68,68,0.3);" onclick="mexpModalDeleteCurrentDay()">🗑 حذف هذا اليوم</button>' : '') +
+        '    <button type="button" class="bt bt-o" style="padding:9px 20px;font-size:12.5px;font-weight:800;border-radius:10px;" onclick="mexpCloseDayModal()">إلغاء</button>' +
+        '  </div>' +
+        '  <button type="button" class="bt bt-p" style="padding:10px 28px;font-size:13.5px;font-weight:900;background:linear-gradient(135deg, #059669, #047857);color:#fff;border-radius:10px;box-shadow:0 4px 14px rgba(5,150,105,0.35);" onclick="mexpModalSaveDay()">💾 حفظ اليوم ومزامنة الشيت فوراً</button>' +
         '</div>' +
         '</div>';
 
@@ -5687,13 +5732,13 @@ window.mexpModalBuildRowHtml = function (idx, item) {
     var price = item && item.price ? item.price : '';
     var subtotal = (parseFloat(qty || '1') * parseFloat(price || '0')) || 0;
     return '<tr>' +
-        '<td class="mexp-modal-idx" style="font-weight:bold;font-size:11px;text-align:center;">' + idx + '</td>' +
+        '<td class="mexp-modal-idx" style="font-weight:bold;font-size:12px;text-align:center;color:var(--tx2);">' + idx + '</td>' +
         '<td><input type="text" class="mexp-modal-spender" list="mexpModalSpendersDatalist" placeholder="اسم الصارف..." value="' + escH(spender) + '"></td>' +
-        '<td><input type="text" class="mexp-modal-cat" placeholder="مثلاً: بوفيه، مواصلات، أدوات..." value="' + escH(cat) + '"></td>' +
-        '<td><input type="number" min="1" step="1" class="mexp-modal-qty" value="' + escH(qty) + '" style="text-align:center;" oninput="mexpModalCalc()"></td>' +
-        '<td><input type="number" min="0" step="0.01" class="mexp-modal-price" value="' + escH(price) + '" style="text-align:center;" oninput="mexpModalCalc()"></td>' +
-        '<td class="mexp-modal-subtotal" style="text-align:center;font-weight:800;color:var(--nv);">' + subtotal.toFixed(2) + '</td>' +
-        '<td style="text-align:center;"><button type="button" class="bt bt-d" style="padding:3px 7px;font-size:11px;border-radius:4px;" onclick="mexpModalDelRow(this)">✕</button></td>' +
+        '<td><input type="text" class="mexp-modal-cat" placeholder="مثلاً: بوفيه، مواصلات، صيانة..." value="' + escH(cat) + '"></td>' +
+        '<td><input type="number" min="1" step="1" class="mexp-modal-qty" value="' + escH(qty) + '" style="text-align:center;font-weight:700;" oninput="mexpModalCalc()"></td>' +
+        '<td><input type="number" min="0" step="0.01" class="mexp-modal-price" value="' + escH(price) + '" style="text-align:center;font-weight:700;" oninput="mexpModalCalc()"></td>' +
+        '<td class="mexp-modal-subtotal" style="text-align:center;font-weight:900;color:#059669;font-size:13.5px;">' + subtotal.toFixed(2) + '</td>' +
+        '<td style="text-align:center;"><button type="button" class="bt bt-d" style="padding:4px 8px;font-size:12px;border-radius:6px;background:rgba(239,68,68,0.12);color:#ef4444;border-color:rgba(239,68,68,0.25);" onclick="mexpModalDelRow(this)" title="حذف هذا البند">✕</button></td>' +
         '</tr>';
 };
 
@@ -5765,12 +5810,12 @@ window.mexpModalCalc = function () {
     var cntEl = document.getElementById('mexpModalItemsCount');
     var totEl = document.getElementById('mexpModalGrandTotal');
     if (cntEl) cntEl.innerText = count;
-    if (totEl) totEl.innerText = total.toFixed(2) + ' ج.م';
+    if (totEl) totEl.innerText = fmtMoney(total);
 };
 
 window.mexpCloseDayModal = function () {
     window._mexpModalOpen = false;
-    window._mexpEditingCard = null;
+    window._mexpEditingDayIdx = null;
     var modal = document.getElementById('mexpDayModal');
     if (modal) modal.style.display = 'none';
 };
@@ -5801,27 +5846,39 @@ window.mexpModalSaveDay = function () {
         items.push({ spender: '', cat: '', qty: '1', price: '' });
     }
 
-    if (window._mexpEditingCard) {
-        var card = window._mexpEditingCard;
-        var dInp = card.querySelector('.mexp-day-date');
-        if (dInp) {
-            dInp.value = dateVal;
-            mexpUpdateDayHeader(dInp);
-        }
-        var cTbody = card.querySelector('.mexp-day-tbody');
-        if (cTbody) {
-            cTbody.innerHTML = '';
-            items.forEach(function (item) {
-                mexpAddDayItem(cTbody, item);
-            });
-        }
+    window._mexpDaysData = window._mexpDaysData || [];
+
+    if (window._mexpEditingDayIdx !== null && window._mexpEditingDayIdx !== undefined && window._mexpDaysData[window._mexpEditingDayIdx]) {
+        window._mexpDaysData[window._mexpEditingDayIdx] = { date: dateVal, items: items };
     } else {
-        mexpAddNewDay({ date: dateVal, items: items });
+        var existingIdx = window._mexpDaysData.findIndex(function (d) { return d.date === dateVal; });
+        if (existingIdx !== -1) {
+            window._mexpDaysData[existingIdx].items = items;
+        } else {
+            window._mexpDaysData.push({ date: dateVal, items: items });
+        }
     }
 
-    mexpCalc();
+    // Sort days chronologically
+    window._mexpDaysData.sort(function (a, b) {
+        return (a.date || '').localeCompare(b.date || '');
+    });
+
     mexpCloseDayModal();
+    mexpRenderDays(window._mexpDaysData);
     mexpSave();
+    if (typeof tgToast === 'function') tgToast('✅ تم حفظ يوم (' + dateVal + ') ومزامنة الشيت فوراً!', 'ok');
+    else if (typeof tgShowToast === 'function') tgShowToast('✅ تم حفظ يوم (' + dateVal + ') ومزامنة الشيت فوراً!', 'success');
+};
+
+window.mexpModalDeleteCurrentDay = function () {
+    if (window._mexpEditingDayIdx === null || window._mexpEditingDayIdx === undefined) return;
+    var day = (window._mexpDaysData || [])[window._mexpEditingDayIdx];
+    var dStr = day ? day.date : '';
+    if (confirm('هل أنت متأكد من حذف يوم (' + (dStr || '') + ') بكافة بنوده ومصروفاته نهائياً؟')) {
+        mexpCloseDayModal();
+        mexpRemoveDay(window._mexpEditingDayIdx);
+    }
 };
 
 function mexpSave() {
@@ -5829,38 +5886,27 @@ function mexpSave() {
     var monthVal = mi && mi.value ? mi.value : '';
     if (!monthVal) return;
 
-    var days = [];
+    var days = (window._mexpDaysData || []).map(function (d) {
+        return {
+            date: d.date || '',
+            items: (d.items || []).filter(function (it) {
+                return (it.spender && it.spender.trim()) || (it.cat && it.cat.trim()) || (parseFloat(it.price || 0) > 0);
+            })
+        };
+    }).filter(function (d) {
+        return d.date || d.items.length > 0;
+    });
+
     var spendersSet = new Set();
     var grandTotal = 0;
 
-    document.querySelectorAll('#mexp-days-container .mexp-day-card').forEach(function (card) {
-        var dateInp = card.querySelector('.mexp-day-date');
-        var dateVal = dateInp ? dateInp.value : '';
-        var items = [];
-
-        card.querySelectorAll('.mexp-day-tbody tr').forEach(function (tr) {
-            var spenderInp = tr.querySelector('.mexp-spender');
-            var catInp = tr.querySelector('.mexp-cat');
-            var qtyInp = tr.querySelector('.mexp-qty');
-            var priceInp = tr.querySelector('.mexp-price');
-
-            var spender = spenderInp ? spenderInp.value.trim() : '';
-            var cat = catInp ? catInp.value.trim() : '';
-            var qty = qtyInp ? qtyInp.value.trim() : '1';
-            var price = priceInp ? priceInp.value.trim() : '';
-
-            if (spender || cat || price) {
-                var p = parseFloat(price || '0') || 0;
-                var q = parseFloat(qty || '1') || 1;
-                grandTotal += (p * q);
-                items.push({ spender: spender, cat: cat, qty: qty || '1', price: price });
-                if (spender) spendersSet.add(spender);
-            }
+    days.forEach(function (d) {
+        (d.items || []).forEach(function (it) {
+            var p = parseFloat(it.price || '0') || 0;
+            var q = parseFloat(it.qty || '1') || 1;
+            grandTotal += (p * q);
+            if (it.spender && it.spender.trim()) spendersSet.add(it.spender.trim());
         });
-
-        if (dateVal || items.length > 0) {
-            days.push({ date: dateVal, items: items });
-        }
     });
 
     var storageKey = 'tg_mexp_' + monthVal;
@@ -6064,6 +6110,7 @@ function mexpSaveAssignee() {
 }
 
 window.mexpPrint = function () {
+    if (typeof mexpUpdatePrintContainer === 'function') mexpUpdatePrintContainer();
     if (typeof togglePrintKeepData === 'function') togglePrintKeepData(true);
     if (typeof openPrintPreview === 'function') {
         openPrintPreview();
@@ -6819,28 +6866,48 @@ function load(id, c) {
             '  </div>' +
             '</div>';
 
-        // Summary Badges & Action Buttons
-        h += '<div class="mexp-summary-bar">' +
-            '  <div class="mexp-badges-wrap">' +
-            '    <div class="mexp-badge-card" style="background:var(--nv);color:#fff;padding:6px 14px;border-radius:10px;box-shadow:var(--sh-sm);">' +
-            '      <span style="font-size:11px;opacity:0.85;">💰 إجمالي المصروفات:</span> <span id="mexp-grand-total" class="mexp-badge-val" style="color:#34d399;font-weight:900;font-size:14.5px;">0.00 ج.م</span>' +
-            '    </div>' +
-            '    <div class="mexp-badge-card" style="background:var(--bg2);color:var(--tx);border:1px solid var(--bd);padding:6px 14px;border-radius:10px;">' +
-            '      <span style="font-size:11px;color:var(--tx2);">📅 الأيام المسجلة:</span> <strong id="mexp-days-count" class="mexp-badge-val" style="color:var(--nv);font-weight:900;font-size:14px;">0 يوم</strong>' +
+        // Top Summary & Stats Counter (Monthly Total sum of all days)
+        h += '<div class="mexp-stats-grid">' +
+            '  <div class="mexp-stat-card primary">' +
+            '    <div class="mexp-stat-icon">💰</div>' +
+            '    <div class="mexp-stat-info">' +
+            '      <span class="mexp-stat-label">إجمالي مصروفات الشهر</span>' +
+            '      <span id="mexp-grand-total" class="mexp-stat-value">0.00 ج.م</span>' +
             '    </div>' +
             '  </div>' +
-            '  <div class="np mexp-actions-wrap">' +
-            '    <button type="button" class="bt bt-p" style="font-weight:900;" onclick="mexpOpenNewDayModal()">➕ يوم جديد (Pop-up 📅)</button>' +
-            '    <button type="button" class="bt bt-o" style="font-weight:800;" onclick="mexpSave()">💾 حفظ ومزامنة</button>' +
-            '    <button type="button" class="bt bt-g" style="font-weight:800;" onclick="mexpPrint()">🖨 طباعة / PDF</button>' +
-            '    <button type="button" class="bt bt-o" style="font-weight:800;" onclick="mexpLoad(true)" title="تحديث البيانات من السيرفر">🔄 تحديث</button>' +
-            '    <button type="button" class="bt bt-o" style="font-size:11.5px;font-weight:700;" onclick="mexpToggleAllDays(false)" title="طي كافة الأيام المسجلة">🔽 طي الكل</button>' +
-            '    <button type="button" class="bt bt-o" style="font-size:11.5px;font-weight:700;" onclick="mexpToggleAllDays(true)" title="توسيع كافة الأيام المسجلة">🔼 تمدد الكل</button>' +
+            '  <div class="mexp-stat-card secondary">' +
+            '    <div class="mexp-stat-icon">📅</div>' +
+            '    <div class="mexp-stat-info">' +
+            '      <span class="mexp-stat-label">الأيام المسجلة</span>' +
+            '      <span id="mexp-days-count" class="mexp-stat-value" style="color:var(--nv);">0 يوم</span>' +
+            '    </div>' +
+            '  </div>' +
+            '  <div class="mexp-stat-card secondary">' +
+            '    <div class="mexp-stat-icon">📋</div>' +
+            '    <div class="mexp-stat-info">' +
+            '      <span class="mexp-stat-label">إجمالي البنود الصادرة</span>' +
+            '      <span id="mexp-items-count" class="mexp-stat-value" style="color:#0284c7;">0 بند</span>' +
+            '    </div>' +
             '  </div>' +
             '</div>';
 
-        // Days Container
-        h += '<div id="mexp-days-container"></div>';
+        // Actions Toolbar
+        h += '<div class="mexp-toolbar np">' +
+            '  <div style="display:flex;align-items:center;gap:8px;">' +
+            '    <button type="button" class="bt bt-p" style="font-weight:900;padding:8px 18px;font-size:13px;background:linear-gradient(135deg, #059669, #047857);color:#fff;border-radius:10px;box-shadow:0 4px 12px rgba(5,150,105,0.3);" onclick="mexpOpenNewDayModal()">➕ تسجيل يوم جديد (Pop-up 📅)</button>' +
+            '    <button type="button" class="bt bt-o" style="font-weight:800;padding:8px 16px;" onclick="mexpSave()">💾 حفظ ومزامنة</button>' +
+            '  </div>' +
+            '  <div class="mexp-actions-wrap">' +
+            '    <button type="button" class="bt bt-g" style="font-weight:800;padding:8px 16px;" onclick="mexpPrint()">🖨 طباعة الشيت الرسمي</button>' +
+            '    <button type="button" class="bt bt-o" style="font-weight:800;padding:8px 14px;" onclick="mexpLoad(true)" title="تحديث البيانات من السيرفر">🔄 تحديث</button>' +
+            '  </div>' +
+            '</div>';
+
+        // Day Cards Grid
+        h += '<div id="mexp-days-container" class="mexp-days-grid"></div>';
+
+        // Official Print Sheet (Consolidated Table & Letterhead)
+        h += '<div id="mexp-print-container"></div>';
 
         h += SC('٢', 'الاعتماد والتوقيعات');
         h += SG3('المسؤول عن الصرف / أمين الصندوق', 'تحرير وتوثيق البيانات',
