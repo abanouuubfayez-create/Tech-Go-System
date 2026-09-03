@@ -5028,6 +5028,90 @@ body.dark-mode .tg-expand-btn:hover {
   display: none;
 }
 
+/* ── MEXP DAY POPUP MODAL STYLES ── */
+.mexp-modal-overlay {
+  position: fixed;
+  top: 0; left: 0; right: 0; bottom: 0;
+  background: rgba(15, 23, 42, 0.75);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  z-index: 99999;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 16px;
+  direction: rtl;
+  animation: mexpModalFadeIn 0.2s ease-out;
+}
+@keyframes mexpModalFadeIn {
+  from { opacity: 0; transform: scale(0.96); }
+  to { opacity: 1; transform: scale(1); }
+}
+.mexp-modal-card {
+  background: var(--w);
+  color: var(--tx);
+  border: 1px solid var(--bd);
+  border-radius: 18px;
+  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.35);
+  width: 100%;
+  max-width: 780px;
+  max-height: 90vh;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+.mexp-modal-head {
+  background: linear-gradient(135deg, #0f172a, #1e293b);
+  color: #fff;
+  padding: 16px 20px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+.mexp-modal-body {
+  padding: 18px 20px;
+  overflow-y: auto;
+  flex: 1;
+}
+.mexp-modal-foot {
+  padding: 14px 20px;
+  background: var(--bg2);
+  border-top: 1px solid var(--bd);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+#mexpModalTable th, #empMexpModalTable th {
+  padding: 8px 10px;
+  font-weight: 800;
+  border: 1px solid var(--bd);
+}
+#mexpModalTable td, #empMexpModalTable td {
+  padding: 6px 8px;
+  vertical-align: middle;
+  border: 1px solid var(--bd);
+}
+#mexpModalTable input, #empMexpModalTable input {
+  width: 100%;
+  padding: 6px 8px;
+  border: 1px solid var(--bd);
+  border-radius: 6px;
+  background: var(--bg2);
+  color: var(--tx);
+  font-size: 12.5px;
+  font-family: inherit;
+  font-weight: 600;
+}
+#mexpModalTable input:focus, #empMexpModalTable input:focus {
+  outline: none;
+  border-color: #0284c7;
+  background: var(--w);
+  box-shadow: 0 0 0 2px rgba(2, 132, 199, 0.2);
+}
+
 @media (max-width: 768px) {
   .mexp-ctrl-bar {
     flex-direction: column;

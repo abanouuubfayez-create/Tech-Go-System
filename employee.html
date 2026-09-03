@@ -67,7 +67,7 @@
     <link
         href="https://fonts.googleapis.com/css2?family=Alexandria:wght@300;400;500;600;700;800;900&family=Cairo:wght@400;600;700;800;900&family=Tajawal:wght@400;500;700;800&family=Inter:wght@400;500;600;700&display=swap"
         rel="stylesheet">
-    <link rel="stylesheet" href="styles.css?v=1788421588">
+    <link rel="stylesheet" href="styles.css?v=1788422732">
     <link rel="manifest" href="manifest.json">
     <link rel="icon" type="image/png" sizes="192x192" href="icon-192.png">
     <link rel="apple-touch-icon" href="icon-192.png">
@@ -75,10 +75,10 @@
     <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-storage-compat.js"></script>
-    <script src="firebase-config.js?v=1788421588"></script>
-    <script src="auth.js?v=1788421588"></script>
-    <script src="app.js?v=1788421588"></script>
-    <script src="formsend.js?v=1788421588"></script>
+    <script src="firebase-config.js?v=1788422732"></script>
+    <script src="auth.js?v=1788422732"></script>
+    <script src="app.js?v=1788422732"></script>
+    <script src="formsend.js?v=1788422732"></script>
     <script>
         (function () {
             const theme = localStorage.getItem('tg-theme') || 'light';
@@ -3476,8 +3476,8 @@
         تطوير وتصميم: أبانوب فايز</div>
     <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
-    <script src="theme.js?v=1788421588"></script>
-    <script src="pwa-install.js?v=1788421588"></script>
+    <script src="theme.js?v=1788422732"></script>
+    <script src="pwa-install.js?v=1788422732"></script>
 
 
     <!-- Incoming Meeting Call Modal -->
@@ -4043,7 +4043,7 @@
                 '    </div>' +
                 '  </div>' +
                 '  <div class="np mexp-actions-wrap">' +
-                '    <button type="button" class="bt bt-p" style="font-weight:900;" onclick="empMexpAddNewDay()">➕ يوم جديد (📅)</button>' +
+                '    <button type="button" class="bt bt-p" style="font-weight:900;" onclick="empMexpOpenNewDayModal()">➕ يوم جديد (Pop-up 📅)</button>' +
                 '    <button type="button" class="bt bt-o" style="font-weight:800;" onclick="empMexpSaveData()">💾 حفظ ومزامنة</button>' +
                 '    <button type="button" class="bt bt-o" style="font-weight:800;" onclick="empMexpLoadData(true)" title="تحديث من السيرفر">🔄 تحديث</button>' +
                 '    <button type="button" class="bt bt-o" style="font-size:11.5px;font-weight:700;" onclick="empMexpToggleAllDays(false)" title="طي كافة الأيام المسجلة">🔽 طي الكل</button>' +
@@ -4058,57 +4058,82 @@
             empMexpLoadData();
         };
 
-        window.empMexpLoadData = function(showToast) {
+window.empMexpLoadData = function(showToast) {
             var container = document.getElementById('emp-mexp-days-container');
             if (!container) return;
             var mi = document.getElementById('emp-mexp-month');
             var monthVal = mi && mi.value ? mi.value : '';
-            if (!monthVal) return;
-
-            container.innerHTML = '<div style="text-align:center;padding:30px;color:var(--tx3);font-weight:700;">⏳ جارٍ تحميل بيانات شهر ' + esc(monthVal) + '...</div>';
+            if (!monthVal) {
+                var d = new Date();
+                monthVal = d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0');
+                if (mi) mi.value = monthVal;
+            }
 
             var storageKey = 'tg_mexp_' + monthVal;
             var localRaw = localStorage.getItem(storageKey);
             var localData = null;
             try { localData = localRaw ? JSON.parse(localRaw) : null; } catch(e){}
 
+            // Fast preview from local cache
+            if (localData && !window._empMexpModalOpen) {
+                empMexpRenderDays(empNormalizeDaysData(localData));
+            }
+
+            // Cancel any previous month listener
+            if (window._empMexpRealtimeUnsub) {
+                try { window._empMexpRealtimeUnsub(); } catch(e){}
+                window._empMexpRealtimeUnsub = null;
+            }
+
             if (typeof db !== 'undefined' && db) {
-                db.collection('savedForms').doc('mexp_' + monthVal).get().then(function(doc) {
+                // Realtime listener on mexp_sheets for live sync with Admin
+                window._empMexpRealtimeUnsub = db.collection('mexp_sheets').doc(monthVal).onSnapshot(function(doc) {
+                    var syncInfo = document.getElementById('empMexpSyncInfo');
                     if (doc.exists) {
                         var data = doc.data() || {};
                         var days = empNormalizeDaysData(data);
                         localStorage.setItem(storageKey, JSON.stringify(data));
-                        var syncInfo = document.getElementById('empMexpSyncInfo');
                         if (syncInfo && data.updatedBy) {
                             var timeStr = data.updatedAt && data.updatedAt.toDate ? data.updatedAt.toDate().toLocaleTimeString('ar-EG', {hour:'2-digit', minute:'2-digit', day:'numeric', month:'numeric'}) : '';
-                            syncInfo.innerHTML = '<span>✅ آخر تحديث تم بواسطة: <b>' + esc(data.updatedBy) + '</b> ' + (timeStr ? '(' + timeStr + ')' : '') + '</span>';
+                            syncInfo.innerHTML = '<span>⚡ <b>متزامن لحظياً مع الإدارة</b> — آخر تحديث: <b>' + esc(data.updatedBy) + '</b> ' + (timeStr ? '(' + timeStr + ')' : '') + '</span>';
                         }
-                        empMexpRenderDays(days);
-                        if (showToast && typeof tgShowToast === 'function') tgShowToast('تم تحديث الشيت بنجاح', 'success');
-                    } else {
-                        db.collection('mexp_sheets').doc(monthVal).get().then(function(doc2) {
-                            var days = [];
-                            var syncInfo = document.getElementById('empMexpSyncInfo');
-                            if (doc2.exists) {
-                                var data2 = doc2.data() || {};
-                                localStorage.setItem(storageKey, JSON.stringify(data2));
-                                if (syncInfo && data2.updatedBy) {
-                                    var timeStr = data2.updatedAt && data2.updatedAt.toDate ? data2.updatedAt.toDate().toLocaleTimeString('ar-EG', {hour:'2-digit', minute:'2-digit', day:'numeric', month:'numeric'}) : '';
-                                    syncInfo.innerHTML = '<span>✅ آخر تحديث تم بواسطة: <b>' + esc(data2.updatedBy) + '</b> ' + (timeStr ? '(' + timeStr + ')' : '') + '</span>';
-                                }
-                                days = empNormalizeDaysData(data2);
-                            } else if (localData) {
-                                days = empNormalizeDaysData(localData);
-                            }
+                        if (!window._empMexpModalOpen) {
                             empMexpRenderDays(days);
-                            if (showToast && typeof tgShowToast === 'function') tgShowToast('تم تحديث الشيت بنجاح', 'success');
+                        }
+                        if (showToast && typeof tgShowToast === 'function') tgShowToast('تمت مزامنة الشيت بنجاح', 'success');
+                    } else {
+                        // Fallback to savedForms and seed to mexp_sheets
+                        db.collection('savedForms').doc('mexp_' + monthVal).get().then(function(sfDoc) {
+                            if (sfDoc.exists) {
+                                var sfData = sfDoc.data() || {};
+                                var sfDays = empNormalizeDaysData(sfData);
+                                localStorage.setItem(storageKey, JSON.stringify(sfData));
+                                if (!window._empMexpModalOpen) empMexpRenderDays(sfDays);
+                                // Seed mexp_sheets
+                                db.collection('mexp_sheets').doc(monthVal).set(sfData, { merge: true }).catch(function(){});
+                            } else if (localData) {
+                                if (!window._empMexpModalOpen) empMexpRenderDays(empNormalizeDaysData(localData));
+                            } else {
+                                if (!window._empMexpModalOpen) empMexpRenderDays([]);
+                            }
                         }).catch(function() {
-                            empMexpRenderDays(empNormalizeDaysData(localData));
+                            if (localData && !window._empMexpModalOpen) empMexpRenderDays(empNormalizeDaysData(localData));
                         });
                     }
-                }).catch(function(err) {
-                    console.error('empMexpLoadData err:', err);
-                    empMexpRenderDays(empNormalizeDaysData(localData));
+                }, function(err) {
+                    console.warn('empMexp realtime sync warning:', err);
+                    db.collection('savedForms').doc('mexp_' + monthVal).get().then(function(doc) {
+                        if (doc.exists) {
+                            var data = doc.data() || {};
+                            var days = empNormalizeDaysData(data);
+                            localStorage.setItem(storageKey, JSON.stringify(data));
+                            if (!window._empMexpModalOpen) empMexpRenderDays(days);
+                        } else if (localData && !window._empMexpModalOpen) {
+                            empMexpRenderDays(empNormalizeDaysData(localData));
+                        }
+                    }).catch(function() {
+                        if (localData && !window._empMexpModalOpen) empMexpRenderDays(empNormalizeDaysData(localData));
+                    });
                 });
             } else {
                 empMexpRenderDays(empNormalizeDaysData(localData));
@@ -4156,15 +4181,15 @@
             if (!days || days.length === 0) {
                 empMexpAddNewDay();
             } else {
-                days.forEach(function(d) {
-                    empMexpAddNewDay(d);
+                days.forEach(function(d, idx) {
+                    empMexpAddNewDay(d, idx);
                 });
             }
             empMexpCalc();
             empMexpUpdateSpenderSuggestions();
         }
 
-        window.empMexpAddNewDay = function(dayData) {
+        window.empMexpAddNewDay = function(dayData, dayIdx) {
             var container = document.getElementById('emp-mexp-days-container');
             if (!container) return;
 
@@ -4190,9 +4215,10 @@
                 }
             }
 
-            var dayName = empMexpGetDayName(defDate);
+            var dayName = (typeof mexpGetDayName === 'function') ? mexpGetDayName(defDate) : '';
             var dayCard = document.createElement('div');
             dayCard.className = 'mexp-day-card';
+            if (dayIdx !== undefined) dayCard.setAttribute('data-day-idx', dayIdx);
 
             dayCard.innerHTML =
                 '<div class="mexp-day-header" onclick="empMexpToggleDayCard(this, event)">' +
@@ -4209,6 +4235,7 @@
                 '  <div class="mexp-day-actions">' +
                 '    <div class="mexp-day-total-wrap" style="font-size:12px; color:#cbd5e1; font-weight:700;">إجمالي اليوم: <strong class="mexp-day-total" style="color:#34d399; font-size:13.5px; font-weight:900;">0.00 ج.م</strong></div>' +
                 '    <div class="mexp-day-actions-btns" style="display:flex; align-items:center; gap:6px;">' +
+                '      <button type="button" class="bt bt-o" style="padding:5px 12px; font-size:11.5px; font-weight:800; border-radius:6px; background:rgba(255,255,255,0.12); color:#fff; border-color:rgba(255,255,255,0.3);" onclick="event.preventDefault(); event.stopPropagation(); empMexpEditDayModal(this);" title="تعديل هذا اليوم في نافذة منبثقة"><span style="font-size:12px;">✏️</span> تعديل (Pop-up)</button>' +
                 '      <button type="button" class="bt bt-p" style="padding:5px 12px; font-size:11.5px; font-weight:800; border-radius:6px;" onclick="event.preventDefault(); event.stopPropagation(); empMexpAddDayItem(this);">➕ بند جديد</button>' +
                 '      <button type="button" class="bt bt-d" style="padding:5px 10px; font-size:11.5px; font-weight:800; border-radius:6px; background:rgba(239,68,68,0.2); color:#fca5a5; border-color:rgba(239,68,68,0.4);" onclick="event.preventDefault(); event.stopPropagation(); empMexpRemoveDay(this);" title="حذف هذا اليوم بالكامل">🗑 حذف</button>' +
                 '    </div>' +
@@ -4326,34 +4353,12 @@
             empMexpCalc();
         };
 
-        window.empMexpUpdateDayHeader = function(dateInp) {
-            if (!dateInp) return;
-            var card = dateInp.closest('.mexp-day-card');
-            if (!card) return;
-            var badge = card.querySelector('.mexp-day-name-badge');
-            if (badge) badge.innerText = empMexpGetDayName(dateInp.value) || 'اليوم';
-            var dateTxt = card.querySelector('.mexp-day-date-text');
-            if (dateTxt) dateTxt.innerText = dateInp.value || '';
-        };
-
-        window.empMexpRemoveDay = function(btn) {
-            var card = btn ? btn.closest('.mexp-day-card') : null;
-            if (card) {
-                var dateInp = card.querySelector('.mexp-day-date');
-                var dStr = dateInp ? dateInp.value : '';
-                if (confirm('هل أنت متأكد من حذف يوم (' + (dStr || '') + ') بكافة بنوده ومصروفاته؟')) {
-                    card.remove();
-                    empMexpCalc();
-                }
-            }
-        };
-
         window.empMexpDelRow = function(btn) {
             var tr = btn ? btn.closest('tr') : null;
             var tbody = tr ? tr.closest('tbody') : null;
             if (tr) tr.remove();
             if (tbody) {
-                tbody.querySelectorAll('tr').forEach(function(r, i){
+                tbody.querySelectorAll('tr').forEach(function(r, i) {
                     var idxEl = r.querySelector('.mexp-idx');
                     if (idxEl) idxEl.innerText = i + 1;
                     var dtIdx = r.querySelector('.mexp-desktop-idx-span');
@@ -4363,7 +4368,30 @@
             empMexpCalc();
         };
 
-        function empMexpCalc() {
+        window.empMexpUpdateDayHeader = function(dateInp) {
+            if (!dateInp) return;
+            var card = dateInp.closest('.mexp-day-card');
+            if (!card) return;
+            var badge = card.querySelector('.mexp-day-name-badge');
+            if (badge) badge.innerText = (typeof mexpGetDayName === 'function') ? (mexpGetDayName(dateInp.value) || 'اليوم') : 'اليوم';
+            var dateTxt = card.querySelector('.mexp-day-date-text');
+            if (dateTxt) dateTxt.innerText = dateInp.value || '';
+        };
+
+        window.empMexpRemoveDay = function(btn) {
+            var card = btn.closest('.mexp-day-card');
+            if (card) {
+                var dateInp = card.querySelector('.mexp-day-date');
+                var dStr = dateInp ? dateInp.value : '';
+                if (confirm('هل أنت متأكد من حذف يوم (' + (dStr || '') + ') بكافة بنوده ومصروفاته؟')) {
+                    card.remove();
+                    empMexpCalc();
+                    empMexpSaveData();
+                }
+            }
+        };
+
+        window.empMexpCalc = function() {
             var grandTotal = 0;
             var daysCount = 0;
 
@@ -4373,39 +4401,28 @@
                 card.querySelectorAll('.mexp-day-tbody tr').forEach(function(tr){
                     var qInp = tr.querySelector('.mexp-qty');
                     var pInp = tr.querySelector('.mexp-price');
-                    var q = parseFloat(qInp && qInp.value ? qInp.value : '1');
-                    if (isNaN(q) || q <= 0) q = 1;
-                    var p = parseFloat(pInp && pInp.value ? pInp.value : '0');
-                    if (!isNaN(p) && p > 0) {
-                        dayTotal += (q * p);
-                    }
+                    var q = parseFloat(qInp ? qInp.value : '1') || 1;
+                    var p = parseFloat(pInp ? pInp.value : '0') || 0;
+                    dayTotal += (q * p);
                 });
                 var dayTotalEl = card.querySelector('.mexp-day-total');
-                if (dayTotalEl) {
-                    var p1 = dayTotal.toFixed(2).split('.');
-                    p1[0] = p1[0].replace(/\B(?=(\d{3})+(?!\d))/g, ',');
-                    dayTotalEl.innerText = p1.join('.') + ' ج.م';
-                }
+                if (dayTotalEl) dayTotalEl.innerText = dayTotal.toFixed(2) + ' ج.م';
                 grandTotal += dayTotal;
             });
 
             var gt = document.getElementById('emp-mexp-grand-total');
-            if (gt) {
-                var p2 = grandTotal.toFixed(2).split('.');
-                p2[0] = p2[0].replace(/\B(?=(\d{3})+(?!\d))/g, ',');
-                gt.innerText = p2.join('.') + ' ج.م';
-            }
+            if (gt) gt.innerText = grandTotal.toFixed(2) + ' ج.م';
 
             var dc = document.getElementById('emp-mexp-days-count');
             if (dc) dc.innerText = daysCount + ' يوم';
-        }
+        };
 
-        function empMexpUpdateSpenderSuggestions() {
+        window.empMexpUpdateSpenderSuggestions = function() {
             var datalist = document.getElementById('emp-mexp-spenders-list');
             if (!datalist) return;
             var namesSet = new Set();
 
-            document.querySelectorAll('#emp-mexp-days-container .mexp-spender').forEach(function(inp) {
+            document.querySelectorAll('#emp-mexp-days-container .mexp-day-tbody .mexp-spender').forEach(function(inp){
                 var v = (inp.value || '').trim();
                 if (v && v.length >= 2) namesSet.add(v);
             });
@@ -4413,16 +4430,307 @@
             try {
                 var hist = JSON.parse(localStorage.getItem('tg_mexp_spenders_history') || '[]');
                 if (Array.isArray(hist)) {
-                    hist.forEach(function(n) { if (n) namesSet.add(n.trim()); });
+                    hist.forEach(function(n){ if (n) namesSet.add(n.trim()); });
                 }
             } catch(e){}
 
+            var myName = (typeof TG_USER !== 'undefined' && TG_USER && TG_USER.name) ? TG_USER.name : '';
+            if (myName) namesSet.add(myName);
+
             var html = '';
-            namesSet.forEach(function(name) {
+            namesSet.forEach(function(name){
                 html += '<option value="' + esc(name) + '">';
             });
             datalist.innerHTML = html;
-        }
+        };
+
+        // ─── DAY POPUP MODAL (EMPLOYEE) ────────────────────────────────────
+        window._empMexpEditingCard = null;
+        window._empMexpModalOpen = false;
+
+        window.empMexpOpenNewDayModal = function() {
+            window._empMexpEditingCard = null;
+            var mi = document.getElementById('emp-mexp-month');
+            var monthVal = mi && mi.value ? mi.value : '';
+            var d = new Date();
+            var todayStr = d.toISOString().split('T')[0];
+            var defDate = todayStr;
+
+            var existingDates = document.querySelectorAll('#emp-mexp-days-container .mexp-day-date');
+            if (existingDates.length > 0) {
+                var lastVal = existingDates[existingDates.length - 1].value;
+                if (lastVal) {
+                    var lastD = new Date(lastVal);
+                    lastD.setDate(lastD.getDate() + 1);
+                    defDate = lastD.toISOString().split('T')[0];
+                }
+            } else if (monthVal) {
+                defDate = monthVal + '-01';
+            }
+
+            var defSpender = (typeof TG_USER !== 'undefined' && TG_USER && TG_USER.name) ? TG_USER.name : '';
+            empMexpShowModalWithData(defDate, [{ spender: defSpender, cat: '', qty: '1', price: '' }], false);
+        };
+
+        window.empMexpEditDayModal = function(btn) {
+            var card = btn ? btn.closest('.mexp-day-card') : null;
+            if (!card) return;
+            window._empMexpEditingCard = card;
+
+            var dateInp = card.querySelector('.mexp-day-date');
+            var dateVal = dateInp ? dateInp.value : '';
+
+            var items = [];
+            card.querySelectorAll('.mexp-day-tbody tr').forEach(function(tr){
+                var spender = (tr.querySelector('.mexp-spender') ? tr.querySelector('.mexp-spender').value : '').trim();
+                var cat = (tr.querySelector('.mexp-cat') ? tr.querySelector('.mexp-cat').value : '').trim();
+                var qty = (tr.querySelector('.mexp-qty') ? tr.querySelector('.mexp-qty').value : '1').trim() || '1';
+                var price = (tr.querySelector('.mexp-price') ? tr.querySelector('.mexp-price').value : '').trim();
+                if (spender || cat || price) {
+                    items.push({ spender: spender, cat: cat, qty: qty, price: price });
+                }
+            });
+
+            if (items.length === 0) {
+                var defSpender = (typeof TG_USER !== 'undefined' && TG_USER && TG_USER.name) ? TG_USER.name : '';
+                items.push({ spender: defSpender, cat: '', qty: '1', price: '' });
+            }
+
+            empMexpShowModalWithData(dateVal, items, true);
+        };
+
+        window.empMexpShowModalWithData = function(dateVal, items, isEdit) {
+            window._empMexpModalOpen = true;
+            var modal = document.getElementById('empMexpDayModal');
+            if (!modal) {
+                modal = document.createElement('div');
+                modal.id = 'empMexpDayModal';
+                modal.className = 'mexp-modal-overlay';
+                document.body.appendChild(modal);
+            }
+
+            var hist = [];
+            try { hist = JSON.parse(localStorage.getItem('tg_mexp_spenders_history') || '[]'); } catch(e){}
+            var myName = (typeof TG_USER !== 'undefined' && TG_USER && TG_USER.name) ? TG_USER.name : '';
+            if (myName && hist.indexOf(myName) === -1) hist.unshift(myName);
+
+            var dlOptions = '';
+            hist.forEach(function(s){ dlOptions += '<option value="' + esc(s) + '">'; });
+
+            var dayName = (typeof mexpGetDayName === 'function') ? mexpGetDayName(dateVal) : '';
+
+            var rowsHtml = '';
+            (items || []).forEach(function(item, idx){
+                rowsHtml += empMexpModalBuildRowHtml(idx + 1, item);
+            });
+
+            var h = '<div class="mexp-modal-card">' +
+                '<div class="mexp-modal-head">' +
+                '  <div style="display:flex;align-items:center;gap:10px;">' +
+                '    <span style="font-size:24px;">📅</span>' +
+                '    <div>' +
+                '      <div style="font-size:16px;font-weight:900;color:#fff;">' + (isEdit ? '✏️ تعديل مصروفات اليوم' : '➕ تسجيل وتوثيق مصروفات يوم جديد') + '</div>' +
+                '      <div style="font-size:11.5px;opacity:0.85;margin-top:2px;">نافذة سريعة مع المزامنة اللحظية المباشرة مع الإدارة العامة</div>' +
+                '    </div>' +
+                '  </div>' +
+                '  <button type="button" onclick="empMexpCloseDayModal()" style="background:rgba(255,255,255,0.15);border:none;color:#fff;font-size:18px;cursor:pointer;width:32px;height:32px;border-radius:50%;display:flex;align-items:center;justify-content:center;">✕</button>' +
+                '</div>' +
+                '<div class="mexp-modal-body">' +
+                '  <div style="background:var(--bg2);border:1px solid var(--bd);border-radius:12px;padding:12px 16px;margin-bottom:14px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;">' +
+                '    <div style="display:flex;align-items:center;gap:10px;flex:1;min-width:260px;">' +
+                '      <label style="font-size:13px;font-weight:800;color:var(--tx);white-space:nowrap;">📆 تاريخ اليوم:</label>' +
+                '      <input type="date" id="empMexpModalDate" class="inp" style="padding:7px 12px;font-weight:800;font-size:13px;" value="' + esc(dateVal) + '" onchange="empMexpModalDateChanged()">' +
+                '      <span id="empMexpModalDayName" style="background:rgba(201,162,39,0.18);color:#d97706;border:1px solid rgba(217,119,6,0.3);padding:4px 12px;border-radius:14px;font-size:12px;font-weight:800;">' + esc(dayName || 'اليوم') + '</span>' +
+                '    </div>' +
+                '    <div style="display:flex;align-items:center;gap:6px;">' +
+                '      <button type="button" class="bt bt-o" style="padding:5px 12px;font-size:11.5px;font-weight:700;border-radius:6px;" onclick="empMexpModalSetQuickDate(0)">📅 اليوم</button>' +
+                '      <button type="button" class="bt bt-o" style="padding:5px 12px;font-size:11.5px;font-weight:700;border-radius:6px;" onclick="empMexpModalSetQuickDate(-1)">⏪ أمس</button>' +
+                '    </div>' +
+                '  </div>' +
+                '  <datalist id="empMexpModalSpendersDatalist">' + dlOptions + '</datalist>' +
+                '  <div style="border:1px solid var(--bd);border-radius:12px;overflow:hidden;background:var(--w);">' +
+                '    <div style="padding:10px 14px;background:var(--bg2);border-bottom:1px solid var(--bd);display:flex;align-items:center;justify-content:space-between;">' +
+                '      <strong style="font-size:13px;color:var(--tx);">📋 بنود المصروفات المسجلة لهذا اليوم:</strong>' +
+                '      <button type="button" class="bt bt-p" style="padding:5px 14px;font-size:12px;font-weight:800;border-radius:8px;" onclick="empMexpModalAddRow()">➕ إضافة بند</button>' +
+                '    </div>' +
+                '    <div style="overflow-x:auto;max-height:360px;overflow-y:auto;">' +
+                '      <table class="dt" style="width:100%;margin:0;border-collapse:collapse;" id="empMexpModalTable">' +
+                '        <thead>' +
+                '          <tr style="background:var(--nv);color:#fff;font-size:11.5px;">' +
+                '            <th style="width:36px;text-align:center;">م</th>' +
+                '            <th style="min-width:140px;">اسم الصارف</th>' +
+                '            <th style="min-width:160px;">النوع / البيان</th>' +
+                '            <th style="width:75px;text-align:center;">العدد</th>' +
+                '            <th style="width:105px;text-align:center;">السعر (ج.م)</th>' +
+                '            <th style="width:100px;text-align:center;">الإجمالي</th>' +
+                '            <th style="width:36px;text-align:center;"></th>' +
+                '          </tr>' +
+                '        </thead>' +
+                '        <tbody id="empMexpModalTbody">' + rowsHtml + '</tbody>' +
+                '      </table>' +
+                '    </div>' +
+                '  </div>' +
+                '  <div style="margin-top:14px;display:flex;align-items:center;justify-content:space-between;background:var(--nv);color:#fff;padding:12px 18px;border-radius:12px;box-shadow:var(--sh-sm);flex-wrap:wrap;gap:10px;">' +
+                '    <div style="font-size:12.5px;opacity:0.9;">🔢 عدد البنود: <strong id="empMexpModalItemsCount" style="color:#fbbf24;font-size:14px;">0</strong></div>' +
+                '    <div style="font-size:13px;">💰 إجمالي مصروفات اليوم: <strong id="empMexpModalGrandTotal" style="color:#34d399;font-size:16px;margin-right:6px;">0.00 ج.م</strong></div>' +
+                '  </div>' +
+                '</div>' +
+                '<div class="mexp-modal-foot">' +
+                '  <button type="button" class="bt bt-o" style="padding:9px 20px;font-size:12.5px;font-weight:700;" onclick="empMexpCloseDayModal()">إلغاء</button>' +
+                '  <button type="button" class="bt bt-p" style="padding:9px 26px;font-size:13px;font-weight:800;background:linear-gradient(135deg, #059669, #047857);color:#fff;border-radius:10px;box-shadow:0 4px 14px rgba(5,150,105,0.35);" onclick="empMexpModalSaveDay()">💾 حفظ اليوم ومزامنة الشيت فوراً</button>' +
+                '</div>' +
+                '</div>';
+
+            modal.innerHTML = h;
+            modal.style.display = 'flex';
+            empMexpModalCalc();
+        };
+
+        window.empMexpModalBuildRowHtml = function(idx, item) {
+            var spender = item && item.spender ? item.spender : '';
+            var cat = item && item.cat ? item.cat : '';
+            var qty = item && item.qty ? item.qty : '1';
+            var price = item && item.price ? item.price : '';
+            var subtotal = (parseFloat(qty || '1') * parseFloat(price || '0')) || 0;
+            return '<tr>' +
+                '<td class="mexp-modal-idx" style="font-weight:bold;font-size:11px;text-align:center;">' + idx + '</td>' +
+                '<td><input type="text" class="mexp-modal-spender" list="empMexpModalSpendersDatalist" placeholder="اسم الصارف..." value="' + esc(spender) + '"></td>' +
+                '<td><input type="text" class="mexp-modal-cat" placeholder="مثلاً: بوفيه، مواصلات، أدوات..." value="' + esc(cat) + '"></td>' +
+                '<td><input type="number" min="1" step="1" class="mexp-modal-qty" value="' + esc(qty) + '" style="text-align:center;" oninput="empMexpModalCalc()"></td>' +
+                '<td><input type="number" min="0" step="0.01" class="mexp-modal-price" value="' + esc(price) + '" style="text-align:center;" oninput="empMexpModalCalc()"></td>' +
+                '<td class="mexp-modal-subtotal" style="text-align:center;font-weight:800;color:var(--nv);">' + subtotal.toFixed(2) + '</td>' +
+                '<td style="text-align:center;"><button type="button" class="bt bt-d" style="padding:3px 7px;font-size:11px;border-radius:4px;" onclick="empMexpModalDelRow(this)">✕</button></td>' +
+                '</tr>';
+        };
+
+        window.empMexpModalAddRow = function() {
+            var tbody = document.getElementById('empMexpModalTbody');
+            if (!tbody) return;
+            var idx = tbody.children.length + 1;
+            var tr = document.createElement('tr');
+            var myName = (typeof TG_USER !== 'undefined' && TG_USER && TG_USER.name) ? TG_USER.name : '';
+            tr.innerHTML = empMexpModalBuildRowHtml(idx, { spender: myName, qty: '1' }).replace(/^<tr>/, '').replace(/<\/tr>$/, '');
+            tbody.appendChild(tr);
+            empMexpModalCalc();
+            var inp = tr.querySelector('.mexp-modal-spender');
+            if (inp) inp.focus();
+        };
+
+        window.empMexpModalDelRow = function(btn) {
+            var tr = btn ? btn.closest('tr') : null;
+            var tbody = document.getElementById('empMexpModalTbody');
+            if (tr) tr.remove();
+            if (tbody) {
+                tbody.querySelectorAll('tr').forEach(function(r, i){
+                    var idxEl = r.querySelector('.mexp-modal-idx');
+                    if (idxEl) idxEl.innerText = i + 1;
+                });
+            }
+            empMexpModalCalc();
+        };
+
+        window.empMexpModalDateChanged = function() {
+            var dateInp = document.getElementById('empMexpModalDate');
+            var badge = document.getElementById('empMexpModalDayName');
+            if (dateInp && badge) {
+                badge.innerText = (typeof mexpGetDayName === 'function') ? (mexpGetDayName(dateInp.value) || 'اليوم') : 'اليوم';
+            }
+        };
+
+        window.empMexpModalSetQuickDate = function(offsetDays) {
+            var d = new Date();
+            if (offsetDays) d.setDate(d.getDate() + offsetDays);
+            var str = d.toISOString().split('T')[0];
+            var dateInp = document.getElementById('empMexpModalDate');
+            if (dateInp) {
+                dateInp.value = str;
+                empMexpModalDateChanged();
+            }
+        };
+
+        window.empMexpModalCalc = function() {
+            var total = 0;
+            var count = 0;
+            var tbody = document.getElementById('empMexpModalTbody');
+            if (tbody) {
+                tbody.querySelectorAll('tr').forEach(function(tr){
+                    var qInp = tr.querySelector('.mexp-modal-qty');
+                    var pInp = tr.querySelector('.mexp-modal-price');
+                    var subEl = tr.querySelector('.mexp-modal-subtotal');
+                    var q = parseFloat(qInp ? qInp.value : '1') || 1;
+                    var p = parseFloat(pInp ? pInp.value : '0') || 0;
+                    var sub = q * p;
+                    if (subEl) subEl.innerText = sub.toFixed(2);
+                    var spenderInp = tr.querySelector('.mexp-modal-spender');
+                    var catInp = tr.querySelector('.mexp-modal-cat');
+                    if ((spenderInp && spenderInp.value.trim()) || (catInp && catInp.value.trim()) || p > 0) {
+                        count++;
+                    }
+                    total += sub;
+                });
+            }
+            var cntEl = document.getElementById('empMexpModalItemsCount');
+            var totEl = document.getElementById('empMexpModalGrandTotal');
+            if (cntEl) cntEl.innerText = count;
+            if (totEl) totEl.innerText = total.toFixed(2) + ' ج.م';
+        };
+
+        window.empMexpCloseDayModal = function() {
+            window._empMexpModalOpen = false;
+            window._empMexpEditingCard = null;
+            var modal = document.getElementById('empMexpDayModal');
+            if (modal) modal.style.display = 'none';
+        };
+
+        window.empMexpModalSaveDay = function() {
+            var dateInp = document.getElementById('empMexpModalDate');
+            var dateVal = dateInp ? dateInp.value.trim() : '';
+            if (!dateVal) {
+                alert('⚠️ يرجى تحديد تاريخ اليوم أولاً.');
+                return;
+            }
+
+            var items = [];
+            var tbody = document.getElementById('empMexpModalTbody');
+            if (tbody) {
+                tbody.querySelectorAll('tr').forEach(function(tr){
+                    var spender = (tr.querySelector('.mexp-modal-spender') ? tr.querySelector('.mexp-modal-spender').value : '').trim();
+                    var cat = (tr.querySelector('.mexp-modal-cat') ? tr.querySelector('.mexp-modal-cat').value : '').trim();
+                    var qty = (tr.querySelector('.mexp-modal-qty') ? tr.querySelector('.mexp-modal-qty').value : '1').trim() || '1';
+                    var price = (tr.querySelector('.mexp-modal-price') ? tr.querySelector('.mexp-modal-price').value : '').trim();
+                    if (spender || cat || price) {
+                        items.push({ spender: spender, cat: cat, qty: qty, price: price });
+                    }
+                });
+            }
+
+            if (items.length === 0) {
+                var defSpender = (typeof TG_USER !== 'undefined' && TG_USER && TG_USER.name) ? TG_USER.name : '';
+                items.push({ spender: defSpender, cat: '', qty: '1', price: '' });
+            }
+
+            if (window._empMexpEditingCard) {
+                var card = window._empMexpEditingCard;
+                var dInp = card.querySelector('.mexp-day-date');
+                if (dInp) {
+                    dInp.value = dateVal;
+                    empMexpUpdateDayHeader(dInp);
+                }
+                var cTbody = card.querySelector('.mexp-day-tbody');
+                if (cTbody) {
+                    cTbody.innerHTML = '';
+                    items.forEach(function(item){
+                        empMexpAddDayItem(cTbody, item);
+                    });
+                }
+            } else {
+                empMexpAddNewDay({ date: dateVal, items: items });
+            }
+
+            empMexpCalc();
+            empMexpCloseDayModal();
+            empMexpSaveData();
+        };
 
         window.empMexpSaveData = function() {
             var mi = document.getElementById('emp-mexp-month');
@@ -4431,6 +4739,7 @@
 
             var days = [];
             var spendersSet = new Set();
+            var grandTotal = 0;
 
             document.querySelectorAll('#emp-mexp-days-container .mexp-day-card').forEach(function(card){
                 var dateInp = card.querySelector('.mexp-day-date');
@@ -4445,10 +4754,13 @@
 
                     var spender = spenderInp ? spenderInp.value.trim() : '';
                     var cat = catInp ? catInp.value.trim() : '';
-                    var qty = qtyInp ? qtyInp.value.trim() : '';
+                    var qty = qtyInp ? qtyInp.value.trim() : '1';
                     var price = priceInp ? priceInp.value.trim() : '';
 
                     if (spender || cat || price) {
+                        var p = parseFloat(price || '0') || 0;
+                        var q = parseFloat(qty || '1') || 1;
+                        grandTotal += (p * q);
                         items.push({ spender: spender, cat: cat, qty: qty || '1', price: price });
                         if (spender) spendersSet.add(spender);
                     }
@@ -4463,6 +4775,7 @@
             var sheetData = {
                 month: monthVal,
                 days: days,
+                grandTotal: grandTotal,
                 updatedBy: (typeof TG_USER !== 'undefined' && TG_USER && TG_USER.name) ? TG_USER.name : 'الموظف المسؤول',
                 updatedAt: new Date().toISOString()
             };
@@ -4481,32 +4794,29 @@
                     formId: 'mexp',
                     month: monthVal,
                     days: days,
+                    grandTotal: grandTotal,
                     updatedBy: myName,
                     updatedAt: firebase.firestore.FieldValue.serverTimestamp()
                 };
 
-                db.collection('savedForms').doc('mexp_' + monthVal).set(sheetDocData, { merge: true }).then(function() {
-                    db.collection('mexp_sheets').doc(monthVal).set(sheetDocData, { merge: true }).catch(function(){});
+                db.collection('mexp_sheets').doc(monthVal).set(sheetDocData, { merge: true }).then(function() {
+                    db.collection('savedForms').doc('mexp_' + monthVal).set(sheetDocData, { merge: true }).catch(function(){});
                     var syncInfo = document.getElementById('empMexpSyncInfo');
-                    if (syncInfo) syncInfo.innerHTML = '<span>✅ تم الحفظ والمزامنة بنجاح مع الإدارة بواسطة: <b>' + esc(myName) + '</b></span>';
-                    if (typeof tgShowToast === 'function') tgShowToast('تم حفظ شيت المصروفات والمزامنة بنجاح', 'success');
-                    else alert('✅ تم حفظ شيت المصروفات والمزامنة بنجاح مع الإدارة');
+                    if (syncInfo) syncInfo.innerHTML = '<span>⚡ <b>متزامن لحظياً</b> — تم الحفظ والمزامنة بنجاح بواسطة: <b>' + esc(myName) + '</b></span>';
+                    if (typeof tgShowToast === 'function') tgShowToast('تم حفظ شيت المصروفات والمزامنة بنجاح مع الإدارة', 'success');
                 }).catch(function(err) {
-                    console.error('empMexpSaveData savedForms err:', err);
-                    db.collection('mexp_sheets').doc(monthVal).set(sheetDocData, { merge: true }).then(function() {
+                    console.error('empMexpSaveData mexp_sheets err:', err);
+                    db.collection('savedForms').doc('mexp_' + monthVal).set(sheetDocData, { merge: true }).then(function() {
                         var syncInfo = document.getElementById('empMexpSyncInfo');
-                        if (syncInfo) syncInfo.innerHTML = '<span>✅ تم الحفظ والمزامنة بنجاح مع الإدارة بواسطة: <b>' + esc(myName) + '</b></span>';
-                        if (typeof tgShowToast === 'function') tgShowToast('تم حفظ شيت المصروفات والمزامنة بنجاح', 'success');
-                        else alert('✅ تم حفظ شيت المصروفات والمزامنة بنجاح مع الإدارة');
+                        if (syncInfo) syncInfo.innerHTML = '<span>✅ تم الحفظ والمزامنة بواسطة: <b>' + esc(myName) + '</b></span>';
+                        if (typeof tgShowToast === 'function') tgShowToast('تم حفظ شيت المصروفات والمزامنة بنجاح مع الإدارة', 'success');
                     }).catch(function(err2) {
                         console.error('empMexpSaveData err2:', err2);
                         if (typeof tgShowToast === 'function') tgShowToast('تم الحفظ محلياً', 'warning');
-                        else alert('✅ تم الحفظ محلياً');
                     });
                 });
             } else {
                 if (typeof tgShowToast === 'function') tgShowToast('تم حفظ شيت المصروفات لشهر ' + monthVal, 'success');
-                else alert('✅ تم حفظ شيت المصروفات لشهر ' + monthVal);
             }
         };
 
