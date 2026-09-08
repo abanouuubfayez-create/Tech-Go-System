@@ -67,7 +67,7 @@
     <link
         href="https://fonts.googleapis.com/css2?family=Alexandria:wght@300;400;500;600;700;800;900&family=Cairo:wght@400;600;700;800;900&family=Tajawal:wght@400;500;700;800&family=Inter:wght@400;500;600;700&display=swap"
         rel="stylesheet">
-    <link rel="stylesheet" href="styles.css?v=1788856550">
+    <link rel="stylesheet" href="styles.css?v=1788856972">
     <link rel="manifest" href="manifest.json">
     <link rel="icon" type="image/png" sizes="192x192" href="icon-192.png">
     <link rel="apple-touch-icon" href="icon-192.png">
@@ -75,10 +75,10 @@
     <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-storage-compat.js"></script>
-    <script src="firebase-config.js?v=1788856550"></script>
-    <script src="auth.js?v=1788856550"></script>
-    <script src="app.js?v=1788856550"></script>
-    <script src="formsend.js?v=1788856550"></script>
+    <script src="firebase-config.js?v=1788856972"></script>
+    <script src="auth.js?v=1788856972"></script>
+    <script src="app.js?v=1788856972"></script>
+    <script src="formsend.js?v=1788856972"></script>
     <script>
         (function () {
             const theme = localStorage.getItem('tg-theme') || 'light';
@@ -3478,8 +3478,8 @@
         تطوير وتصميم: أبانوب فايز</div>
     <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
-    <script src="theme.js?v=1788856550"></script>
-    <script src="pwa-install.js?v=1788856550"></script>
+    <script src="theme.js?v=1788856972"></script>
+    <script src="pwa-install.js?v=1788856972"></script>
 
 
     <!-- Incoming Meeting Call Modal -->
@@ -4193,10 +4193,70 @@
                 empMexpRenderDays(serverDays);
             }
 
+            empMexpCheckLocalRecovery(serverDays, data);
+
             if (sourceCollection === 'savedForms' && typeof db !== 'undefined' && db && monthVal) {
                 db.collection('mexp_sheets').doc(monthVal).set(data, { merge: true }).catch(function () { });
             }
         }
+
+        function empMexpCheckLocalRecovery(serverDays, serverData) {
+            var mi = document.getElementById('emp-mexp-month');
+            var monthVal = mi && mi.value ? mi.value : '';
+            if (!monthVal) return;
+            var storageKey = 'tg_mexp_' + monthVal;
+            var localRaw = localStorage.getItem(storageKey);
+            if (!localRaw) return;
+            var localData = null;
+            try { localData = JSON.parse(localRaw); } catch (e) { }
+            if (!localData) return;
+            var localDays = empNormalizeDaysData(localData);
+            if (!Array.isArray(localDays) || localDays.length === 0) return;
+
+            var serverItemsCount = 0;
+            (serverDays || []).forEach(function (d) { serverItemsCount += (d.items || []).length; });
+            var localItemsCount = 0;
+            (localDays || []).forEach(function (d) { localItemsCount += (d.items || []).length; });
+
+            if (localItemsCount > serverItemsCount) {
+                var banner = document.getElementById('empMexpRecoveryBanner');
+                if (!banner) {
+                    banner = document.createElement('div');
+                    banner.id = 'empMexpRecoveryBanner';
+                    banner.style.cssText = 'background:linear-gradient(135deg,#fef3c7,#fde68a);border:2px solid #f59e0b;padding:14px 18px;border-radius:12px;margin-bottom:14px;color:#92400e;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px;box-shadow:var(--sh-sm);';
+                    var container = document.getElementById('emp-mexp-days-container');
+                    if (container && container.parentNode) {
+                        container.parentNode.insertBefore(banner, container);
+                    }
+                }
+                banner.innerHTML = '<div>' +
+                    '<div style="font-size:14px;font-weight:900;">⚠️ تم العثور على ' + localItemsCount + ' بند مسجل على جهازك (السيرفر عليه ' + serverItemsCount + ' بند فقط)</div>' +
+                    '<div style="font-size:12px;margin-top:3px;opacity:0.9;">يبدو أن هناك بنوداً قمت بإضافتها سابقاً ولم تُرفع للسيرفر أو تم حفظ نسخة أقدم عليها. يمكنك مزامنتها مع الإدارة الآن بضغطة واحدة:</div>' +
+                    '</div>' +
+                    '<button type="button" class="bt bt-p" style="padding:8px 20px;font-size:13px;font-weight:900;background:#d97706;border-color:#b45309;box-shadow:0 2px 8px rgba(217,119,6,0.35);" onclick="empMexpRecoverAndSync()">' +
+                    '🚀 رفع ومزامنة كل بنود جهازي مع الإدارة فوراً' +
+                    '</button>';
+            }
+        }
+
+        window.empMexpRecoverAndSync = function () {
+            var mi = document.getElementById('emp-mexp-month');
+            var monthVal = mi && mi.value ? mi.value : '';
+            var storageKey = 'tg_mexp_' + monthVal;
+            var localRaw = localStorage.getItem(storageKey);
+            if (!localRaw) return;
+            var localData = null;
+            try { localData = JSON.parse(localRaw); } catch (e) { }
+            if (!localData) return;
+            var localDays = empNormalizeDaysData(localData);
+            window._empMexpDaysData = localDays;
+            empMexpRenderDays(localDays);
+            empMexpSaveData(true);
+            var banner = document.getElementById('empMexpRecoveryBanner');
+            if (banner) banner.remove();
+            if (typeof tgToast === 'function') tgToast('✅ تم استرجاع ومزامنة جميع بنودك مع الإدارة بنجاح!', 'ok');
+            else if (typeof tgShowToast === 'function') tgShowToast('تم استرجاع ومزامنة جميع بنودك مع الإدارة بنجاح', 'success');
+        };
 
         window.empMexpLoadData = function (showToastOrForce) {
             var container = document.getElementById('emp-mexp-days-container');

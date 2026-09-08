@@ -6466,6 +6466,78 @@ window.mexpShowHistoryModal = function () {
     modal.style.display = 'flex';
 };
 
+window.mexpScanAllMonths = function () {
+    if (typeof db === 'undefined' || !db) return;
+    var resultDiv = document.getElementById('mexpMonthsFoundWrap');
+    if (!resultDiv) {
+        resultDiv = document.createElement('div');
+        resultDiv.id = 'mexpMonthsFoundWrap';
+        resultDiv.style.cssText = 'margin-top:10px;padding:10px 14px;background:var(--bg2);border:1px dashed var(--bd);border-radius:10px;font-size:12px;';
+        var syncInfo = document.getElementById('mexpSyncInfo');
+        if (syncInfo && syncInfo.parentNode) syncInfo.parentNode.appendChild(resultDiv);
+    }
+    resultDiv.innerHTML = '<span style="color:var(--tx2);">⏳ جاري فحص كافة الشهور وقواعد البيانات بالسيرفر...</span>';
+
+    var p1 = db.collection('mexp_sheets').get();
+    var p2 = db.collection('savedForms').get();
+
+    Promise.allSettled([p1, p2]).then(function (res) {
+        var monthsMap = {};
+        if (res[0].status === 'fulfilled' && res[0].value) {
+            res[0].value.forEach(function (doc) {
+                var d = doc.data() || {};
+                var m = doc.id;
+                if (!monthsMap[m]) monthsMap[m] = { month: m, source: 'mexp_sheets', days: (d.days || []).length, total: d.grandTotal || 0, by: d.updatedBy || '', at: d.updatedAt };
+            });
+        }
+        if (res[1].status === 'fulfilled' && res[1].value) {
+            res[1].value.forEach(function (doc) {
+                if (doc.id.startsWith('mexp_')) {
+                    var m = doc.id.replace('mexp_', '');
+                    var d = doc.data() || {};
+                    if (!monthsMap[m] || (d.days && d.days.length > (monthsMap[m].days || 0))) {
+                        monthsMap[m] = { month: m, source: 'savedForms', days: (d.days || []).length, total: d.grandTotal || 0, by: d.updatedBy || '', at: d.updatedAt };
+                    }
+                }
+            });
+        }
+
+        var keys = Object.keys(monthsMap).sort().reverse();
+        if (keys.length === 0) {
+            resultDiv.innerHTML = '<span style="color:var(--tx3);">لم يتم العثور على أي شيتات مسجلة في أي شهر آخر بالسيرفر.</span>';
+            return;
+        }
+
+        var chipsHtml = keys.map(function (mKey) {
+            var item = monthsMap[mKey];
+            var timeStr = '';
+            if (item.at) {
+                try {
+                    if (typeof item.at.toDate === 'function') timeStr = item.at.toDate().toLocaleDateString('ar-EG');
+                    else timeStr = new Date(item.at).toLocaleDateString('ar-EG');
+                } catch (e) { }
+            }
+            return '<button type="button" class="bt bt-o" style="padding:4px 10px;font-size:11.5px;font-weight:800;border-radius:8px;background:var(--w);" onclick="mexpSwitchToMonth(\'' + mKey + '\')">' +
+                '📅 ' + mKey + ' (' + item.days + ' يوم - ' + fmtMoney(item.total) + ' - بواسطة: ' + escH(item.by || 'مجهول') + (timeStr ? ' ' + timeStr : '') + ')' +
+                '</button>';
+        }).join(' ');
+
+        resultDiv.innerHTML = '<div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">' +
+            '<strong style="color:var(--tx);font-weight:900;">📂 الشهور المسجلة في السيرفر:</strong> ' + chipsHtml +
+            '</div>';
+    }).catch(function (err) {
+        resultDiv.innerHTML = '<span style="color:#ef4444;">تعذر فحص السيرفر: ' + escH(err.message || '') + '</span>';
+    });
+};
+
+window.mexpSwitchToMonth = function (targetMonth) {
+    var mi = document.getElementById('mexp-month');
+    if (mi) {
+        mi.value = targetMonth;
+        mexpLoad(true);
+    }
+};
+
 // ─── MAIN LOAD ────────────────────────────────────────────────────────────
 function load(id, c) {
     var h = "";
@@ -7208,8 +7280,9 @@ function load(id, c) {
             '      <button type="button" class="bt bt-p" style="padding:6px 12px;font-size:11.5px;font-weight:800;white-space:nowrap;" onclick="mexpSaveAssignee()">💾 حفظ</button>' +
             '    </div>' +
             '  </div>' +
-            '  <div id="mexpSyncInfo" style="margin-top:10px;display:flex;align-items:center;gap:8px;border-top:1px dashed var(--bd);padding-top:8px;">' +
+            '  <div id="mexpSyncInfo" style="margin-top:10px;display:flex;align-items:center;gap:8px;border-top:1px dashed var(--bd);padding-top:8px;flex-wrap:wrap;">' +
             '    <span class="mexp-sync-badge"><span class="mexp-pulse-dot"></span> ⚡ متزامن لحظياً مع بوابة الموظف المسؤول</span>' +
+            '    <button type="button" class="bt bt-o" style="padding:2px 9px;font-size:11px;border-radius:12px;font-weight:700;" onclick="mexpScanAllMonths()">🔍 فحص الشهور والبيانات المحفوظة بالسيرفر</button>' +
             '  </div>' +
             '</div>';
 
