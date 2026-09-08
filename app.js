@@ -5212,7 +5212,7 @@ function mexpInit() {
     mexpLoad();
 }
 
-function mexpUpdateSyncStatus(updatedBy, updatedAt, isSyncing) {
+function mexpUpdateSyncStatus(updatedBy, updatedAt, isSyncing, isEmp) {
     var syncInfo = document.getElementById('mexpSyncInfo');
     if (!syncInfo) return;
     if (isSyncing) {
@@ -5229,8 +5229,77 @@ function mexpUpdateSyncStatus(updatedBy, updatedAt, isSyncing) {
             }
         } catch (e) { }
     }
+    var myName = (window.TG_USER && TG_USER.name) ? TG_USER.name : 'الأدمن';
     var byName = updatedBy ? escH(updatedBy) : 'الإدارة العامة';
-    syncInfo.innerHTML = '<span class="mexp-sync-badge"><span class="mexp-pulse-dot"></span> ⚡ متزامن لحظياً — آخر تحديث: <b>' + byName + '</b> ' + (timeStr ? '(' + timeStr + ')' : '') + '</span>';
+
+    if (isEmp === undefined && updatedBy) {
+        isEmp = (updatedBy !== myName && !updatedBy.includes('أدمن') && !updatedBy.includes('الإدارة'));
+    }
+
+    if (isEmp) {
+        syncInfo.innerHTML = '<span class="mexp-sync-badge emp-updated"><span class="mexp-pulse-dot emp-updated"></span> ⚡ متزامن لحظياً — آخر تحديث بواسطة الموظف: <b>' + byName + '</b> ' + (timeStr ? '(' + timeStr + ')' : '') + '</span>' +
+            '<button type="button" class="bt bt-o mexp-btn-history-pill" onclick="mexpShowHistoryModal()" title="عرض سجل تحديثات الموظف">📜 سجل التعديلات</button>';
+    } else {
+        syncInfo.innerHTML = '<span class="mexp-sync-badge"><span class="mexp-pulse-dot"></span> ⚡ متزامن لحظياً — آخر تحديث: <b>' + byName + '</b> ' + (timeStr ? '(' + timeStr + ')' : '') + '</span>';
+    }
+}
+
+function mexpHandleRemoteUpdate(data, sourceCollection, isForce) {
+    if (!data) return;
+    var serverDays = mexpNormalizeDaysData(data);
+    var updatedBy = data.updatedBy || '';
+    var updatedAt = data.updatedAt;
+
+    // Convert updatedAt to comparable timestamp ms
+    var newTimeMs = 0;
+    if (updatedAt) {
+        if (typeof updatedAt.toDate === 'function') newTimeMs = updatedAt.toDate().getTime();
+        else if (typeof updatedAt === 'number') newTimeMs = updatedAt;
+        else if (typeof updatedAt === 'string') newTimeMs = new Date(updatedAt).getTime();
+    }
+    if (isNaN(newTimeMs)) newTimeMs = 0;
+
+    var curTimeMs = window._mexpLastRemoteTime || 0;
+    if (!isForce && curTimeMs && newTimeMs && newTimeMs < curTimeMs) {
+        return; // Incoming data is older than current data in memory
+    }
+
+    window._mexpLastRemoteTime = newTimeMs || Date.now();
+    window._mexpLastRemoteSource = sourceCollection;
+    window._mexpLastSheetData = data;
+
+    if (Array.isArray(data.auditTrail)) {
+        window._mexpAuditTrail = data.auditTrail;
+    }
+
+    var mi = document.getElementById('mexp-month');
+    var monthVal = mi && mi.value ? mi.value : '';
+    var storageKey = 'tg_mexp_' + monthVal;
+    try { localStorage.setItem(storageKey, JSON.stringify(data)); } catch (e) { }
+
+    var myName = (window.TG_USER && TG_USER.name) ? TG_USER.name : 'الأدمن';
+    var isEmp = updatedBy && (updatedBy !== myName) && !updatedBy.includes('أدمن') && !updatedBy.includes('الإدارة');
+
+    mexpUpdateSyncStatus(updatedBy, updatedAt, false, isEmp);
+
+    // Direct authoritative update without destructive union merging
+    if (window._mexpModalOpen) {
+        window._mexpPendingRemoteDays = serverDays;
+        if (isEmp && typeof tgShowToast === 'function') {
+            tgShowToast('🔔 قام الموظف (' + updatedBy + ') بتحديث المصروفات على السيرفر!', 'info');
+        }
+    } else {
+        window._mexpDaysData = serverDays;
+        mexpRenderDays(serverDays);
+        if (isEmp && typeof tgShowToast === 'function') {
+            tgShowToast('🔔 تحديث فوري: قام الموظف (' + updatedBy + ') بتعديل الشيت!', 'info');
+        }
+    }
+
+    // Auto-replicate from savedForms to mexp_sheets if savedForms had newer data
+    if (sourceCollection === 'savedForms' && typeof db !== 'undefined' && db && monthVal) {
+        db.collection('mexp_sheets').doc(monthVal).set(data, { merge: true }).catch(function () { });
+    }
 }
 
 function mexpMergeDays(existingDays, incomingDays) {
@@ -5242,6 +5311,8 @@ function mexpMergeDays(existingDays, incomingDays) {
         if (!d || !d.date) return;
         dateMap[d.date] = {
             date: d.date,
+            updatedBy: d.updatedBy || '',
+            updatedAt: d.updatedAt || '',
             items: Array.isArray(d.items) ? JSON.parse(JSON.stringify(d.items)) : []
         };
     });
@@ -5252,6 +5323,8 @@ function mexpMergeDays(existingDays, incomingDays) {
         if (!dateMap[inDay.date]) {
             dateMap[inDay.date] = {
                 date: inDay.date,
+                updatedBy: inDay.updatedBy || '',
+                updatedAt: inDay.updatedAt || '',
                 items: JSON.parse(JSON.stringify(inItems))
             };
         } else {
@@ -5270,6 +5343,8 @@ function mexpMergeDays(existingDays, incomingDays) {
                 }
             });
             dateMap[inDay.date].items = curItems;
+            if (inDay.updatedBy) dateMap[inDay.date].updatedBy = inDay.updatedBy;
+            if (inDay.updatedAt) dateMap[inDay.date].updatedAt = inDay.updatedAt;
         }
     });
 
@@ -5293,6 +5368,9 @@ function mexpLoad(showToastOrForce) {
         if (mi) mi.value = monthVal;
     }
 
+    // Reset remote timestamp tracker for this month
+    window._mexpLastRemoteTime = 0;
+
     // Load assigned employee config
     mexpLoadAssigneeConfig();
 
@@ -5301,131 +5379,67 @@ function mexpLoad(showToastOrForce) {
     var localData = null;
     try { localData = localRaw ? JSON.parse(localRaw) : null; } catch (e) { }
 
-    // Fast preview from local cache if modal is not open and we have no days loaded yet
-    if (localData && !window._mexpModalOpen && (!window._mexpDaysData || window._mexpDaysData.length === 0)) {
-        mexpRenderDays(mexpNormalizeDaysData(localData));
+    if (localData) {
+        if (Array.isArray(localData.auditTrail)) window._mexpAuditTrail = localData.auditTrail;
+        window._mexpLastSheetData = localData;
+        if (!window._mexpModalOpen && (!window._mexpDaysData || window._mexpDaysData.length === 0)) {
+            mexpRenderDays(mexpNormalizeDaysData(localData));
+            mexpUpdateSyncStatus(localData.updatedBy, localData.updatedAt, false);
+        }
     }
 
-    // If manual refresh requested, force fetch directly from server (bypassing local cache)
-    if (showToastOrForce === true && typeof db !== 'undefined' && db) {
-        mexpUpdateSyncStatus(null, null, true);
-        var fetchPromise = db.collection('mexp_sheets').doc(monthVal).get({ source: 'server' }).catch(function () {
-            return db.collection('savedForms').doc('mexp_' + monthVal).get({ source: 'server' });
-        });
-
-        fetchPromise.then(function (doc) {
-            if (doc && doc.exists) {
-                var dData = doc.data() || {};
-                var serverDays = mexpNormalizeDaysData(dData);
-                var merged = mexpMergeDays(window._mexpDaysData || [], serverDays);
-                localStorage.setItem(storageKey, JSON.stringify(dData));
-                window._mexpDaysData = merged;
-                if (!window._mexpModalOpen) {
-                    mexpRenderDays(merged);
-                }
-                mexpUpdateSyncStatus(dData.updatedBy, dData.updatedAt, false);
-                if (typeof tgToast === 'function') tgToast('✅ تم تحديث ومزامنة البيانات مباشرة من السيرفر!', 'ok');
-                else if (typeof tgShowToast === 'function') tgShowToast('✅ تم تحديث ومزامنة البيانات مباشرة من السيرفر!', 'success');
-            } else {
-                if (typeof tgToast === 'function') tgToast('لا توجد بيانات محفوظة على السيرفر لهذا الشهر بعد', 'info');
-                else if (typeof tgShowToast === 'function') tgShowToast('لا توجد بيانات محفوظة على السيرفر لهذا الشهر بعد');
-            }
-        }).catch(function (err) {
-            console.error('mexpLoad server force error:', err);
-            if (typeof tgShowToast === 'function') tgShowToast('تعذر الاتصال بالسيرفر، يتم العرض من الذاكرة المحلية', 'warning');
-        });
-    }
-
-    // Cancel any previous month listener
+    // Cancel any previous month listeners
     if (window._mexpRealtimeUnsub) {
-        try { window._mexpRealtimeUnsub(); } catch(e){}
+        try { window._mexpRealtimeUnsub(); } catch (e) { }
         window._mexpRealtimeUnsub = null;
+    }
+    if (window._mexpRealtimeSfUnsub) {
+        try { window._mexpRealtimeSfUnsub(); } catch (e) { }
+        window._mexpRealtimeSfUnsub = null;
     }
 
     if (typeof db !== 'undefined' && db) {
-        // Realtime listener on mexp_sheets for live cross-device sync
-        window._mexpRealtimeUnsub = db.collection('mexp_sheets').doc(monthVal).onSnapshot(function (doc) {
-            if (doc.metadata && doc.metadata.hasPendingWrites) {
-                // Local write in progress, avoid UI flash
-                return;
-            }
-            if (doc.exists) {
-                var data = doc.data() || {};
-                var serverDays = mexpNormalizeDaysData(data);
-                // Smart merge server days with any local days
-                var merged = mexpMergeDays(window._mexpDaysData || [], serverDays);
-                localStorage.setItem(storageKey, JSON.stringify(data));
-                mexpUpdateSyncStatus(data.updatedBy, data.updatedAt, false);
+        if (showToastOrForce === true) {
+            mexpUpdateSyncStatus(null, null, true);
+        }
 
-                if (window._mexpModalOpen) {
-                    // Do not disturb active modal, hold in pending
-                    window._mexpPendingRemoteDays = merged;
-                } else {
-                    window._mexpDaysData = merged;
-                    mexpRenderDays(merged);
-                }
-                if (showToastOrForce && typeof tgShowToast === 'function') tgShowToast('تمت مزامنة الشيت بنجاح', 'success');
+        // 1. Primary Realtime listener on mexp_sheets
+        window._mexpRealtimeUnsub = db.collection('mexp_sheets').doc(monthVal).onSnapshot(function (doc) {
+            if (doc.metadata && doc.metadata.hasPendingWrites) return;
+            if (doc.exists) {
+                mexpHandleRemoteUpdate(doc.data(), 'mexp_sheets', showToastOrForce);
+                if (showToastOrForce && typeof tgShowToast === 'function') tgShowToast('تمت مزامنة الشيت بنجاح من السيرفر', 'success');
             } else {
-                // If not in mexp_sheets, check savedForms and seed to mexp_sheets
+                // If not found in mexp_sheets, try savedForms directly
                 db.collection('savedForms').doc('mexp_' + monthVal).get().then(function (sfDoc) {
                     if (sfDoc.exists) {
-                        var sfData = sfDoc.data() || {};
-                        var sfDays = mexpNormalizeDaysData(sfData);
-                        var merged = mexpMergeDays(window._mexpDaysData || [], sfDays);
-                        localStorage.setItem(storageKey, JSON.stringify(sfData));
-                        mexpUpdateSyncStatus(sfData.updatedBy, sfData.updatedAt, false);
-                        if (!window._mexpModalOpen) {
-                            window._mexpDaysData = merged;
-                            mexpRenderDays(merged);
-                        }
-                        // Auto-seed to mexp_sheets so other devices immediately receive it
-                        db.collection('mexp_sheets').doc(monthVal).set(sfData, { merge: true }).catch(function(){});
+                        mexpHandleRemoteUpdate(sfDoc.data(), 'savedForms', showToastOrForce);
                     } else if (localData) {
-                        var lDays = mexpNormalizeDaysData(localData);
                         if (!window._mexpModalOpen) {
+                            var lDays = mexpNormalizeDaysData(localData);
                             window._mexpDaysData = lDays;
                             mexpRenderDays(lDays);
                         }
-                        // DO NOT auto-save stale localData here to avoid wiping out other users!
                     } else {
                         if (!window._mexpModalOpen) {
                             window._mexpDaysData = [];
                             mexpRenderDays([]);
                         }
                     }
-                }).catch(function () {
-                    if (localData && !window._mexpModalOpen) {
-                        var lDays = mexpNormalizeDaysData(localData);
-                        window._mexpDaysData = lDays;
-                        mexpRenderDays(lDays);
-                    }
-                });
+                }).catch(function () { });
             }
         }, function (err) {
-            console.warn('mexp realtime listener warning, falling back to savedForms:', err);
-            db.collection('savedForms').doc('mexp_' + monthVal).get().then(function (doc) {
-                if (doc.exists) {
-                    var data = doc.data() || {};
-                    var days = mexpNormalizeDaysData(data);
-                    var merged = mexpMergeDays(window._mexpDaysData || [], days);
-                    localStorage.setItem(storageKey, JSON.stringify(data));
-                    mexpUpdateSyncStatus(data.updatedBy, data.updatedAt, false);
-                    if (!window._mexpModalOpen) {
-                        window._mexpDaysData = merged;
-                        mexpRenderDays(merged);
-                    }
-                } else if (localData && !window._mexpModalOpen) {
-                    var lDays = mexpNormalizeDaysData(localData);
-                    window._mexpDaysData = lDays;
-                    mexpRenderDays(lDays);
-                }
-            }).catch(function () {
-                if (localData && !window._mexpModalOpen) {
-                    var lDays = mexpNormalizeDaysData(localData);
-                    window._mexpDaysData = lDays;
-                    mexpRenderDays(lDays);
-                }
-            });
+            console.warn('mexp_sheets listener warning:', err);
+        });
+
+        // 2. Dual Realtime listener on savedForms to catch employee saves immediately
+        window._mexpRealtimeSfUnsub = db.collection('savedForms').doc('mexp_' + monthVal).onSnapshot(function (sfDoc) {
+            if (sfDoc.metadata && sfDoc.metadata.hasPendingWrites) return;
+            if (sfDoc.exists) {
+                mexpHandleRemoteUpdate(sfDoc.data(), 'savedForms', showToastOrForce);
+            }
+        }, function (err) {
+            console.warn('savedForms realtime listener warning:', err);
         });
     } else {
         mexpRenderDays(mexpNormalizeDaysData(localData));
@@ -5518,6 +5532,8 @@ function mexpRenderDays(days) {
                 snippetsHtml = '<div style="font-size:11px;color:var(--tx3);font-style:italic;">لم يتم إدخال بنود بعد</div>';
             }
 
+            var dAuthor = d.updatedBy ? '<span class="mexp-day-author-tag" title="آخر تعديل بواسطة: ' + escH(d.updatedBy) + '">👤 ' + escH(d.updatedBy) + '</span>' : '';
+
             var card = document.createElement('div');
             card.className = 'mexp-day-card';
             card.setAttribute('data-day-idx', idx);
@@ -5529,6 +5545,7 @@ function mexpRenderDays(days) {
                 '  <div class="mexp-day-badge-wrap">' +
                 '    <span class="mexp-day-name-tag">📅 ' + escH(dayName || 'اليوم') + '</span>' +
                 '    <span class="mexp-day-date-str">' + escH(dDate) + '</span>' +
+                (dAuthor ? '    ' + dAuthor : '') +
                 '  </div>' +
                 '  <button type="button" class="mexp-day-del-btn" onclick="event.stopPropagation(); mexpRemoveDay(' + idx + ');" title="حذف هذا اليوم بالكامل">🗑</button>' +
                 '</div>' +
@@ -6056,6 +6073,8 @@ window.mexpModalSaveDay = function () {
 
     var items = [];
     var tbody = document.getElementById('mexpModalTbody');
+    var myName = (window.TG_USER && TG_USER.name) ? TG_USER.name : 'الأدمن';
+
     if (tbody) {
         tbody.querySelectorAll('tr').forEach(function (tr) {
             var spender = (tr.querySelector('.mexp-modal-spender') ? tr.querySelector('.mexp-modal-spender').value : '').trim();
@@ -6063,25 +6082,32 @@ window.mexpModalSaveDay = function () {
             var qty = (tr.querySelector('.mexp-modal-qty') ? tr.querySelector('.mexp-modal-qty').value : '1').trim() || '1';
             var price = (tr.querySelector('.mexp-modal-price') ? tr.querySelector('.mexp-modal-price').value : '').trim();
             if (spender || cat || price) {
-                items.push({ spender: spender, cat: cat, qty: qty, price: price });
+                items.push({ spender: spender, cat: cat, qty: qty, price: price, by: myName });
             }
         });
     }
 
     if (items.length === 0) {
-        items.push({ spender: '', cat: '', qty: '1', price: '' });
+        items.push({ spender: '', cat: '', qty: '1', price: '', by: myName });
     }
 
     window._mexpDaysData = window._mexpDaysData || [];
 
+    var dayObj = {
+        date: dateVal,
+        items: items,
+        updatedBy: myName,
+        updatedAt: new Date().toISOString()
+    };
+
     if (window._mexpEditingDayIdx !== null && window._mexpEditingDayIdx !== undefined && window._mexpDaysData[window._mexpEditingDayIdx]) {
-        window._mexpDaysData[window._mexpEditingDayIdx] = { date: dateVal, items: items };
+        window._mexpDaysData[window._mexpEditingDayIdx] = dayObj;
     } else {
         var existingIdx = window._mexpDaysData.findIndex(function (d) { return d.date === dateVal; });
         if (existingIdx !== -1) {
-            window._mexpDaysData[existingIdx].items = items;
+            window._mexpDaysData[existingIdx] = dayObj;
         } else {
-            window._mexpDaysData.push({ date: dateVal, items: items });
+            window._mexpDaysData.push(dayObj);
         }
     }
 
@@ -6092,7 +6118,7 @@ window.mexpModalSaveDay = function () {
 
     mexpCloseDayModal();
     mexpRenderDays(window._mexpDaysData);
-    mexpSave();
+    mexpSave(true);
     if (typeof tgToast === 'function') tgToast('✅ تم حفظ يوم (' + dateVal + ') ومزامنة الشيت فوراً!', 'ok');
     else if (typeof tgShowToast === 'function') tgShowToast('✅ تم حفظ يوم (' + dateVal + ') ومزامنة الشيت فوراً!', 'success');
 };
@@ -6113,11 +6139,23 @@ function mexpSave(skipMerge) {
     var monthVal = mi && mi.value ? mi.value : '';
     if (!monthVal) return;
 
+    var myName = (window.TG_USER && TG_USER.name) ? TG_USER.name : 'الأدمن';
+
     var days = (window._mexpDaysData || []).map(function (d) {
         return {
             date: d.date || '',
+            updatedBy: d.updatedBy || myName,
+            updatedAt: d.updatedAt || new Date().toISOString(),
             items: (d.items || []).filter(function (it) {
                 return (it.spender && it.spender.trim()) || (it.cat && it.cat.trim()) || (parseFloat(it.price || 0) > 0);
+            }).map(function (it) {
+                return {
+                    spender: it.spender || '',
+                    cat: it.cat || '',
+                    qty: it.qty || '1',
+                    price: it.price || '',
+                    by: it.by || d.updatedBy || myName
+                };
             })
         };
     }).filter(function (d) {
@@ -6137,14 +6175,27 @@ function mexpSave(skipMerge) {
     });
 
     var storageKey = 'tg_mexp_' + monthVal;
-    var updatedByName = (window.TG_USER && TG_USER.name) ? TG_USER.name : 'الأدمن';
+
+    // Audit trail logging
+    var audit = Array.isArray(window._mexpAuditTrail) ? JSON.parse(JSON.stringify(window._mexpAuditTrail)) : [];
+    audit.unshift({
+        by: myName,
+        role: 'admin',
+        at: new Date().toISOString(),
+        total: grandTotal,
+        daysCount: days.length,
+        action: 'تعديل وحفظ من لوحة الإدارة'
+    });
+    if (audit.length > 20) audit = audit.slice(0, 20);
+    window._mexpAuditTrail = audit;
 
     var sheetData = {
         month: monthVal,
         days: days,
         grandTotal: grandTotal,
-        updatedBy: updatedByName,
-        updatedAt: new Date().toISOString()
+        updatedBy: myName,
+        updatedAt: new Date().toISOString(),
+        auditTrail: audit
     };
     localStorage.setItem(storageKey, JSON.stringify(sheetData));
 
@@ -6155,57 +6206,27 @@ function mexpSave(skipMerge) {
     } catch (e) { }
 
     if (typeof db !== 'undefined' && db) {
-        var doCommit = function (finalDays, finalGrandTotal) {
-            var sheetDocData = {
-                formId: 'mexp',
-                month: monthVal,
-                days: finalDays,
-                grandTotal: finalGrandTotal,
-                updatedBy: updatedByName,
-                updatedAt: firebase.firestore.FieldValue.serverTimestamp()
-            };
-
-            db.collection('mexp_sheets').doc(monthVal).set(sheetDocData, { merge: true }).then(function () {
-                db.collection('savedForms').doc('mexp_' + monthVal).set(sheetDocData, { merge: true }).catch(function () { });
-                mexpUpdateSyncStatus(updatedByName, new Date(), false);
-                if (typeof tgShowToast === 'function') tgShowToast('تم حفظ ومزامنة شيت المصروفات بنجاح', 'success');
-            }).catch(function (err) {
-                console.warn('mexpSave mexp_sheets err, fallback to savedForms:', err);
-                db.collection('savedForms').doc('mexp_' + monthVal).set(sheetDocData, { merge: true }).then(function () {
-                    mexpUpdateSyncStatus(updatedByName, new Date(), false);
-                    if (typeof tgShowToast === 'function') tgShowToast('تم حفظ ومزامنة شيت المصروفات بنجاح', 'success');
-                }).catch(function (err2) {
-                    console.error('mexpSave err:', err2);
-                    if (typeof tgShowToast === 'function') tgShowToast('تم الحفظ محلياً', 'warning');
-                });
-            });
+        var sheetDocData = {
+            formId: 'mexp',
+            month: monthVal,
+            days: days,
+            grandTotal: grandTotal,
+            updatedBy: myName,
+            updatedAt: firebase.firestore.FieldValue.serverTimestamp(),
+            auditTrail: audit
         };
 
-        if (skipMerge) {
-            doCommit(days, grandTotal);
-        } else {
-            // First fetch latest from mexp_sheets to merge and avoid race overwriting
-            db.collection('mexp_sheets').doc(monthVal).get().then(function (snap) {
-                var sDays = [];
-                if (snap.exists) {
-                    sDays = mexpNormalizeDaysData(snap.data() || {});
-                }
-                var merged = mexpMergeDays(sDays, days);
-                var mTotal = 0;
-                merged.forEach(function (d) {
-                    (d.items || []).forEach(function (it) {
-                        mTotal += (parseFloat(it.price || '0') || 0) * (parseFloat(it.qty || '1') || 1);
-                    });
-                });
-                window._mexpDaysData = merged;
-                if (!window._mexpModalOpen) {
-                    mexpRenderDays(merged);
-                }
-                doCommit(merged, mTotal);
-            }).catch(function () {
-                doCommit(days, grandTotal);
-            });
-        }
+        var p1 = db.collection('mexp_sheets').doc(monthVal).set(sheetDocData, { merge: true });
+        var p2 = db.collection('savedForms').doc('mexp_' + monthVal).set(sheetDocData, { merge: true });
+
+        Promise.allSettled([p1, p2]).then(function (results) {
+            mexpUpdateSyncStatus(myName, new Date(), false, false);
+            if (typeof tgToast === 'function') tgToast('✅ تم حفظ ومزامنة شيت المصروفات بنجاح!', 'ok');
+            else if (typeof tgShowToast === 'function') tgShowToast('تم حفظ ومزامنة شيت المصروفات بنجاح', 'success');
+        }).catch(function (err) {
+            console.error('mexpSave error:', err);
+            if (typeof tgShowToast === 'function') tgShowToast('تم الحفظ محلياً', 'warning');
+        });
     } else {
         if (typeof tgShowToast === 'function') tgShowToast('تم حفظ شيت المصروفات لشهر ' + monthVal, 'success');
     }
@@ -6362,14 +6383,87 @@ function mexpSaveAssignee() {
     }
 }
 
-window.mexpPrint = function () {
-    if (typeof mexpUpdatePrintContainer === 'function') mexpUpdatePrintContainer();
-    if (typeof togglePrintKeepData === 'function') togglePrintKeepData(true);
-    if (typeof openPrintPreview === 'function') {
-        openPrintPreview();
-    } else {
-        window.print();
+window.mexpShowHistoryModal = function () {
+    var modal = document.getElementById('mexpHistoryModal');
+    if (!modal) {
+        modal = document.createElement('div');
+        modal.id = 'mexpHistoryModal';
+        modal.className = 'mexp-modal-overlay';
+        document.body.appendChild(modal);
     }
+
+    var mi = document.getElementById('mexp-month');
+    var monthVal = mi && mi.value ? mi.value : '';
+    var trail = window._mexpAuditTrail || [];
+    var lastData = window._mexpLastSheetData || {};
+    var lastBy = lastData.updatedBy || '';
+    var lastAt = lastData.updatedAt;
+    var lastTimeStr = '';
+    if (lastAt) {
+        try {
+            if (typeof lastAt.toDate === 'function') lastTimeStr = lastAt.toDate().toLocaleString('ar-EG');
+            else lastTimeStr = new Date(lastAt).toLocaleString('ar-EG');
+        } catch (e) { }
+    }
+
+    var historyHtml = '';
+    if (trail.length === 0) {
+        historyHtml = '<div style="text-align:center;padding:32px 16px;color:var(--tx3);font-size:13px;line-height:1.8;">' +
+            '<div style="font-size:36px;margin-bottom:8px;">📜</div>' +
+            '<strong style="color:var(--tx);font-size:14px;">لا توجد سجلات مؤرشفة بعد لشهر ' + escH(monthVal) + '</strong><br>' +
+            (lastBy ? '<span style="font-size:12px;color:var(--tx2);margin-top:8px;display:inline-block;background:var(--bg2);padding:6px 14px;border-radius:20px;border:1px solid var(--bd);">آخر تحديث مسجل بالسيرفر بواسطة: <b style="color:var(--tx);">' + escH(lastBy) + '</b> ' + (lastTimeStr ? '(' + lastTimeStr + ')' : '') + '</span>' : '<span style="font-size:12px;opacity:0.8;">ستظهر جميع تعديلات الموظف والإدارة هنا بالتفصيل فور حفظ أي مصروفات.</span>') +
+            '</div>';
+    } else {
+        historyHtml = '<div class="mexp-history-timeline">' +
+            trail.map(function (item, idx) {
+                var timeStr = '';
+                try {
+                    timeStr = new Date(item.at).toLocaleString('ar-EG', { hour: '2-digit', minute: '2-digit', second: '2-digit', day: 'numeric', month: 'numeric', year: 'numeric' });
+                } catch (e) { timeStr = item.at || ''; }
+                var isEmp = item.role === 'employee' || (item.by && !item.by.includes('أدمن') && !item.by.includes('الإدارة'));
+                var roleBadge = isEmp ? '<span class="mexp-hist-role-badge emp">👤 الموظف المسؤول</span>' : '<span class="mexp-hist-role-badge admin">👑 الإدارة العامة</span>';
+                return '<div class="mexp-hist-item' + (isEmp ? ' emp-item' : '') + '">' +
+                    '  <div class="mexp-hist-dot"></div>' +
+                    '  <div class="mexp-hist-card">' +
+                    '    <div class="mexp-hist-header">' +
+                    '      <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;">' +
+                    '        <strong style="font-size:13px;color:var(--tx);">' + escH(item.by || 'مستخدم') + '</strong>' +
+                    '        ' + roleBadge +
+                    '      </div>' +
+                    '      <span class="mexp-hist-time">' + escH(timeStr) + '</span>' +
+                    '    </div>' +
+                    '    <div class="mexp-hist-desc">' + escH(item.action || 'تعديل وحفظ المصروفات') + '</div>' +
+                    '    <div class="mexp-hist-meta">' +
+                    '      <span>📅 الأيام: <b>' + (item.daysCount || 0) + ' يوم</b></span>' +
+                    '      <span>💰 الإجمالي: <b>' + fmtMoney(item.total || 0) + '</b></span>' +
+                    '    </div>' +
+                    '  </div>' +
+                    '</div>';
+            }).join('') +
+            '</div>';
+    }
+
+    var h = '<div class="mexp-modal-card" style="max-width:580px;">' +
+        '<div class="mexp-modal-head" style="background:linear-gradient(135deg,#1e1b4b,#312e81);">' +
+        '  <div style="display:flex;align-items:center;gap:12px;">' +
+        '    <div style="font-size:24px;background:rgba(255,255,255,0.12);width:42px;height:42px;border-radius:12px;display:flex;align-items:center;justify-content:center;">📜</div>' +
+        '    <div>' +
+        '      <div style="font-size:16px;font-weight:900;color:#fff;">سجل تحديثات ومزامنة الموظف</div>' +
+        '      <div style="font-size:11.5px;opacity:0.85;margin-top:2px;">كشف زمني بكافة التعديلات التي أجريت على مصروفات شهر ' + escH(monthVal) + '</div>' +
+        '    </div>' +
+        '  </div>' +
+        '  <button type="button" onclick="document.getElementById(\'mexpHistoryModal\').style.display=\'none\'" style="background:rgba(255,255,255,0.15);border:none;color:#fff;font-size:16px;cursor:pointer;width:34px;height:34px;border-radius:50%;display:flex;align-items:center;justify-content:center;" title="إغلاق">✕</button>' +
+        '</div>' +
+        '<div class="mexp-modal-body" style="max-height:480px;overflow-y:auto;padding:16px;">' +
+        historyHtml +
+        '</div>' +
+        '<div class="mexp-modal-foot" style="justify-content:flex-end;">' +
+        '  <button type="button" class="bt bt-o" onclick="document.getElementById(\'mexpHistoryModal\').style.display=\'none\'">إغلاق</button>' +
+        '</div>' +
+        '</div>';
+
+    modal.innerHTML = h;
+    modal.style.display = 'flex';
 };
 
 // ─── MAIN LOAD ────────────────────────────────────────────────────────────
@@ -7108,7 +7202,7 @@ function load(id, c) {
             '    </div>' +
             '    <div class="mexp-ctrl-item" style="display:flex;align-items:center;gap:8px;" id="mexpAssigneeWrap">' +
             '      <label style="font-size:12px;font-weight:800;color:var(--tx2);white-space:nowrap;">👤 المسؤول:</label>' +
-            '      <select id="mexpAssignedEmp" class="inp" style="padding:6px 10px;font-size:11.5px;font-weight:700;flex:1;">' +
+            '      <select id="mexpAssignedEmp" class="inp" style="padding:6px 10px;font-size:11.5px;font-weight:700;flex:1;" onchange="mexpSaveAssignee()">' +
             '        <option value="">-- لم يتم تعيين موظف (الأدمن فقط) --</option>' +
             '      </select>' +
             '      <button type="button" class="bt bt-p" style="padding:6px 12px;font-size:11.5px;font-weight:800;white-space:nowrap;" onclick="mexpSaveAssignee()">💾 حفظ</button>' +
@@ -7151,6 +7245,7 @@ function load(id, c) {
             '    <button type="button" class="bt bt-o mexp-btn-save" onclick="mexpSave()">💾 حفظ ومزامنة</button>' +
             '  </div>' +
             '  <div class="mexp-toolbar-secondary">' +
+            '    <button type="button" class="bt bt-o mexp-btn-history" onclick="mexpShowHistoryModal()" title="عرض كشف وسجل التعديلات التي أجراها الموظف">📜 سجل التحديثات</button>' +
             '    <button type="button" class="bt bt-g mexp-btn-print" onclick="mexpPrint()">🖨 طباعة الشيت الرسمي</button>' +
             '    <button type="button" class="bt bt-o mexp-btn-refresh" onclick="mexpLoad(true)" title="تحديث البيانات من السيرفر">🔄 تحديث</button>' +
             '  </div>' +

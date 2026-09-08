@@ -67,7 +67,7 @@
     <link
         href="https://fonts.googleapis.com/css2?family=Alexandria:wght@300;400;500;600;700;800;900&family=Cairo:wght@400;600;700;800;900&family=Tajawal:wght@400;500;700;800&family=Inter:wght@400;500;600;700&display=swap"
         rel="stylesheet">
-    <link rel="stylesheet" href="styles.css?v=1788776180">
+    <link rel="stylesheet" href="styles.css?v=1788856550">
     <link rel="manifest" href="manifest.json">
     <link rel="icon" type="image/png" sizes="192x192" href="icon-192.png">
     <link rel="apple-touch-icon" href="icon-192.png">
@@ -75,10 +75,10 @@
     <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-storage-compat.js"></script>
-    <script src="firebase-config.js?v=1788776180"></script>
-    <script src="auth.js?v=1788776180"></script>
-    <script src="app.js?v=1788776180"></script>
-    <script src="formsend.js?v=1788776180"></script>
+    <script src="firebase-config.js?v=1788856550"></script>
+    <script src="auth.js?v=1788856550"></script>
+    <script src="app.js?v=1788856550"></script>
+    <script src="formsend.js?v=1788856550"></script>
     <script>
         (function () {
             const theme = localStorage.getItem('tg-theme') || 'light';
@@ -3478,8 +3478,8 @@
         تطوير وتصميم: أبانوب فايز</div>
     <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
-    <script src="theme.js?v=1788776180"></script>
-    <script src="pwa-install.js?v=1788776180"></script>
+    <script src="theme.js?v=1788856550"></script>
+    <script src="pwa-install.js?v=1788856550"></script>
 
 
     <!-- Incoming Meeting Call Modal -->
@@ -4152,6 +4152,52 @@
             return result;
         }
 
+        function empMexpHandleRemoteUpdate(data, sourceCollection, isForce) {
+            if (!data) return;
+            var serverDays = empNormalizeDaysData(data);
+            var updatedBy = data.updatedBy || '';
+            var updatedAt = data.updatedAt;
+
+            var newTimeMs = 0;
+            if (updatedAt) {
+                if (typeof updatedAt.toDate === 'function') newTimeMs = updatedAt.toDate().getTime();
+                else if (typeof updatedAt === 'number') newTimeMs = updatedAt;
+                else if (typeof updatedAt === 'string') newTimeMs = new Date(updatedAt).getTime();
+            }
+            if (isNaN(newTimeMs)) newTimeMs = 0;
+
+            var curTimeMs = window._empMexpLastRemoteTime || 0;
+            if (!isForce && curTimeMs && newTimeMs && newTimeMs < curTimeMs) {
+                return;
+            }
+
+            window._empMexpLastRemoteTime = newTimeMs || Date.now();
+            window._empMexpLastRemoteSource = sourceCollection;
+            window._empMexpLastSheetData = data;
+
+            if (Array.isArray(data.auditTrail)) {
+                window._empMexpAuditTrail = data.auditTrail;
+            }
+
+            var mi = document.getElementById('emp-mexp-month');
+            var monthVal = mi && mi.value ? mi.value : '';
+            var storageKey = 'tg_mexp_' + monthVal;
+            try { localStorage.setItem(storageKey, JSON.stringify(data)); } catch (e) { }
+
+            empMexpUpdateSyncStatus(updatedBy, updatedAt, false);
+
+            if (window._empMexpModalOpen) {
+                window._empMexpPendingRemoteDays = serverDays;
+            } else {
+                window._empMexpDaysData = serverDays;
+                empMexpRenderDays(serverDays);
+            }
+
+            if (sourceCollection === 'savedForms' && typeof db !== 'undefined' && db && monthVal) {
+                db.collection('mexp_sheets').doc(monthVal).set(data, { merge: true }).catch(function () { });
+            }
+        }
+
         window.empMexpLoadData = function (showToastOrForce) {
             var container = document.getElementById('emp-mexp-days-container');
             if (!container) return;
@@ -4163,89 +4209,49 @@
                 if (mi) mi.value = monthVal;
             }
 
+            window._empMexpLastRemoteTime = 0;
+
             var storageKey = 'tg_mexp_' + monthVal;
             var localRaw = localStorage.getItem(storageKey);
             var localData = null;
             try { localData = localRaw ? JSON.parse(localRaw) : null; } catch (e) { }
 
-            // Fast preview from local cache if modal is not open and no days currently in memory
-            if (localData && !window._empMexpModalOpen && (!window._empMexpDaysData || window._empMexpDaysData.length === 0)) {
-                empMexpRenderDays(empNormalizeDaysData(localData));
+            if (localData) {
+                if (Array.isArray(localData.auditTrail)) window._empMexpAuditTrail = localData.auditTrail;
+                window._empMexpLastSheetData = localData;
+                if (!window._empMexpModalOpen && (!window._empMexpDaysData || window._empMexpDaysData.length === 0)) {
+                    empMexpRenderDays(empNormalizeDaysData(localData));
+                    empMexpUpdateSyncStatus(localData.updatedBy, localData.updatedAt, false);
+                }
             }
 
-            // Force server fetch if requested
-            if (showToastOrForce === true && typeof db !== 'undefined' && db) {
-                empMexpUpdateSyncStatus(null, null, true);
-                var fetchPromise = db.collection('mexp_sheets').doc(monthVal).get({ source: 'server' }).catch(function () {
-                    return db.collection('savedForms').doc('mexp_' + monthVal).get({ source: 'server' });
-                });
-
-                fetchPromise.then(function (doc) {
-                    if (doc && doc.exists) {
-                        var dData = doc.data() || {};
-                        var serverDays = empNormalizeDaysData(dData);
-                        var merged = empMexpMergeDays(window._empMexpDaysData || [], serverDays);
-                        localStorage.setItem(storageKey, JSON.stringify(dData));
-                        window._empMexpDaysData = merged;
-                        if (!window._empMexpModalOpen) {
-                            empMexpRenderDays(merged);
-                        }
-                        empMexpUpdateSyncStatus(dData.updatedBy, dData.updatedAt, false);
-                        if (typeof tgToast === 'function') tgToast('✅ تم تحديث ومزامنة البيانات مباشرة من السيرفر!', 'ok');
-                        else if (typeof tgShowToast === 'function') tgShowToast('✅ تم تحديث ومزامنة البيانات مباشرة من السيرفر!', 'success');
-                    } else {
-                        if (typeof tgToast === 'function') tgToast('لا توجد بيانات محفوظة على السيرفر لهذا الشهر بعد', 'info');
-                        else if (typeof tgShowToast === 'function') tgShowToast('لا توجد بيانات محفوظة على السيرفر لهذا الشهر بعد');
-                    }
-                }).catch(function (err) {
-                    console.error('empMexpLoadData server force error:', err);
-                    if (typeof tgShowToast === 'function') tgShowToast('تعذر الاتصال بالسيرفر، يتم العرض من الذاكرة المحلية', 'warning');
-                });
-            }
-
-            // Cancel any previous month listener
             if (window._empMexpRealtimeUnsub) {
                 try { window._empMexpRealtimeUnsub(); } catch (e) { }
                 window._empMexpRealtimeUnsub = null;
             }
+            if (window._empMexpRealtimeSfUnsub) {
+                try { window._empMexpRealtimeSfUnsub(); } catch (e) { }
+                window._empMexpRealtimeSfUnsub = null;
+            }
 
             if (typeof db !== 'undefined' && db) {
-                // Realtime listener on mexp_sheets for live sync with Admin
-                window._empMexpRealtimeUnsub = db.collection('mexp_sheets').doc(monthVal).onSnapshot(function (doc) {
-                    if (doc.metadata && doc.metadata.hasPendingWrites) {
-                        return;
-                    }
-                    if (doc.exists) {
-                        var data = doc.data() || {};
-                        var serverDays = empNormalizeDaysData(data);
-                        var merged = empMexpMergeDays(window._empMexpDaysData || [], serverDays);
-                        localStorage.setItem(storageKey, JSON.stringify(data));
-                        empMexpUpdateSyncStatus(data.updatedBy, data.updatedAt, false);
+                if (showToastOrForce === true) {
+                    empMexpUpdateSyncStatus(null, null, true);
+                }
 
-                        if (window._empMexpModalOpen) {
-                            window._empMexpPendingRemoteDays = merged;
-                        } else {
-                            window._empMexpDaysData = merged;
-                            empMexpRenderDays(merged);
-                        }
-                        if (showToastOrForce && typeof tgShowToast === 'function') tgShowToast('تمت مزامنة الشيت بنجاح', 'success');
+                // Primary listener on mexp_sheets
+                window._empMexpRealtimeUnsub = db.collection('mexp_sheets').doc(monthVal).onSnapshot(function (doc) {
+                    if (doc.metadata && doc.metadata.hasPendingWrites) return;
+                    if (doc.exists) {
+                        empMexpHandleRemoteUpdate(doc.data(), 'mexp_sheets', showToastOrForce);
+                        if (showToastOrForce && typeof tgShowToast === 'function') tgShowToast('تمت مزامنة الشيت بنجاح من السيرفر', 'success');
                     } else {
-                        // Fallback to savedForms and seed to mexp_sheets
                         db.collection('savedForms').doc('mexp_' + monthVal).get().then(function (sfDoc) {
                             if (sfDoc.exists) {
-                                var sfData = sfDoc.data() || {};
-                                var sfDays = empNormalizeDaysData(sfData);
-                                var merged = empMexpMergeDays(window._empMexpDaysData || [], sfDays);
-                                localStorage.setItem(storageKey, JSON.stringify(sfData));
-                                empMexpUpdateSyncStatus(sfData.updatedBy, sfData.updatedAt, false);
-                                if (!window._empMexpModalOpen) {
-                                    window._empMexpDaysData = merged;
-                                    empMexpRenderDays(merged);
-                                }
-                                db.collection('mexp_sheets').doc(monthVal).set(sfData, { merge: true }).catch(function () { });
+                                empMexpHandleRemoteUpdate(sfDoc.data(), 'savedForms', showToastOrForce);
                             } else if (localData) {
-                                var lDays = empNormalizeDaysData(localData);
                                 if (!window._empMexpModalOpen) {
+                                    var lDays = empNormalizeDaysData(localData);
                                     window._empMexpDaysData = lDays;
                                     empMexpRenderDays(lDays);
                                 }
@@ -4255,39 +4261,20 @@
                                     empMexpRenderDays([]);
                                 }
                             }
-                        }).catch(function () {
-                            if (localData && !window._empMexpModalOpen) {
-                                var lDays = empNormalizeDaysData(localData);
-                                window._empMexpDaysData = lDays;
-                                empMexpRenderDays(lDays);
-                            }
-                        });
+                        }).catch(function () { });
                     }
                 }, function (err) {
-                    console.warn('empMexp realtime sync warning, fallback to savedForms:', err);
-                    db.collection('savedForms').doc('mexp_' + monthVal).get().then(function (doc) {
-                        if (doc.exists) {
-                            var data = doc.data() || {};
-                            var days = empNormalizeDaysData(data);
-                            var merged = empMexpMergeDays(window._empMexpDaysData || [], days);
-                            localStorage.setItem(storageKey, JSON.stringify(data));
-                            empMexpUpdateSyncStatus(data.updatedBy, data.updatedAt, false);
-                            if (!window._empMexpModalOpen) {
-                                window._empMexpDaysData = merged;
-                                empMexpRenderDays(merged);
-                            }
-                        } else if (localData && !window._empMexpModalOpen) {
-                            var lDays = empNormalizeDaysData(localData);
-                            window._empMexpDaysData = lDays;
-                            empMexpRenderDays(lDays);
-                        }
-                    }).catch(function () {
-                        if (localData && !window._empMexpModalOpen) {
-                            var lDays = empNormalizeDaysData(localData);
-                            window._empMexpDaysData = lDays;
-                            empMexpRenderDays(lDays);
-                        }
-                    });
+                    console.warn('emp mexp_sheets listener warning:', err);
+                });
+
+                // Dual listener on savedForms
+                window._empMexpRealtimeSfUnsub = db.collection('savedForms').doc('mexp_' + monthVal).onSnapshot(function (sfDoc) {
+                    if (sfDoc.metadata && sfDoc.metadata.hasPendingWrites) return;
+                    if (sfDoc.exists) {
+                        empMexpHandleRemoteUpdate(sfDoc.data(), 'savedForms', showToastOrForce);
+                    }
+                }, function (err) {
+                    console.warn('emp savedForms listener warning:', err);
                 });
             } else {
                 empMexpRenderDays(empNormalizeDaysData(localData));
@@ -4385,11 +4372,14 @@
                     card.title = 'اضغط لتعديل وتفاصيل مصروفات هذا اليوم';
                     card.onclick = function () { empMexpEditDayModal(idx); };
 
+                    var dAuthor = d.updatedBy ? '<span class="mexp-day-author-tag" title="آخر تعديل بواسطة: ' + esc(d.updatedBy) + '">👤 ' + esc(d.updatedBy) + '</span>' : '';
+
                     card.innerHTML =
                         '<div class="mexp-day-card-top">' +
                         '  <div class="mexp-day-badge-wrap">' +
                         '    <span class="mexp-day-name-tag">📅 ' + esc(dayName || 'اليوم') + '</span>' +
                         '    <span class="mexp-day-date-str">' + esc(dDate) + '</span>' +
+                        (dAuthor ? '    ' + dAuthor : '') +
                         '  </div>' +
                         '  <button type="button" class="mexp-day-del-btn" onclick="event.stopPropagation(); empMexpRemoveDay(' + idx + ');" title="حذف هذا اليوم بالكامل">🗑</button>' +
                         '</div>' +
@@ -4914,6 +4904,8 @@
 
             var items = [];
             var tbody = document.getElementById('empMexpModalTbody');
+            var myName = (typeof TG_USER !== 'undefined' && TG_USER && TG_USER.name) ? TG_USER.name : 'الموظف المسؤول';
+
             if (tbody) {
                 tbody.querySelectorAll('tr').forEach(function(tr){
                     var spender = (tr.querySelector('.mexp-modal-spender') ? tr.querySelector('.mexp-modal-spender').value : '').trim();
@@ -4921,26 +4913,33 @@
                     var qty = (tr.querySelector('.mexp-modal-qty') ? tr.querySelector('.mexp-modal-qty').value : '1').trim() || '1';
                     var price = (tr.querySelector('.mexp-modal-price') ? tr.querySelector('.mexp-modal-price').value : '').trim();
                     if (spender || cat || price) {
-                        items.push({ spender: spender, cat: cat, qty: qty, price: price });
+                        items.push({ spender: spender, cat: cat, qty: qty, price: price, by: myName });
                     }
                 });
             }
 
             if (items.length === 0) {
-                var defSpender = (typeof TG_USER !== 'undefined' && TG_USER && TG_USER.name) ? TG_USER.name : '';
-                items.push({ spender: defSpender, cat: '', qty: '1', price: '' });
+                var defSpender = myName || '';
+                items.push({ spender: defSpender, cat: '', qty: '1', price: '', by: myName });
             }
 
             window._empMexpDaysData = window._empMexpDaysData || [];
 
+            var dayObj = {
+                date: dateVal,
+                items: items,
+                updatedBy: myName,
+                updatedAt: new Date().toISOString()
+            };
+
             if (window._empMexpEditingDayIdx !== null && window._empMexpEditingDayIdx !== undefined && window._empMexpDaysData[window._empMexpEditingDayIdx]) {
-                window._empMexpDaysData[window._empMexpEditingDayIdx] = { date: dateVal, items: items };
+                window._empMexpDaysData[window._empMexpEditingDayIdx] = dayObj;
             } else {
                 var existingIdx = window._empMexpDaysData.findIndex(function (d) { return d.date === dateVal; });
                 if (existingIdx !== -1) {
-                    window._empMexpDaysData[existingIdx].items = items;
+                    window._empMexpDaysData[existingIdx] = dayObj;
                 } else {
-                    window._empMexpDaysData.push({ date: dateVal, items: items });
+                    window._empMexpDaysData.push(dayObj);
                 }
             }
 
@@ -4950,9 +4949,9 @@
 
             empMexpCloseDayModal();
             empMexpRenderDays(window._empMexpDaysData);
-            empMexpSaveData();
-            if (typeof tgToast === 'function') tgToast('✅ تم حفظ يوم (' + dateVal + ') ومزامنة الشيت فوراً!', 'ok');
-            else if (typeof tgShowToast === 'function') tgShowToast('✅ تم حفظ يوم (' + dateVal + ') ومزامنة الشيت فوراً!', 'success');
+            empMexpSaveData(true);
+            if (typeof tgToast === 'function') tgToast('✅ تم حفظ يوم (' + dateVal + ') ومزامنة الشيت فوراً مع الإدارة!', 'ok');
+            else if (typeof tgShowToast === 'function') tgShowToast('✅ تم حفظ يوم (' + dateVal + ') ومزامنة الشيت فوراً مع الإدارة!', 'success');
         };
 
         window.empMexpModalDeleteCurrentDay = function() {
@@ -4978,11 +4977,23 @@
             }
             if (mi && !mi.value) mi.value = monthVal;
 
+            var myName = (typeof TG_USER !== 'undefined' && TG_USER && TG_USER.name) ? TG_USER.name : 'الموظف المسؤول';
+
             var days = (window._empMexpDaysData || []).map(function (d) {
                 return {
                     date: d.date || '',
+                    updatedBy: d.updatedBy || myName,
+                    updatedAt: d.updatedAt || new Date().toISOString(),
                     items: (d.items || []).filter(function (it) {
                         return (it.spender && it.spender.trim()) || (it.cat && it.cat.trim()) || (parseFloat(it.price || 0) > 0);
+                    }).map(function (it) {
+                        return {
+                            spender: it.spender || '',
+                            cat: it.cat || '',
+                            qty: it.qty || '1',
+                            price: it.price || '',
+                            by: it.by || d.updatedBy || myName
+                        };
                     })
                 };
             }).filter(function (d) {
@@ -5002,14 +5013,27 @@
             });
 
             var storageKey = 'tg_mexp_' + monthVal;
-            var myName = (typeof TG_USER !== 'undefined' && TG_USER && TG_USER.name) ? TG_USER.name : 'الموظف المسؤول';
+
+            // Maintain audit trail
+            var audit = Array.isArray(window._empMexpAuditTrail) ? JSON.parse(JSON.stringify(window._empMexpAuditTrail)) : [];
+            audit.unshift({
+                by: myName,
+                role: 'employee',
+                at: new Date().toISOString(),
+                total: grandTotal,
+                daysCount: days.length,
+                action: 'تسجيل وتعديل بنود المصروفات بواسطة الموظف'
+            });
+            if (audit.length > 20) audit = audit.slice(0, 20);
+            window._empMexpAuditTrail = audit;
 
             var sheetData = {
                 month: monthVal,
                 days: days,
                 grandTotal: grandTotal,
                 updatedBy: myName,
-                updatedAt: new Date().toISOString()
+                updatedAt: new Date().toISOString(),
+                auditTrail: audit
             };
             localStorage.setItem(storageKey, JSON.stringify(sheetData));
 
@@ -5020,56 +5044,40 @@
             } catch(e){}
 
             if (typeof db !== 'undefined' && db) {
-                var doCommit = function(finalDays, finalGrandTotal) {
-                    var sheetDocData = {
-                        formId: 'mexp',
-                        month: monthVal,
-                        days: finalDays,
-                        grandTotal: finalGrandTotal,
-                        updatedBy: myName,
-                        updatedAt: firebase.firestore.FieldValue.serverTimestamp()
-                    };
-
-                    db.collection('mexp_sheets').doc(monthVal).set(sheetDocData, { merge: true }).then(function() {
-                        db.collection('savedForms').doc('mexp_' + monthVal).set(sheetDocData, { merge: true }).catch(function(){});
-                        empMexpUpdateSyncStatus(myName, new Date(), false);
-                        if (typeof tgShowToast === 'function') tgShowToast('تم حفظ شيت المصروفات والمزامنة بنجاح مع الإدارة', 'success');
-                    }).catch(function(err) {
-                        console.warn('empMexpSaveData mexp_sheets err, fallback to savedForms:', err);
-                        db.collection('savedForms').doc('mexp_' + monthVal).set(sheetDocData, { merge: true }).then(function() {
-                            empMexpUpdateSyncStatus(myName, new Date(), false);
-                            if (typeof tgShowToast === 'function') tgShowToast('تم حفظ شيت المصروفات والمزامنة بنجاح مع الإدارة', 'success');
-                        }).catch(function(err2) {
-                            console.error('empMexpSaveData err2:', err2);
-                            if (typeof tgShowToast === 'function') tgShowToast('تم الحفظ محلياً', 'warning');
-                        });
-                    });
+                var sheetDocData = {
+                    formId: 'mexp',
+                    month: monthVal,
+                    days: days,
+                    grandTotal: grandTotal,
+                    updatedBy: myName,
+                    updatedAt: firebase.firestore.FieldValue.serverTimestamp(),
+                    auditTrail: audit
                 };
 
-                if (skipMerge) {
-                    doCommit(days, grandTotal);
-                } else {
-                    db.collection('mexp_sheets').doc(monthVal).get().then(function (snap) {
-                        var sDays = [];
-                        if (snap.exists) {
-                            sDays = empNormalizeDaysData(snap.data() || {});
+                var p1 = db.collection('mexp_sheets').doc(monthVal).set(sheetDocData, { merge: true });
+                var p2 = db.collection('savedForms').doc('mexp_' + monthVal).set(sheetDocData, { merge: true });
+
+                Promise.allSettled([p1, p2]).then(function(results) {
+                    empMexpUpdateSyncStatus(myName, new Date(), false);
+                    if (typeof tgToast === 'function') tgToast('✅ تم حفظ ومزامنة الشيت مع الإدارة بنجاح!', 'ok');
+                    else if (typeof tgShowToast === 'function') tgShowToast('تم حفظ ومزامنة الشيت مع الإدارة بنجاح', 'success');
+
+                    // Notify Admins in real-time
+                    try {
+                        if (typeof tgNotifyAdmins === 'function') {
+                            var fmtTot = (typeof fmtMoney === 'function') ? fmtMoney(grandTotal) : grandTotal.toFixed(2) + ' ج.م';
+                            tgNotifyAdmins(
+                                '💰 كشف المصروفات: تحديث من الموظف',
+                                'قام ' + myName + ' بتسجيل وتعديل مصروفات شهر ' + monthVal + ' (الإجمالي: ' + fmtTot + ')',
+                                'mexp_' + monthVal,
+                                { formId: 'mexp', month: monthVal, updatedBy: myName, grandTotal: grandTotal }
+                            );
                         }
-                        var merged = empMexpMergeDays(sDays, days);
-                        var mTotal = 0;
-                        merged.forEach(function(d){
-                            (d.items || []).forEach(function(it){
-                                mTotal += (parseFloat(it.price || '0') || 0) * (parseFloat(it.qty || '1') || 1);
-                            });
-                        });
-                        window._empMexpDaysData = merged;
-                        if (!window._empMexpModalOpen) {
-                            empMexpRenderDays(merged);
-                        }
-                        doCommit(merged, mTotal);
-                    }).catch(function() {
-                        doCommit(days, grandTotal);
-                    });
-                }
+                    } catch (notifErr) { console.warn('tgNotifyAdmins error:', notifErr); }
+                }).catch(function(err) {
+                    console.error('empMexpSaveData error:', err);
+                    if (typeof tgShowToast === 'function') tgShowToast('تم الحفظ محلياً', 'warning');
+                });
             } else {
                 if (typeof tgShowToast === 'function') tgShowToast('تم حفظ شيت المصروفات لشهر ' + monthVal, 'success');
             }

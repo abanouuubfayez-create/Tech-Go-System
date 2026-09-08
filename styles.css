@@ -6443,3 +6443,167 @@ body.dark-mode .tg-expand-btn:hover {
     100% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(2, 132, 199, 0); }
 }
 
+/* ── Employee-Specific Sync Status & Audit Badge ── */
+.mexp-sync-badge.emp-updated {
+    background: linear-gradient(135deg, rgba(99, 102, 241, 0.12), rgba(168, 85, 247, 0.14));
+    border-color: rgba(139, 92, 246, 0.38);
+    color: #5b21b6;
+    font-weight: 800;
+}
+.mexp-pulse-dot.emp-updated {
+    background-color: #8b5cf6;
+    box-shadow: 0 0 0 0 rgba(139, 92, 246, 0.7);
+    animation: mexpPulsePurple 1.6s infinite;
+}
+@keyframes mexpPulsePurple {
+    0% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(139, 92, 246, 0.7); }
+    70% { transform: scale(1.1); box-shadow: 0 0 0 6px rgba(139, 92, 246, 0); }
+    100% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(139, 92, 246, 0); }
+}
+
+.mexp-btn-history-pill {
+    padding: 3px 10px !important;
+    font-size: 11px !important;
+    border-radius: 14px !important;
+    margin-right: 8px !important;
+    font-weight: 800 !important;
+    border-color: rgba(139, 92, 246, 0.4) !important;
+    color: #6d28d9 !important;
+    background: rgba(139, 92, 246, 0.09) !important;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+.mexp-btn-history-pill:hover {
+    background: rgba(139, 92, 246, 0.2) !important;
+    transform: translateY(-1px);
+}
+
+.mexp-btn-history {
+    background: rgba(99, 102, 241, 0.08) !important;
+    border-color: rgba(99, 102, 241, 0.3) !important;
+    color: #4f46e5 !important;
+    font-weight: 800 !important;
+    transition: all 0.2s ease;
+}
+.mexp-btn-history:hover {
+    background: rgba(99, 102, 241, 0.16) !important;
+    border-color: rgba(99, 102, 241, 0.5) !important;
+}
+
+/* ── Day Card Author Tag ── */
+.mexp-day-author-tag {
+    font-size: 10.5px;
+    font-weight: 800;
+    color: #6366f1;
+    background: rgba(99, 102, 241, 0.1);
+    border: 1px solid rgba(99, 102, 241, 0.25);
+    padding: 2px 8px;
+    border-radius: 12px;
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    white-space: nowrap;
+}
+
+/* ── Audit History Timeline Styles ── */
+.mexp-history-timeline {
+    position: relative;
+    padding: 8px 12px;
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+}
+.mexp-history-timeline::before {
+    content: '';
+    position: absolute;
+    top: 16px;
+    bottom: 16px;
+    right: 22px;
+    width: 2px;
+    background: var(--bd);
+    border-radius: 2px;
+}
+.mexp-hist-item {
+    position: relative;
+    display: flex;
+    align-items: flex-start;
+    gap: 14px;
+    padding-right: 28px;
+}
+.mexp-hist-dot {
+    position: absolute;
+    right: 5px;
+    top: 12px;
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+    background: #0ea5e9;
+    border: 2px solid var(--w);
+    box-shadow: 0 0 0 2px #0ea5e9;
+    z-index: 2;
+}
+.mexp-hist-item.emp-item .mexp-hist-dot {
+    background: #8b5cf6;
+    box-shadow: 0 0 0 2px #8b5cf6;
+}
+.mexp-hist-card {
+    background: var(--bg2);
+    border: 1.5px solid var(--bd);
+    border-radius: 12px;
+    padding: 12px 14px;
+    width: 100%;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.03);
+    transition: all 0.2s ease;
+}
+.mexp-hist-item.emp-item .mexp-hist-card {
+    background: rgba(139, 92, 246, 0.04);
+    border-color: rgba(139, 92, 246, 0.25);
+}
+.mexp-hist-card:hover {
+    border-color: var(--nv);
+    transform: translateX(-2px);
+}
+.mexp-hist-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+    margin-bottom: 6px;
+}
+.mexp-hist-role-badge {
+    font-size: 10px;
+    padding: 2px 7px;
+    border-radius: 10px;
+    font-weight: 800;
+}
+.mexp-hist-role-badge.emp {
+    background: rgba(139, 92, 246, 0.15);
+    color: #6d28d9;
+    border: 1px solid rgba(139, 92, 246, 0.3);
+}
+.mexp-hist-role-badge.admin {
+    background: rgba(14, 165, 233, 0.15);
+    color: #0369a1;
+    border: 1px solid rgba(14, 165, 233, 0.3);
+}
+.mexp-hist-time {
+    font-size: 11px;
+    color: var(--tx3);
+    direction: ltr;
+    font-family: monospace, sans-serif;
+}
+.mexp-hist-desc {
+    font-size: 12px;
+    color: var(--tx2);
+    margin-bottom: 8px;
+}
+.mexp-hist-meta {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    font-size: 11.5px;
+    color: var(--tx);
+    border-top: 1px dashed var(--bd);
+    padding-top: 6px;
+}
+
