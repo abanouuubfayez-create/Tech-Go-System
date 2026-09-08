@@ -1,5 +1,5 @@
 // ─── Service Worker for Tech Go PWA ─────────────────────────────────────────
-const CACHE_NAME = 'techgo-v1788856972-force-purge';
+const CACHE_NAME = 'techgo-v1788858169-force-purge';
 const STATIC_ASSETS = [
     './login.html',
     './styles.css',
@@ -58,9 +58,23 @@ self.addEventListener('fetch', function(event) {
     if (event.request.mode === 'navigate' || url.indexOf('app.js') > -1 || url.indexOf('styles.css') > -1 || url.indexOf('index.html') > -1 || url.indexOf('employee.html') > -1 || url.indexOf('.js') > -1 || url.indexOf('.html') > -1 || url.indexOf('.css') > -1) {
         event.respondWith(
             fetch(new Request(event.request, { cache: 'no-cache' })).then(function(response) {
+                if (response && response.status === 200 && event.request.method === 'GET') {
+                    var resClone = response.clone();
+                    caches.open(CACHE_NAME).then(function(cache) {
+                        cache.put(event.request, resClone);
+                        var cleanUrl = event.request.url.split('?')[0];
+                        if (cleanUrl !== event.request.url) {
+                            cache.put(cleanUrl, resClone.clone());
+                        }
+                    });
+                }
                 return response;
             }).catch(function() {
-                return caches.match(event.request);
+                return caches.match(event.request, { ignoreSearch: true }).then(function(matched) {
+                    if (matched) return matched;
+                    var cleanUrl = event.request.url.split('?')[0];
+                    return caches.match(cleanUrl, { ignoreSearch: true });
+                });
             })
         );
         return;
@@ -72,11 +86,19 @@ self.addEventListener('fetch', function(event) {
                 var resClone = response.clone();
                 caches.open(CACHE_NAME).then(function(cache) {
                     cache.put(event.request, resClone);
+                    var cleanUrl = event.request.url.split('?')[0];
+                    if (cleanUrl !== event.request.url) {
+                        cache.put(cleanUrl, resClone.clone());
+                    }
                 });
             }
             return response;
         }).catch(function() {
-            return caches.match(event.request);
+            return caches.match(event.request, { ignoreSearch: true }).then(function(matched) {
+                if (matched) return matched;
+                var cleanUrl = event.request.url.split('?')[0];
+                return caches.match(cleanUrl, { ignoreSearch: true });
+            });
         })
     );
 });
