@@ -5246,6 +5246,26 @@ body.dark-mode .tg-expand-btn:hover {
   box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.2);
 }
 
+/* Hide number input spinners (up/down arrows) for price and quantity fields */
+#mexpModalTable input[type="number"],
+#empMexpModalTable input[type="number"] {
+  -moz-appearance: textfield;
+  padding-right: 12px;
+}
+
+#mexpModalTable input[type="number"]::-webkit-outer-spin-button,
+#mexpModalTable input[type="number"]::-webkit-inner-spin-button,
+#empMexpModalTable input[type="number"]::-webkit-outer-spin-button,
+#empMexpModalTable input[type="number"]::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+
+/* Enhance price input visibility */
+.mexp-modal-price, .mexp-modal-qty {
+  letter-spacing: 0.5px;
+}
+
 .mexp-modal-field-lbl {
   display: none;
 }
