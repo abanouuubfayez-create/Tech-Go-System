@@ -67,7 +67,7 @@
     <link
         href="https://fonts.googleapis.com/css2?family=Alexandria:wght@300;400;500;600;700;800;900&family=Cairo:wght@400;600;700;800;900&family=Tajawal:wght@400;500;700;800&family=Inter:wght@400;500;600;700&display=swap"
         rel="stylesheet">
-    <link rel="stylesheet" href="styles.css?v=1788939280">
+    <link rel="stylesheet" href="styles.css?v=1788940475">
     <link rel="manifest" href="manifest.json">
     <link rel="icon" type="image/png" sizes="192x192" href="icon-192.png">
     <link rel="apple-touch-icon" href="icon-192.png">
@@ -75,10 +75,10 @@
     <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-storage-compat.js"></script>
-    <script src="firebase-config.js?v=1788939280"></script>
-    <script src="auth.js?v=1788939280"></script>
-    <script src="app.js?v=1788939280"></script>
-    <script src="formsend.js?v=1788939280"></script>
+    <script src="firebase-config.js?v=1788940475"></script>
+    <script src="auth.js?v=1788940475"></script>
+    <script src="app.js?v=1788940475"></script>
+    <script src="formsend.js?v=1788940475"></script>
     <script>
         (function () {
             const theme = localStorage.getItem('tg-theme') || 'light';
@@ -3467,6 +3467,10 @@
             }
             else if (tag === 'emp-doc-personal' || tag === 'emp-doc-direct') clickTab('docs');
             else if (tag === 'chat-new') { if (typeof tgChatToggle === 'function') tgChatToggle(); }
+            else if (tag && (tag.indexOf('mexp') !== -1)) {
+                clickTab('mexp');
+                if (typeof empMexpLoadData === 'function') empMexpLoadData(true);
+            }
         }
         function tgNotifDelClick(id, ev) {
             if (ev) ev.stopPropagation();
@@ -3478,8 +3482,8 @@
         تطوير وتصميم: أبانوب فايز</div>
     <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
-    <script src="theme.js?v=1788939280"></script>
-    <script src="pwa-install.js?v=1788939280"></script>
+    <script src="theme.js?v=1788940475"></script>
+    <script src="pwa-install.js?v=1788940475"></script>
 
 
     <!-- Incoming Meeting Call Modal -->
@@ -4062,15 +4066,19 @@
 
             // Actions Toolbar
             h += '<div class="mexp-toolbar np">' +
-                '  <div class="mexp-toolbar-primary">' +
-                '    <button type="button" class="bt bt-p mexp-btn-add" onclick="empMexpOpenNewDayModal()">➕ تسجيل يوم جديد (Pop-up 📅)</button>' +
-                '    <button type="button" class="bt bt-o mexp-btn-save" onclick="empMexpSaveData()">💾 حفظ ومزامنة</button>' +
+                '  <div class="mexp-toolbar-primary" style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;">' +
+                '    <button type="button" class="bt bt-p mexp-btn-add" id="empMexpBtnAddDay" onclick="empMexpOpenNewDayModal()">➕ تسجيل يوم جديد (Pop-up 📅)</button>' +
+                '    <button type="button" class="bt bt-o mexp-btn-save" id="empMexpBtnSaveDraft" onclick="empMexpSaveData()">💾 حفظ مسودة</button>' +
+                '    <button type="button" class="bt bt-p" id="empMexpBtnSubmitTop" style="background:#0284c7;border-color:#0369a1;padding:8px 18px;font-weight:900;box-shadow:0 2px 8px rgba(2,132,199,0.35);" onclick="empMexpSubmitSheet()">🚀 إرسال الشيت للإدارة للاعتماد</button>' +
                 '  </div>' +
                 '  <div class="mexp-toolbar-secondary">' +
                 '    <button type="button" class="bt bt-g mexp-btn-print" onclick="empMexpPrint()">🖨 طباعة الشيت الرسمي</button>' +
                 '    <button type="button" class="bt bt-o mexp-btn-refresh" onclick="empMexpLoadData(true)" title="تحديث من السيرفر">🔄 تحديث</button>' +
                 '  </div>' +
                 '</div>';
+
+            // Workflow status & review action bar
+            h += '<div id="empMexpWorkflowWrap" style="margin-bottom:14px;"></div>';
 
             // Day Cards Grid
             h += '<div id="emp-mexp-days-container" class="mexp-days-grid"></div>';
@@ -4152,6 +4160,258 @@
             return result;
         }
 
+        function empMexpRenderWorkflow(data) {
+            var bar = document.getElementById('empMexpWorkflowWrap');
+            if (!bar) {
+                bar = document.createElement('div');
+                bar.id = 'empMexpWorkflowWrap';
+                var container = document.getElementById('emp-mexp-days-container');
+                if (container && container.parentNode) {
+                    container.parentNode.insertBefore(bar, container);
+                }
+            }
+            if (!bar) return;
+
+            data = data || window._empMexpLastSheetData || {};
+            var status = data.status || 'draft';
+            var adminNotes = data.adminNotes || '';
+            var reviewedBy = data.reviewedBy || '';
+            var submittedAt = data.submittedAt;
+            var submittedTimeStr = '';
+            if (submittedAt) {
+                try {
+                    if (typeof submittedAt.toDate === 'function') submittedTimeStr = submittedAt.toDate().toLocaleString('ar-EG');
+                    else submittedTimeStr = new Date(submittedAt).toLocaleString('ar-EG');
+                } catch (e) { }
+            }
+
+            var grandTotal = data.grandTotal || 0;
+            if (!grandTotal && window._empMexpDaysData) {
+                window._empMexpDaysData.forEach(function (d) {
+                    (d.items || []).forEach(function (it) {
+                        grandTotal += ((parseFloat(it.price || 0) || 0) * (parseFloat(it.qty || 1) || 1));
+                    });
+                });
+            }
+            var fmtTot = (typeof fmtMoney === 'function') ? fmtMoney(grandTotal) : grandTotal.toFixed(2) + ' ج.م';
+            var daysCount = (window._empMexpDaysData || []).length;
+
+            window._empMexpCurrentStatus = status;
+
+            // Toggle top buttons visibility based on status
+            var addBtn = document.getElementById('empMexpBtnAddDay');
+            var saveDraftBtn = document.getElementById('empMexpBtnSaveDraft');
+            var topSubmitBtn = document.getElementById('empMexpBtnSubmitTop');
+            var isLocked = (status === 'submitted' || status === 'approved');
+
+            if (addBtn) addBtn.style.display = isLocked ? 'none' : 'inline-flex';
+            if (saveDraftBtn) saveDraftBtn.style.display = isLocked ? 'none' : 'inline-flex';
+            if (topSubmitBtn) topSubmitBtn.style.display = isLocked ? 'none' : 'inline-flex';
+
+            var h = '';
+            if (status === 'submitted') {
+                h = '<div style="background:linear-gradient(135deg,#eff6ff,#dbeafe);border:2px solid #3b82f6;border-radius:12px;padding:16px 20px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:14px;box-shadow:var(--sh-sm);">' +
+                    '  <div>' +
+                    '    <div style="font-size:15px;font-weight:900;color:#1e40af;display:flex;align-items:center;gap:8px;">' +
+                    '      <span>⏳ تم إرسال الشيت للإدارة وهو قيد المراجعة والاعتماد</span>' +
+                    '      <span style="font-size:11px;background:#3b82f6;color:#fff;padding:2px 10px;border-radius:20px;font-weight:800;">🔒 مغلق مؤقتاً للتعديل</span>' +
+                    '    </div>' +
+                    '    <div style="font-size:12.5px;color:#1d4ed8;margin-top:4px;font-weight:700;">' +
+                    '      تم الإرسال بتاريخ: <b>' + (submittedTimeStr || 'اليوم') + '</b> بإجمالي: <b style="color:#0f766e;">' + fmtTot + '</b> (' + daysCount + ' يوم مسجل). الشيت مغلق حالياً بانتظار مراجعة واعتماد الإدارة.' +
+                    '    </div>' +
+                    '  </div>' +
+                    '  <div style="display:flex;gap:10px;flex-wrap:wrap;">' +
+                    '    <button type="button" class="bt bt-o" style="background:#fff;color:#1e40af;border-color:#93c5fd;font-weight:800;padding:8px 16px;font-size:12.5px;" onclick="empMexpRemindAdmin()">' +
+                    '      🔔 تذكير الإدارة بمراجعة الشيت' +
+                    '    </button>' +
+                    '    <button type="button" class="bt bt-o" style="background:#fff;color:#b45309;border-color:#fcd34d;font-weight:800;padding:8px 16px;font-size:12.5px;" onclick="empMexpWithdrawSheet()">' +
+                    '      ✏️ سحب الشيت للتعديل قبل المراجعة' +
+                    '    </button>' +
+                    '  </div>' +
+                    '</div>';
+            } else if (status === 'revision_requested') {
+                h = '<div style="background:linear-gradient(135deg,#fffbeb,#fef3c7);border:2px solid #f59e0b;border-radius:12px;padding:16px 20px;box-shadow:var(--sh-sm);">' +
+                    '  <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px;margin-bottom:12px;">' +
+                    '    <div style="font-size:15px;font-weight:900;color:#92400e;display:flex;align-items:center;gap:8px;">' +
+                    '      <span>⚠️ الإدارة أعادت الشيت مع ملاحظات وتوجيهات للتعديل</span>' +
+                    '      <span style="font-size:11px;background:#f59e0b;color:#fff;padding:2px 10px;border-radius:20px;font-weight:800;">🔓 مفتوح للتعديل الآن</span>' +
+                    '    </div>' +
+                    '    <button type="button" class="bt bt-p" style="background:#d97706;border-color:#b45309;padding:9px 22px;font-weight:900;font-size:13.5px;box-shadow:0 3px 10px rgba(217,119,6,0.35);" onclick="empMexpSubmitSheet()">' +
+                    '      🚀 إعادة إرسال الشيت بعد التعديل للإدارة (' + fmtTot + ')' +
+                    '    </button>' +
+                    '  </div>' +
+                    '  <div style="background:#fff;border:1px solid #fde68a;border-radius:8px;padding:10px 14px;color:#78350f;font-size:13px;line-height:1.6;font-weight:700;">' +
+                    '    📝 <b>توجيهات وملاحظات الإدارة:</b> ' + (adminNotes ? esc(adminNotes) : 'يرجى مراجعة البنود والمبالغ وتعديلها.') +
+                    '  </div>' +
+                    '</div>';
+            } else if (status === 'approved') {
+                h = '<div style="background:linear-gradient(135deg,#f0fdf4,#dcfce7);border:2px solid #10b981;border-radius:12px;padding:16px 20px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px;box-shadow:var(--sh-sm);">' +
+                    '  <div>' +
+                    '    <div style="font-size:15px;font-weight:900;color:#065f46;display:flex;align-items:center;gap:8px;">' +
+                    '      <span>🎉 تم اعتماد ومطابقة شيت المصروفات رسمياً من الإدارة العامة</span>' +
+                    '      <span style="font-size:11px;background:#10b981;color:#fff;padding:2px 10px;border-radius:20px;font-weight:800;">معتمد نهائياً</span>' +
+                    '    </div>' +
+                    '    <div style="font-size:12.5px;color:#047857;margin-top:4px;font-weight:700;">' +
+                    '      تم الاعتماد والموافقة بواسطة: <b>' + (reviewedBy ? esc(reviewedBy) : 'الإدارة العامة') + '</b> — الإجمالي المعتمد: <b>' + fmtTot + '</b>' +
+                    '    </div>' +
+                    '  </div>' +
+                    '  <button type="button" class="bt bt-g" style="padding:8px 20px;font-weight:800;font-size:13px;" onclick="empMexpPrint()">' +
+                    '    🖨 طباعة الشيت المعتمد' +
+                    '  </button>' +
+                    '</div>';
+            } else {
+                // Draft
+                h = '<div style="background:linear-gradient(135deg,#f8fafc,#f1f5f9);border:1.5px dashed #94a3b8;border-radius:12px;padding:14px 18px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px;margin-bottom:14px;">' +
+                    '  <div>' +
+                    '    <div style="font-size:14px;font-weight:900;color:var(--tx);">' +
+                    '      📝 شيت الشهر قيد التسجيل (مسودة خاصة بك)' +
+                    '    </div>' +
+                    '    <div style="font-size:12px;color:var(--tx3);margin-top:2px;font-weight:700;">' +
+                    '      سجل أيامك ومصروفاتك بحرية. عند انتهاء الشهر بالكامل، اضغط الزر لإرساله للإدارة للاعتماد والمراجعة.' +
+                    '    </div>' +
+                    '  </div>' +
+                    '  <button type="button" class="bt bt-p" style="background:#0284c7;border-color:#0369a1;padding:9px 22px;font-weight:900;font-size:13.5px;box-shadow:0 3px 12px rgba(2,132,199,0.35);" onclick="empMexpSubmitSheet()">' +
+                    '    🚀 إرسال شيت الشهر كاملاً للإدارة للاعتماد (' + fmtTot + ')' +
+                    '  </button>' +
+                    '</div>';
+            }
+            bar.innerHTML = h;
+        }
+
+        window.empMexpSubmitSheet = function () {
+            var mi = document.getElementById('emp-mexp-month');
+            var monthVal = mi && mi.value ? mi.value : '';
+            if (!monthVal) {
+                var d = new Date();
+                monthVal = d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0');
+            }
+
+            var days = (window._empMexpDaysData || []).filter(function (d) { return d.date || (d.items && d.items.length > 0); });
+            if (days.length === 0) {
+                alert('⚠️ لا توجد أي أيام أو بنود مصروفات مسجلة لإرسالها للإدارة. يرجى تسجيل مصروفات الشهر أولاً.');
+                return;
+            }
+
+            var grandTotal = 0;
+            days.forEach(function (d) {
+                (d.items || []).forEach(function (it) {
+                    grandTotal += ((parseFloat(it.price || 0) || 0) * (parseFloat(it.qty || 1) || 1));
+                });
+            });
+
+            var fmtTot = (typeof fmtMoney === 'function') ? fmtMoney(grandTotal) : grandTotal.toFixed(2) + ' ج.م';
+
+            if (!confirm('هل أنت متأكد من اكتمال تسجيل شهر (' + monthVal + ') وإرساله رسمياً للإدارة للاعتماد؟\n\n📌 الإجمالي: ' + fmtTot + '\n📌 عدد الأيام: ' + days.length + ' يوم\n\n(سيتم إغلاق الشيت مؤقتاً أثناء مراجعة الإدارة)')) {
+                return;
+            }
+
+            var myName = (typeof TG_USER !== 'undefined' && TG_USER && TG_USER.name) ? TG_USER.name : 'الموظف المسؤول';
+            var myUid = (typeof TG_USER !== 'undefined' && TG_USER && TG_USER.uid) ? TG_USER.uid : '';
+
+            var audit = Array.isArray(window._empMexpAuditTrail) ? JSON.parse(JSON.stringify(window._empMexpAuditTrail)) : [];
+            audit.unshift({
+                by: myName,
+                role: 'employee',
+                at: new Date().toISOString(),
+                total: grandTotal,
+                daysCount: days.length,
+                action: 'إرسال الشيت رسمياً للإدارة للاعتماد والمطابقة'
+            });
+            if (audit.length > 20) audit = audit.slice(0, 20);
+            window._empMexpAuditTrail = audit;
+
+            var sheetDocData = {
+                formId: 'mexp',
+                month: monthVal,
+                days: days,
+                grandTotal: grandTotal,
+                status: 'submitted',
+                submittedBy: myName,
+                submittedByUid: myUid,
+                submittedAt: firebase.firestore.FieldValue.serverTimestamp(),
+                updatedBy: myName,
+                updatedAt: firebase.firestore.FieldValue.serverTimestamp(),
+                auditTrail: audit
+            };
+
+            var storageKey = 'tg_mexp_' + monthVal;
+            try {
+                localStorage.setItem(storageKey, JSON.stringify(sheetDocData));
+                localStorage.setItem('tg_mexp_emergency_backup_' + monthVal, JSON.stringify(sheetDocData));
+            } catch (e) { }
+
+            window._empMexpLastSheetData = sheetDocData;
+            empMexpRenderWorkflow(sheetDocData);
+            empMexpRenderDays(days);
+
+            if (typeof db !== 'undefined' && db) {
+                // Multi-channel save to guarantee zero failure
+                var p1 = db.collection('mexp_sheets').doc(monthVal).set(sheetDocData, { merge: true });
+                var p2 = db.collection('savedForms').doc('mexp_' + monthVal).set(sheetDocData, { merge: true });
+                var p3 = db.collection('achievements').doc('mexp_sync_' + monthVal).set(sheetDocData, { merge: true });
+
+                Promise.allSettled([p1, p2, p3]).then(function () {
+                    if (typeof tgNotifyAdmins === 'function') {
+                        tgNotifyAdmins(
+                            '💰 كشف المصروفات: إرسال للاعتماد',
+                            'قام ' + myName + ' بإرسال كشف مصروفات شهر ' + monthVal + ' للاعتماد والمراجعة (الإجمالي: ' + fmtTot + ')',
+                            'mexp_submission_' + monthVal,
+                            {
+                                formId: 'mexp',
+                                month: monthVal,
+                                status: 'submitted',
+                                updatedBy: myName,
+                                grandTotal: grandTotal,
+                                days: days
+                            }
+                        );
+                    }
+                    if (typeof confetti === 'function') {
+                        try { confetti({ particleCount: 60, spread: 70, origin: { y: 0.6 } }); } catch (e) { }
+                    }
+                    if (typeof tgToast === 'function') tgToast('🚀 تم إرسال الشيت للإدارة بنجاح وهو قيد المراجعة والاعتماد!', 'ok');
+                    else alert('🚀 تم إرسال الشيت للإدارة بنجاح وهو قيد المراجعة والاعتماد!');
+                });
+            }
+        };
+
+        window.empMexpWithdrawSheet = function () {
+            if (!confirm('هل تريد سحب الشيت لإجراء تعديلات عليه قبل أن تراجعه الإدارة؟')) return;
+            var mi = document.getElementById('emp-mexp-month');
+            var monthVal = mi && mi.value ? mi.value : '';
+            var myName = (typeof TG_USER !== 'undefined' && TG_USER && TG_USER.name) ? TG_USER.name : 'الموظف المسؤول';
+
+            var updateData = {
+                status: 'draft',
+                updatedBy: myName,
+                updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+            };
+            if (typeof db !== 'undefined' && db && monthVal) {
+                db.collection('mexp_sheets').doc(monthVal).set(updateData, { merge: true }).catch(function () { });
+                db.collection('savedForms').doc('mexp_' + monthVal).set(updateData, { merge: true }).catch(function () { });
+                db.collection('achievements').doc('mexp_sync_' + monthVal).set(updateData, { merge: true }).catch(function () { });
+            }
+            if (window._empMexpLastSheetData) window._empMexpLastSheetData.status = 'draft';
+            empMexpRenderWorkflow(window._empMexpLastSheetData);
+            empMexpRenderDays(window._empMexpDaysData);
+            if (typeof tgToast === 'function') tgToast('🔓 تم سحب الشيت وأصبح متاحاً للتعديل مجدداً', 'ok');
+        };
+
+        window.empMexpRemindAdmin = function () {
+            var mi = document.getElementById('emp-mexp-month');
+            var monthVal = mi && mi.value ? mi.value : '';
+            var myName = (typeof TG_USER !== 'undefined' && TG_USER && TG_USER.name) ? TG_USER.name : 'الموظف المسؤول';
+            if (typeof tgNotifyAdmins === 'function') {
+                tgNotifyAdmins(
+                    '🔔 تذكير: كشف مصروفات بانتظار الاعتماد',
+                    'تذكير من ' + myName + ': شيت مصروفات شهر ' + monthVal + ' بانتظار مراجعتكم واعتمادكم.',
+                    'mexp_reminder_' + monthVal,
+                    { formId: 'mexp', month: monthVal, status: 'submitted', updatedBy: myName }
+                );
+                if (typeof tgToast === 'function') tgToast('🔔 تم إرسال تذكير للإدارة بنجاح', 'ok');
+            }
+        };
+
         function empMexpHandleRemoteUpdate(data, sourceCollection, isForce) {
             if (!data) return;
             try {
@@ -4159,6 +4419,21 @@
                 var updatedBy = data.updatedBy || '';
                 var updatedAt = data.updatedAt;
 
+            var newTimeMs = 0;
+            if (updatedAt) {
+                if (typeof updatedAt.toDate === 'function') newTimeMs = updatedAt.toDate().getTime();
+                else if (typeof updatedAt === 'number') newTimeMs = updatedAt;
+                else if (typeof updatedAt === 'string') newTimeMs = new Date(updatedAt).getTime();
+            }
+            if (isNaN(newTimeMs)) newTimeMs = 0;
+
+            var curTimeMs = window._empMexpLastRemoteTime || 0;
+            var currentDaysCount = (window._empMexpDaysData || []).length;
+            if (!isForce && curTimeMs && newTimeMs && newTimeMs < curTimeMs && serverDays.length < currentDaysCount && !data.status) {
+                return;
+            }
+
+            window._empMexpLastRemoteTime = newTimeMs || Date.now();
                 window._empMexpLastRemoteSource = sourceCollection;
                 window._empMexpLastSheetData = data;
 
@@ -4169,15 +4444,32 @@
                 var mi = document.getElementById('emp-mexp-month');
                 var monthVal = mi && mi.value ? mi.value : '';
                 var storageKey = 'tg_mexp_' + monthVal;
+
+            // Check local days BEFORE overwriting localStorage!
+            var localRaw = localStorage.getItem(storageKey);
+            var localBackupRaw = localStorage.getItem('tg_mexp_emergency_backup_' + monthVal);
+            var localData = null;
+            try { localData = JSON.parse(localBackupRaw || localRaw); } catch (e) { }
+            var localDays = empNormalizeDaysData(localData);
+
+            // If server returned 0 days but local has days and status is draft: PRESERVE local days!
+            var finalDays = serverDays;
+            if ((!serverDays || serverDays.length === 0) && localDays && localDays.length > 0 && (!data.status || data.status === 'draft')) {
+                finalDays = localDays;
+            } else if (data.status === 'approved' || data.status === 'submitted' || data.status === 'revision_requested') {
+                finalDays = serverDays.length > 0 ? serverDays : (localDays.length > 0 ? localDays : []);
+            }
+
                 try { localStorage.setItem(storageKey, JSON.stringify(data)); } catch (e) { }
 
                 empMexpUpdateSyncStatus(updatedBy, updatedAt, false);
+            empMexpRenderWorkflow(data);
 
                 if (window._empMexpModalOpen) {
-                    window._empMexpPendingRemoteDays = serverDays;
+                window._empMexpPendingRemoteDays = finalDays;
                 } else {
-                    window._empMexpDaysData = serverDays;
-                    empMexpRenderDays(serverDays);
+                window._empMexpDaysData = finalDays;
+                empMexpRenderDays(finalDays);
                 }
 
                 empMexpCheckLocalRecovery(serverDays, data);
@@ -4192,7 +4484,7 @@
             var monthVal = mi && mi.value ? mi.value : '';
             if (!monthVal) return;
             var storageKey = 'tg_mexp_' + monthVal;
-            var localRaw = localStorage.getItem(storageKey);
+            var localRaw = localStorage.getItem('tg_mexp_emergency_backup_' + monthVal) || localStorage.getItem(storageKey);
             if (!localRaw) return;
             var localData = null;
             try { localData = JSON.parse(localRaw); } catch (e) { }
@@ -4230,7 +4522,7 @@
             var mi = document.getElementById('emp-mexp-month');
             var monthVal = mi && mi.value ? mi.value : '';
             var storageKey = 'tg_mexp_' + monthVal;
-            var localRaw = localStorage.getItem(storageKey);
+            var localRaw = localStorage.getItem('tg_mexp_emergency_backup_' + monthVal) || localStorage.getItem(storageKey);
             if (!localRaw) return;
             var localData = null;
             try { localData = JSON.parse(localRaw); } catch (e) { }
@@ -4259,18 +4551,19 @@
             window._empMexpLastRemoteTime = 0;
 
             var storageKey = 'tg_mexp_' + monthVal;
-            var localRaw = localStorage.getItem(storageKey);
+            var localRaw = localStorage.getItem(storageKey) || localStorage.getItem('tg_mexp_emergency_backup_' + monthVal);
             var localData = null;
             try { localData = localRaw ? JSON.parse(localRaw) : null; } catch (e) { }
 
             if (localData) {
                 if (Array.isArray(localData.auditTrail)) window._empMexpAuditTrail = localData.auditTrail;
                 window._empMexpLastSheetData = localData;
-                if (!window._empMexpModalOpen && (!window._empMexpDaysData || window._empMexpDaysData.length === 0)) {
-                    empMexpRenderDays(empNormalizeDaysData(localData));
+                var lDays = empNormalizeDaysData(localData);
+                window._empMexpDaysData = lDays;
+                empMexpRenderDays(lDays);
+                empMexpRenderWorkflow(localData);
                     empMexpUpdateSyncStatus(localData.updatedBy, localData.updatedAt, false);
                 }
-            }
 
             if (window._empMexpRealtimeUnsub) {
                 try { window._empMexpRealtimeUnsub(); } catch (e) { }
@@ -4280,13 +4573,17 @@
                 try { window._empMexpRealtimeSfUnsub(); } catch (e) { }
                 window._empMexpRealtimeSfUnsub = null;
             }
+            if (window._empMexpRealtimeAchUnsub) {
+                try { window._empMexpRealtimeAchUnsub(); } catch (e) { }
+                window._empMexpRealtimeAchUnsub = null;
+            }
 
             if (typeof db !== 'undefined' && db) {
                 if (showToastOrForce === true) {
                     empMexpUpdateSyncStatus(null, null, true);
                 }
 
-                // مصدر واحد فقط للحقيقة: mexp_sheets
+                // 1. Primary listener on mexp_sheets
                 window._empMexpRealtimeUnsub = db.collection('mexp_sheets').doc(monthVal).onSnapshot(function (doc) {
                     if (doc.metadata && doc.metadata.hasPendingWrites) return;
                     if (doc.exists) {
@@ -4301,11 +4598,13 @@
                                     var lDays = empNormalizeDaysData(localData);
                                     window._empMexpDaysData = lDays;
                                     empMexpRenderDays(lDays);
+                                    empMexpRenderWorkflow(localData);
                                 }
                             } else {
                                 if (!window._empMexpModalOpen) {
                                     window._empMexpDaysData = [];
                                     empMexpRenderDays([]);
+                                    empMexpRenderWorkflow({ status: 'draft' });
                                 }
                             }
                         }).catch(function () { });
@@ -4314,8 +4613,29 @@
                     console.warn('emp mexp_sheets listener warning:', err);
                     if (typeof tgShowToast === 'function') tgShowToast('⚠️ انقطعت المزامنة اللحظية مع السيرفر — اضغط "تحديث"', 'warning');
                 });
+
+                // 2. Dual listener on savedForms
+                window._empMexpRealtimeSfUnsub = db.collection('savedForms').doc('mexp_' + monthVal).onSnapshot(function (sfDoc) {
+                    if (sfDoc.metadata && sfDoc.metadata.hasPendingWrites) return;
+                    if (sfDoc.exists) {
+                        empMexpHandleRemoteUpdate(sfDoc.data(), 'savedForms', showToastOrForce);
+                    }
+                }, function (err) {
+                    console.warn('emp savedForms listener warning:', err);
+                });
+
+                // 3. Fallback listener on achievements (always permitted)
+                window._empMexpRealtimeAchUnsub = db.collection('achievements').doc('mexp_sync_' + monthVal).onSnapshot(function (achDoc) {
+                    if (achDoc.metadata && achDoc.metadata.hasPendingWrites) return;
+                    if (achDoc.exists) {
+                        empMexpHandleRemoteUpdate(achDoc.data(), 'achievements', showToastOrForce);
+                    }
+                }, function (err) {
+                    console.warn('emp achievements listener warning:', err);
+                });
             } else {
                 empMexpRenderDays(empNormalizeDaysData(localData));
+                empMexpRenderWorkflow(localData);
             }
         };
 
@@ -4364,14 +4684,23 @@
                 return (a.date || '').localeCompare(b.date || '');
             });
 
+            var isLocked = (window._empMexpCurrentStatus === 'submitted' || window._empMexpCurrentStatus === 'approved');
+
             if (window._empMexpDaysData.length === 0) {
                 var emptyCard = document.createElement('div');
                 emptyCard.className = 'mexp-add-day-card';
+                if (!isLocked) {
                 emptyCard.onclick = function () { empMexpOpenNewDayModal(); };
                 emptyCard.innerHTML =
                     '<div class="mexp-add-day-icon">➕</div>' +
                     '<div style="font-size:15px;font-weight:900;">تسجيل أول يوم في الشهر (Pop-up 📅)</div>' +
                     '<span style="font-size:11.5px;opacity:0.8;">لا توجد أيام مسجلة بعد. اضغط هنا لتوثيق اليوم الأول ومصروفاته.</span>';
+                } else {
+                    emptyCard.innerHTML =
+                        '<div class="mexp-add-day-icon">🔒</div>' +
+                        '<div style="font-size:15px;font-weight:900;">الشيت قيد المراجعة والاعتماد</div>' +
+                        '<span style="font-size:11.5px;opacity:0.8;">لا يمكن إضافة أيام جديدة حالياً.</span>';
+                }
                 container.appendChild(emptyCard);
             } else {
                 window._empMexpDaysData.forEach(function (d, idx) {
@@ -4407,10 +4736,11 @@
                     var card = document.createElement('div');
                     card.className = 'mexp-day-card';
                     card.setAttribute('data-day-idx', idx);
-                    card.title = 'اضغط لتعديل وتفاصيل مصروفات هذا اليوم';
+                    card.title = isLocked ? 'اضغط لعرض تفاصيل مصروفات هذا اليوم' : 'اضغط لتعديل وتفاصيل مصروفات هذا اليوم';
                     card.onclick = function () { empMexpEditDayModal(idx); };
 
                     var dAuthor = d.updatedBy ? '<span class="mexp-day-author-tag" title="آخر تعديل بواسطة: ' + esc(d.updatedBy) + '">👤 ' + esc(d.updatedBy) + '</span>' : '';
+                    var delBtn = isLocked ? '' : '  <button type="button" class="mexp-day-del-btn" onclick="event.stopPropagation(); empMexpRemoveDay(' + idx + ');" title="حذف هذا اليوم بالكامل">🗑</button>';
 
                     card.innerHTML =
                         '<div class="mexp-day-card-top">' +
@@ -4419,7 +4749,7 @@
                         '    <span class="mexp-day-date-str">' + esc(dDate) + '</span>' +
                         (dAuthor ? '    ' + dAuthor : '') +
                         '  </div>' +
-                        '  <button type="button" class="mexp-day-del-btn" onclick="event.stopPropagation(); empMexpRemoveDay(' + idx + ');" title="حذف هذا اليوم بالكامل">🗑</button>' +
+                        delBtn +
                         '</div>' +
                         '<div class="mexp-day-card-body">' +
                         '  <div class="mexp-day-total-badge">' +
@@ -4430,12 +4760,13 @@
                         '</div>' +
                         '<div class="mexp-day-card-foot">' +
                         '  <span class="mexp-day-count-tag">📋 ' + items.length + ' ' + (items.length === 1 ? 'بند مسجل' : (items.length === 2 ? 'بندان' : 'بنود')) + '</span>' +
-                        '  <span class="mexp-day-edit-hint">✏️ تعديل / إضافة ↗</span>' +
+                        '  <span class="mexp-day-edit-hint">' + (isLocked ? '🔍 عرض البنود ↗' : '✏️ تعديل / إضافة ↗') + '</span>' +
                         '</div>';
 
                     container.appendChild(card);
                 });
 
+                if (!isLocked) {
                 var addCard = document.createElement('div');
                 addCard.className = 'mexp-add-day-card';
                 addCard.onclick = function () { empMexpOpenNewDayModal(); };
@@ -4444,6 +4775,7 @@
                     '<div>تسجيل يوم جديد (Pop-up 📅)</div>' +
                     '<span style="font-size:11px;opacity:0.75;font-weight:600;">انقر لفتح نافذة التوثيق</span>';
                 container.appendChild(addCard);
+            }
             }
 
             empMexpCalc();
@@ -4734,12 +5066,14 @@
                 rowsHtml += empMexpModalBuildRowHtml(idx + 1, item);
             });
 
+            var isLocked = (window._empMexpCurrentStatus === 'submitted' || window._empMexpCurrentStatus === 'approved');
+
             var h = '<div class="mexp-modal-card">' +
                 '<div class="mexp-modal-head">' +
                 '  <div style="display:flex;align-items:center;gap:12px;">' +
                 '    <div style="font-size:26px;background:rgba(255,255,255,0.12);width:44px;height:44px;border-radius:12px;display:flex;align-items:center;justify-content:center;">📅</div>' +
                 '    <div>' +
-                '      <div style="font-size:16px;font-weight:900;color:#fff;">' + (isEdit ? '✏️ تعديل مصروفات اليوم' : '➕ تسجيل وتوثيق مصروفات يوم جديد') + '</div>' +
+                '      <div style="font-size:16px;font-weight:900;color:#fff;">' + (isLocked ? '🔍 عرض تفاصيل مصروفات اليوم (مغلق أثناء المراجعة/الاعتماد)' : (isEdit ? '✏️ تعديل مصروفات اليوم' : '➕ تسجيل وتوثيق مصروفات يوم جديد')) + '</div>' +
                 '      <div style="font-size:11.5px;opacity:0.85;margin-top:2px;">نافذة سريعة مع المزامنة اللحظية المباشرة مع الإدارة العامة</div>' +
                 '    </div>' +
                 '  </div>' +
@@ -4749,19 +5083,19 @@
                 '  <div style="background:var(--bg2);border:1.5px solid var(--bd);border-radius:12px;padding:12px 16px;margin-bottom:16px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px;">' +
                 '    <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;">' +
                 '      <label style="font-size:13px;font-weight:900;color:var(--tx);white-space:nowrap;">📆 تاريخ اليوم:</label>' +
-                '      <input type="date" id="empMexpModalDate" class="inp" style="padding:7px 12px;font-weight:800;font-size:13px;border-radius:8px;border:1.5px solid var(--bd);" value="' + esc(dateVal) + '" onchange="empMexpModalDateChanged()">' +
+                '      <input type="date" id="empMexpModalDate" class="inp" style="padding:7px 12px;font-weight:800;font-size:13px;border-radius:8px;border:1.5px solid var(--bd);' + (isLocked ? 'background:#f1f5f9;cursor:not-allowed;' : '') + '" value="' + esc(dateVal) + '" onchange="empMexpModalDateChanged()"' + (isLocked ? ' disabled' : '') + '>' +
                 '      <span id="empMexpModalDayName" class="mexp-day-name-tag" style="font-size:12.5px;padding:4px 14px;">' + esc(dayName || 'اليوم') + '</span>' +
                 '    </div>' +
-                '    <div style="display:flex;align-items:center;gap:6px;">' +
+                (!isLocked ? '    <div style="display:flex;align-items:center;gap:6px;">' +
                 '      <button type="button" class="bt bt-o" style="padding:6px 12px;font-size:12px;font-weight:800;border-radius:8px;" onclick="empMexpModalSetQuickDate(0)">📅 اليوم</button>' +
                 '      <button type="button" class="bt bt-o" style="padding:6px 12px;font-size:12px;font-weight:800;border-radius:8px;" onclick="empMexpModalSetQuickDate(-1)">⏪ أمس</button>' +
-                '    </div>' +
+                '    </div>' : '') +
                 '  </div>' +
                 '  <datalist id="empMexpModalSpendersDatalist">' + dlOptions + '</datalist>' +
                 '  <div style="border:1.5px solid var(--bd);border-radius:14px;overflow:hidden;background:var(--w);box-shadow:0 1px 4px rgba(0,0,0,0.03);">' +
                 '    <div style="padding:12px 16px;background:var(--bg2);border-bottom:1.5px solid var(--bd);display:flex;align-items:center;justify-content:space-between;">' +
                 '      <strong style="font-size:13.5px;color:var(--tx);font-weight:900;">📋 بنود المصروفات المسجلة لهذا اليوم:</strong>' +
-                '      <button type="button" class="bt bt-p" style="padding:6px 16px;font-size:12px;font-weight:900;border-radius:8px;" onclick="empMexpModalAddRow()">➕ إضافة بند</button>' +
+                (!isLocked ? '      <button type="button" class="bt bt-p" style="padding:6px 16px;font-size:12px;font-weight:900;border-radius:8px;" onclick="empMexpModalAddRow()">➕ إضافة بند</button>' : '') +
                 '    </div>' +
                 '    <div style="overflow-x:auto;max-height:360px;overflow-y:auto;padding:8px;">' +
                 '      <table id="empMexpModalTable">' +
@@ -4785,14 +5119,11 @@
                 '    <div style="font-size:13.5px;font-weight:700;">💰 إجمالي مصروفات اليوم: <strong id="empMexpModalGrandTotal" style="color:#34d399;font-size:17px;margin-right:6px;font-weight:900;">0.00 ج.م</strong></div>' +
                 '  </div>' +
                 '</div>' +
-                '<div class="mexp-modal-foot">' +
-                '  <div style="display:flex;align-items:center;gap:8px;">' +
-                '<div class="mexp-modal-foot">' +
-                '  <button type="button" class="bt bt-p mexp-modal-save-btn" style="padding:10px 28px;font-size:13.5px;font-weight:900;background:linear-gradient(135deg, #059669, #047857);color:#fff;border-radius:10px;box-shadow:0 4px 14px rgba(5,150,105,0.35);" onclick="empMexpModalSaveDay()">💾 حفظ اليوم ومزامنة الشيت فوراً</button>' +
+                '<div class="mexp-modal-foot" style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;">' +
+                (!isLocked ? '  <button type="button" class="bt bt-p mexp-modal-save-btn" style="padding:10px 28px;font-size:13.5px;font-weight:900;background:linear-gradient(135deg, #059669, #047857);color:#fff;border-radius:10px;box-shadow:0 4px 14px rgba(5,150,105,0.35);" onclick="empMexpModalSaveDay()">💾 حفظ اليوم ومزامنة الشيت فوراً</button>' : '<span style="font-size:12px;font-weight:700;color:var(--tx2);">🔒 العرض فقط متاح حالياً</span>') +
                 '  <div class="mexp-modal-foot-actions" style="display:flex;align-items:center;gap:8px;">' +
-                '    <button type="button" class="bt bt-o" style="padding:9px 20px;font-size:12.5px;font-weight:800;border-radius:10px;" onclick="empMexpCloseDayModal()">إلغاء</button>' +
-                (isEdit ? '    <button type="button" class="bt bt-d" style="padding:9px 16px;font-size:12px;font-weight:800;border-radius:10px;background:rgba(239,68,68,0.15);color:#ef4444;border-color:rgba(239,68,68,0.3);" onclick="empMexpModalDeleteCurrentDay()">🗑 حذف هذا اليوم</button>' : '') +
-                '  </div>' +
+                '    <button type="button" class="bt bt-o" style="padding:9px 20px;font-size:12.5px;font-weight:800;border-radius:10px;" onclick="empMexpCloseDayModal()">إغلاق</button>' +
+                ((isEdit && !isLocked) ? '    <button type="button" class="bt bt-d" style="padding:9px 16px;font-size:12px;font-weight:800;border-radius:10px;background:rgba(239,68,68,0.15);color:#ef4444;border-color:rgba(239,68,68,0.3);" onclick="empMexpModalDeleteCurrentDay()">🗑 حذف هذا اليوم</button>' : '') +
                 '</div>' +
                 '</div>';
 
@@ -5051,6 +5382,7 @@
             });
 
             var storageKey = 'tg_mexp_' + monthVal;
+            var currentStatus = (window._empMexpLastSheetData && window._empMexpLastSheetData.status) ? window._empMexpLastSheetData.status : (window._empMexpCurrentStatus || 'draft');
 
             // Maintain audit trail
             var audit = Array.isArray(window._empMexpAuditTrail) ? JSON.parse(JSON.stringify(window._empMexpAuditTrail)) : [];
@@ -5069,11 +5401,15 @@
                 month: monthVal,
                 days: days,
                 grandTotal: grandTotal,
+                status: currentStatus,
                 updatedBy: myName,
                 updatedAt: new Date().toISOString(),
                 auditTrail: audit
             };
+            try {
             localStorage.setItem(storageKey, JSON.stringify(sheetData));
+                localStorage.setItem('tg_mexp_emergency_backup_' + monthVal, JSON.stringify(sheetData));
+            } catch (e) { }
 
             try {
                 var hist = JSON.parse(localStorage.getItem('tg_mexp_spenders_history') || '[]');
@@ -5100,6 +5436,7 @@
                     month: monthVal,
                     days: days,
                     grandTotal: grandTotal,
+                    status: currentStatus,
                     updatedBy: myName,
                     updatedAt: firebase.firestore.FieldValue.serverTimestamp(),
                     auditTrail: audit
@@ -5107,12 +5444,13 @@
 
                 var p1 = db.collection('mexp_sheets').doc(monthVal).set(sheetDocData, { merge: true });
                 var p2 = db.collection('savedForms').doc('mexp_' + monthVal).set(sheetDocData, { merge: true });
+                var p3 = db.collection('achievements').doc('mexp_sync_' + monthVal).set(sheetDocData, { merge: true });
 
-                Promise.allSettled([p1, p2]).then(function(results) {
+                Promise.allSettled([p1, p2, p3]).then(function(results) {
                     var failures = results.filter(function (r) { return r.status === 'rejected'; });
 
-                    if (failures.length > 0) {
-                        // فشل حقيقي في الرفع — لازم نبلّغ الموظف بصدق، مش نقوله "تمت المزامنة"
+                    if (failures.length === 3) {
+                        // فشل حقيقي في الرفع عبر القنوات التلاتة
                         var reason = (failures[0].reason && failures[0].reason.message) ? failures[0].reason.message : 'خطأ غير معروف';
                         console.error('empMexpSaveData: real sync failure:', failures.map(function (f) { return f.reason; }));
                         empMexpMarkUnsynced(reason);
@@ -5120,23 +5458,9 @@
                         else if (typeof tgShowToast === 'function') tgShowToast('⚠️ فشلت المزامنة مع السيرفر — البيانات محفوظة محلياً فقط', 'warning');
                         return;
                     }
-
                     empMexpUpdateSyncStatus(myName, new Date(), false);
-                    if (typeof tgToast === 'function') tgToast('✅ تم حفظ ومزامنة الشيت مع الإدارة بنجاح!', 'ok');
-                    else if (typeof tgShowToast === 'function') tgShowToast('تم حفظ ومزامنة الشيت مع الإدارة بنجاح', 'success');
-
-                    // Notify Admins in real-time
-                    try {
-                        if (typeof tgNotifyAdmins === 'function') {
-                            var fmtTot = (typeof fmtMoney === 'function') ? fmtMoney(grandTotal) : grandTotal.toFixed(2) + ' ج.م';
-                            tgNotifyAdmins(
-                                '💰 كشف المصروفات: تحديث من الموظف',
-                                'قام ' + myName + ' بتسجيل وتعديل مصروفات شهر ' + monthVal + ' (الإجمالي: ' + fmtTot + ')',
-                                'mexp_' + monthVal,
-                                { formId: 'mexp', month: monthVal, updatedBy: myName, grandTotal: grandTotal }
-                            );
-                        }
-                    } catch (notifErr) { console.warn('tgNotifyAdmins error:', notifErr); }
+                    if (typeof tgToast === 'function') tgToast('✅ تم حفظ المسودة ومزامنتها بنجاح!', 'ok');
+                    else if (typeof tgShowToast === 'function') tgShowToast('تم حفظ المسودة ومزامنتها بنجاح', 'success');
                 }).catch(function(err) {
                     // Promise.allSettled نفسها بالكاد بترفض، لكن سايبينها كخط دفاع أخير
                     console.error('empMexpSaveData unexpected error:', err);
