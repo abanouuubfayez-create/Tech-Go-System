@@ -6220,16 +6220,40 @@ function mexpSave(skipMerge) {
         var p2 = db.collection('savedForms').doc('mexp_' + monthVal).set(sheetDocData, { merge: true });
 
         Promise.allSettled([p1, p2]).then(function (results) {
+            var failures = results.filter(function (r) { return r.status === 'rejected'; });
+
+            if (failures.length > 0) {
+                var reason = (failures[0].reason && failures[0].reason.message) ? failures[0].reason.message : 'خطأ غير معروف';
+                console.error('mexpSave: real sync failure:', failures.map(function (f) { return f.reason; }));
+                mexpMarkUnsynced(reason);
+                if (typeof tgToast === 'function') tgToast('⚠️ فشلت المزامنة مع السيرفر (' + reason + ') — البيانات محفوظة على جهازك فقط.', 'warn');
+                else if (typeof tgShowToast === 'function') tgShowToast('⚠️ فشلت المزامنة مع السيرفر — البيانات محفوظة محلياً فقط', 'warning');
+                return;
+            }
+
             mexpUpdateSyncStatus(myName, new Date(), false, false);
             if (typeof tgToast === 'function') tgToast('✅ تم حفظ ومزامنة شيت المصروفات بنجاح!', 'ok');
             else if (typeof tgShowToast === 'function') tgShowToast('تم حفظ ومزامنة شيت المصروفات بنجاح', 'success');
         }).catch(function (err) {
-            console.error('mexpSave error:', err);
-            if (typeof tgShowToast === 'function') tgShowToast('تم الحفظ محلياً', 'warning');
+            console.error('mexpSave unexpected error:', err);
+            mexpMarkUnsynced(err && err.message ? err.message : 'خطأ غير متوقع');
+            if (typeof tgShowToast === 'function') tgShowToast('⚠️ فشلت المزامنة — تم الحفظ محلياً فقط', 'warning');
         });
     } else {
-        if (typeof tgShowToast === 'function') tgShowToast('تم حفظ شيت المصروفات لشهر ' + monthVal, 'success');
+        mexpMarkUnsynced('لا يوجد اتصال بقاعدة البيانات');
+        if (typeof tgShowToast === 'function') tgShowToast('⚠️ لا يوجد اتصال بالسيرفر — تم حفظ شيت المصروفات على جهازك فقط لشهر ' + monthVal, 'warning');
     }
+}
+
+// يعرض حالة "غير متزامن" بوضوح للأدمن بدل ما يفتكر إن كل حاجة تمام
+function mexpMarkUnsynced(reasonText) {
+    var syncInfo = document.getElementById('mexpSyncInfo');
+    if (!syncInfo) return;
+    syncInfo.innerHTML = '<span class="mexp-sync-badge" style="background:#fef2f2;border-color:#fca5a5;color:#991b1b;">' +
+        '<span class="mexp-pulse-dot" style="background:#dc2626;"></span> ⚠️ لم تتم المزامنة مع السيرفر' +
+        (reasonText ? ' (' + escH(reasonText) + ')' : '') +
+        ' — البيانات محفوظة على جهازك فقط</span>' +
+        '<button type="button" class="bt bt-o" style="margin-right:6px;" onclick="mexpSave(true)">🔄 إعادة المحاولة</button>';
 }
 
 function mexpLoadAssigneeConfig() {

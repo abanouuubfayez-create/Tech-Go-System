@@ -5104,6 +5104,19 @@
             } catch(e){}
 
             if (typeof db !== 'undefined' && db) {
+                // تحقق مبكر من حالة تسجيل الدخول — انتهاء الجلسة من أكتر أسباب فشل الحفظ بصمت
+                var authOk = true;
+                try {
+                    authOk = !!(typeof auth !== 'undefined' && auth && auth.currentUser);
+                } catch (eAuth) { authOk = false; }
+
+                if (!authOk) {
+                    empMexpMarkUnsynced('انتهت جلسة الدخول');
+                    if (typeof tgToast === 'function') tgToast('⚠️ جلسة الدخول منتهية — البيانات محفوظة على جهازك فقط ولن يراها الأدمن. سجّل الدخول من جديد ثم اضغط "تحديث".', 'warn');
+                    else if (typeof tgShowToast === 'function') tgShowToast('⚠️ جلسة الدخول منتهية — البيانات لم تُرفع للسيرفر. سجّل الدخول من جديد.', 'warning');
+                    return;
+                }
+
                 var sheetDocData = {
                     formId: 'mexp',
                     month: monthVal,
@@ -5118,6 +5131,18 @@
                 var p2 = db.collection('savedForms').doc('mexp_' + monthVal).set(sheetDocData, { merge: true });
 
                 Promise.allSettled([p1, p2]).then(function(results) {
+                    var failures = results.filter(function (r) { return r.status === 'rejected'; });
+
+                    if (failures.length > 0) {
+                        // فشل حقيقي في الرفع — لازم نبلّغ الموظف بصدق، مش نقوله "تمت المزامنة"
+                        var reason = (failures[0].reason && failures[0].reason.message) ? failures[0].reason.message : 'خطأ غير معروف';
+                        console.error('empMexpSaveData: real sync failure:', failures.map(function (f) { return f.reason; }));
+                        empMexpMarkUnsynced(reason);
+                        if (typeof tgToast === 'function') tgToast('⚠️ فشلت المزامنة مع السيرفر (' + reason + ') — البيانات محفوظة على جهازك فقط. اضغط "تحديث" لإعادة المحاولة.', 'warn');
+                        else if (typeof tgShowToast === 'function') tgShowToast('⚠️ فشلت المزامنة مع السيرفر — البيانات محفوظة محلياً فقط', 'warning');
+                        return;
+                    }
+
                     empMexpUpdateSyncStatus(myName, new Date(), false);
                     if (typeof tgToast === 'function') tgToast('✅ تم حفظ ومزامنة الشيت مع الإدارة بنجاح!', 'ok');
                     else if (typeof tgShowToast === 'function') tgShowToast('تم حفظ ومزامنة الشيت مع الإدارة بنجاح', 'success');
@@ -5135,13 +5160,27 @@
                         }
                     } catch (notifErr) { console.warn('tgNotifyAdmins error:', notifErr); }
                 }).catch(function(err) {
-                    console.error('empMexpSaveData error:', err);
-                    if (typeof tgShowToast === 'function') tgShowToast('تم الحفظ محلياً', 'warning');
+                    // Promise.allSettled نفسها بالكاد بترفض، لكن سايبينها كخط دفاع أخير
+                    console.error('empMexpSaveData unexpected error:', err);
+                    empMexpMarkUnsynced(err && err.message ? err.message : 'خطأ غير متوقع');
+                    if (typeof tgShowToast === 'function') tgShowToast('⚠️ فشلت المزامنة — تم الحفظ محلياً فقط', 'warning');
                 });
             } else {
-                if (typeof tgShowToast === 'function') tgShowToast('تم حفظ شيت المصروفات لشهر ' + monthVal, 'success');
+                empMexpMarkUnsynced('لا يوجد اتصال بقاعدة البيانات');
+                if (typeof tgShowToast === 'function') tgShowToast('⚠️ لا يوجد اتصال بالسيرفر — تم حفظ شيت المصروفات على جهازك فقط لشهر ' + monthVal, 'warning');
             }
         };
+
+        // يعرض حالة "غير متزامن" بوضوح للموظف بدل ما يفتكر إن كل حاجة تمام
+        function empMexpMarkUnsynced(reasonText) {
+            var syncInfo = document.getElementById('empMexpSyncInfo');
+            if (!syncInfo) return;
+            syncInfo.innerHTML = '<span class="mexp-sync-badge" style="background:#fef2f2;border-color:#fca5a5;color:#991b1b;">' +
+                '<span class="mexp-pulse-dot" style="background:#dc2626;"></span> ⚠️ لم تتم المزامنة مع السيرفر' +
+                (reasonText ? ' (' + esc(reasonText) + ')' : '') +
+                ' — البيانات محفوظة على جهازك فقط</span>' +
+                '<button type="button" class="bt bt-o" style="margin-right:6px;" onclick="empMexpSaveData(true)">🔄 إعادة المحاولة</button>';
+        }
 
         function initEmpMexpAccessCheck() {
             var tab = document.getElementById('empTabMexp');
