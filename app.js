@@ -5246,59 +5246,44 @@ function mexpUpdateSyncStatus(updatedBy, updatedAt, isSyncing, isEmp) {
 
 function mexpHandleRemoteUpdate(data, sourceCollection, isForce) {
     if (!data) return;
-    var serverDays = mexpNormalizeDaysData(data);
-    var updatedBy = data.updatedBy || '';
-    var updatedAt = data.updatedAt;
+    try {
+        var serverDays = mexpNormalizeDaysData(data);
+        var updatedBy = data.updatedBy || '';
+        var updatedAt = data.updatedAt;
 
-    // Convert updatedAt to comparable timestamp ms
-    var newTimeMs = 0;
-    if (updatedAt) {
-        if (typeof updatedAt.toDate === 'function') newTimeMs = updatedAt.toDate().getTime();
-        else if (typeof updatedAt === 'number') newTimeMs = updatedAt;
-        else if (typeof updatedAt === 'string') newTimeMs = new Date(updatedAt).getTime();
-    }
-    if (isNaN(newTimeMs)) newTimeMs = 0;
+        window._mexpLastRemoteSource = sourceCollection;
+        window._mexpLastSheetData = data;
 
-    var curTimeMs = window._mexpLastRemoteTime || 0;
-    if (!isForce && curTimeMs && newTimeMs && newTimeMs < curTimeMs) {
-        return; // Incoming data is older than current data in memory
-    }
-
-    window._mexpLastRemoteTime = newTimeMs || Date.now();
-    window._mexpLastRemoteSource = sourceCollection;
-    window._mexpLastSheetData = data;
-
-    if (Array.isArray(data.auditTrail)) {
-        window._mexpAuditTrail = data.auditTrail;
-    }
-
-    var mi = document.getElementById('mexp-month');
-    var monthVal = mi && mi.value ? mi.value : '';
-    var storageKey = 'tg_mexp_' + monthVal;
-    try { localStorage.setItem(storageKey, JSON.stringify(data)); } catch (e) { }
-
-    var myName = (window.TG_USER && TG_USER.name) ? TG_USER.name : 'الأدمن';
-    var isEmp = updatedBy && (updatedBy !== myName) && !updatedBy.includes('أدمن') && !updatedBy.includes('الإدارة');
-
-    mexpUpdateSyncStatus(updatedBy, updatedAt, false, isEmp);
-
-    // Direct authoritative update without destructive union merging
-    if (window._mexpModalOpen) {
-        window._mexpPendingRemoteDays = serverDays;
-        if (isEmp && typeof tgShowToast === 'function') {
-            tgShowToast('🔔 قام الموظف (' + updatedBy + ') بتحديث المصروفات على السيرفر!', 'info');
+        if (Array.isArray(data.auditTrail)) {
+            window._mexpAuditTrail = data.auditTrail;
         }
-    } else {
-        window._mexpDaysData = serverDays;
-        mexpRenderDays(serverDays);
-        if (isEmp && typeof tgShowToast === 'function') {
-            tgShowToast('🔔 تحديث فوري: قام الموظف (' + updatedBy + ') بتعديل الشيت!', 'info');
-        }
-    }
 
-    // Auto-replicate from savedForms to mexp_sheets if savedForms had newer data
-    if (sourceCollection === 'savedForms' && typeof db !== 'undefined' && db && monthVal) {
-        db.collection('mexp_sheets').doc(monthVal).set(data, { merge: true }).catch(function () { });
+        var mi = document.getElementById('mexp-month');
+        var monthVal = mi && mi.value ? mi.value : '';
+        var storageKey = 'tg_mexp_' + monthVal;
+        try { localStorage.setItem(storageKey, JSON.stringify(data)); } catch (e) { }
+
+        var myName = (window.TG_USER && TG_USER.name) ? TG_USER.name : 'الأدمن';
+        var isEmp = updatedBy && (updatedBy !== myName) && !updatedBy.includes('أدمن') && !updatedBy.includes('الإدارة');
+
+        mexpUpdateSyncStatus(updatedBy, updatedAt, false, isEmp);
+
+        // دايمًا بنعرض آخر نسخة وصلت من السيرفر مباشرة، من غير أي مقارنة تواريخ ممكن تتسبب في تجاهل تحديث حقيقي
+        if (window._mexpModalOpen) {
+            window._mexpPendingRemoteDays = serverDays;
+            if (isEmp && typeof tgShowToast === 'function') {
+                tgShowToast('🔔 قام الموظف (' + updatedBy + ') بتحديث المصروفات على السيرفر!', 'info');
+            }
+        } else {
+            window._mexpDaysData = serverDays;
+            mexpRenderDays(serverDays);
+            if (isEmp && typeof tgShowToast === 'function') {
+                tgShowToast('🔔 تحديث فوري: قام الموظف (' + updatedBy + ') بتعديل الشيت!', 'info');
+            }
+        }
+    } catch (err) {
+        console.error('mexpHandleRemoteUpdate error:', err);
+        if (typeof tgShowToast === 'function') tgShowToast('⚠️ حصل خطأ أثناء عرض آخر تحديث — اضغط "تحديث" لإعادة المحاولة', 'warning');
     }
 }
 
@@ -5388,7 +5373,7 @@ function mexpLoad(showToastOrForce) {
         }
     }
 
-    // Cancel any previous month listeners
+    // Cancel any previous month listener
     if (window._mexpRealtimeUnsub) {
         try { window._mexpRealtimeUnsub(); } catch (e) { }
         window._mexpRealtimeUnsub = null;
@@ -5403,14 +5388,14 @@ function mexpLoad(showToastOrForce) {
             mexpUpdateSyncStatus(null, null, true);
         }
 
-        // 1. Primary Realtime listener on mexp_sheets
+        // مصدر واحد فقط للحقيقة: mexp_sheets — أي مصدر تاني كان بيسبب سباق بين تحديثين ويتسبب في تجاهل بيانات حقيقية
         window._mexpRealtimeUnsub = db.collection('mexp_sheets').doc(monthVal).onSnapshot(function (doc) {
             if (doc.metadata && doc.metadata.hasPendingWrites) return;
             if (doc.exists) {
                 mexpHandleRemoteUpdate(doc.data(), 'mexp_sheets', showToastOrForce);
                 if (showToastOrForce && typeof tgShowToast === 'function') tgShowToast('تمت مزامنة الشيت بنجاح من السيرفر', 'success');
             } else {
-                // If not found in mexp_sheets, try savedForms directly
+                // توافق مع بيانات قديمة كانت متخزنة في savedForms فقط قبل التبسيط — مرة واحدة عند عدم وجود مستند
                 db.collection('savedForms').doc('mexp_' + monthVal).get().then(function (sfDoc) {
                     if (sfDoc.exists) {
                         mexpHandleRemoteUpdate(sfDoc.data(), 'savedForms', showToastOrForce);
@@ -5430,16 +5415,7 @@ function mexpLoad(showToastOrForce) {
             }
         }, function (err) {
             console.warn('mexp_sheets listener warning:', err);
-        });
-
-        // 2. Dual Realtime listener on savedForms to catch employee saves immediately
-        window._mexpRealtimeSfUnsub = db.collection('savedForms').doc('mexp_' + monthVal).onSnapshot(function (sfDoc) {
-            if (sfDoc.metadata && sfDoc.metadata.hasPendingWrites) return;
-            if (sfDoc.exists) {
-                mexpHandleRemoteUpdate(sfDoc.data(), 'savedForms', showToastOrForce);
-            }
-        }, function (err) {
-            console.warn('savedForms realtime listener warning:', err);
+            if (typeof tgShowToast === 'function') tgShowToast('⚠️ انقطعت المزامنة اللحظية مع السيرفر — اضغط "تحديث"', 'warning');
         });
     } else {
         mexpRenderDays(mexpNormalizeDaysData(localData));

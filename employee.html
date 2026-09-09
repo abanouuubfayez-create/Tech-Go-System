@@ -67,7 +67,7 @@
     <link
         href="https://fonts.googleapis.com/css2?family=Alexandria:wght@300;400;500;600;700;800;900&family=Cairo:wght@400;600;700;800;900&family=Tajawal:wght@400;500;700;800&family=Inter:wght@400;500;600;700&display=swap"
         rel="stylesheet">
-    <link rel="stylesheet" href="styles.css?v=1788938847">
+    <link rel="stylesheet" href="styles.css?v=1788939280">
     <link rel="manifest" href="manifest.json">
     <link rel="icon" type="image/png" sizes="192x192" href="icon-192.png">
     <link rel="apple-touch-icon" href="icon-192.png">
@@ -75,10 +75,10 @@
     <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-storage-compat.js"></script>
-    <script src="firebase-config.js?v=1788938847"></script>
-    <script src="auth.js?v=1788938847"></script>
-    <script src="app.js?v=1788938847"></script>
-    <script src="formsend.js?v=1788938847"></script>
+    <script src="firebase-config.js?v=1788939280"></script>
+    <script src="auth.js?v=1788939280"></script>
+    <script src="app.js?v=1788939280"></script>
+    <script src="formsend.js?v=1788939280"></script>
     <script>
         (function () {
             const theme = localStorage.getItem('tg-theme') || 'light';
@@ -3478,8 +3478,8 @@
         تطوير وتصميم: أبانوب فايز</div>
     <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
-    <script src="theme.js?v=1788938847"></script>
-    <script src="pwa-install.js?v=1788938847"></script>
+    <script src="theme.js?v=1788939280"></script>
+    <script src="pwa-install.js?v=1788939280"></script>
 
 
     <!-- Incoming Meeting Call Modal -->
@@ -4154,49 +4154,36 @@
 
         function empMexpHandleRemoteUpdate(data, sourceCollection, isForce) {
             if (!data) return;
-            var serverDays = empNormalizeDaysData(data);
-            var updatedBy = data.updatedBy || '';
-            var updatedAt = data.updatedAt;
+            try {
+                var serverDays = empNormalizeDaysData(data);
+                var updatedBy = data.updatedBy || '';
+                var updatedAt = data.updatedAt;
 
-            var newTimeMs = 0;
-            if (updatedAt) {
-                if (typeof updatedAt.toDate === 'function') newTimeMs = updatedAt.toDate().getTime();
-                else if (typeof updatedAt === 'number') newTimeMs = updatedAt;
-                else if (typeof updatedAt === 'string') newTimeMs = new Date(updatedAt).getTime();
-            }
-            if (isNaN(newTimeMs)) newTimeMs = 0;
+                window._empMexpLastRemoteSource = sourceCollection;
+                window._empMexpLastSheetData = data;
 
-            var curTimeMs = window._empMexpLastRemoteTime || 0;
-            if (!isForce && curTimeMs && newTimeMs && newTimeMs < curTimeMs) {
-                return;
-            }
+                if (Array.isArray(data.auditTrail)) {
+                    window._empMexpAuditTrail = data.auditTrail;
+                }
 
-            window._empMexpLastRemoteTime = newTimeMs || Date.now();
-            window._empMexpLastRemoteSource = sourceCollection;
-            window._empMexpLastSheetData = data;
+                var mi = document.getElementById('emp-mexp-month');
+                var monthVal = mi && mi.value ? mi.value : '';
+                var storageKey = 'tg_mexp_' + monthVal;
+                try { localStorage.setItem(storageKey, JSON.stringify(data)); } catch (e) { }
 
-            if (Array.isArray(data.auditTrail)) {
-                window._empMexpAuditTrail = data.auditTrail;
-            }
+                empMexpUpdateSyncStatus(updatedBy, updatedAt, false);
 
-            var mi = document.getElementById('emp-mexp-month');
-            var monthVal = mi && mi.value ? mi.value : '';
-            var storageKey = 'tg_mexp_' + monthVal;
-            try { localStorage.setItem(storageKey, JSON.stringify(data)); } catch (e) { }
+                if (window._empMexpModalOpen) {
+                    window._empMexpPendingRemoteDays = serverDays;
+                } else {
+                    window._empMexpDaysData = serverDays;
+                    empMexpRenderDays(serverDays);
+                }
 
-            empMexpUpdateSyncStatus(updatedBy, updatedAt, false);
-
-            if (window._empMexpModalOpen) {
-                window._empMexpPendingRemoteDays = serverDays;
-            } else {
-                window._empMexpDaysData = serverDays;
-                empMexpRenderDays(serverDays);
-            }
-
-            empMexpCheckLocalRecovery(serverDays, data);
-
-            if (sourceCollection === 'savedForms' && typeof db !== 'undefined' && db && monthVal) {
-                db.collection('mexp_sheets').doc(monthVal).set(data, { merge: true }).catch(function () { });
+                empMexpCheckLocalRecovery(serverDays, data);
+            } catch (err) {
+                console.error('empMexpHandleRemoteUpdate error:', err);
+                if (typeof tgShowToast === 'function') tgShowToast('⚠️ حصل خطأ أثناء عرض آخر تحديث — اضغط "تحديث" لإعادة المحاولة', 'warning');
             }
         }
 
@@ -4299,7 +4286,7 @@
                     empMexpUpdateSyncStatus(null, null, true);
                 }
 
-                // Primary listener on mexp_sheets
+                // مصدر واحد فقط للحقيقة: mexp_sheets
                 window._empMexpRealtimeUnsub = db.collection('mexp_sheets').doc(monthVal).onSnapshot(function (doc) {
                     if (doc.metadata && doc.metadata.hasPendingWrites) return;
                     if (doc.exists) {
@@ -4325,16 +4312,7 @@
                     }
                 }, function (err) {
                     console.warn('emp mexp_sheets listener warning:', err);
-                });
-
-                // Dual listener on savedForms
-                window._empMexpRealtimeSfUnsub = db.collection('savedForms').doc('mexp_' + monthVal).onSnapshot(function (sfDoc) {
-                    if (sfDoc.metadata && sfDoc.metadata.hasPendingWrites) return;
-                    if (sfDoc.exists) {
-                        empMexpHandleRemoteUpdate(sfDoc.data(), 'savedForms', showToastOrForce);
-                    }
-                }, function (err) {
-                    console.warn('emp savedForms listener warning:', err);
+                    if (typeof tgShowToast === 'function') tgShowToast('⚠️ انقطعت المزامنة اللحظية مع السيرفر — اضغط "تحديث"', 'warning');
                 });
             } else {
                 empMexpRenderDays(empNormalizeDaysData(localData));
