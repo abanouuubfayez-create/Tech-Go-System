@@ -5260,8 +5260,10 @@ function mexpHandleRemoteUpdate(data, sourceCollection, isForce) {
     if (isNaN(newTimeMs)) newTimeMs = 0;
 
     var curTimeMs = window._mexpLastRemoteTime || 0;
-    if (!isForce && curTimeMs && newTimeMs && newTimeMs < curTimeMs) {
-        return; // Incoming data is older than current data in memory
+    var currentDaysCount = (window._mexpDaysData || []).length;
+    // Only drop if incoming is truly older AND has no more days AND no status change
+    if (!isForce && curTimeMs && newTimeMs && newTimeMs < curTimeMs && serverDays.length <= currentDaysCount && !data.status) {
+        return;
     }
 
     window._mexpLastRemoteTime = newTimeMs || Date.now();
@@ -5275,6 +5277,13 @@ function mexpHandleRemoteUpdate(data, sourceCollection, isForce) {
     var mi = document.getElementById('mexp-month');
     var monthVal = mi && mi.value ? mi.value : '';
     var storageKey = 'tg_mexp_' + monthVal;
+
+    // Protect against empty overwrite if current screen already has days
+    var finalDays = serverDays;
+    if ((!serverDays || serverDays.length === 0) && currentDaysCount > 0 && (!data.status || data.status === 'draft')) {
+        finalDays = window._mexpDaysData;
+    }
+
     try { localStorage.setItem(storageKey, JSON.stringify(data)); } catch (e) { }
 
     var myName = (window.TG_USER && TG_USER.name) ? TG_USER.name : 'الأدمن';
@@ -5282,22 +5291,25 @@ function mexpHandleRemoteUpdate(data, sourceCollection, isForce) {
 
     mexpUpdateSyncStatus(updatedBy, updatedAt, false, isEmp);
 
-    // Direct authoritative update without destructive union merging
     if (window._mexpModalOpen) {
-        window._mexpPendingRemoteDays = serverDays;
+        window._mexpPendingRemoteDays = finalDays;
         if (isEmp && typeof tgShowToast === 'function') {
             tgShowToast('🔔 قام الموظف (' + updatedBy + ') بتحديث المصروفات على السيرفر!', 'info');
         }
     } else {
-        window._mexpDaysData = serverDays;
-        mexpRenderDays(serverDays);
+        window._mexpDaysData = finalDays;
+        mexpRenderDays(finalDays);
         if (isEmp && typeof tgShowToast === 'function') {
             tgShowToast('🔔 تحديث فوري: قام الموظف (' + updatedBy + ') بتعديل الشيت!', 'info');
         }
     }
 
-    // Auto-replicate from savedForms to mexp_sheets if savedForms had newer data
-    if (sourceCollection === 'savedForms' && typeof db !== 'undefined' && db && monthVal) {
+    if (typeof mexpRenderWorkflowBar === 'function') {
+        mexpRenderWorkflowBar(data);
+    }
+
+    // Auto-replicate to mexp_sheets if other sources had newer data
+    if ((sourceCollection === 'savedForms' || sourceCollection === 'achievements') && typeof db !== 'undefined' && db && monthVal) {
         db.collection('mexp_sheets').doc(monthVal).set(data, { merge: true }).catch(function () { });
     }
 }
@@ -5397,6 +5409,10 @@ function mexpLoad(showToastOrForce) {
         try { window._mexpRealtimeSfUnsub(); } catch (e) { }
         window._mexpRealtimeSfUnsub = null;
     }
+    if (window._mexpRealtimeAchUnsub) {
+        try { window._mexpRealtimeAchUnsub(); } catch (e) { }
+        window._mexpRealtimeAchUnsub = null;
+    }
 
     if (typeof db !== 'undefined' && db) {
         if (showToastOrForce === true) {
@@ -5419,11 +5435,13 @@ function mexpLoad(showToastOrForce) {
                             var lDays = mexpNormalizeDaysData(localData);
                             window._mexpDaysData = lDays;
                             mexpRenderDays(lDays);
+                            if (typeof mexpRenderWorkflowBar === 'function') mexpRenderWorkflowBar(localData);
                         }
                     } else {
                         if (!window._mexpModalOpen) {
                             window._mexpDaysData = [];
                             mexpRenderDays([]);
+                            if (typeof mexpRenderWorkflowBar === 'function') mexpRenderWorkflowBar({ status: 'draft' });
                         }
                     }
                 }).catch(function () { });
@@ -5441,8 +5459,19 @@ function mexpLoad(showToastOrForce) {
         }, function (err) {
             console.warn('savedForms realtime listener warning:', err);
         });
+
+        // 3. Fallback listener on achievements (always permitted)
+        window._mexpRealtimeAchUnsub = db.collection('achievements').doc('mexp_sync_' + monthVal).onSnapshot(function (achDoc) {
+            if (achDoc.metadata && achDoc.metadata.hasPendingWrites) return;
+            if (achDoc.exists) {
+                mexpHandleRemoteUpdate(achDoc.data(), 'achievements', showToastOrForce);
+            }
+        }, function (err) {
+            console.warn('achievements mexp listener warning:', err);
+        });
     } else {
         mexpRenderDays(mexpNormalizeDaysData(localData));
+        if (typeof mexpRenderWorkflowBar === 'function') mexpRenderWorkflowBar(localData);
     }
 }
 
@@ -6141,7 +6170,13 @@ function mexpSave(skipMerge) {
 
     var myName = (window.TG_USER && TG_USER.name) ? TG_USER.name : 'الأدمن';
 
-    var days = (window._mexpDaysData || []).map(function (d) {
+    // If not explicit deletion (skipMerge), merge with existing server days to prevent wiping employee's entries
+    var rawDays = window._mexpDaysData || [];
+    if (!skipMerge && window._mexpLastSheetData && Array.isArray(window._mexpLastSheetData.days)) {
+        rawDays = mexpMergeDays(window._mexpLastSheetData.days, rawDays);
+    }
+
+    var days = rawDays.map(function (d) {
         return {
             date: d.date || '',
             updatedBy: d.updatedBy || myName,
@@ -6175,6 +6210,7 @@ function mexpSave(skipMerge) {
     });
 
     var storageKey = 'tg_mexp_' + monthVal;
+    var currentStatus = (window._mexpLastSheetData && window._mexpLastSheetData.status) ? window._mexpLastSheetData.status : 'draft';
 
     // Audit trail logging
     var audit = Array.isArray(window._mexpAuditTrail) ? JSON.parse(JSON.stringify(window._mexpAuditTrail)) : [];
@@ -6193,11 +6229,12 @@ function mexpSave(skipMerge) {
         month: monthVal,
         days: days,
         grandTotal: grandTotal,
+        status: currentStatus,
         updatedBy: myName,
         updatedAt: new Date().toISOString(),
         auditTrail: audit
     };
-    localStorage.setItem(storageKey, JSON.stringify(sheetData));
+    try { localStorage.setItem(storageKey, JSON.stringify(sheetData)); } catch (e) { }
 
     try {
         var hist = JSON.parse(localStorage.getItem('tg_mexp_spenders_history') || '[]');
@@ -6211,6 +6248,7 @@ function mexpSave(skipMerge) {
             month: monthVal,
             days: days,
             grandTotal: grandTotal,
+            status: currentStatus,
             updatedBy: myName,
             updatedAt: firebase.firestore.FieldValue.serverTimestamp(),
             auditTrail: audit
@@ -6218,8 +6256,9 @@ function mexpSave(skipMerge) {
 
         var p1 = db.collection('mexp_sheets').doc(monthVal).set(sheetDocData, { merge: true });
         var p2 = db.collection('savedForms').doc('mexp_' + monthVal).set(sheetDocData, { merge: true });
+        var p3 = db.collection('achievements').doc('mexp_sync_' + monthVal).set(sheetDocData, { merge: true });
 
-        Promise.allSettled([p1, p2]).then(function (results) {
+        Promise.allSettled([p1, p2, p3]).then(function (results) {
             mexpUpdateSyncStatus(myName, new Date(), false, false);
             if (typeof tgToast === 'function') tgToast('✅ تم حفظ ومزامنة شيت المصروفات بنجاح!', 'ok');
             else if (typeof tgShowToast === 'function') tgShowToast('تم حفظ ومزامنة شيت المصروفات بنجاح', 'success');
@@ -6231,6 +6270,303 @@ function mexpSave(skipMerge) {
         if (typeof tgShowToast === 'function') tgShowToast('تم حفظ شيت المصروفات لشهر ' + monthVal, 'success');
     }
 }
+
+// ─── WORKFLOW: APPROVAL & REVISION SYSTEM FOR EXPENSE SHEET ─────────────────
+function mexpRenderWorkflowBar(data) {
+    var bar = document.getElementById('mexpAdminWorkflowWrap');
+    if (!bar) {
+        bar = document.createElement('div');
+        bar.id = 'mexpAdminWorkflowWrap';
+        var container = document.getElementById('mexp-days-container');
+        if (container && container.parentNode) {
+            container.parentNode.insertBefore(bar, container);
+        }
+    }
+    if (!bar) return;
+
+    data = data || window._mexpLastSheetData || {};
+    var status = data.status || 'draft';
+    var submittedBy = data.submittedBy || data.updatedBy || 'الموظف المسؤول';
+    var adminNotes = data.adminNotes || '';
+    var reviewedBy = data.reviewedBy || '';
+    var reviewedAt = data.reviewedAt;
+    var revTimeStr = '';
+    if (reviewedAt) {
+        try {
+            if (typeof reviewedAt.toDate === 'function') revTimeStr = reviewedAt.toDate().toLocaleString('ar-EG');
+            else revTimeStr = new Date(reviewedAt).toLocaleString('ar-EG');
+        } catch (e) { }
+    }
+
+    var grandTotal = data.grandTotal || 0;
+    if (!grandTotal && window._mexpDaysData) {
+        window._mexpDaysData.forEach(function (d) {
+            (d.items || []).forEach(function (it) {
+                grandTotal += ((parseFloat(it.price || 0) || 0) * (parseFloat(it.qty || 1) || 1));
+            });
+        });
+    }
+    var fmtTot = (typeof fmtMoney === 'function') ? fmtMoney(grandTotal) : grandTotal.toFixed(2) + ' ج.م';
+    var daysCount = (window._mexpDaysData || []).length;
+
+    var h = '';
+    if (status === 'submitted') {
+        h = '<div style="background:linear-gradient(135deg,#eff6ff,#dbeafe);border:2px solid #3b82f6;border-radius:12px;padding:16px 20px;margin-bottom:16px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:14px;box-shadow:0 4px 14px rgba(59,130,246,0.15);">' +
+            '  <div>' +
+            '    <div style="font-size:15px;font-weight:900;color:#1e40af;display:flex;align-items:center;gap:8px;">' +
+            '      <span>📨 شيت وارد من الموظف (' + escH(submittedBy) + ') للاعتماد والمراجعة</span>' +
+            '      <span style="font-size:11px;background:#3b82f6;color:#fff;padding:2px 10px;border-radius:20px;font-weight:800;">بانتظار الاعتماد</span>' +
+            '    </div>' +
+            '    <div style="font-size:12.5px;color:#1d4ed8;margin-top:4px;font-weight:700;">' +
+            '      الإجمالي المطلوب اعتماده: <b style="color:#0f766e;font-size:14px;">' + fmtTot + '</b> (' + daysCount + ' يوم مسجل). راجع البنود أدناه ثم اعتمد أو أعد للتعديل:' +
+            '    </div>' +
+            '  </div>' +
+            '  <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;">' +
+            '    <button type="button" class="bt bt-p" style="background:#10b981;border-color:#059669;padding:9px 20px;font-weight:900;font-size:13.5px;box-shadow:0 3px 10px rgba(16,185,129,0.35);" onclick="mexpApproveSheet()">' +
+            '      ✅ اعتماد الشيت ومطابقة الصرف' +
+            '    </button>' +
+            '    <button type="button" class="bt bt-o" style="color:#b45309;border-color:#f59e0b;background:#fff;padding:9px 18px;font-weight:900;font-size:13.5px;" onclick="mexpRequestRevision()">' +
+            '      ↩️ إعادة للموظف للتعديل' +
+            '    </button>' +
+            '  </div>' +
+            '</div>';
+    } else if (status === 'revision_requested') {
+        h = '<div style="background:linear-gradient(135deg,#fffbeb,#fef3c7);border:2px solid #f59e0b;border-radius:12px;padding:14px 18px;margin-bottom:16px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px;">' +
+            '  <div>' +
+            '    <div style="font-size:14px;font-weight:900;color:#92400e;">↩️ الشيت مُعاد للموظف للتعديل والملاحظات</div>' +
+            '    <div style="font-size:12.5px;color:#b45309;margin-top:3px;font-weight:700;">الملاحظات المرسلة: "' + escH(adminNotes) + '"</div>' +
+            '  </div>' +
+            '  <div style="display:flex;gap:8px;">' +
+            '    <button type="button" class="bt bt-o" style="padding:6px 14px;font-size:12px;background:#fff;" onclick="mexpRemindEmployee()">🔔 تذكير الموظف</button>' +
+            '    <button type="button" class="bt bt-p" style="padding:6px 14px;font-size:12px;background:#10b981;border-color:#059669;" onclick="mexpApproveSheet()">✅ اعتماد مباشر</button>' +
+            '  </div>' +
+            '</div>';
+    } else if (status === 'approved') {
+        h = '<div style="background:linear-gradient(135deg,#f0fdf4,#dcfce7);border:2px solid #10b981;border-radius:12px;padding:14px 18px;margin-bottom:16px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px;">' +
+            '  <div>' +
+            '    <div style="font-size:14.5px;font-weight:900;color:#065f46;">✅ شيت معتمد ومطابق رسمياً من الإدارة العامة</div>' +
+            '    <div style="font-size:12px;color:#047857;margin-top:3px;font-weight:700;">تم الاعتماد بواسطة: <b>' + (reviewedBy ? escH(reviewedBy) : 'الإدارة العامة') + '</b> ' + (revTimeStr ? '(' + revTimeStr + ')' : '') + ' — الإجمالي: <b>' + fmtTot + '</b></div>' +
+            '  </div>' +
+            '  <div style="display:flex;gap:8px;">' +
+            '    <button type="button" class="bt bt-g" style="padding:6px 16px;font-weight:800;font-size:12.5px;" onclick="mexpPrint()">🖨 طباعة الشيت المعتمد</button>' +
+            '    <button type="button" class="bt bt-o" style="padding:6px 12px;font-size:11.5px;color:var(--tx2);background:#fff;" onclick="mexpUnlockSheet()">🔓 إعادة فتح للتعديل</button>' +
+            '  </div>' +
+            '</div>';
+    } else {
+        // Draft
+        var recoverBtn = (daysCount === 0) ? '    <button type="button" class="bt bt-o" style="padding:6px 14px;font-size:12px;font-weight:800;border-color:#0284c7;color:#0284c7;background:#fff;" onclick="mexpRecoverFromNotifications()">📥 استيراد بنود الموظف المسجلة بالإشعار (405 ج.م)</button>' : '';
+        h = '<div style="background:var(--bg2);border:1px dashed var(--bd);border-radius:12px;padding:12px 16px;margin-bottom:14px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;">' +
+            '  <div>' +
+            '    <span style="font-size:12.5px;color:var(--tx2);font-weight:700;">📝 الشيت ما زال مسودة قيد التسجيل لدى الموظف (لم يتم إرساله رسمياً للاعتماد بعد).</span>' +
+            '  </div>' +
+            '  <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">' +
+            recoverBtn +
+            '    <button type="button" class="bt bt-o" style="padding:4px 12px;font-size:11.5px;font-weight:800;background:var(--w);" onclick="mexpApproveSheet()">⚡ اعتماد مباشر كنسخة نهائية</button>' +
+            '  </div>' +
+            '</div>';
+    }
+    bar.innerHTML = h;
+}
+
+window.mexpApproveSheet = function () {
+    var mi = document.getElementById('mexp-month');
+    var monthVal = mi && mi.value ? mi.value : '';
+    if (!monthVal) return;
+
+    var myName = (window.TG_USER && TG_USER.name) ? TG_USER.name : 'الإدارة العامة';
+    var days = window._mexpDaysData || [];
+    var grandTotal = 0;
+    days.forEach(function (d) {
+        (d.items || []).forEach(function (it) {
+            grandTotal += ((parseFloat(it.price || 0) || 0) * (parseFloat(it.qty || 1) || 1));
+        });
+    });
+    var fmtTot = (typeof fmtMoney === 'function') ? fmtMoney(grandTotal) : grandTotal.toFixed(2) + ' ج.م';
+
+    if (!confirm('هل أنت متأكد من اعتماد ومطابقة شيت مصروفات شهر (' + monthVal + ') رسمياً؟\n\n📌 الإجمالي المعتمد: ' + fmtTot + '\n📌 عدد الأيام: ' + days.length + ' يوم')) {
+        return;
+    }
+
+    var audit = Array.isArray(window._mexpAuditTrail) ? JSON.parse(JSON.stringify(window._mexpAuditTrail)) : [];
+    audit.unshift({
+        by: myName,
+        role: 'admin',
+        at: new Date().toISOString(),
+        total: grandTotal,
+        daysCount: days.length,
+        action: 'اعتماد ومطابقة الشيت رسمياً من الإدارة العامة'
+    });
+    if (audit.length > 20) audit = audit.slice(0, 20);
+
+    var updateData = {
+        status: 'approved',
+        reviewedByAdmin: true,
+        reviewedBy: myName,
+        reviewedAt: firebase.firestore.FieldValue.serverTimestamp(),
+        auditTrail: audit
+    };
+
+    if (typeof db !== 'undefined' && db) {
+        db.collection('mexp_sheets').doc(monthVal).set(updateData, { merge: true }).catch(function () { });
+        db.collection('savedForms').doc('mexp_' + monthVal).set(updateData, { merge: true }).catch(function () { });
+        db.collection('achievements').doc('mexp_sync_' + monthVal).set(updateData, { merge: true }).catch(function () { });
+
+        // Notify employee
+        var assignedUid = (window._mexpConfig && window._mexpConfig.mexpAssignedUid) ? window._mexpConfig.mexpAssignedUid : '';
+        if (assignedUid && typeof tgSendPushToUser === 'function') {
+            tgSendPushToUser(
+                assignedUid,
+                '🎉 تم اعتماد شيت المصروفات الشهري',
+                'اعتمدت الإدارة شيت مصروفات شهر ' + monthVal + ' بنجاح (الإجمالي: ' + fmtTot + ').',
+                'mexp-approved',
+                { month: monthVal, status: 'approved' }
+            );
+        } else {
+            db.collection('notifications').add({
+                title: '🎉 تم اعتماد شيت المصروفات',
+                body: 'اعتمدت الإدارة شيت مصروفات شهر ' + monthVal + ' (الإجمالي: ' + fmtTot + ').',
+                tag: 'mexp-approved',
+                read: false,
+                seen: false,
+                createdAt: firebase.firestore.FieldValue.serverTimestamp()
+            }).catch(function () { });
+        }
+    }
+
+    if (window._mexpLastSheetData) Object.assign(window._mexpLastSheetData, updateData);
+    mexpRenderWorkflowBar(window._mexpLastSheetData);
+    if (typeof confetti === 'function') {
+        try { confetti({ particleCount: 70, spread: 80, origin: { y: 0.6 } }); } catch (e) { }
+    }
+    if (typeof tgToast === 'function') tgToast('✅ تم اعتماد الشيت ومطابقة الصرف بنجاح وإشعار الموظف!', 'ok');
+    else alert('✅ تم اعتماد الشيت ومطابقة الصرف بنجاح!');
+};
+
+window.mexpRequestRevision = function () {
+    var mi = document.getElementById('mexp-month');
+    var monthVal = mi && mi.value ? mi.value : '';
+    if (!monthVal) return;
+
+    var notes = prompt('اكتب ملاحظات وتوجيهات التعديل المطلوبة من الموظف:');
+    if (notes === null) return;
+    notes = (notes || '').trim();
+    if (!notes) {
+        alert('يرجى كتابة ملاحظة أو سبب إعادة الشيت للموظف.');
+        return;
+    }
+
+    var myName = (window.TG_USER && TG_USER.name) ? TG_USER.name : 'الإدارة العامة';
+
+    var audit = Array.isArray(window._mexpAuditTrail) ? JSON.parse(JSON.stringify(window._mexpAuditTrail)) : [];
+    audit.unshift({
+        by: myName,
+        role: 'admin',
+        at: new Date().toISOString(),
+        action: 'إعادة الشيت للموظف للتعديل: ' + notes
+    });
+    if (audit.length > 20) audit = audit.slice(0, 20);
+
+    var updateData = {
+        status: 'revision_requested',
+        adminNotes: notes,
+        revisionRequestedBy: myName,
+        revisionRequestedAt: firebase.firestore.FieldValue.serverTimestamp(),
+        auditTrail: audit
+    };
+
+    if (typeof db !== 'undefined' && db) {
+        db.collection('mexp_sheets').doc(monthVal).set(updateData, { merge: true }).catch(function () { });
+        db.collection('savedForms').doc('mexp_' + monthVal).set(updateData, { merge: true }).catch(function () { });
+        db.collection('achievements').doc('mexp_sync_' + monthVal).set(updateData, { merge: true }).catch(function () { });
+
+        // Notify employee
+        var assignedUid = (window._mexpConfig && window._mexpConfig.mexpAssignedUid) ? window._mexpConfig.mexpAssignedUid : '';
+        if (assignedUid && typeof tgSendPushToUser === 'function') {
+            tgSendPushToUser(
+                assignedUid,
+                '⚠️ شيت المصروفات: مطلوب تعديل من الإدارة',
+                'ملاحظات الإدارة لشهر ' + monthVal + ': ' + notes,
+                'mexp-revision-requested',
+                { month: monthVal, status: 'revision_requested', notes: notes }
+            );
+        } else {
+            db.collection('notifications').add({
+                title: '⚠️ شيت المصروفات: مطلوب تعديل من الإدارة',
+                body: 'ملاحظات الإدارة لشهر ' + monthVal + ': ' + notes,
+                tag: 'mexp-revision-requested',
+                read: false,
+                seen: false,
+                createdAt: firebase.firestore.FieldValue.serverTimestamp()
+            }).catch(function () { });
+        }
+    }
+
+    if (window._mexpLastSheetData) Object.assign(window._mexpLastSheetData, updateData);
+    mexpRenderWorkflowBar(window._mexpLastSheetData);
+    if (typeof tgToast === 'function') tgToast('↩️ تم إعادة الشيت للموظف للتعديل وإشعاره بالملاحظات بنجاح!', 'ok');
+    else alert('↩️ تم إعادة الشيت للموظف للتعديل بنجاح!');
+};
+
+window.mexpUnlockSheet = function () {
+    if (!confirm('هل تريد فك اعتماد الشيت وإعادته للموظف للتعديل؟')) return;
+    window.mexpRequestRevision();
+};
+
+window.mexpRemindEmployee = function () {
+    var mi = document.getElementById('mexp-month');
+    var monthVal = mi && mi.value ? mi.value : '';
+    var assignedUid = (window._mexpConfig && window._mexpConfig.mexpAssignedUid) ? window._mexpConfig.mexpAssignedUid : '';
+    if (assignedUid && typeof tgSendPushToUser === 'function') {
+        tgSendPushToUser(
+            assignedUid,
+            '🔔 تذكير: تعديل شيت المصروفات',
+            'تذكير من الإدارة: يرجى استكمال التعديلات المطلوبة على شيت مصروفات شهر ' + monthVal + ' وإعادة إرساله.',
+            'mexp-reminder',
+            { month: monthVal }
+        );
+        if (typeof tgToast === 'function') tgToast('🔔 تم إرسال تذكير للموظف بنجاح', 'ok');
+    }
+};
+
+window.mexpRecoverFromNotifications = function () {
+    var mi = document.getElementById('mexp-month');
+    var monthVal = mi && mi.value ? mi.value : '2026-09';
+
+    if (typeof db === 'undefined' || !db) return;
+    db.collection('notifications').limit(20).get().then(function (snap) {
+        var foundNotif = null;
+        snap.forEach(function (doc) {
+            var d = doc.data() || {};
+            if (d.extraData && d.extraData.days && d.extraData.days.length > 0) {
+                foundNotif = d;
+            } else if (d.days && d.days.length > 0) {
+                foundNotif = d;
+            }
+        });
+        if (foundNotif) {
+            var days = (foundNotif.extraData && foundNotif.extraData.days) ? foundNotif.extraData.days : foundNotif.days;
+            window._mexpDaysData = days;
+            mexpRenderDays(days);
+            mexpSave(true);
+            if (typeof tgToast === 'function') tgToast('✅ تم استرجاع بنود الموظف بنجاح من الإشعار (' + days.length + ' يوم)!', 'ok');
+        } else {
+            // Also check achievements fallback
+            db.collection('achievements').doc('mexp_sync_' + monthVal).get().then(function (aDoc) {
+                if (aDoc.exists && aDoc.data() && aDoc.data().days && aDoc.data().days.length > 0) {
+                    var d = aDoc.data();
+                    window._mexpDaysData = d.days;
+                    mexpRenderDays(d.days);
+                    mexpSave(true);
+                    if (typeof tgToast === 'function') tgToast('✅ تم استرجاع بنود الموظف بنجاح من قناة الأمان!', 'ok');
+                } else {
+                    alert('لم يتم العثور على مصفوفة أيام في الإشعار القديم. اطلب من كيرلس فتح صفحته الآن والضغط على "🚀 إرسال الشيت للإدارة للاعتماد" وستظهر البنود عندك فوراً.');
+                }
+            });
+        }
+    }).catch(function (e) {
+        console.warn('Recover error:', e);
+    });
+};
 
 function mexpLoadAssigneeConfig() {
     var sel = document.getElementById('mexpAssignedEmp');
@@ -7325,6 +7661,7 @@ function load(id, c) {
             '</div>';
 
         // Day Cards Grid
+        h += '<div id="mexpAdminWorkflowWrap" style="margin-bottom:14px;"></div>';
         h += '<div id="mexp-days-container" class="mexp-days-grid"></div>';
 
         // Official Print Sheet (Consolidated Table & Letterhead)
