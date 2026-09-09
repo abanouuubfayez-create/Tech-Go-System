@@ -264,6 +264,13 @@ service cloud.firestore {
       allow update, delete: if isAnyAdmin() || (isSignedIn() && (resource.data.uid == myUid() || resource.data.createdBy == myUid() || resource.data.assignedTo == myUid() || resource.data.empUid == myUid()));
     }
 
+    // تقارير مشتريات الموظف المكتبي (Office Boy) — camelCase variant
+    match /purchaseReports/{reportId} {
+      allow read: if isSignedIn();
+      allow create: if isSignedIn();
+      allow update, delete: if isAnyAdmin() || (isSignedIn() && (resource.data.uid == myUid() || resource.data.createdBy == myUid() || resource.data.assignedTo == myUid() || resource.data.empUid == myUid()));
+    }
+
     // إشعارات التقارير والخطط الواردة للإدارة
     match /admin_notifications/{notifId} {
       allow read, update, delete: if isAnyAdmin();

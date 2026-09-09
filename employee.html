@@ -869,6 +869,7 @@
             <div class="emp-tab" data-pg="req" onclick="empGo('req',this)">📨 طلباتي</div>
             <div class="emp-tab" id="empTabAtt" data-pg="att" onclick="empGo('att',this)" style="display:none">⏱️ الحضور والانصراف</div>
             <div class="emp-tab" id="empTabMexp" data-pg="mexp" onclick="empGo('mexp',this)" style="display:none">💵 شيت المصروفات</div>
+        <div class="emp-tab" id="empTabPurchase" data-pg="purchase" onclick="empGo('purchase',this)" style="display:none">🛒 المشتريات</div>
             <div class="emp-tab" data-pg="devres" onclick="empGo('devres',this)">🚀 التطوير المهني <span class="tab-badge" id="devres-badge" style="display:none">0</span></div>
             <div class="emp-tab" data-pg="livemeeting" onclick="empGo('livemeeting',this)">🎥 غرفة الاجتماعات <span class="tab-badge" id="meetingBadgeStatus" style="display:none; background:var(--ok)">مباشر</span></div>
             <div class="emp-tab" data-pg="acct" onclick="empGo('acct',this)">👤 حسابي</div>
@@ -879,6 +880,7 @@
         <div class="emp-pg" id="epg-assigneddocs"></div>
         <div class="emp-pg" id="epg-wkr"></div>
         <div class="emp-pg" id="epg-mexp"></div>
+        <div class="emp-pg" id="epg-purchase"></div>
 
         <!-- الحضور والانصراف -->
         <div class="emp-pg" id="epg-att">
@@ -5557,7 +5559,8 @@
 
         window.initEmpMexpAccessCheck = initEmpMexpAccessCheck;
         // Initialize access check
-        initEmpMexpAccessCheck();
+initEmpMexpAccessCheck();
+        initEmpPurchaseAccessCheck();
 
         // ════════════════════════════════════════════════════════════════════════
         // ── نظام النماذج والتكليفات المحولة للموظف (Universal Assigned Docs)
