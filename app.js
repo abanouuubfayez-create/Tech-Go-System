@@ -506,7 +506,10 @@ function genDocNum(type) {
     localStorage.setItem(key, seq);
     return 'TG-' + yr + '-' + code + '-' + String(seq).padStart(3, '0');
 }
-function escH(s) { return (s || '').replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/</g, '&lt;').replace(/>/g, '&gt;'); }
+function escH(s) {
+    if (s === null || s === undefined) return '';
+    return String(s).replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+}
 
 // ─── Make text expandable if longer than threshold ─────────────────────────
 function tgMakeExpandable(text, threshold) {
@@ -5292,26 +5295,27 @@ function mexpHandleRemoteUpdate(data, sourceCollection, isForce) {
 
         mexpUpdateSyncStatus(updatedBy, updatedAt, false, isEmp);
 
+        var daysJsonStr = JSON.stringify(finalDays);
+        var curJsonStr = JSON.stringify(window._mexpDaysData || []);
+        var hasChanged = (daysJsonStr !== curJsonStr);
 
         if (window._mexpModalOpen) {
-        window._mexpPendingRemoteDays = finalDays;
-            if (isEmp && typeof tgShowToast === 'function') {
+            window._mexpPendingRemoteDays = finalDays;
+            if (isEmp && hasChanged && typeof tgShowToast === 'function') {
                 tgShowToast('🔔 قام الموظف (' + updatedBy + ') بتحديث المصروفات على السيرفر!', 'info');
             }
         } else {
-        window._mexpDaysData = finalDays;
-        mexpRenderDays(finalDays);
-            if (isEmp && typeof tgShowToast === 'function') {
+            window._mexpDaysData = finalDays;
+            var container = document.getElementById('mexp-days-container');
+            if (hasChanged || !container || container.children.length === 0) {
+                mexpRenderDays(finalDays);
+            }
+            if (isEmp && hasChanged && typeof tgShowToast === 'function') {
                 tgShowToast('🔔 تحديث فوري: قام الموظف (' + updatedBy + ') بتعديل الشيت!', 'info');
             }
         }
         if (typeof mexpRenderWorkflowBar === 'function') {
             mexpRenderWorkflowBar(data);
-        }
-
-        // Auto-replicate to mexp_sheets if other sources had newer data
-        if ((sourceCollection === 'savedForms' || sourceCollection === 'achievements') && typeof db !== 'undefined' && db && monthVal) {
-            db.collection('mexp_sheets').doc(monthVal).set(data, { merge: true }).catch(function () { });
         }
     } catch (err) {
         console.error('mexpHandleRemoteUpdate error:', err);
@@ -5589,9 +5593,10 @@ function mexpRenderDays(days) {
 
             var card = document.createElement('div');
             card.className = 'mexp-day-card';
-            card.setAttribute('data-day-idx', idx);
-            card.title = 'اضغط لتعديل وتفاصيل مصروفات هذا اليوم';
-            card.onclick = function () { mexpEditDayModal(idx); };
+            card.onclick = function (e) {
+                if (e && e.target && e.target.closest && e.target.closest('.mexp-day-del-btn')) return;
+                mexpEditDayModal(idx);
+            };
 
             card.innerHTML =
                 '<div class="mexp-day-card-top">' +

@@ -67,7 +67,7 @@
     <link
         href="https://fonts.googleapis.com/css2?family=Alexandria:wght@300;400;500;600;700;800;900&family=Cairo:wght@400;600;700;800;900&family=Tajawal:wght@400;500;700;800&family=Inter:wght@400;500;600;700&display=swap"
         rel="stylesheet">
-    <link rel="stylesheet" href="styles.css?v=1788950845">
+    <link rel="stylesheet" href="styles.css?v=1788955657">
     <link rel="manifest" href="manifest.json">
     <link rel="icon" type="image/png" sizes="192x192" href="icon-192.png">
     <link rel="apple-touch-icon" href="icon-192.png">
@@ -75,10 +75,10 @@
     <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-storage-compat.js"></script>
-    <script src="firebase-config.js?v=1788950845"></script>
-    <script src="auth.js?v=1788950845"></script>
-    <script src="app.js?v=1788950845"></script>
-    <script src="formsend.js?v=1788950845"></script>
+    <script src="firebase-config.js?v=1788955657"></script>
+    <script src="auth.js?v=1788955657"></script>
+    <script src="app.js?v=1788955657"></script>
+    <script src="formsend.js?v=1788955657"></script>
     <script>
         (function () {
             const theme = localStorage.getItem('tg-theme') || 'light';
@@ -1263,7 +1263,10 @@
             }
         };
 
-        function esc(s) { return (s || '').replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/</g, '&lt;').replace(/>/g, '&gt;'); }
+        function esc(s) {
+            if (s === null || s === undefined) return '';
+            return String(s).replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+        }
         function badgeReq(s) {
             var cls = s === 'approved' ? 'badge-approved' : (s === 'rejected' ? 'badge-rejected' : 'badge-pending');
             var lbl = s === 'approved' ? 'موافق عليه' : (s === 'rejected' ? 'مرفوض' : 'قيد المراجعة');
@@ -3482,8 +3485,8 @@
         تطوير وتصميم: أبانوب فايز</div>
     <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
-    <script src="theme.js?v=1788950845"></script>
-    <script src="pwa-install.js?v=1788950845"></script>
+    <script src="theme.js?v=1788955657"></script>
+    <script src="pwa-install.js?v=1788955657"></script>
 
 
     <!-- Incoming Meeting Call Modal -->
@@ -4463,13 +4466,20 @@
                 try { localStorage.setItem(storageKey, JSON.stringify(data)); } catch (e) { }
 
                 empMexpUpdateSyncStatus(updatedBy, updatedAt, false);
-            empMexpRenderWorkflow(data);
+                empMexpRenderWorkflow(data);
+
+                var daysJsonStr = JSON.stringify(finalDays);
+                var curJsonStr = JSON.stringify(window._empMexpDaysData || []);
+                var hasChanged = (daysJsonStr !== curJsonStr);
 
                 if (window._empMexpModalOpen) {
-                window._empMexpPendingRemoteDays = finalDays;
+                    window._empMexpPendingRemoteDays = finalDays;
                 } else {
-                window._empMexpDaysData = finalDays;
-                empMexpRenderDays(finalDays);
+                    window._empMexpDaysData = finalDays;
+                    var container = document.getElementById('emp-mexp-days-container');
+                    if (hasChanged || !container || container.children.length === 0) {
+                        empMexpRenderDays(finalDays);
+                    }
                 }
 
                 empMexpCheckLocalRecovery(serverDays, data);
@@ -4736,8 +4746,10 @@
                     var card = document.createElement('div');
                     card.className = 'mexp-day-card';
                     card.setAttribute('data-day-idx', idx);
-                    card.title = isLocked ? 'اضغط لعرض تفاصيل مصروفات هذا اليوم' : 'اضغط لتعديل وتفاصيل مصروفات هذا اليوم';
-                    card.onclick = function () { empMexpEditDayModal(idx); };
+                    card.onclick = function (e) {
+                        if (e && e.target && e.target.closest && e.target.closest('.mexp-day-del-btn')) return;
+                        empMexpEditDayModal(idx);
+                    };
 
                     var dAuthor = d.updatedBy ? '<span class="mexp-day-author-tag" title="آخر تعديل بواسطة: ' + esc(d.updatedBy) + '">👤 ' + esc(d.updatedBy) + '</span>' : '';
                     var delBtn = isLocked ? '' : '  <button type="button" class="mexp-day-del-btn" onclick="event.stopPropagation(); empMexpRemoveDay(' + idx + ');" title="حذف هذا اليوم بالكامل">🗑</button>';
