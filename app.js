@@ -5575,16 +5575,17 @@ function mexpRenderDays(days) {
 
             var snippetsHtml = '';
             if (items.length > 0) {
-                var previewItems = items.slice(0, 2);
-                snippetsHtml = previewItems.map(function (it) {
+                // Show all items in the preview, not just the first 2
+                snippetsHtml = items.map(function (it) {
                     var sp = it.spender ? escH(it.spender) + ': ' : '';
                     var ct = it.cat ? escH(it.cat) : 'مصروف';
-                    var pr = parseFloat(it.price || 0) > 0 ? ' (' + parseFloat(it.price).toFixed(2) + ' ج.م)' : '';
-                    return '<div class="mexp-day-item-snippet">• ' + sp + ct + pr + '</div>';
+                    var q = parseFloat(it.qty || '1') || 1;
+                    var p = parseFloat(it.price || '0') || 0;
+                    var qtyText = q > 1 ? ' (×' + q + ')' : '';
+                    var priceText = p > 0 ? ' — ' + p.toFixed(2) + ' ج.م' : '';
+                    var subtotal = (q * p).toFixed(2);
+                    return '<div class="mexp-day-item-snippet" style="display:flex;justify-content:space-between;align-items:center;padding:4px 0;border-bottom:1px solid var(--bd);"><span>• ' + sp + ct + qtyText + priceText + '</span><strong style="color:#059669;">' + subtotal + ' ج.م</strong></div>';
                 }).join('');
-                if (items.length > 2) {
-                    snippetsHtml += '<div style="font-size:10.5px;color:#0284c7;font-weight:700;">+ ' + (items.length - 2) + ' بنود إضافية...</div>';
-                }
             } else {
                 snippetsHtml = '<div style="font-size:11px;color:var(--tx3);font-style:italic;">لم يتم إدخال بنود بعد</div>';
             }
