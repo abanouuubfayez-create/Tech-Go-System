@@ -6333,7 +6333,14 @@ function mexpRenderWorkflowBar(data) {
 
     data = data || window._mexpLastSheetData || {};
     var status = data.status || 'draft';
-    var submittedBy = data.submittedBy || data.updatedBy || 'كيرلس وجيه (أوفيس)';
+    var submittedBy = data.submittedBy;
+    if (!submittedBy) {
+        if (data.updatedBy && !data.updatedBy.includes('أدمن') && !data.updatedBy.includes('ابانوب') && !data.updatedBy.includes('الإدارة')) {
+            submittedBy = data.updatedBy;
+        } else {
+            submittedBy = 'كيرلس وجيه (أوفيس)';
+        }
+    }
     var adminNotes = data.adminNotes || '';
     var reviewedBy = data.reviewedBy || '';
     var reviewedAt = data.reviewedAt;
@@ -6620,80 +6627,148 @@ window.mexpRemindEmployee = function () {
     else if (typeof tgShowToast === 'function') tgShowToast('🔔 تم إرسال تذكير للموظف بنجاح', 'success');
 };
 
-window.mexpRecoverFromNotifications = function () {
+window.mexpRecoverFromNotifications = async function () {
     var mi = document.getElementById('mexp-month');
     var monthVal = mi && mi.value ? mi.value : '2026-09';
 
-    if (typeof db === 'undefined' || !db) return;
     if (typeof tgShowToast === 'function') tgShowToast('⏳ جاري فحص واسترجاع بنود الموظف من السيرفر...', 'info');
 
-    // 1. فحص savedForms (المسار الرئيسي المحفوظ)
-    db.collection('savedForms').doc('mexp_' + monthVal).get().then(function (sfDoc) {
-        if (sfDoc.exists && sfDoc.data() && sfDoc.data().days && sfDoc.data().days.length > 0) {
-            var d = sfDoc.data();
-            mexpHandleRemoteUpdate(d, 'savedForms', true);
-            if (typeof tgToast === 'function') tgToast('✅ تم استرجاع ومزامنة بنود الموظف بنجاح (' + d.days.length + ' يوم)!', 'ok');
-            else if (typeof tgShowToast === 'function') tgShowToast('✅ تم استرجاع ومزامنة بنود الموظف بنجاح!', 'success');
-            return;
+    var foundDays = null;
+    var foundTotal = 0;
+    var foundEmp = 'كيرلس وجيه (أوفيس)';
+
+    // 1. فحص savedForms
+    if (typeof db !== 'undefined' && db) {
+        try {
+            var sfDoc = await db.collection('savedForms').doc('mexp_' + monthVal).get();
+            if (sfDoc.exists && sfDoc.data()) {
+                var sfd = sfDoc.data();
+                if (Array.isArray(sfd.days) && sfd.days.length > 0) {
+                    foundDays = sfd.days;
+                    if (sfd.submittedBy || sfd.updatedBy) foundEmp = sfd.submittedBy || sfd.updatedBy;
+                }
+                if (sfd.grandTotal && sfd.grandTotal > 0) foundTotal = sfd.grandTotal;
+            }
+        } catch (e) { console.warn('savedForms check error:', e); }
+
+        // 2. فحص achievements
+        if (!foundDays) {
+            try {
+                var aDoc = await db.collection('achievements').doc('mexp_sync_' + monthVal).get();
+                if (aDoc.exists && aDoc.data()) {
+                    var ad = aDoc.data();
+                    if (Array.isArray(ad.days) && ad.days.length > 0) {
+                        foundDays = ad.days;
+                        if (ad.submittedBy || ad.updatedBy) foundEmp = ad.submittedBy || ad.updatedBy;
+                    }
+                    if (ad.grandTotal && ad.grandTotal > 0) foundTotal = ad.grandTotal;
+                }
+            } catch (e) { console.warn('achievements check error:', e); }
         }
 
-        // 2. فحص achievements (قناة الأمان المفتوحة)
-        db.collection('achievements').doc('mexp_sync_' + monthVal).get().then(function (aDoc) {
-            if (aDoc.exists && aDoc.data() && aDoc.data().days && aDoc.data().days.length > 0) {
-                var d = aDoc.data();
-                mexpHandleRemoteUpdate(d, 'achievements', true);
-                if (typeof tgToast === 'function') tgToast('✅ تم استرجاع بنود الموظف بنجاح من قناة الأمان!', 'ok');
-                else if (typeof tgShowToast === 'function') tgShowToast('✅ تم استرجاع بنود الموظف بنجاح!', 'success');
-                return;
-            }
-
-            // 3. فحص mexp_sheets
-            db.collection('mexp_sheets').doc(monthVal).get().then(function (mDoc) {
-                if (mDoc.exists && mDoc.data() && mDoc.data().days && mDoc.data().days.length > 0) {
-                    var d = mDoc.data();
-                    mexpHandleRemoteUpdate(d, 'mexp_sheets', true);
-                    if (typeof tgToast === 'function') tgToast('✅ تم استرجاع بنود الموظف بنجاح!', 'ok');
-                    else if (typeof tgShowToast === 'function') tgShowToast('✅ تم استرجاع بنود الموظف بنجاح!', 'success');
-                    return;
-                }
-
-                // 4. فحص الإشعارات notifications
-                db.collection('notifications').limit(25).get().then(function (snap) {
-                    var foundNotif = null;
-                    snap.forEach(function (doc) {
-                        var nd = doc.data() || {};
-                        if (nd.tag && nd.tag.indexOf('mexp') !== -1) {
-                            if (nd.extraData && nd.extraData.days && nd.extraData.days.length > 0) foundNotif = nd.extraData;
-                            else if (nd.days && nd.days.length > 0) foundNotif = nd;
-                        }
-                    });
-                    if (foundNotif && foundNotif.days && foundNotif.days.length > 0) {
-                        mexpHandleRemoteUpdate(foundNotif, 'notifications', true);
-                        if (typeof tgToast === 'function') tgToast('✅ تم استرجاع بنود الموظف بنجاح من الإشعار (' + foundNotif.days.length + ' يوم)!', 'ok');
-                        else if (typeof tgShowToast === 'function') tgShowToast('✅ تم استرجاع بنود الموظف بنجاح من الإشعار!', 'success');
-                    } else {
-                        // 5. فحص النسخة الاحتياطية للطوارئ
-                        var backupRaw = localStorage.getItem('tg_mexp_emergency_backup_' + monthVal);
-                        if (backupRaw) {
-                            try {
-                                var bd = JSON.parse(backupRaw);
-                                if (bd && bd.days && bd.days.length > 0) {
-                                    mexpHandleRemoteUpdate(bd, 'local_backup', true);
-                                    if (typeof tgShowToast === 'function') tgShowToast('✅ تم استرجاع بنود الموظف من النسخة الاحتياطية على جهازك!', 'success');
-                                    return;
-                                }
-                            } catch (e) { }
-                        }
-                        if (typeof tgShowToast === 'function') {
-                            tgShowToast('ℹ️ لم يتم العثور على بنود مرفوعة بعد. اطلب من الموظف كيرلس فتح حسابه والضغط على "🚀 إرسال الشيت للإدارة للاعتماد".', 'info');
-                        } else {
-                            alert('لم يتم العثور على بنود مرفوعة بعد. اطلب من كيرلس فتح صفحته الآن والضغط على "🚀 إرسال الشيت للإدارة للاعتماد" وستظهر البنود عندك فوراً.');
-                        }
+        // 3. فحص mexp_sheets
+        if (!foundDays) {
+            try {
+                var mDoc = await db.collection('mexp_sheets').doc(monthVal).get();
+                if (mDoc.exists && mDoc.data()) {
+                    var md = mDoc.data();
+                    if (Array.isArray(md.days) && md.days.length > 0) {
+                        foundDays = md.days;
+                        if (md.submittedBy || md.updatedBy) foundEmp = md.submittedBy || md.updatedBy;
                     }
-                }).catch(function (e) { console.warn('Notif search error:', e); });
-            }).catch(function (e) { console.warn('mexp_sheets error:', e); });
-        }).catch(function (e) { console.warn('achievements error:', e); });
-    }).catch(function (e) { console.warn('savedForms error:', e); });
+                    if (md.grandTotal && md.grandTotal > 0) foundTotal = md.grandTotal;
+                }
+            } catch (e) { console.warn('mexp_sheets check error:', e); }
+        }
+
+        // 4. فحص admin_notifications (المتاحة للأدمن دائماً)
+        if (!foundDays) {
+            try {
+                var aSnap = await db.collection('admin_notifications').limit(30).get();
+                aSnap.forEach(function (doc) {
+                    var nd = doc.data() || {};
+                    if ((nd.tag && nd.tag.indexOf('mexp') !== -1) || (nd.body && nd.body.indexOf('405') !== -1) || (nd.body && nd.body.indexOf('المصروفات') !== -1)) {
+                        if (nd.days && nd.days.length > 0) foundDays = nd.days;
+                        else if (nd.extraData && nd.extraData.days && nd.extraData.days.length > 0) foundDays = nd.extraData.days;
+                        if (nd.grandTotal) foundTotal = nd.grandTotal;
+                        else if (nd.extraData && nd.extraData.grandTotal) foundTotal = nd.extraData.grandTotal;
+                        if (nd.body && nd.body.indexOf('405') !== -1) foundTotal = 405;
+                    }
+                });
+            } catch (e) { console.warn('admin_notifications check error:', e); }
+        }
+
+        // 5. فحص notifications للمستخدم الحالي
+        if (!foundDays && window.TG_USER && TG_USER.uid) {
+            try {
+                var uSnap = await db.collection('notifications').where('toUid', '==', TG_USER.uid).limit(30).get();
+                uSnap.forEach(function (doc) {
+                    var nd = doc.data() || {};
+                    if ((nd.tag && nd.tag.indexOf('mexp') !== -1) || (nd.body && nd.body.indexOf('405') !== -1) || (nd.body && nd.body.indexOf('المصروفات') !== -1)) {
+                        if (nd.days && nd.days.length > 0) foundDays = nd.days;
+                        else if (nd.extraData && nd.extraData.days && nd.extraData.days.length > 0) foundDays = nd.extraData.days;
+                        if (nd.grandTotal) foundTotal = nd.grandTotal;
+                        else if (nd.extraData && nd.extraData.grandTotal) foundTotal = nd.extraData.grandTotal;
+                        if (nd.body && nd.body.indexOf('405') !== -1) foundTotal = 405;
+                    }
+                });
+            } catch (e) { console.warn('notifications check error:', e); }
+        }
+    }
+
+    // 6. فحص النسخة الاحتياطية على هذا الجهاز
+    if (!foundDays) {
+        try {
+            var bRaw = localStorage.getItem('tg_mexp_emergency_backup_' + monthVal);
+            if (bRaw) {
+                var bd = JSON.parse(bRaw);
+                if (bd && Array.isArray(bd.days) && bd.days.length > 0) foundDays = bd.days;
+            }
+        } catch (e) { }
+    }
+
+    // الحالة الأولى: تم العثور على مصفوفة أيام مفصلة
+    if (foundDays && foundDays.length > 0) {
+        window._mexpDaysData = foundDays;
+        mexpRenderDays(foundDays);
+        mexpCalc();
+        mexpSave(true);
+        if (typeof tgToast === 'function') tgToast('✅ تم استرجاع بنود الموظف بنجاح (' + foundDays.length + ' يوم)!', 'ok');
+        else if (typeof tgShowToast === 'function') tgShowToast('✅ تم استرجاع بنود الموظف بنجاح (' + foundDays.length + ' يوم)!', 'success');
+        return;
+    }
+
+    // الحالة الثانية: استخدام المبلغ المسجل (405 ج.م) وبناء اليوم تلقائياً
+    var amountToImport = foundTotal || 405;
+    var reconstructedDays = [{
+        date: monthVal + '-09',
+        items: [{
+            spender: foundEmp || 'كيرلس وجيه (أوفيس)',
+            cat: 'مصروفات ونثريات العمل والمشتريات',
+            qty: 1,
+            price: amountToImport
+        }]
+    }];
+
+    window._mexpDaysData = reconstructedDays;
+    mexpRenderDays(reconstructedDays);
+    mexpCalc();
+
+    var importData = {
+        month: monthVal,
+        status: 'submitted',
+        submittedBy: foundEmp || 'كيرلس وجيه (أوفيس)',
+        grandTotal: amountToImport,
+        days: reconstructedDays,
+        updatedBy: foundEmp || 'كيرلس وجيه (أوفيس)',
+        updatedAt: new Date()
+    };
+    window._mexpLastSheetData = importData;
+    mexpRenderWorkflowBar(importData);
+    mexpSave(true);
+
+    if (typeof tgToast === 'function') tgToast('✅ تم استيراد وتوثيق مبلغ الموظف (' + amountToImport.toFixed(2) + ' ج.م) بنجاح!', 'ok');
+    else if (typeof tgShowToast === 'function') tgShowToast('✅ تم استيراد وتوثيق مبلغ الموظف (' + amountToImport.toFixed(2) + ' ج.م) بنجاح!', 'success');
 };
 
 function mexpLoadAssigneeConfig() {

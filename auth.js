@@ -341,6 +341,7 @@ function tgListenNotifCenter(uid, onUpdate) {
             return tb - ta;
         });
 
+        window._tgLatestNotifs = combined;
         onUpdate(combined.slice(0, 50), unread);
     }
 
