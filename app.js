@@ -5845,39 +5845,141 @@ function mexpPrint() {
 function mexpLoadAssigneeConfig() {
     var sel = document.getElementById('mexpAssignedEmp');
     if (!sel) return;
+
+    var cachedCfg = {};
     try {
-        var cached = JSON.parse(localStorage.getItem('tg_purchases_config') || localStorage.getItem('tg_mexp_config') || '{}');
-        if (cached && (cached.purchaseAssignedUid || cached.mexpAssignedUid)) {
-            sel.value = cached.purchaseAssignedUid || cached.mexpAssignedUid;
-        }
+        cachedCfg = JSON.parse(localStorage.getItem('tg_purchases_config') || localStorage.getItem('tg_mexp_config') || '{}');
     } catch (e) { }
 
-    if (typeof db !== 'undefined' && db) {
-        db.collection('system').doc('appSettings').get().then(function (doc) {
-            if (doc.exists) {
-                var cfg = doc.data() || {};
-                localStorage.setItem('tg_purchases_config', JSON.stringify(cfg));
-                if (sel && (cfg.purchaseAssignedUid || cfg.mexpAssignedUid)) {
-                    sel.value = cfg.purchaseAssignedUid || cfg.mexpAssignedUid;
-                }
+    function renderSelect(emps, activeUid) {
+        var curVal = activeUid || (sel ? sel.value : '') || cachedCfg.purchaseAssignedUid || cachedCfg.mexpAssignedUid || '';
+        var h = '<option value="">-- لم يتم تعيين موظف (الأدمن فقط) --</option>';
+        var foundKiro = null;
+
+        emps.forEach(function (e) {
+            var name = e.name || e.email || 'موظف';
+            var job = e.jobTitle || (e.role === 'admin' ? 'إدارة' : 'موظف');
+            var isKiro = (name.includes('كيرلس') || name.includes('كيرو') || name.includes('كيرلوس') ||
+                (e.email && (e.email.includes('kerolos') || e.email.includes('kirlos'))) ||
+                (String(e.empId) === '10') ||
+                (job && (job.includes('أوفيس') || job.includes('مساعد مكتبي'))));
+
+            if (isKiro && !foundKiro) foundKiro = e;
+
+            var isSelected = (curVal && (curVal === e.uid || curVal === e.id)) || (!curVal && isKiro);
+            h += '<option value="' + escH(e.uid || e.id || '') + '"' + (isSelected ? ' selected' : '') + '>' +
+                (isKiro ? '⭐ ' : '') + escH(name) + (job ? ' (' + escH(job) + ')' : '') + '</option>';
+        });
+
+        if (!foundKiro) {
+            var isSelKiro = !curVal || curVal === 'kiro_default';
+            h += '<option value="kiro_default"' + (isSelKiro ? ' selected' : '') + '>⭐ كيرلس وجيه (مساعد مكتبي / أوفيس بوي)</option>';
+        }
+
+        sel.innerHTML = h;
+        if (curVal) {
+            sel.value = curVal;
+        } else if (foundKiro) {
+            sel.value = foundKiro.uid || foundKiro.id;
+        } else {
+            sel.value = 'kiro_default';
+        }
+    }
+
+    var fallbackList = (typeof PMGMT_EMPLOYEES !== 'undefined' && PMGMT_EMPLOYEES.length) ? PMGMT_EMPLOYEES : [
+        { uid: 'kiro_default', name: 'كيرلس وجيه', jobTitle: 'مساعد مكتبي (أوفيس بوي)', empId: '10' }
+    ];
+    renderSelect(fallbackList);
+
+    if (typeof db !== 'undefined' && db && db.collection) {
+        Promise.all([
+            db.collection('users').get().catch(function () { return { docs: [] }; }),
+            db.collection('system').doc('appSettings').get().catch(function () { return { exists: false }; })
+        ]).then(function (results) {
+            var usersSnap = results[0];
+            var settingsSnap = results[1];
+
+            var cfg = {};
+            if (settingsSnap && settingsSnap.exists) {
+                cfg = settingsSnap.data() || {};
+                try { localStorage.setItem('tg_purchases_config', JSON.stringify(cfg)); } catch (e) { }
+            } else {
+                cfg = cachedCfg;
             }
-        }).catch(function () { });
+
+            var emps = [];
+            if (usersSnap && usersSnap.docs && usersSnap.docs.length > 0) {
+                usersSnap.docs.forEach(function (doc) {
+                    var u = doc.data() || {};
+                    u.uid = doc.id;
+                    if (u.disabled === true || u.status === 'disabled') return;
+                    emps.push(u);
+                });
+            } else if (typeof PMGMT_EMPLOYEES !== 'undefined' && PMGMT_EMPLOYEES.length > 0) {
+                emps = PMGMT_EMPLOYEES;
+            } else {
+                emps = fallbackList;
+            }
+
+            emps.sort(function (a, b) {
+                return (a.name || a.email || '').localeCompare((b.name || b.email || ''), 'ar');
+            });
+
+            window._allPurchasesEmpsCache = emps;
+            var assignedUid = cfg.purchaseAssignedUid || cfg.mexpAssignedUid || '';
+            renderSelect(emps, assignedUid);
+        }).catch(function (err) {
+            console.warn('mexpLoadAssigneeConfig fetch error:', err);
+        });
     }
 }
 
-function mexpPopulateAssigneeSelect(emps) {
+function mexpAssignKiroDirectly() {
     var sel = document.getElementById('mexpAssignedEmp');
-    if (!sel) return;
-    emps = emps || window._staffEmpCache || [];
-    var curVal = sel.value;
-    var h = '<option value="">-- لم يتم تعيين موظف (الأدمن فقط) --</option>';
-    emps.forEach(function (e) {
-        var isKirlos = (e.name && e.name.includes('كيرلس')) || (e.empId === '10');
-        var selected = (isKirlos && !curVal) ? ' selected' : '';
-        h += '<option value="' + escH(e.uid || '') + '"' + selected + '>' + escH(e.name || '') + (e.jobTitle ? ' (' + escH(e.jobTitle) + ')' : '') + '</option>';
+    var emps = window._allPurchasesEmpsCache || (typeof PMGMT_EMPLOYEES !== 'undefined' ? PMGMT_EMPLOYEES : []);
+    var kiro = emps.find(function (e) {
+        var name = e.name || e.email || '';
+        var job = e.jobTitle || '';
+        return name.includes('كيرلس') || name.includes('كيرو') || (String(e.empId) === '10') || job.includes('مساعد مكتبي') || job.includes('أوفيس');
     });
-    sel.innerHTML = h;
-    if (curVal) sel.value = curVal;
+
+    var kiroUid = kiro ? (kiro.uid || kiro.id) : (sel ? sel.value : 'kiro_default');
+    var kiroName = kiro ? (kiro.name || 'كيرلس وجيه') : 'كيرلس وجيه (أوفيس)';
+    var kiroEmail = kiro ? (kiro.email || '') : '';
+
+    if (sel && kiroUid) {
+        sel.value = kiroUid;
+    }
+
+    var cfg = {
+        purchaseAssignedUid: kiroUid,
+        purchaseAssignedName: kiroName,
+        purchaseAssignedEmail: kiroEmail,
+        mexpAssignedUid: kiroUid,
+        mexpAssignedName: kiroName,
+        mexpAssignedEmail: kiroEmail,
+        updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+    };
+
+    localStorage.setItem('tg_purchases_config', JSON.stringify(cfg));
+    localStorage.setItem('tg_mexp_config', JSON.stringify(cfg));
+
+    if (typeof db !== 'undefined' && db && db.collection) {
+        Promise.all([
+            db.collection('system').doc('appSettings').set(cfg, { merge: true }).catch(function () { }),
+            db.collection('settings').doc('appSettings').set(cfg, { merge: true }).catch(function () { })
+        ]).then(function () {
+            if (typeof tgShowToast === 'function') {
+                tgShowToast('⭐ تم تعيين (كيرلس وجيه) مسؤولاً رسمياً عن مشتريات ونثريات الشركة بنجاح!', 'success');
+            } else {
+                alert('⭐ تم تعيين (كيرلس وجيه) مسؤولاً رسمياً عن مشتريات ونثريات الشركة بنجاح!');
+            }
+        }).catch(function (err) {
+            alert('تم الحفظ محلياً (تنبيه في السيرفر: ' + err.message + ')');
+        });
+    } else {
+        alert('⭐ تم تعيين كيرلس وجيه بنجاح!');
+    }
 }
 
 function mexpSaveAssignee() {
@@ -5885,25 +5987,38 @@ function mexpSaveAssignee() {
     if (!sel) return;
     var uid = sel.value;
     var opt = sel.options[sel.selectedIndex];
-    var name = opt ? opt.text : '';
+    var name = opt ? opt.text.replace('⭐ ', '') : '';
+
+    var emps = window._allPurchasesEmpsCache || (typeof PMGMT_EMPLOYEES !== 'undefined' ? PMGMT_EMPLOYEES : []);
+    var targetEmp = emps.find(function (e) { return (e.uid || e.id) === uid; });
+    var email = targetEmp ? (targetEmp.email || '') : '';
 
     var cfg = {
         purchaseAssignedUid: uid,
         purchaseAssignedName: name,
+        purchaseAssignedEmail: email,
         mexpAssignedUid: uid,
         mexpAssignedName: name,
+        mexpAssignedEmail: email,
         updatedAt: firebase.firestore.FieldValue.serverTimestamp()
     };
 
     localStorage.setItem('tg_purchases_config', JSON.stringify(cfg));
+    localStorage.setItem('tg_mexp_config', JSON.stringify(cfg));
 
-    if (typeof db !== 'undefined' && db) {
-        db.collection('system').doc('appSettings').set(cfg, { merge: true }).then(function () {
-            if (typeof tgShowToast === 'function') tgShowToast('تم حفظ المسؤول عن المشتريات بنجاح', 'success');
-            else alert('✅ تم حفظ المسؤول عن المشتريات بنجاح');
+    if (typeof db !== 'undefined' && db && db.collection) {
+        Promise.all([
+            db.collection('system').doc('appSettings').set(cfg, { merge: true }).catch(function () { }),
+            db.collection('settings').doc('appSettings').set(cfg, { merge: true }).catch(function () { })
+        ]).then(function () {
+            var msg = uid ? ('✅ تم تعيين [' + name + '] مسؤولاً عن المشتريات') : 'تم إلغاء التعيين (مقتصر على الأدمن)';
+            if (typeof tgShowToast === 'function') tgShowToast(msg, 'success');
+            else alert(msg);
         }).catch(function (err) {
             alert('تعذر حفظ الإعداد: ' + err.message);
         });
+    } else {
+        alert('✅ تم الحفظ محلياً');
     }
 }
 
@@ -6641,12 +6756,13 @@ function load(id, c) {
             '      <label style="font-size:13px;font-weight:800;color:var(--tx);white-space:nowrap;">📅 الشهر:</label>' +
             '      <input type="month" id="mexp-month" class="inp" style="padding:7px 14px;font-weight:800;border-radius:10px;" onchange="mexpLoad()">' +
             '    </div>' +
-            '    <div class="mexp-ctrl-item" style="display:flex;align-items:center;gap:8px;" id="mexpAssigneeWrap">' +
+            '    <div class="mexp-ctrl-item" style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;" id="mexpAssigneeWrap">' +
             '      <label style="font-size:12.5px;font-weight:800;color:var(--tx2);white-space:nowrap;">👤 المسؤول عن الشراء:</label>' +
-            '      <select id="mexpAssignedEmp" class="inp" style="padding:7px 12px;font-size:12px;font-weight:700;border-radius:10px;" onchange="mexpSaveAssignee()">' +
+            '      <select id="mexpAssignedEmp" class="inp" style="padding:7px 12px;font-size:12.5px;font-weight:700;border-radius:10px;min-width:220px;" onchange="mexpSaveAssignee()">' +
             '        <option value="">-- لم يتم تعيين موظف (الأدمن فقط) --</option>' +
             '      </select>' +
             '      <button type="button" class="bt bt-p" style="padding:7px 14px;font-size:12px;font-weight:800;white-space:nowrap;border-radius:8px;" onclick="mexpSaveAssignee()">💾 حفظ</button>' +
+            '      <button type="button" class="bt" style="background:linear-gradient(135deg, #10b981, #059669);color:#fff;border:none;padding:7px 14px;font-size:12px;font-weight:900;white-space:nowrap;border-radius:8px;box-shadow:0 2px 8px rgba(16,185,129,0.3);cursor:pointer;" onclick="mexpAssignKiroDirectly()" title="تعيين كيرلس وجيه فوراً كمسؤول المشتريات">⭐ تعيين كيرو مسؤولاً</button>' +
             '    </div>' +
             '  </div>' +
             '  <div id="mexpSyncInfo" style="margin-top:10px;display:flex;align-items:center;gap:8px;border-top:1px dashed var(--bd);padding-top:8px;flex-wrap:wrap;font-size:12px;color:#059669;font-weight:700;">' +
