@@ -67,7 +67,7 @@
     <link
         href="https://fonts.googleapis.com/css2?family=Alexandria:wght@300;400;500;600;700;800;900&family=Cairo:wght@400;600;700;800;900&family=Tajawal:wght@400;500;700;800&family=Inter:wght@400;500;600;700&display=swap"
         rel="stylesheet">
-    <link rel="stylesheet" href="styles.css?v=1788955657">
+    <link rel="stylesheet" href="styles.css?v=1789041789">
     <link rel="manifest" href="manifest.json">
     <link rel="icon" type="image/png" sizes="192x192" href="icon-192.png">
     <link rel="apple-touch-icon" href="icon-192.png">
@@ -75,10 +75,10 @@
     <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-storage-compat.js"></script>
-    <script src="firebase-config.js?v=1788955657"></script>
-    <script src="auth.js?v=1788955657"></script>
-    <script src="app.js?v=1788955657"></script>
-    <script src="formsend.js?v=1788955657"></script>
+    <script src="firebase-config.js?v=1789041789"></script>
+    <script src="auth.js?v=1789041789"></script>
+    <script src="app.js?v=1789041789"></script>
+    <script src="formsend.js?v=1789041789"></script>
     <script>
         (function () {
             const theme = localStorage.getItem('tg-theme') || 'light';
@@ -868,8 +868,7 @@
             <div class="emp-tab" data-pg="docs" onclick="empGo('docs',this)">📄 مستنداتي</div>
             <div class="emp-tab" data-pg="req" onclick="empGo('req',this)">📨 طلباتي</div>
             <div class="emp-tab" id="empTabAtt" data-pg="att" onclick="empGo('att',this)" style="display:none">⏱️ الحضور والانصراف</div>
-            <div class="emp-tab" id="empTabMexp" data-pg="mexp" onclick="empGo('mexp',this)" style="display:none">💵 شيت المصروفات</div>
-        <div class="emp-tab" id="empTabPurchase" data-pg="purchase" onclick="empGo('purchase',this)" style="display:none">🛒 المشتريات</div>
+            <div class="emp-tab" id="empTabPurchases" data-pg="purchases" onclick="empGo('purchases',this)" style="display:none">🛒 مشتريات الشركة</div>
             <div class="emp-tab" data-pg="devres" onclick="empGo('devres',this)">🚀 التطوير المهني <span class="tab-badge" id="devres-badge" style="display:none">0</span></div>
             <div class="emp-tab" data-pg="livemeeting" onclick="empGo('livemeeting',this)">🎥 غرفة الاجتماعات <span class="tab-badge" id="meetingBadgeStatus" style="display:none; background:var(--ok)">مباشر</span></div>
             <div class="emp-tab" data-pg="acct" onclick="empGo('acct',this)">👤 حسابي</div>
@@ -879,8 +878,7 @@
     <div class="emp-ct">
         <div class="emp-pg" id="epg-assigneddocs"></div>
         <div class="emp-pg" id="epg-wkr"></div>
-        <div class="emp-pg" id="epg-mexp"></div>
-        <div class="emp-pg" id="epg-purchase"></div>
+        <div class="emp-pg" id="epg-purchases"></div>
 
         <!-- الحضور والانصراف -->
         <div class="emp-pg" id="epg-att">
@@ -1275,6 +1273,7 @@
             return '<span class="badge ' + cls + '">' + lbl + '</span>';
         }
         function empGo(id, el, force) {
+            if (id === 'mexp' || id === 'purchase') id = 'purchases';
             // Remove active from all navigation elements
             document.querySelectorAll('.emp-tab').forEach(function (t) { t.classList.remove('a'); });
             document.querySelectorAll('.dock-item').forEach(function (d) { d.classList.remove('a'); });
@@ -1346,8 +1345,9 @@
                 if (typeof loadMonthlyPlansEmp === 'function') loadMonthlyPlansEmp(epg);
                 else setTimeout(function(){ if (typeof loadMonthlyPlansEmp === 'function') loadMonthlyPlansEmp(epg); }, 400);
             }
-            if (id === 'mexp') {
-                if (typeof empLoadMexpPage === 'function') empLoadMexpPage(epg);
+            if (id === 'purchases') {
+                if (typeof empLoadPurchasesPage === 'function') empLoadPurchasesPage(epg);
+                else setTimeout(function(){ if (typeof empLoadPurchasesPage === 'function') empLoadPurchasesPage(epg); }, 200);
             }
             if (id === 'assigneddocs') {
                 if (typeof empLoadAssignedDocsPage === 'function') empLoadAssignedDocsPage(epg);
@@ -2932,1080 +2932,18 @@
             if (typeof tgChatMount === 'function') tgChatMount();
             if (typeof tgChatWatch === 'function') tgChatWatch();
             if (typeof loadEmpAnnouncements === 'function') loadEmpAnnouncements();
-            // فحص إشعارات الأعياد والمناسبات الرسمية في بوابة الموظف
-            if (typeof tgCheckUpcomingHolidaysEmp === 'function') tgCheckUpcomingHolidaysEmp();
-            // نماذج مطلوبة من الأدمن لملئها وإرسالها
-            if (typeof loadMyFormRequests === 'function') loadMyFormRequests(u.uid);
-            // تفعيل استقبال Push Notifications من Firestore
-            if (typeof tgListenMyNotifications === 'function') tgListenMyNotifications(u.uid);
-            // تفعيل مركز الإشعارات للموظف
-            if (typeof tgListenNotifCenter === 'function') tgListenNotifCenter(u.uid, tgRenderNotifPanel);
-            // PWA Service Worker
-            if ('serviceWorker' in navigator) {
-                navigator.serviceWorker.register('./sw.js').catch(function () { });
-            }
-            if (typeof loadMyDocs === 'function') loadMyDocs();
-            if (typeof initEmpMexpAccessCheck === 'function') initEmpMexpAccessCheck();
-
-            // Auto-expand textareas
-            document.addEventListener('input', function (e) {
-                if (e.target.tagName.toLowerCase() === 'textarea') {
-                    e.target.style.height = 'auto';
-                    e.target.style.height = (e.target.scrollHeight) + 'px';
-                }
-            });
         });
 
-        // ─── حضور وانصراف الموظف ────────────────────────────────────────────────
-        var _todayAttDocId = null;
-
-        window.tgFormatWorkHours = function (checkIn, checkOut, dateStr) {
-            if (!checkIn || !checkOut || checkIn === '-' || checkOut === '-') return '-';
-            try {
-                var baseDate = dateStr || '2026-01-01';
-                var d1 = new Date(baseDate + 'T' + checkIn);
-                var d2 = new Date(baseDate + 'T' + checkOut);
-                if (d2 < d1) d2.setDate(d2.getDate() + 1);
-
-                var diffMs = d2 - d1;
-                if (isNaN(diffMs) || diffMs <= 0) return '0 دقيقة';
-
-                var totalMinutes = Math.floor(diffMs / 60000);
-                var hours = Math.floor(totalMinutes / 60);
-                var minutes = totalMinutes % 60;
-
-                if (hours > 0 && minutes > 0) {
-                    var hLabel = (hours === 1) ? 'ساعة' : (hours === 2 ? 'ساعتان' : (hours >= 3 && hours <= 10 ? hours + ' ساعات' : hours + ' ساعة'));
-                    return hLabel + ' و ' + minutes + ' دقيقة';
-                } else if (hours > 0) {
-                    return (hours === 1) ? 'ساعة واحدة' : (hours === 2 ? 'ساعتان' : (hours >= 3 && hours <= 10 ? hours + ' ساعات' : hours + ' ساعة'));
-                } else {
-                    return minutes + ' دقيقة';
-                }
-            } catch (e) {
-                return '-';
-            }
-        };
-
-        function loadEmpAttendance() {
-            var now = new Date();
-            var y = now.getFullYear();
-            var m = ('0' + (now.getMonth() + 1)).slice(-2);
-            var d = ('0' + now.getDate()).slice(-2);
-            var todayStr = y + '-' + m + '-' + d;
-            var monthPrefix = y + '-' + m;
-
-            db.collection('attendance_logs').where('uid', '==', TG_USER.uid)
-                .onSnapshot(function (snap) {
-                    var box = document.getElementById('myAttList');
-                    if (snap.empty) {
-                        if (box) box.innerHTML = '<div class="empty-hint">لا توجد سجلات حضور لهذا الشهر.</div>';
-                        _todayAttDocId = null;
-                        var bIn = document.getElementById('btnCheckIn'); if (bIn) bIn.disabled = false;
-                        var bOut = document.getElementById('btnCheckOut'); if (bOut) bOut.disabled = true;
-                        var stMsg = document.getElementById('attStatusMsg'); if (stMsg) stMsg.textContent = '';
-                        return;
-                    }
-                    var arr = [];
-                    var todayLog = null;
-                    var uniqueDates = {};
-                    snap.forEach(function (doc) {
-                        var data = doc.data();
-                        if (data.date && data.date >= monthPrefix + '-01' && data.date <= monthPrefix + '-31') {
-                            if (!uniqueDates[data.date]) {
-                                uniqueDates[data.date] = data;
-                                uniqueDates[data.date].docId = doc.id;
-                                arr.push(data);
-                            } else {
-                                if (data.checkOut && !uniqueDates[data.date].checkOut) {
-                                    Object.assign(uniqueDates[data.date], data);
-                                    uniqueDates[data.date].docId = doc.id;
-                                } else if (!uniqueDates[data.date].checkOut && data.checkIn > uniqueDates[data.date].checkIn) {
-                                    Object.assign(uniqueDates[data.date], data);
-                                    uniqueDates[data.date].docId = doc.id;
-                                }
-                            }
-                        }
-                    });
-
-                    if (uniqueDates[todayStr]) {
-                        todayLog = uniqueDates[todayStr];
-                        _todayAttDocId = uniqueDates[todayStr].docId;
-                    }
-
-                    if (arr.length === 0 && !todayLog) {
-                        if (box) box.innerHTML = '<div class="empty-hint">لا توجد سجلات حضور لهذا الشهر.</div>';
-                        _todayAttDocId = null;
-                        var bIn = document.getElementById('btnCheckIn'); if (bIn) bIn.disabled = false;
-                        var bOut = document.getElementById('btnCheckOut'); if (bOut) bOut.disabled = true;
-                        var stMsg = document.getElementById('attStatusMsg'); if (stMsg) stMsg.textContent = '';
-                        return;
-                    }
-
-                    arr.sort(function (a, b) { return a.date < b.date ? 1 : -1; });
-
-                    var btnIn = document.getElementById('btnCheckIn');
-                    var btnOut = document.getElementById('btnCheckOut');
-                    var statusMsg = document.getElementById('attStatusMsg');
-
-                    if (todayLog) {
-                        if (btnIn) btnIn.disabled = true;
-                        if (todayLog.checkOut) {
-                            if (btnOut) btnOut.disabled = true;
-                            if (statusMsg) {
-                                statusMsg.textContent = '🎉 لقد سجلت حضورك (' + todayLog.checkIn + ') وانصرافك (' + todayLog.checkOut + ') بنجاح اليوم.';
-                                statusMsg.style.color = 'var(--ok)';
-                            }
-                        } else {
-                            if (btnOut) btnOut.disabled = false;
-                            if (statusMsg) {
-                                statusMsg.textContent = '✅ مسجل حضور (' + todayLog.checkIn + ') — يمكنك تسجيل الانصراف الآن.';
-                                statusMsg.style.color = 'var(--nv)';
-                            }
-                        }
-                    } else {
-                        _todayAttDocId = null;
-                        if (btnIn) btnIn.disabled = false;
-                        if (btnOut) btnOut.disabled = true;
-                        if (statusMsg) {
-                            statusMsg.textContent = 'لم تقم بتسجيل الحضور اليوم.';
-                            statusMsg.style.color = 'var(--tx3)';
-                        }
-                    }
-
-                    if (box) {
-                        var h = '<table class="dt"><tr><th>التاريخ</th><th>الحضور</th><th>الانصراف</th><th>ساعات العمل</th></tr>';
-                        arr.forEach(function (a) {
-                            var cin = a.checkIn || '-';
-                            var cout = a.checkOut || '-';
-                            var th = tgFormatWorkHours(a.checkIn, a.checkOut, a.date);
-                            h += '<tr><td>' + a.date + '</td><td><b>' + cin + '</b></td><td><b>' + cout + '</b></td><td><span style="color:#0284c7;font-weight:800">' + th + '</span></td></tr>';
-                        });
-                        h += '</table>';
-                        box.innerHTML = h;
-                    }
-                }, function (err) {
-                    var box = document.getElementById('myAttList');
-                    if (box) box.innerHTML = '<div class="empty-hint" style="color:var(--no)">تعذر تحميل السجلات: ' + esc(err.message) + '</div>';
-                    var statusMsg = document.getElementById('attStatusMsg');
-                    if (statusMsg) statusMsg.textContent = '';
-                });
-        }
-
-        function empCheckIn() {
-            if (_todayAttDocId) {
-                if (typeof tgToast === 'function') tgToast('أنت مسجل حضور بالفعل اليوم', 'warn');
-                return;
-            }
-
-            var btn = document.getElementById('btnCheckIn');
-            if (btn) btn.disabled = true;
-
-            var now = new Date();
-            var time = ('0' + now.getHours()).slice(-2) + ':' + ('0' + now.getMinutes()).slice(-2);
-            var dateStr = now.getFullYear() + '-' + ('0' + (now.getMonth() + 1)).slice(-2) + '-' + ('0' + now.getDate()).slice(-2);
-
-            var msg = document.getElementById('attStatusMsg');
-            if (msg) {
-                msg.textContent = '⏳ جارٍ تسجيل الحضور...';
-                msg.style.color = 'var(--nv)';
-            }
-
-            db.collection('attendance_logs').add({
-                uid: TG_USER.uid,
-                name: TG_USER.name || 'موظف',
-                date: dateStr,
-                checkIn: time,
-                checkOut: null,
-                timestamp: new Date(),
-                serverTimestamp: firebase.firestore.FieldValue.serverTimestamp()
-            }).then(function (docRef) {
-                _todayAttDocId = docRef.id;
-                if (typeof tgToast === 'function') tgToast('✅ تم تسجيل الحضور بنجاح (' + time + ')', 'ok');
-                if (typeof tgNotifyAdmins === 'function') {
-                    tgNotifyAdmins('🕒 تسجيل حضور موظف', 'قام الموظف ' + (TG_USER.name || '') + ' بتسجيل الحضور الآن (' + time + ')', 'att-check-in');
-                }
-            }).catch(function (err) {
-                if (btn) btn.disabled = false;
-                if (msg) {
-                    msg.textContent = 'تعذر التسجيل: ' + err.message;
-                    msg.style.color = 'var(--no)';
-                }
-            });
-        }
-
-        function empCheckOut() {
-            var btn = document.getElementById('btnCheckOut');
-            if (btn) btn.disabled = true;
-
-            var now = new Date();
-            var time = ('0' + now.getHours()).slice(-2) + ':' + ('0' + now.getMinutes()).slice(-2);
-            var dateStr = now.getFullYear() + '-' + ('0' + (now.getMonth() + 1)).slice(-2) + '-' + ('0' + now.getDate()).slice(-2);
-
-            var msg = document.getElementById('attStatusMsg');
-            if (msg) {
-                msg.textContent = '⏳ جارٍ تسجيل الانصراف...';
-                msg.style.color = 'var(--nv)';
-            }
-
-            var doUpdate = function (docId) {
-                db.collection('attendance_logs').doc(docId).update({
-                    checkOut: time
-                }).then(function () {
-                    _todayAttDocId = docId;
-                    if (typeof tgToast === 'function') tgToast('✅ تم تسجيل الانصراف بنجاح (' + time + ')', 'ok');
-                    if (msg) {
-                        msg.textContent = '🎉 تم تسجيل الانصراف بنجاح (' + time + ')';
-                        msg.style.color = 'var(--ok)';
-                    }
-                    if (typeof tgNotifyAdmins === 'function') {
-                        tgNotifyAdmins('🕒 تسجيل انصراف موظف', 'قام الموظف ' + (TG_USER.name || '') + ' بتسجيل الانصراف الآن (' + time + ')', 'att-check-out');
-                    }
-                }).catch(function (err) {
-                    if (btn) btn.disabled = false;
-                    if (msg) {
-                        msg.textContent = 'تعذر التسجيل: ' + err.message;
-                        msg.style.color = 'var(--no)';
-                    }
-                });
-            };
-
-            if (_todayAttDocId) {
-                doUpdate(_todayAttDocId);
-            } else {
-                db.collection('attendance_logs')
-                    .where('uid', '==', TG_USER.uid)
-                    .get()
-                    .then(function (snap) {
-                        var foundId = null;
-                        snap.forEach(function (d) {
-                            var data = d.data();
-                            if (data.date === dateStr) foundId = d.id;
-                        });
-                        if (foundId) {
-                            doUpdate(foundId);
-                        } else {
-                            if (btn) btn.disabled = false;
-                            if (msg) {
-                                msg.textContent = '❌ لم يتم العثور على سجل حضور لليوم. يرجى تسجيل الحضور أولاً.';
-                                msg.style.color = 'var(--no)';
-                            }
-                        }
-                    }).catch(function (err) {
-                        if (btn) btn.disabled = false;
-                        if (msg) {
-                            msg.textContent = 'تعذر الوصول لسجل الحضور: ' + err.message;
-                            msg.style.color = 'var(--no)';
-                        }
-                    });
-            }
-        }
-
-        // ── مستنداتي ────────────────────────────────────────────────────────
-        function loadMyDocs() {
-            db.collection('employeeDocuments').where('uid', '==', TG_USER.uid).onSnapshot(function (snap) {
-                var box = document.getElementById('empDocsViewList');
-                if (!box) return;
-                if (snap.empty) {
-                    box.innerHTML = '<div class="empty-hint">لم يتم رفع أي مستندات بعد.</div>';
-                    return;
-                }
-                var docs = [];
-                snap.forEach(function (d) { docs.push(d); });
-                docs.sort(function (a, b) {
-                    var ta = a.data().createdAt ? a.data().createdAt.toMillis() : 0;
-                    var tb = b.data().createdAt ? b.data().createdAt.toMillis() : 0;
-                    return tb - ta;
-                });
-
-                var h = '<div style="display:flex;flex-direction:column;gap:8px">';
-                docs.forEach(function (doc) {
-                    var d = doc.data();
-                    var directBadge = d.isDirectToAdmin ? '<span class="badge" style="background:var(--gd);color:var(--nv);font-size:9px;margin-right:6px">📩 مرسل للأدمن مباشرة</span>' : '';
-                    h += '<div style="background:rgba(0,0,0,.3);padding:12px;border-radius:8px;display:flex;justify-content:space-between;align-items:center;border-right:3px solid var(--gd)">';
-                    h += '<div><div style="font-weight:bold;margin-bottom:4px">' + escH(d.title) + ' ' + directBadge + '</div>';
-                    h += '<div style="font-size:11px;opacity:.6">بواسطة: ' + (d.uploadedBy === 'admin' ? 'الإدارة' : 'أنت') + ' · ' + (d.createdAt && d.createdAt.toDate ? d.createdAt.toDate().toLocaleString('ar-EG') : '') + '</div></div>';
-                    h += '<div style="display:flex;gap:8px"><a href="' + d.fileUrl + '" target="_blank" class="bt bt-p" style="padding:4px 10px;font-size:11px;text-decoration:none">👁 عرض</a>';
-                    if (d.uploadedBy === 'employee') {
-                        h += '<button class="bt bt-d" style="padding:4px 10px;font-size:11px" onclick="empDeleteDoc(\'' + doc.id + '\', \'' + d.fileUrl + '\')">🗑 حذف</button>';
-                    }
-                    h += '</div></div>';
-                });
-                h += '</div>';
-                box.innerHTML = h;
-            }, function (err) {
-                var box = document.getElementById('empDocsViewList');
-                if (box) box.innerHTML = '<div class="empty-hint" style="color:var(--no)">خطأ في تحميل المستندات: ' + escH(err.message) + '</div>';
-            });
-        }
-
-        function empUploadDoc() {
-            var titleInp = document.getElementById('empNewDocTitle');
-            var fileInp = document.getElementById('empNewDocFile');
-            var msg = document.getElementById('empDocUploadMsg');
-            var title = (titleInp.value || '').trim();
-            if (!title) { msg.style.color = 'var(--no)'; msg.textContent = '❌ يرجى كتابة اسم المستند.'; return; }
-            if (!fileInp.files || fileInp.files.length === 0) { msg.style.color = 'var(--no)'; msg.textContent = '❌ يرجى اختيار ملف.'; return; }
-
-            var file = fileInp.files[0];
-            msg.style.color = '#fff'; msg.textContent = '⏳ جارٍ الرفع... يرجى الانتظار';
-            tgUploadFile('employeeDocuments/' + TG_USER.uid, file.name, file, null, function (err) {
-                msg.style.color = 'var(--no)'; msg.textContent = '❌ تعذر رفع الملف: ' + err;
-            }, function (url) {
-                db.collection('employeeDocuments').add({
-                    uid: TG_USER.uid,
-                    title: title,
-                    fileName: file.name,
-                    fileType: file.type,
-                    fileUrl: url,
-                    uploadedBy: 'employee',
-                    createdAt: new Date()
-                }).then(function () {
-                    // إشعار للأدمن
-                    tgNotifyAdmins('📄 مستند جديد في ملف موظف', (TG_USER.name || 'موظف') + ' رفع مستنداً جديداً لملفه الشخصي: ' + title, 'emp-doc-personal');
-                    titleInp.value = '';
-                    fileInp.value = '';
-                    msg.style.color = 'var(--ok)'; msg.textContent = '✅ تم رفع المستند بنجاح.';
-                    setTimeout(function () { msg.textContent = ''; }, 3000);
-                }).catch(function (err) {
-                    msg.style.color = 'var(--no)'; msg.textContent = '❌ تعذر حفظ بيانات المستند: ' + err.message;
-                });
-            });
-        }
-
-        function empSendDirectToAdmin() {
-            var titleInp = document.getElementById('empDirectDocTitle');
-            var fileInp = document.getElementById('empDirectDocFile');
-            var msg = document.getElementById('empDirectUploadMsg');
-            var title = (titleInp.value || '').trim();
-            if (!title) { msg.style.color = 'var(--no)'; msg.textContent = '❌ يرجى كتابة اسم المستند.'; return; }
-            if (!fileInp.files || fileInp.files.length === 0) { msg.style.color = 'var(--no)'; msg.textContent = '❌ يرجى اختيار ملف.'; return; }
-
-            var file = fileInp.files[0];
-            msg.style.color = 'var(--gd)'; msg.textContent = '⏳ جارٍ الإرسال للأدمن... يرجى الانتظار';
-            tgUploadFile('employeeDocuments/' + TG_USER.uid, 'direct_' + Date.now() + '_' + file.name, file, null, function (err) {
-                msg.style.color = 'var(--no)'; msg.textContent = '❌ تعذر رفع الملف: ' + err;
-            }, function (url) {
-                db.collection('employeeDocuments').add({
-                    uid: TG_USER.uid,
-                    title: title,
-                    fileName: file.name,
-                    fileType: file.type,
-                    fileUrl: url,
-                    uploadedBy: 'employee',
-                    isDirectToAdmin: true,
-                    createdAt: new Date()
-                }).then(function () {
-                    titleInp.value = '';
-                    fileInp.value = '';
-                    msg.style.color = 'var(--ok)'; msg.textContent = '✅ تم إرسال المستند للأدمن بنجاح.';
-                    setTimeout(function () { msg.textContent = ''; }, 5000);
-
-                    // إشعار للأدمن
-                    tgNotifyAdmins('📄 مستند جديد مرسل للأدمن', (TG_USER.name || 'موظف') + ' أرسل مستنداً جديداً مباشرة: ' + title, 'emp-doc-direct');
-                }).catch(function (err) {
-                    msg.style.color = 'var(--no)'; msg.textContent = '❌ تعذر حفظ بيانات المستند: ' + err.message;
-                });
-            });
-        }
-
-        function empDeleteDoc(docId, fileUrl) {
-            if (!confirm('هل أنت متأكد من حذف هذا المستند؟')) return;
-            db.collection('employeeDocuments').doc(docId).delete().then(function () {
-                if (fileUrl && typeof tgDeleteSupabaseFile === 'function') {
-                    tgDeleteSupabaseFile(fileUrl);
-                }
-            }).catch(function (err) {
-                alert('❌ خطأ أثناء الحذف: ' + err.message);
-            });
-        }
-
-        // ═══ Tab-based filtering for employee tasks ═══
-        window._empActiveTaskTab = '';
-        function tgSetEmpTaskTab(btn, status) {
-            window._empActiveTaskTab = status;
-
-            // Update active tab
-            document.querySelectorAll('.tg-task-tab').forEach(function (tab) {
-                tab.classList.remove('tg-task-tab-active');
-            });
-            btn.classList.add('tg-task-tab-active');
-
-            // Apply filter
-            tgApplyEmpTaskFilter();
-        }
-
-        function tgApplyEmpTaskFilter() {
-            var status = window._empActiveTaskTab || '';
-            var cards = document.querySelectorAll('#myTasksList .pj-row');
-
-            cards.forEach(function (card) {
-                var show = false;
-                var cardStatus = card.getAttribute('data-taskstatus') || 'لم يبدأ';
-                var dlVal = parseFloat(card.getAttribute('data-deadline'));
-                var isOverdue = dlVal && dlVal < 9999999999999 && dlVal < Date.now() && cardStatus !== 'مكتمل';
-
-                if (status === '') {
-                    show = true; // All
-                } else if (status === 'overdue') {
-                    show = isOverdue;
-                } else {
-                    show = (cardStatus === status);
-                }
-
-                if (show) {
-                    card.style.removeProperty('display');
-                } else {
-                    card.style.setProperty('display', 'none', 'important');
-                }
-            });
-        }
-
-        // Update tab counts after rendering
-        function tgUpdateEmpTaskTabCounts(rows) {
-            var counts = { all: rows.length, notstarted: 0, inprogress: 0, paused: 0, done: 0, overdue: 0 };
-            var now = Date.now();
-
-            rows.forEach(function (t) {
-                var status = t.status || 'لم يبدأ';
-                if (status === 'لم يبدأ') counts.notstarted++;
-                else if (status === 'جاري العمل') counts.inprogress++;
-                else if (status === 'متوقف') counts.paused++;
-                else if (status === 'مكتمل') counts.done++;
-
-                var dlTime = t.deadline ? new Date(t.deadline).getTime() : 0;
-                if (dlTime && dlTime < now && status !== 'مكتمل') counts.overdue++;
-            });
-
-            var map = { 'emp-tab-count-all': counts.all, 'emp-tab-count-1': counts.notstarted, 'emp-tab-count-2': counts.inprogress, 'emp-tab-count-paused': counts.paused, 'emp-tab-count-3': counts.done, 'emp-tab-count-late': counts.overdue };
-            Object.keys(map).forEach(function (id) {
-                var el = document.getElementById(id);
-                if (el) el.textContent = map[id];
-            });
-        }
-
-        // ── مركز الإشعارات للموظف ──────────────────────────────────────
-        function tgToggleNotifPanel(ev) {
-            if (ev) ev.stopPropagation();
-            var panel = document.getElementById('notifPanel');
-            if (!panel) return;
-            var willOpen = panel.style.display === 'none' || !panel.style.display;
-            panel.style.display = willOpen ? 'block' : 'none';
-        }
-        document.addEventListener('click', function (ev) {
-            var wrap = document.getElementById('notifWrap');
-            var panel = document.getElementById('notifPanel');
-            if (!wrap || !panel || panel.style.display === 'none') return;
-            if (!wrap.contains(ev.target)) panel.style.display = 'none';
-        });
-        function tgTimeAgo(d) {
-            if (!d) return 'الآن';
-            var ms = (d && d.toMillis) ? d.toMillis() : new Date(d).getTime();
-            if (!ms || isNaN(ms)) return 'توقيت غير معروف';
-            var now = Date.now();
-            var s = Math.floor(Math.abs(now - ms) / 1000);
-            if (s < 2) return 'الآن';
-            if (s < 60) return 'منذ ' + s + ' ثانية';
-            var m = Math.floor(s / 60);
-            if (m < 60) return (m === 1 ? 'منذ دقيقة' : m === 2 ? 'منذ دقيقتين' : m <= 10 ? 'منذ ' + m + ' دقائق' : 'منذ ' + m + ' دقيقة');
-            var h = Math.floor(m / 60);
-            if (h < 24) return (h === 1 ? 'منذ ساعة' : h === 2 ? 'منذ ساعتين' : h <= 10 ? 'منذ ' + h + ' ساعات' : 'منذ ' + h + ' ساعة');
-            var days = Math.floor(h / 24);
-            if (days < 30) return (days === 1 ? 'منذ يوم' : days === 2 ? 'منذ يومين' : days <= 10 ? 'منذ ' + days + ' أيام' : 'منذ ' + days + ' يوم');
-            return new Date(ms).toLocaleDateString('ar-EG');
-        }
-        function tgRenderNotifPanel(list, unreadCount) {
-            var badge = document.getElementById('notifBadge');
-            if (badge) {
-                if (unreadCount > 0) {
-                    badge.style.display = 'flex';
-                    badge.textContent = unreadCount > 99 ? '99+' : unreadCount;
-                } else {
-                    badge.style.display = 'none';
-                }
-            }
-            var bellBtn = document.getElementById('notifBellBtn');
-            if (bellBtn) bellBtn.classList.toggle('has-unread', unreadCount > 0);
-
-            var listEl = document.getElementById('notifList');
-            if (!listEl) return;
-            if (!list || !list.length) {
-                listEl.innerHTML = '<div class="notif-empty">لا توجد إشعارات بعد</div>';
-                return;
-            }
-            var h = '';
-            list.forEach(function (n) {
-                var unread = !n.read;
-                h += '<div class="notif-item' + (unread ? ' unread' : '') + '" onclick="tgNotifItemClick(\'' + n.id + '\', event, \'' + (n.tag || '') + '\')">';
-                h += '<div class="notif-item-dot"></div>';
-                h += '<div class="notif-item-body">';
-                h += '<div class="notif-item-title">' + (typeof escH === 'function' ? escH(n.title || 'إشعار') : (n.title || 'إشعار')) + '</div>';
-                if (n.body) h += '<div class="notif-item-text">' + (typeof escH === 'function' ? escH(n.body) : n.body) + '</div>';
-                h += '<div class="notif-item-time">' + tgTimeAgo(n.createdAt) + '</div>';
-                h += '</div>';
-                h += '<div class="notif-item-del" title="حذف" onclick="tgNotifDelClick(\'' + n.id + '\', event)">✕</div>';
-                h += '</div>';
-            });
-            listEl.innerHTML = h;
-        }
-        function tgNotifItemClick(id, ev, tag) {
-            if (ev) ev.stopPropagation();
-            if (typeof tgMarkNotifRead === 'function') tgMarkNotifRead(id);
-            var panel = document.getElementById('notifPanel');
-            if (panel) panel.style.display = 'none';
-
-            var clickTab = function (t) { var el = document.querySelector('[data-pg="' + t + '"]'); if (el) empGo(t, el); };
-
-            if (tag === 'form-submitted' || tag === 'form-new') clickTab('forms');
-            else if (tag === 'request-reviewed' || tag === 'request-new') clickTab('req');
-            else if (tag === 'att-check-in' || tag === 'att-check-out') clickTab('att');
-            else if (tag === 'name-change' || tag === 'achievement-new') clickTab('ach');
-            else if (tag === 'project-new' || tag === 'project-update' || tag === 'project-status' || tag === 'project-progress' || tag === 'project-note' || tag === 'project-completed') clickTab('proj');
-            else if (tag === 'task-new' || tag === 'task-update' || tag === 'task-status') clickTab('tasks');
-            else if (tag === 'weekly-report-new' || tag === 'weekly-report-reminder' || tag === 'weekly-report-approved' || tag === 'weekly-report-feedback' || tag === 'weekly-report-rejected' || tag === 'monthly-report-new' || tag === 'monthly-report-approved' || tag === 'monthly-report-rejected' || tag === 'monthly-plan-new') {
-                clickTab('wkr');
-                if (typeof loadWeeklyReportsEmp === 'function') loadWeeklyReportsEmp();
-                if (typeof tgRenderWeeklyReportsEmp === 'function') tgRenderWeeklyReportsEmp();
-                if (typeof tgOpenReportDetailsModal === 'function') {
-                    tgOpenReportDetailsModal(id, (tag.indexOf('monthly') !== -1 ? 'monthly_reports' : 'weekly_reports'));
-                }
-            }
-            else if (tag === 'emp-doc-personal' || tag === 'emp-doc-direct') clickTab('docs');
-            else if (tag === 'chat-new') { if (typeof tgChatToggle === 'function') tgChatToggle(); }
-            else if (tag && (tag.indexOf('mexp') !== -1)) {
-                clickTab('mexp');
-                if (typeof empMexpLoadData === 'function') empMexpLoadData(true);
-            }
-        }
-        function tgNotifDelClick(id, ev) {
-            if (ev) ev.stopPropagation();
-            if (typeof tgDeleteNotif === 'function') tgDeleteNotif(id);
-        }
-    </script>
-    <div
-        style="position:fixed;bottom:4px;left:50%;transform:translateX(-50%);font-size:9px;color:rgba(255,255,255,0.2);z-index:9999;pointer-events:none;white-space:nowrap;font-family:inherit">
-        تطوير وتصميم: أبانوب فايز</div>
-    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
-    <script src="theme.js?v=1788955657"></script>
-    <script src="pwa-install.js?v=1788955657"></script>
-
-
-    <!-- Incoming Meeting Call Modal -->
-    <div id="incomingMeetingModal"
-        style="display:none; position:fixed; top:0; left:0; right:0; bottom:0; background:radial-gradient(circle at center, rgba(16,185,129,0.2) 0%, rgba(15,23,42,0.98) 100%); z-index:9999999; flex-direction:column; justify-content:center; align-items:center; backdrop-filter:blur(16px); font-family:inherit;">
-        <div style="text-align:center; margin-bottom:35px;">
-            <div
-                style="position:relative; width:130px; height:130px; margin:0 auto 25px; display:flex; justify-content:center; align-items:center;">
-                <div
-                    style="position:absolute; width:100%; height:100%; border-radius:50%; background:#10b981; opacity:0.3; animation:pulseCallRipple 1.5s infinite;">
-                </div>
-                <div
-                    style="position:absolute; width:85%; height:85%; border-radius:50%; background:#10b981; opacity:0.6; animation:pulseCallRipple 1.5s infinite 0.4s;">
-                </div>
-                <div
-                    style="width:110px; height:110px; background:linear-gradient(135deg, #10b981, #059669); border-radius:50%; display:flex; justify-content:center; align-items:center; z-index:2; box-shadow:0 0 40px rgba(16,185,129,0.8);">
-                    <span style="font-size:55px; animation:bouncePhone 1s infinite alternate;">📞</span>
-                </div>
-            </div>
-            <span
-                style="display:inline-block; background:rgba(16,185,129,0.2); color:#10b981; border:1px solid rgba(16,185,129,0.4); padding:6px 18px; border-radius:30px; font-size:13px; font-weight:bold; margin-bottom:15px; letter-spacing:0.5px;">📞
-                مكالمة واردة الآن (صوت وفيديو)</span>
-            <h2 style="color:#fff; margin-bottom:8px; font-size:24px; font-weight:bold;">اتصال مباشر من:</h2>
-            <p id="incomingCallerNameText"
-                style="color:#f59e0b; font-size:32px; font-weight:900; margin-bottom:10px; text-shadow:0 2px 10px rgba(245,158,11,0.3);">
-                جاري الاتصال...</p>
-            <p style="color:rgba(255,255,255,0.7); font-size:13px; margin:0;">🔔 الهاتف يرن الآن... انقر للرد فوراً
-                والتحدث عبر الفيديو</p>
-        </div>
-        <div style="display:flex; gap:20px; flex-wrap:wrap; justify-content:center;">
-            <button type="button" onclick="acceptMeetingCall(this)"
-                style="background:linear-gradient(135deg, #10b981, #059669); color:#fff; border:none; border-radius:50px; padding:16px 45px; font-size:20px; font-weight:bold; cursor:pointer; box-shadow:0 8px 30px rgba(16,185,129,0.6); display:flex; align-items:center; gap:12px; transition:all 0.2s; transform:scale(1.05);">
-                <span style="font-size:24px;">📞</span> قبول وانضمام للمكالمة
-            </button>
-            <button type="button" onclick="declineMeetingCall(this)"
-                style="background:linear-gradient(135deg, #ef4444, #dc2626); color:#fff; border:none; border-radius:50px; padding:16px 45px; font-size:20px; font-weight:bold; cursor:pointer; box-shadow:0 8px 30px rgba(239,68,68,0.6); display:flex; align-items:center; gap:12px; transition:all 0.2s;">
-                <span style="font-size:22px;">✖</span> رفض المكالمة
-            </button>
-        </div>
-    </div>
-
-    <!-- Modal for selecting specific employees for a targeted meeting -->
-    <div id="selectEmpMeetingModal"
-        style="display:none; position:fixed; top:0; left:0; right:0; bottom:0; background:rgba(15,23,42,0.8); z-index:99999; flex-direction:column; justify-content:center; align-items:center; backdrop-filter:blur(12px); font-family:inherit;">
-        <div
-            style="background:var(--bg2); border:1px solid rgba(255,255,255,0.15); border-radius:20px; width:92%; max-width:580px; padding:28px; box-shadow:0 25px 50px -12px rgba(0,0,0,0.5); max-height:85vh; display:flex; flex-direction:column;">
-            <!-- Modal Header -->
-            <div
-                style="display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:20px; border-bottom:1px solid var(--bd); padding-bottom:15px;">
-                <div>
-                    <h3
-                        style="margin:0; font-size:18px; font-weight:bold; color:var(--tx); display:flex; align-items:center; gap:8px;">
-                        <span
-                            style="display:inline-flex; justify-content:center; align-items:center; width:32px; height:32px; border-radius:8px; background:rgba(16,185,129,0.15); color:#10b981;">👥</span>
-                        تحديد الموظفين المشاركين في الاجتماع
-                    </h3>
-                    <p style="margin:4px 0 0; font-size:12px; color:var(--tx2);">اختر الموظفين المطلوب دعوة هواتفهم
-                        ورنينها فوراً لحضور اجتماع خاص</p>
-                </div>
-                <button type="button" onclick="closeSelectEmpMeetingModal()"
-                    style="background:var(--bg); border:1px solid var(--bd); color:var(--tx2); width:32px; height:32px; border-radius:50%; display:flex; justify-content:center; align-items:center; cursor:pointer; font-size:16px; transition:all 0.2s;">✕</button>
-            </div>
-
-            <!-- Topic Input -->
-            <div style="margin-bottom:18px;">
-                <label
-                    style="font-size:13px; font-weight:bold; color:var(--tx); display:flex; align-items:center; gap:6px; margin-bottom:8px;">
-                    <span>📝</span> موضوع أو عنوان الاجتماع:
-                </label>
-                <input type="text" id="targetMeetingTopicInput" placeholder="مثال: اجتماع فريق المبيعات والتسويق"
-                    style="width:100%; padding:12px 15px; border-radius:10px; border:1px solid var(--bd); background:var(--bg); color:var(--tx); font-family:inherit; font-size:14px; outline:none; transition:border 0.2s;">
-            </div>
-
-            <!-- Selection Bar -->
-            <div
-                style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px; background:var(--bg); padding:10px 14px; border-radius:10px; border:1px solid var(--bd);">
-                <span style="font-size:13px; font-weight:bold; color:var(--tx);">قائمة الموظفين:</span>
-                <div style="display:flex; gap:8px;">
-                    <button type="button" onclick="selectAllMeetingEmps(true)"
-                        style="background:rgba(16,185,129,0.12); border:1px solid rgba(16,185,129,0.3); color:#10b981; padding:4px 12px; border-radius:20px; font-size:12px; cursor:pointer; font-weight:bold; transition:all 0.2s;">✓
-                        تحديد الكل</button>
-                    <button type="button" onclick="selectAllMeetingEmps(false)"
-                        style="background:rgba(239,68,68,0.12); border:1px solid rgba(239,68,68,0.3); color:#ef4444; padding:4px 12px; border-radius:20px; font-size:12px; cursor:pointer; font-weight:bold; transition:all 0.2s;">✕
-                        إلغاء الكل</button>
-                </div>
-            </div>
-
-            <!-- Employee Checkboxes List -->
-            <div id="selectEmpMeetingList"
-                style="flex:1; overflow-y:auto; padding-right:4px; margin-bottom:22px; display:flex; flex-direction:column; gap:10px; max-height:280px;">
-                <!-- Employees with checkboxes rendered dynamically -->
-            </div>
-
-            <!-- Action Footer -->
-            <div
-                style="display:flex; justify-content:flex-end; gap:12px; border-top:1px solid var(--bd); padding-top:16px;">
-                <button type="button" onclick="closeSelectEmpMeetingModal()"
-                    style="background:var(--bg); border:1px solid var(--bd); color:var(--tx2); padding:11px 22px; border-radius:10px; cursor:pointer; font-size:14px; font-weight:bold; transition:all 0.2s;">إلغاء</button>
-                <button type="button" onclick="startTargetedGroupMeeting()"
-                    style="background:linear-gradient(135deg, #10b981, #059669); color:#fff; border:none; padding:11px 28px; border-radius:10px; cursor:pointer; font-weight:bold; font-size:14px; box-shadow:0 6px 20px rgba(16,185,129,0.35); display:inline-flex; align-items:center; gap:8px; transition:all 0.2s;">
-                    <span>🚀</span> بدء الاجتماع ورنين الموظفين
-                </button>
-            </div>
-        </div>
-    </div>
-
-    <!-- Outgoing Call Modal (For Caller) -->
-    <div id="outgoingMeetingModal"
-        style="display:none; position:fixed; top:0; left:0; right:0; bottom:0; background:radial-gradient(circle at center, rgba(59,130,246,0.2) 0%, rgba(15,23,42,0.98) 100%); z-index:9999999; flex-direction:column; justify-content:center; align-items:center; backdrop-filter:blur(16px); font-family:inherit;">
-        <div style="text-align:center; margin-bottom:35px;">
-            <div
-                style="position:relative; width:130px; height:130px; margin:0 auto 25px; display:flex; justify-content:center; align-items:center;">
-                <div
-                    style="position:absolute; width:100%; height:100%; border-radius:50%; background:#3b82f6; opacity:0.3; animation:pulseCallRipple 1.5s infinite;">
-                </div>
-                <div
-                    style="position:absolute; width:85%; height:85%; border-radius:50%; background:#3b82f6; opacity:0.6; animation:pulseCallRipple 1.5s infinite 0.4s;">
-                </div>
-                <div
-                    style="width:110px; height:110px; background:linear-gradient(135deg, #3b82f6, #1d4ed8); border-radius:50%; display:flex; justify-content:center; align-items:center; z-index:2; box-shadow:0 0 40px rgba(59,130,246,0.8);">
-                    <span id="outgoingCallIcon"
-                        style="font-size:55px; animation:bouncePhone 1s infinite alternate;">📞</span>
-                </div>
-            </div>
-            <span id="outgoingCallTag"
-                style="display:inline-block; background:rgba(59,130,246,0.2); color:#60a5fa; border:1px solid rgba(59,130,246,0.4); padding:6px 18px; border-radius:30px; font-size:13px; font-weight:bold; margin-bottom:15px; letter-spacing:0.5px;">📡
-                جاري الاتصال المباشر (رنين جارٍ 🔔)</span>
-            <h2 id="outgoingCallStatusText" style="color:#fff; margin-bottom:8px; font-size:26px; font-weight:bold;">
-                جاري الاتصال...</h2>
-            <p id="outgoingTargetNameText"
-                style="color:#f59e0b; font-size:28px; font-weight:900; margin-bottom:10px; text-shadow:0 2px 10px rgba(245,158,11,0.3);">
-                🔔 جاري الرنين الآن...</p>
-            <p style="color:rgba(255,255,255,0.7); font-size:13px; margin:0;">🔔 هاتف الطرف الآخر يرن الآن... يرجى
-                الانتظار لحين الانضمام</p>
-        </div>
-
-        <div style="display:flex; gap:20px; flex-wrap:wrap; justify-content:center;">
-            <a id="outgoingDirectRoomLink" href="#" target="_blank"
-                style="background:linear-gradient(135deg, #10b981, #059669); color:#fff; text-decoration:none; padding:16px 40px; border-radius:50px; font-size:18px; font-weight:bold; box-shadow:0 8px 30px rgba(16,185,129,0.5); display:inline-flex; align-items:center; gap:10px; transition:all 0.2s;">
-                <span style="font-size:22px;">🎥</span> دخول الغرفة مباشرة ↗
-            </a>
-            <button type="button" onclick="cancelOutgoingCall()"
-                style="background:linear-gradient(135deg, #ef4444, #dc2626); color:#fff; border:none; border-radius:50px; padding:16px 40px; font-size:18px; font-weight:bold; cursor:pointer; box-shadow:0 8px 30px rgba(239,68,68,0.5); display:inline-flex; align-items:center; gap:10px; transition:all 0.2s;">
-                <span style="font-size:20px;">✖</span> إلغاء الاتصال
-            </button>
-        </div>
-
-        <script>
-            window._outgoingAudioCtx = null;
-            window._outgoingOsc1 = null;
-            window._outgoingOsc2 = null;
-            window._outgoingGainNode = null;
-            window._outgoingInterval = null;
-
-            function playOutgoingRinging() {
-                stopOutgoingRinging();
-
-                // Web Audio API International Dual-Tone Ringback Tone (440Hz + 480Hz - Authentic Telephone Sound "tuuuuoot...")
-                try {
-                    var AudioCtx = window.AudioContext || window.webkitAudioContext;
-                    if (!AudioCtx) return;
-
-                    window._outgoingAudioCtx = new AudioCtx();
-                    var ctx = window._outgoingAudioCtx;
-
-                    window._outgoingOsc1 = ctx.createOscillator();
-                    window._outgoingOsc2 = ctx.createOscillator();
-                    window._outgoingOsc1.type = 'sine';
-                    window._outgoingOsc2.type = 'sine';
-                    window._outgoingOsc1.frequency.setValueAtTime(440, ctx.currentTime);
-                    window._outgoingOsc2.frequency.setValueAtTime(480, ctx.currentTime);
-
-                    window._outgoingGainNode = ctx.createGain();
-                    window._outgoingGainNode.gain.setValueAtTime(0, ctx.currentTime);
-
-                    window._outgoingOsc1.connect(window._outgoingGainNode);
-                    window._outgoingOsc2.connect(window._outgoingGainNode);
-                    window._outgoingGainNode.connect(ctx.destination);
-
-                    window._outgoingOsc1.start();
-                    window._outgoingOsc2.start();
-
-                    function ringPulse() {
-                        if (!window._outgoingAudioCtx || !window._outgoingGainNode) return;
-                        var now = window._outgoingAudioCtx.currentTime;
-                        window._outgoingGainNode.gain.cancelScheduledValues(now);
-                        window._outgoingGainNode.gain.setValueAtTime(0, now);
-                        window._outgoingGainNode.gain.linearRampToValueAtTime(0.12, now + 0.05);
-                        window._outgoingGainNode.gain.setValueAtTime(0.12, now + 1.8);
-                        window._outgoingGainNode.gain.linearRampToValueAtTime(0, now + 1.9);
-                    }
-
-                    ringPulse();
-                    window._outgoingInterval = setInterval(ringPulse, 4000);
-                } catch (e) {
-                    console.warn("Web Audio playOutgoingRinging error:", e);
-                }
-            }
-
-            function stopOutgoingRinging() {
-                if (window._outgoingInterval) {
-                    clearInterval(window._outgoingInterval);
-                    window._outgoingInterval = null;
-                }
-                try {
-                    if (window._outgoingOsc1) { window._outgoingOsc1.stop(); window._outgoingOsc1.disconnect(); window._outgoingOsc1 = null; }
-                    if (window._outgoingOsc2) { window._outgoingOsc2.stop(); window._outgoingOsc2.disconnect(); window._outgoingOsc2 = null; }
-                    if (window._outgoingAudioCtx) { window._outgoingAudioCtx.close(); window._outgoingAudioCtx = null; }
-                } catch (e) { }
-            }
-        </script>
-    </div>
-
-    <!-- Full-Screen Active Call Overlay Modal -->
-    <div id="liveCallOverlayModal"
-        style="display:none; position:fixed; top:0; left:0; right:0; bottom:0; background:#0f172a; z-index:99999999; flex-direction:column; font-family:inherit;">
-        <div
-            style="background:#1e293b; padding:12px 20px; display:flex; justify-content:space-between; align-items:center; border-bottom:1px solid rgba(255,255,255,0.15);">
-            <div style="display:flex; align-items:center; gap:10px;">
-                <span style="font-size:24px;">📞</span>
-                <div>
-                    <div id="liveCallOverlayTitle" style="color:#fff; font-weight:bold; font-size:16px;">🟢 مكالمة نشطة
-                        (مباشر)</div>
-                    <div id="liveCallOverlaySubtitle" style="color:rgba(255,255,255,0.7); font-size:12px;">مكالمة بالصوت
-                        والفيديو عالية الدقة (غير محدودة الوقت)</div>
-                </div>
-            </div>
-            <div style="display:flex; gap:12px; align-items:center;">
-                <a id="liveCallExternalBtn" href="#" target="_blank"
-                    style="background:rgba(59,130,246,0.2); color:#60a5fa; border:1px solid rgba(59,130,246,0.4); text-decoration:none; padding:8px 16px; border-radius:8px; font-size:13px; font-weight:bold; display:inline-flex; align-items:center; gap:6px;">
-                    <span>↗</span> فتح في تبويب مستقل
-                </a>
-                <button type="button" onclick="endCall()"
-                    style="background:linear-gradient(135deg, #ef4444, #dc2626); color:#fff; border:none; padding:8px 22px; border-radius:8px; font-weight:bold; font-size:14px; cursor:pointer; box-shadow:0 4px 15px rgba(239,68,68,0.4); display:inline-flex; align-items:center; gap:6px;">
-                    <span>✖</span> إنهاء المكالمة
-                </button>
-            </div>
-        </div>
-        <div id="liveCallOverlayBody"
-            style="flex:1; width:100%; height:calc(100vh - 65px); background:#000; position:relative;">
-        </div>
-    </div>
-
-
-    <div id="tgToastContainer"></div>
-
-    <script>
-        // ── فحص وعرض إشعار الأعياد والمناسبات الرسمية في بوابة الموظف ──
-        function tgCheckUpcomingHolidaysEmp() {
-            var container = document.getElementById('empHolidayAlertBannerContainer');
-            if (!container) return;
-
-            var today = new Date();
-            today.setHours(0, 0, 0, 0);
-
-            var presets = window.TG_OFFICIAL_HOLIDAYS_PRESETS || [
-                { key: 'coptic_xmas', label: '✝️ عيد الميلاد المجيد', occasion: 'عيد الميلاد المجيد', date: '2026-01-07', durationDays: 1 },
-                { key: 'police_day', label: '👮 عيد الشرطة وثورة 25 يناير', occasion: 'عيد الشرطة وثورة 25 يناير', date: '2026-01-25', durationDays: 1 },
-                { key: 'eid_fitr', label: '🎉 عيد الفطر المبارك', occasion: 'عيد الفطر المبارك', date: '2026-03-20', durationDays: 3 },
-                { key: 'sinai_lib', label: '🦅 عيد تحرير سيناء', occasion: 'عيد تحرير سيناء', date: '2026-04-25', durationDays: 1 },
-                { key: 'labor_day', label: '👷 عيد العمال', occasion: 'عيد العمال', date: '2026-05-01', durationDays: 1 },
-                { key: 'sham_nessim', label: '🌸 شم النسيم', occasion: 'شم النسيم', date: '2026-05-11', durationDays: 1 },
-                { key: 'eid_adha', label: '🐑 عيد الأضحى المبارك', occasion: 'عيد الأضحى المبارك', date: '2026-05-27', durationDays: 4 },
-                { key: 'islamic_ny', label: '🌙 رأس السنة الهجرية', occasion: 'رأس السنة الهجرية', date: '2026-06-17', durationDays: 1 },
-                { key: 'rev_30_june', label: '🇪🇬 ثورة ٣٠ يونيو', occasion: 'ثورة 30 يونيو', date: '2026-06-30', durationDays: 1 },
-                { key: 'rev_23_july', label: '🇪🇬 ثورة ٢٣ يوليو', occasion: 'ثورة 23 يوليو', date: '2026-07-23', durationDays: 1 },
-                { key: 'prophet_bday', label: '🕌 المولد النبوي الشريف', occasion: 'المولد النبوي الشريف', date: '2026-08-26', durationDays: 1 },
-                { key: 'oct_6', label: '⚔️ عيد القوات المسلحة (٦ أكتوبر)', occasion: 'عيد القوات المسلحة (ذكرى نصر 6 أكتوبر)', date: '2026-10-06', durationDays: 1 }
-            ];
-
-            var allHolidays = [...presets];
-            try {
-                var localHols = JSON.parse(localStorage.getItem('officialHolidays') || '[]');
-                localHols.forEach(function(lh) {
-                    if (lh.date && !allHolidays.some(function(h){ return h.date === lh.date; })) {
-                        allHolidays.push({
-                            key: 'custom_' + lh.date,
-                            label: lh.label || 'إجازة رسمية',
-                            occasion: (lh.label || 'إجازة رسمية').replace(/^[^\w؀-ۿ]+/g, ''),
-                            date: lh.date,
-                            durationDays: 1
-                        });
-                    }
-                });
-            } catch(e) {}
-
-            var upcoming = [];
-            allHolidays.forEach(function(h) {
-                if (!h.date) return;
-                if (localStorage.getItem('tg_dismissed_holiday_' + h.date) === 'true') return;
-                var hDate = new Date(h.date + 'T00:00:00');
-                var diffMs = hDate.getTime() - today.getTime();
-                var diffDays = Math.round(diffMs / (1000 * 60 * 60 * 24));
-                if (diffDays >= 0 && diffDays <= 4) {
-                    upcoming.push(Object.assign({}, h, { diffDays: diffDays, holidayDateObj: hDate }));
-                }
-            });
-
-            if (!upcoming.length) {
-                container.innerHTML = '';
-                return;
-            }
-
-            upcoming.sort(function(a, b) { return a.diffDays - b.diffDays; });
-            var target = upcoming[0];
-
-            var daysLabel = '';
-            if (target.diffDays === 0) daysLabel = 'اليوم!';
-            else if (target.diffDays === 1) daysLabel = 'غداً';
-            else if (target.diffDays === 2) daysLabel = 'بعد يومين';
-            else daysLabel = 'بعد ' + target.diffDays + ' أيام';
-
-            var arabicDays = ['الأحد', 'الاثنين', 'الثلاثاء', 'الأربعاء', 'الخميس', 'الجمعة', 'السبت'];
-            var arabicMonths = ['يناير', 'فبراير', 'مارس', 'أبريل', 'مايو', 'يونيو', 'يوليو', 'أغسطس', 'سبتمبر', 'أكتوبر', 'نوفمبر', 'ديسمبر'];
-
-            function getDayName(d) { return arabicDays[d.getDay()] || ''; }
-            function formatDate(d) { return d.getDate() + ' ' + arabicMonths[d.getMonth()] + ' ' + d.getFullYear(); }
-
-            var hDayName = getDayName(target.holidayDateObj);
-            var hFormatted = formatDate(target.holidayDateObj);
-
-            var resumeObj = new Date(target.holidayDateObj.getTime());
-            resumeObj.setDate(resumeObj.getDate() + (target.durationDays || 1));
-            while (resumeObj.getDay() === 5 || resumeObj.getDay() === 6) {
-                resumeObj.setDate(resumeObj.getDate() + 1);
-            }
-            var rDayName = getDayName(resumeObj);
-            var rFormatted = formatDate(resumeObj);
-
-            var bannerHTML = 
-                '<div id="empHolidayBannerCard" style="background:var(--w); border:1px solid var(--bd); border-right:4px solid #10b981; border-radius:12px; padding:16px 20px; margin-bottom:14px; box-shadow:0 1px 4px rgba(0,0,0,0.03); direction:rtl; position:relative;">' +
-                '  <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:10px; flex-wrap:wrap; gap:8px;">' +
-                '    <div style="display:flex; align-items:center; gap:8px;">' +
-                '      <span style="font-size:16px;">🎉</span>' +
-                '      <div style="font-size:15px; font-weight:800; color:var(--tx);">' +
-                '        إشعار إجازة رسمية | <strong>' + escH(target.occasion) + '</strong>' +
-                '      </div>' +
-                '    </div>' +
-                '    <div style="display:flex; align-items:center; gap:8px;">' +
-                '      <span style="background:rgba(245,158,11,0.12); color:#b45309; border:1px solid rgba(245,158,11,0.25); padding:2px 10px; border-radius:20px; font-size:11px; font-weight:800;">' + daysLabel + '</span>' +
-                '      <button type="button" onclick="tgDismissHolidayBanner(\'' + target.date + '\')" style="background:none; border:none; color:var(--tx3); font-size:16px; cursor:pointer; padding:2px 6px; font-weight:bold;" title="إخفاء الإشعار">✕</button>' +
-                '    </div>' +
-                '  </div>' +
-                '  <div style="font-size:13px; line-height:1.75; color:var(--tx); font-weight:600;">' +
-                '    تُحيط إدارة الشركة جميع الموظفين الكرام بأن يوم <strong>' + hDayName + ' الموافق ' + hFormatted + '</strong> سيكون إجازة رسمية مدفوعة الأجر بمناسبة <strong>' + escH(target.occasion) + '</strong>.<br>' +
-                '    • تاريخ استئناف العمل: <strong>' + rDayName + ' ' + rFormatted + '</strong> الساعة 10:00 صباحًا.<br>' +
-                '    • يُرجى الالتزام بتسجيل الحضور عبر جهاز البصمة عند العودة.' +
-                '  </div>' +
-                '  <div style="display:flex; justify-content:space-between; align-items:center; margin-top:8px; border-top:1px dashed var(--bd); padding-top:6px; font-size:11px; color:#10b981; font-weight:700;">' +
-                '    <span>🌿 كل عام وحضراتكم بخير — إدارة شركة تيك - جو</span>' +
-                '    <span style="color:var(--tx3); font-size:10.5px;">اللائحة التنظيمية — المادة 129</span>' +
-                '  </div>' +
-                '</div>';
-
-            container.innerHTML = bannerHTML;
-        }
-
-        window.tgDismissHolidayBanner = function(dateStr) {
-            localStorage.setItem('tg_dismissed_holiday_' + dateStr, 'true');
-            var banner = document.getElementById('empHolidayBannerCard');
-            if (banner) banner.remove();
-        };
-
-        // ── تحميل وعرض إعلانات وتكليفات الإدارة الحقيقية في بوابة الموظف ──
-        function loadEmpAnnouncements() {
-            var box = document.getElementById('empAnnouncementsList');
-            var panel = document.getElementById('empAnnouncementsPanel');
-            if (!box || !panel) return;
-            var myUid = (typeof TG_USER !== 'undefined' && TG_USER) ? TG_USER.uid : '';
-
-            function annCard(data, isPrivate) {
-                var accentBorder = isPrivate ? '#d97706' : '#0284c7';
-                var audienceBadge = isPrivate 
-                    ? '<span style="background:rgba(245,158,11,0.12); color:#b45309; border:1px solid rgba(245,158,11,0.25); padding:2px 10px; border-radius:20px; font-size:11px; font-weight:800;">👤 خاص بك</span>' 
-                    : '<span style="background:rgba(2,132,199,0.12); color:#0369a1; border:1px solid rgba(2,132,199,0.25); padding:2px 10px; border-radius:20px; font-size:11px; font-weight:800;">📢 عام لكل الموظفين</span>';
-                
-                var h = '<div class="emp-ann-card" id="annCard_' + esc(data.id) + '" style="background:var(--w); border:1px solid var(--bd); border-right:4px solid ' + accentBorder + '; border-radius:12px; padding:16px 20px; margin-bottom:12px; box-shadow:0 1px 4px rgba(0,0,0,0.03); direction:rtl; position:relative;">';
-                h += '<div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px; gap:8px; flex-wrap:wrap;">';
-                h += '  <div style="display:flex; align-items:center; gap:8px;">';
-                h += '    <span style="font-size:16px;">📢</span>';
-                h += '    <div style="font-size:15px; font-weight:800; color:var(--tx);">' + esc(data.title) + '</div>';
-                h += '  </div>';
-                h += '  <div style="display:flex; align-items:center; gap:8px;">' + audienceBadge + 
-                     '    <button type="button" onclick="tgDismissEmpAnnouncement(\'' + esc(data.id) + '\', this)" style="background:none; border:none; color:var(--tx3); font-size:14px; cursor:pointer; padding:2px 6px; font-weight:bold; border-radius:4px;" title="إخفاء / تمت القراءة">✕</button>' +
-                     '  </div>';
-                h += '</div>';
-                h += '<div style="font-size:13px; line-height:1.75; color:var(--tx); white-space:pre-wrap; font-weight:600;">' + esc(data.content) + '</div>';
-                h += '<div style="display:flex; justify-content:space-between; align-items:center; margin-top:8px; border-top:1px dashed var(--bd); padding-top:6px; font-size:11px; color:var(--tx3); font-weight:600;">';
-                h += '  <div>👤 ' + esc(data.createdBy) + (data.createdByRole ? ' (' + esc(data.createdByRole) + ')' : '') + '</div>';
-                h += '  <div>📅 ' + esc(data.date || '') + '</div>';
-                h += '</div>';
-                h += '</div>';
-                return h;
-            }
-
-            function renderAnnList(allList) {
-                if (!allList) allList = [];
-
-                var dismissed = [];
-                try {
-                    dismissed = JSON.parse(localStorage.getItem('techgo_dismissed_announcements') || '[]');
-                } catch(e){}
-
-                var activeList = allList.filter(function(a){
-                    return a && a.id && !dismissed.includes(a.id) && !a.isHidden;
-                });
-
-                activeList.sort(function(a, b) {
-                    var tA = a.createdAt && a.createdAt.seconds ? a.createdAt.seconds*1000 : (a.createdAt ? new Date(a.createdAt).getTime() : 0);
-                    var tB = b.createdAt && b.createdAt.seconds ? b.createdAt.seconds*1000 : (b.createdAt ? new Date(b.createdAt).getTime() : 0);
-                    return tB - tA;
-                });
-
-                var publicOnes = [];
-                var privateOnes = [];
-                activeList.forEach(function(data) {
-                    if (data.audience === 'private') {
-                        if (data.targetUid === myUid) privateOnes.push(data);
-                    } else {
-                        publicOnes.push(data);
-                    }
-                });
-
-                if (!publicOnes.length && !privateOnes.length) {
-                    panel.style.display = 'none';
-                    box.innerHTML = '';
-                    return;
-                }
-                panel.style.display = 'block';
-
-                var h = '';
-                if (privateOnes.length) {
-                    h += '<div style="font-size:13px;font-weight:800;margin:0 0 8px;opacity:.9;color:#fff;">👤 إعلانات وتكليفات خاصة بك</div>';
-                    privateOnes.forEach(function(data){ h += annCard(data, true); });
-                }
-                if (publicOnes.length) {
-                    if (privateOnes.length) h += '<div style="font-size:13px;font-weight:800;margin:14px 0 8px;opacity:.9;color:#fff;">📢 إعلانات عامة</div>';
-                    publicOnes.forEach(function(data){ h += annCard(data, false); });
-                }
-                box.innerHTML = h;
-            }
-
-            window.tgDismissEmpAnnouncement = function(id, btn) {
-                if (!id) return;
-                var dismissed = [];
-                try {
-                    dismissed = JSON.parse(localStorage.getItem('techgo_dismissed_announcements') || '[]');
-                } catch(e){}
-                if (!dismissed.includes(id)) dismissed.push(id);
-                try {
-                    localStorage.setItem('techgo_dismissed_announcements', JSON.stringify(dismissed));
-                } catch(e){}
-
-                var card = document.getElementById('annCard_' + id) || (btn ? btn.closest('.emp-ann-card') : null);
-                if (card) {
-                    card.style.transition = 'all 0.3s ease';
-                    card.style.opacity = '0';
-                    card.style.transform = 'translateY(-10px)';
-                    setTimeout(function(){
-                        card.remove();
-                        if (!box.querySelectorAll('.emp-ann-card').length) {
-                            panel.style.display = 'none';
-                        }
-                    }, 300);
-                }
-            };
-
-            // 1. Initial fast render from cache
-            try {
-                var cached = JSON.parse(localStorage.getItem('techgo_shared_announcements') || '[]');
-                if (cached && cached.length) {
-                    renderAnnList(cached);
-                } else {
-                    panel.style.display = 'none';
-                    box.innerHTML = '';
-                }
-            } catch(e){
-                panel.style.display = 'none';
-                box.innerHTML = '';
-            }
-
-            // 2. Real-time sync with Firestore
-            if (typeof db !== 'undefined' && db && db.collection) {
-                db.collection('announcements').limit(50).onSnapshot(function(snap) {
-                    var list = [];
-                    if (snap && !snap.empty) {
-                        snap.forEach(function(d) {
-                            var data = Object.assign({ id: d.id }, d.data());
-                            if (data.isHidden) return;
-                            list.push(data);
-                        });
-                    }
-
-                    try {
-                        localStorage.setItem('techgo_shared_announcements', JSON.stringify(list));
-                    } catch(e){}
-
-                    renderAnnList(list);
-                }, function(err) {
-                    console.warn('Firestore announcements listener notice:', err);
-                });
-            }
-
-            // 3. Listen to cross-tab storage updates
-            window.addEventListener('storage', function(e) {
-                if (e.key === 'techgo_shared_announcements' && e.newValue) {
-                    try {
-                        var updated = JSON.parse(e.newValue);
-                        renderAnnList(updated || []);
-                    } catch(err){}
-                }
-            });
-        }
-
-        // Run immediately
-        loadEmpAnnouncements();
-        function empMexpGetDayName(dateStr) {
+        // ════════════════════════════════════════════════════════════════════════
+        // ── نظام مشتريات الشركة ونثريات الأوفيس بوي (Company Purchases Ledger)
+        // ════════════════════════════════════════════════════════════════════════
+
+        window._empPurchasesList = [];
+        window._empPurchasesFilterCat = '';
+        window._empPurchasesSearch = '';
+        window._empPurchasesUnsubscribe = null;
+
+        function empPchGetDayName(dateStr) {
             if (!dateStr) return '';
             try {
                 var parts = dateStr.split('-');
@@ -4014,1505 +2952,26 @@
                     var days = ['الأحد', 'الإثنين', 'الثلاثاء', 'الأربعاء', 'الخميس', 'الجمعة', 'السبت'];
                     return days[d.getDay()] || '';
                 }
-            } catch(e){}
+            } catch (e) {}
             return '';
         }
 
-        window.empLoadMexpPage = function(container) {
-            if (!container) container = document.getElementById('epg-mexp');
-            if (!container) return;
-
-            var d = new Date();
-            var curMonth = d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0');
-
-            var h = '<div class="set-sec" style="background:var(--w);border:1px solid var(--bd);border-radius:12px;padding:12px 16px;margin-bottom:14px;box-shadow:var(--sh-sm);">' +
-                '<div class="mexp-ctrl-bar">' +
-                '  <div>' +
-                '    <div style="font-size:15px;font-weight:900;color:var(--tx);display:flex;align-items:center;gap:8px;">' +
-                '      <span>💵 شيت المصروفات الشهري</span>' +
-                '      <span style="font-size:10.5px;background:rgba(16,185,129,0.12);color:#10b981;padding:2px 8px;border-radius:20px;font-weight:800;">موظف معتمد</span>' +
-                '    </div>' +
-                '    <div style="font-size:11.5px;color:var(--tx3);margin-top:2px;">تسجيل وتوثيق حركة المصروفات النقدية مقسمة بالأيام</div>' +
-                '  </div>' +
-                '  <div class="mexp-ctrl-item" style="display:flex;align-items:center;gap:8px;">' +
-                '    <label style="font-size:12.5px;font-weight:800;color:var(--tx);white-space:nowrap;">📅 الشهر:</label>' +
-                '    <input type="month" id="emp-mexp-month" class="inp" style="padding:6px 12px;font-weight:800;flex:1;" value="' + curMonth + '" onchange="empMexpLoadData()">' +
-                '  </div>' +
-                '</div>' +
-                '<div id="empMexpSyncInfo" style="margin-top:10px;border-top:1px dashed var(--bd);padding-top:8px;">' +
-                '  <span class="mexp-sync-badge"><span class="mexp-pulse-dot"></span> ⚡ متزامن لحظياً مع الإدارة العامة</span>' +
-                '</div>' +
-                '</div>';
-
-            // Top Summary & Stats Counter
-            h += '<div class="mexp-stats-grid">' +
-                '  <div class="mexp-stat-card primary">' +
-                '    <div class="mexp-stat-icon">💰</div>' +
-                '    <div class="mexp-stat-info">' +
-                '      <span class="mexp-stat-label">إجمالي مصروفات الشهر</span>' +
-                '      <span id="emp-mexp-grand-total" class="mexp-stat-value">0.00 ج.م</span>' +
-                '    </div>' +
-                '  </div>' +
-                '  <div class="mexp-stat-card secondary">' +
-                '    <div class="mexp-stat-icon">📅</div>' +
-                '    <div class="mexp-stat-info">' +
-                '      <span class="mexp-stat-label">الأيام المسجلة</span>' +
-                '      <span id="emp-mexp-days-count" class="mexp-stat-value" style="color:var(--nv);">0 يوم</span>' +
-                '    </div>' +
-                '  </div>' +
-                '  <div class="mexp-stat-card secondary">' +
-                '    <div class="mexp-stat-icon">📋</div>' +
-                '    <div class="mexp-stat-info">' +
-                '      <span class="mexp-stat-label">إجمالي البنود الصادرة</span>' +
-                '      <span id="emp-mexp-items-count" class="mexp-stat-value" style="color:#0284c7;">0 بند</span>' +
-                '    </div>' +
-                '  </div>' +
-                '</div>';
-
-            // Actions Toolbar
-            h += '<div class="mexp-toolbar np">' +
-                '  <div class="mexp-toolbar-primary" style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;">' +
-                '    <button type="button" class="bt bt-p mexp-btn-add" id="empMexpBtnAddDay" onclick="empMexpOpenNewDayModal()">➕ تسجيل يوم جديد</button>' +
-                '    <button type="button" class="bt bt-o mexp-btn-save" id="empMexpBtnSaveDraft" onclick="empMexpSaveData()">💾 حفظ مسودة</button>' +
-                '    <button type="button" class="bt bt-p" id="empMexpBtnSubmitTop" style="background:#0284c7;border-color:#0369a1;padding:8px 18px;font-weight:900;box-shadow:0 2px 8px rgba(2,132,199,0.35);" onclick="empMexpSubmitSheet()">🚀 إرسال الشيت للإدارة للاعتماد</button>' +
-                '  </div>' +
-                '  <div class="mexp-toolbar-secondary">' +
-                '    <button type="button" class="bt bt-g mexp-btn-print" onclick="empMexpPrint()">🖨 طباعة الشيت الرسمي</button>' +
-                '    <button type="button" class="bt bt-o mexp-btn-refresh" onclick="empMexpLoadData(true)" title="تحديث من السيرفر">🔄 تحديث</button>' +
-                '  </div>' +
-                '</div>';
-
-            // Workflow status & review action bar
-            h += '<div id="empMexpWorkflowWrap" style="margin-bottom:14px;"></div>';
-
-            // Day Cards Grid
-            h += '<div id="emp-mexp-days-container" class="mexp-days-grid"></div>';
-
-            // Official Print Sheet
-            h += '<div id="emp-mexp-print-container"></div>';
-
-            container.innerHTML = h;
-            empMexpLoadData();
-        };
-
-        function empMexpUpdateSyncStatus(updatedBy, updatedAt, isSyncing) {
-            var syncInfo = document.getElementById('empMexpSyncInfo');
-            if (!syncInfo) return;
-            if (isSyncing) {
-                syncInfo.innerHTML = '<span class="mexp-sync-badge syncing"><span class="mexp-pulse-dot syncing"></span> ⏳ جاري جلب ومزامنة أحدث البيانات من السيرفر...</span>';
-                return;
-            }
-            var timeStr = '';
-            if (updatedAt) {
-                try {
-                    if (typeof updatedAt.toDate === 'function') {
-                        timeStr = updatedAt.toDate().toLocaleTimeString('ar-EG', { hour: '2-digit', minute: '2-digit', day: 'numeric', month: 'numeric' });
-                    } else if (typeof updatedAt === 'string' || typeof updatedAt === 'number') {
-                        timeStr = new Date(updatedAt).toLocaleTimeString('ar-EG', { hour: '2-digit', minute: '2-digit', day: 'numeric', month: 'numeric' });
-                    }
-                } catch (e) { }
-            }
-            var byName = updatedBy ? esc(updatedBy) : 'الإدارة العامة';
-            syncInfo.innerHTML = '<span class="mexp-sync-badge"><span class="mexp-pulse-dot"></span> ⚡ متزامن لحظياً مع الإدارة — آخر تحديث: <b>' + byName + '</b> ' + (timeStr ? '(' + timeStr + ')' : '') + '</span>';
-        }
-
-        function empMexpMergeDays(existingDays, incomingDays) {
-            existingDays = Array.isArray(existingDays) ? existingDays : [];
-            incomingDays = Array.isArray(incomingDays) ? incomingDays : [];
-            var dateMap = {};
-
-            existingDays.forEach(function (d) {
-                if (!d || !d.date) return;
-                dateMap[d.date] = {
-                    date: d.date,
-                    items: Array.isArray(d.items) ? JSON.parse(JSON.stringify(d.items)) : []
-                };
-            });
-
-            incomingDays.forEach(function (inDay) {
-                if (!inDay || !inDay.date) return;
-                var inItems = Array.isArray(inDay.items) ? inDay.items : [];
-                if (!dateMap[inDay.date]) {
-                    dateMap[inDay.date] = {
-                        date: inDay.date,
-                        items: JSON.parse(JSON.stringify(inItems))
-                    };
-                } else {
-                    var curItems = dateMap[inDay.date].items || [];
-                    var curSigs = new Set();
-                    curItems.forEach(function (it) {
-                        var sig = ((it.spender || '').trim().toLowerCase()) + '|' + ((it.cat || '').trim().toLowerCase()) + '|' + ((it.qty || '1').toString().trim()) + '|' + ((it.price || '0').toString().trim());
-                        curSigs.add(sig);
-                    });
-
-                    inItems.forEach(function (it) {
-                        var sig = ((it.spender || '').trim().toLowerCase()) + '|' + ((it.cat || '').trim().toLowerCase()) + '|' + ((it.qty || '1').toString().trim()) + '|' + ((it.price || '0').toString().trim());
-                        if (!curSigs.has(sig)) {
-                            curItems.push(JSON.parse(JSON.stringify(it)));
-                            curSigs.add(sig);
-                        }
-                    });
-                    dateMap[inDay.date].items = curItems;
-                }
-            });
-
-            var result = Object.keys(dateMap).map(function (k) {
-                return dateMap[k];
-            });
-            result.sort(function (a, b) {
-                return (a.date || '').localeCompare(b.date || '');
-            });
-            return result;
-        }
-
-        function empMexpRenderWorkflow(data) {
-            var bar = document.getElementById('empMexpWorkflowWrap');
-            if (!bar) {
-                bar = document.createElement('div');
-                bar.id = 'empMexpWorkflowWrap';
-                var container = document.getElementById('emp-mexp-days-container');
-                if (container && container.parentNode) {
-                    container.parentNode.insertBefore(bar, container);
-                }
-            }
-            if (!bar) return;
-
-            data = data || window._empMexpLastSheetData || {};
-            var status = data.status || 'draft';
-            var adminNotes = data.adminNotes || '';
-            var reviewedBy = data.reviewedBy || '';
-            var submittedAt = data.submittedAt;
-            var submittedTimeStr = '';
-            if (submittedAt) {
-                try {
-                    if (typeof submittedAt.toDate === 'function') submittedTimeStr = submittedAt.toDate().toLocaleString('ar-EG');
-                    else submittedTimeStr = new Date(submittedAt).toLocaleString('ar-EG');
-                } catch (e) { }
-            }
-
-            var grandTotal = data.grandTotal || 0;
-            if (!grandTotal && window._empMexpDaysData) {
-                window._empMexpDaysData.forEach(function (d) {
-                    (d.items || []).forEach(function (it) {
-                        grandTotal += ((parseFloat(it.price || 0) || 0) * (parseFloat(it.qty || 1) || 1));
-                    });
-                });
-            }
-            var fmtTot = (typeof fmtMoney === 'function') ? fmtMoney(grandTotal) : grandTotal.toFixed(2) + ' ج.م';
-            var daysCount = (window._empMexpDaysData || []).length;
-
-            window._empMexpCurrentStatus = status;
-
-            // Toggle top buttons visibility based on status
-            var addBtn = document.getElementById('empMexpBtnAddDay');
-            var saveDraftBtn = document.getElementById('empMexpBtnSaveDraft');
-            var topSubmitBtn = document.getElementById('empMexpBtnSubmitTop');
-            var isLocked = (status === 'submitted' || status === 'approved');
-
-            if (addBtn) addBtn.style.display = isLocked ? 'none' : 'inline-flex';
-            if (saveDraftBtn) saveDraftBtn.style.display = isLocked ? 'none' : 'inline-flex';
-            if (topSubmitBtn) topSubmitBtn.style.display = isLocked ? 'none' : 'inline-flex';
-
-            var h = '';
-            if (status === 'submitted') {
-                h = '<div style="background:linear-gradient(135deg,#eff6ff,#dbeafe);border:2px solid #3b82f6;border-radius:12px;padding:16px 20px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:14px;box-shadow:var(--sh-sm);">' +
-                    '  <div>' +
-                    '    <div style="font-size:15px;font-weight:900;color:#1e40af;display:flex;align-items:center;gap:8px;">' +
-                    '      <span>⏳ تم إرسال الشيت للإدارة وهو قيد المراجعة والاعتماد</span>' +
-                    '      <span style="font-size:11px;background:#3b82f6;color:#fff;padding:2px 10px;border-radius:20px;font-weight:800;">🔒 مغلق مؤقتاً للتعديل</span>' +
-                    '    </div>' +
-                    '    <div style="font-size:12.5px;color:#1d4ed8;margin-top:4px;font-weight:700;">' +
-                    '      تم الإرسال بتاريخ: <b>' + (submittedTimeStr || 'اليوم') + '</b> بإجمالي: <b style="color:#0f766e;">' + fmtTot + '</b> (' + daysCount + ' يوم مسجل). الشيت مغلق حالياً بانتظار مراجعة واعتماد الإدارة.' +
-                    '    </div>' +
-                    '  </div>' +
-                    '  <div style="display:flex;gap:10px;flex-wrap:wrap;">' +
-                    '    <button type="button" class="bt bt-o" style="background:#fff;color:#1e40af;border-color:#93c5fd;font-weight:800;padding:8px 16px;font-size:12.5px;" onclick="empMexpRemindAdmin()">' +
-                    '      🔔 تذكير الإدارة بمراجعة الشيت' +
-                    '    </button>' +
-                    '    <button type="button" class="bt bt-o" style="background:#fff;color:#b45309;border-color:#fcd34d;font-weight:800;padding:8px 16px;font-size:12.5px;" onclick="empMexpWithdrawSheet()">' +
-                    '      ✏️ سحب الشيت للتعديل قبل المراجعة' +
-                    '    </button>' +
-                    '  </div>' +
-                    '</div>';
-            } else if (status === 'revision_requested') {
-                h = '<div style="background:linear-gradient(135deg,#fffbeb,#fef3c7);border:2px solid #f59e0b;border-radius:12px;padding:16px 20px;box-shadow:var(--sh-sm);">' +
-                    '  <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px;margin-bottom:12px;">' +
-                    '    <div style="font-size:15px;font-weight:900;color:#92400e;display:flex;align-items:center;gap:8px;">' +
-                    '      <span>⚠️ الإدارة أعادت الشيت مع ملاحظات وتوجيهات للتعديل</span>' +
-                    '      <span style="font-size:11px;background:#f59e0b;color:#fff;padding:2px 10px;border-radius:20px;font-weight:800;">🔓 مفتوح للتعديل الآن</span>' +
-                    '    </div>' +
-                    '    <button type="button" class="bt bt-p" style="background:#d97706;border-color:#b45309;padding:9px 22px;font-weight:900;font-size:13.5px;box-shadow:0 3px 10px rgba(217,119,6,0.35);" onclick="empMexpSubmitSheet()">' +
-                    '      🚀 إعادة إرسال الشيت بعد التعديل للإدارة (' + fmtTot + ')' +
-                    '    </button>' +
-                    '  </div>' +
-                    '  <div style="background:#fff;border:1px solid #fde68a;border-radius:8px;padding:10px 14px;color:#78350f;font-size:13px;line-height:1.6;font-weight:700;">' +
-                    '    📝 <b>توجيهات وملاحظات الإدارة:</b> ' + (adminNotes ? esc(adminNotes) : 'يرجى مراجعة البنود والمبالغ وتعديلها.') +
-                    '  </div>' +
-                    '</div>';
-            } else if (status === 'approved') {
-                h = '<div style="background:linear-gradient(135deg,#f0fdf4,#dcfce7);border:2px solid #10b981;border-radius:12px;padding:16px 20px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px;box-shadow:var(--sh-sm);">' +
-                    '  <div>' +
-                    '    <div style="font-size:15px;font-weight:900;color:#065f46;display:flex;align-items:center;gap:8px;">' +
-                    '      <span>🎉 تم اعتماد ومطابقة شيت المصروفات رسمياً من الإدارة العامة</span>' +
-                    '      <span style="font-size:11px;background:#10b981;color:#fff;padding:2px 10px;border-radius:20px;font-weight:800;">معتمد نهائياً</span>' +
-                    '    </div>' +
-                    '    <div style="font-size:12.5px;color:#047857;margin-top:4px;font-weight:700;">' +
-                    '      تم الاعتماد والموافقة بواسطة: <b>' + (reviewedBy ? esc(reviewedBy) : 'الإدارة العامة') + '</b> — الإجمالي المعتمد: <b>' + fmtTot + '</b>' +
-                    '    </div>' +
-                    '  </div>' +
-                    '  <button type="button" class="bt bt-g" style="padding:8px 20px;font-weight:800;font-size:13px;" onclick="empMexpPrint()">' +
-                    '    🖨 طباعة الشيت المعتمد' +
-                    '  </button>' +
-                    '</div>';
-            } else {
-                // Draft
-                h = '<div style="background:linear-gradient(135deg,#f8fafc,#f1f5f9);border:1.5px dashed #94a3b8;border-radius:12px;padding:14px 18px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px;margin-bottom:14px;">' +
-                    '  <div>' +
-                    '    <div style="font-size:14px;font-weight:900;color:var(--tx);">' +
-                    '      📝 شيت الشهر قيد التسجيل (مسودة خاصة بك)' +
-                    '    </div>' +
-                    '    <div style="font-size:12px;color:var(--tx3);margin-top:2px;font-weight:700;">' +
-                    '      سجل أيامك ومصروفاتك بحرية. عند انتهاء الشهر بالكامل، اضغط الزر لإرساله للإدارة للاعتماد والمراجعة.' +
-                    '    </div>' +
-                    '  </div>' +
-                    '  <button type="button" class="bt bt-p" style="background:#0284c7;border-color:#0369a1;padding:9px 22px;font-weight:900;font-size:13.5px;box-shadow:0 3px 12px rgba(2,132,199,0.35);" onclick="empMexpSubmitSheet()">' +
-                    '    🚀 إرسال شيت الشهر كاملاً للإدارة للاعتماد (' + fmtTot + ')' +
-                    '  </button>' +
-                    '</div>';
-            }
-            bar.innerHTML = h;
-        }
-
-        window.empMexpSubmitSheet = function () {
-            var mi = document.getElementById('emp-mexp-month');
-            var monthVal = mi && mi.value ? mi.value : '';
-            if (!monthVal) {
-                var d = new Date();
-                monthVal = d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0');
-            }
-
-            var days = (window._empMexpDaysData || []).filter(function (d) { return d.date || (d.items && d.items.length > 0); });
-            if (days.length === 0) {
-                alert('⚠️ لا توجد أي أيام أو بنود مصروفات مسجلة لإرسالها للإدارة. يرجى تسجيل مصروفات الشهر أولاً.');
-                return;
-            }
-
-            var grandTotal = 0;
-            days.forEach(function (d) {
-                (d.items || []).forEach(function (it) {
-                    grandTotal += ((parseFloat(it.price || 0) || 0) * (parseFloat(it.qty || 1) || 1));
-                });
-            });
-
-            var fmtTot = (typeof fmtMoney === 'function') ? fmtMoney(grandTotal) : grandTotal.toFixed(2) + ' ج.م';
-
-            if (!confirm('هل أنت متأكد من اكتمال تسجيل شهر (' + monthVal + ') وإرساله رسمياً للإدارة للاعتماد؟\n\n📌 الإجمالي: ' + fmtTot + '\n📌 عدد الأيام: ' + days.length + ' يوم\n\n(سيتم إغلاق الشيت مؤقتاً أثناء مراجعة الإدارة)')) {
-                return;
-            }
-
-            var myName = (typeof TG_USER !== 'undefined' && TG_USER && TG_USER.name) ? TG_USER.name : 'الموظف المسؤول';
-            var myUid = (typeof TG_USER !== 'undefined' && TG_USER && TG_USER.uid) ? TG_USER.uid : '';
-
-            var audit = Array.isArray(window._empMexpAuditTrail) ? JSON.parse(JSON.stringify(window._empMexpAuditTrail)) : [];
-            audit.unshift({
-                by: myName,
-                role: 'employee',
-                at: new Date().toISOString(),
-                total: grandTotal,
-                daysCount: days.length,
-                action: 'إرسال الشيت رسمياً للإدارة للاعتماد والمطابقة'
-            });
-            if (audit.length > 20) audit = audit.slice(0, 20);
-            window._empMexpAuditTrail = audit;
-
-            var sheetDocData = {
-                formId: 'mexp',
-                month: monthVal,
-                days: days,
-                grandTotal: grandTotal,
-                status: 'submitted',
-                submittedBy: myName,
-                submittedByUid: myUid,
-                submittedAt: firebase.firestore.FieldValue.serverTimestamp(),
-                updatedBy: myName,
-                updatedAt: firebase.firestore.FieldValue.serverTimestamp(),
-                auditTrail: audit
-            };
-
-            var storageKey = 'tg_mexp_' + monthVal;
-            try {
-                localStorage.setItem(storageKey, JSON.stringify(sheetDocData));
-                localStorage.setItem('tg_mexp_emergency_backup_' + monthVal, JSON.stringify(sheetDocData));
-            } catch (e) { }
-
-            window._empMexpLastSheetData = sheetDocData;
-            empMexpRenderWorkflow(sheetDocData);
-            empMexpRenderDays(days);
-
-            if (typeof db !== 'undefined' && db) {
-                // Multi-channel save to guarantee zero failure
-                var p1 = db.collection('mexp_sheets').doc(monthVal).set(sheetDocData, { merge: true });
-                var p2 = db.collection('savedForms').doc('mexp_' + monthVal).set(sheetDocData, { merge: true });
-                var p3 = db.collection('achievements').doc('mexp_sync_' + monthVal).set(sheetDocData, { merge: true });
-
-                Promise.allSettled([p1, p2, p3]).then(function () {
-                    if (typeof tgNotifyAdmins === 'function') {
-                        tgNotifyAdmins(
-                            '💰 كشف المصروفات: إرسال للاعتماد',
-                            'قام ' + myName + ' بإرسال كشف مصروفات شهر ' + monthVal + ' للاعتماد والمراجعة (الإجمالي: ' + fmtTot + ')',
-                            'mexp_submission_' + monthVal,
-                            {
-                                formId: 'mexp',
-                                month: monthVal,
-                                status: 'submitted',
-                                updatedBy: myName,
-                                grandTotal: grandTotal,
-                                days: days
-                            }
-                        );
-                    }
-                    if (typeof confetti === 'function') {
-                        try { confetti({ particleCount: 60, spread: 70, origin: { y: 0.6 } }); } catch (e) { }
-                    }
-                    if (typeof tgToast === 'function') tgToast('🚀 تم إرسال الشيت للإدارة بنجاح وهو قيد المراجعة والاعتماد!', 'ok');
-                    else alert('🚀 تم إرسال الشيت للإدارة بنجاح وهو قيد المراجعة والاعتماد!');
-                });
-            }
-        };
-
-        window.empMexpWithdrawSheet = function () {
-            if (!confirm('هل تريد سحب الشيت لإجراء تعديلات عليه قبل أن تراجعه الإدارة؟')) return;
-            var mi = document.getElementById('emp-mexp-month');
-            var monthVal = mi && mi.value ? mi.value : '';
-            var myName = (typeof TG_USER !== 'undefined' && TG_USER && TG_USER.name) ? TG_USER.name : 'الموظف المسؤول';
-
-            var updateData = {
-                status: 'draft',
-                updatedBy: myName,
-                updatedAt: firebase.firestore.FieldValue.serverTimestamp()
-            };
-            if (typeof db !== 'undefined' && db && monthVal) {
-                db.collection('mexp_sheets').doc(monthVal).set(updateData, { merge: true }).catch(function () { });
-                db.collection('savedForms').doc('mexp_' + monthVal).set(updateData, { merge: true }).catch(function () { });
-                db.collection('achievements').doc('mexp_sync_' + monthVal).set(updateData, { merge: true }).catch(function () { });
-            }
-            if (window._empMexpLastSheetData) window._empMexpLastSheetData.status = 'draft';
-            empMexpRenderWorkflow(window._empMexpLastSheetData);
-            empMexpRenderDays(window._empMexpDaysData);
-            if (typeof tgToast === 'function') tgToast('🔓 تم سحب الشيت وأصبح متاحاً للتعديل مجدداً', 'ok');
-        };
-
-        window.empMexpRemindAdmin = function () {
-            var mi = document.getElementById('emp-mexp-month');
-            var monthVal = mi && mi.value ? mi.value : '';
-            var myName = (typeof TG_USER !== 'undefined' && TG_USER && TG_USER.name) ? TG_USER.name : 'الموظف المسؤول';
-            if (typeof tgNotifyAdmins === 'function') {
-                tgNotifyAdmins(
-                    '🔔 تذكير: كشف مصروفات بانتظار الاعتماد',
-                    'تذكير من ' + myName + ': شيت مصروفات شهر ' + monthVal + ' بانتظار مراجعتكم واعتمادكم.',
-                    'mexp_reminder_' + monthVal,
-                    { formId: 'mexp', month: monthVal, status: 'submitted', updatedBy: myName }
-                );
-                if (typeof tgToast === 'function') tgToast('🔔 تم إرسال تذكير للإدارة بنجاح', 'ok');
-            }
-        };
-
-        function empMexpHandleRemoteUpdate(data, sourceCollection, isForce) {
-            if (!data) return;
-            try {
-                var serverDays = empNormalizeDaysData(data);
-                var updatedBy = data.updatedBy || '';
-                var updatedAt = data.updatedAt;
-
-            var newTimeMs = 0;
-            if (updatedAt) {
-                if (typeof updatedAt.toDate === 'function') newTimeMs = updatedAt.toDate().getTime();
-                else if (typeof updatedAt === 'number') newTimeMs = updatedAt;
-                else if (typeof updatedAt === 'string') newTimeMs = new Date(updatedAt).getTime();
-            }
-            if (isNaN(newTimeMs)) newTimeMs = 0;
-
-            var curTimeMs = window._empMexpLastRemoteTime || 0;
-            var currentDaysCount = (window._empMexpDaysData || []).length;
-            if (!isForce && curTimeMs && newTimeMs && newTimeMs < curTimeMs && serverDays.length < currentDaysCount && !data.status) {
-                return;
-            }
-
-            window._empMexpLastRemoteTime = newTimeMs || Date.now();
-                window._empMexpLastRemoteSource = sourceCollection;
-                window._empMexpLastSheetData = data;
-
-                if (Array.isArray(data.auditTrail)) {
-                    window._empMexpAuditTrail = data.auditTrail;
-                }
-
-                var mi = document.getElementById('emp-mexp-month');
-                var monthVal = mi && mi.value ? mi.value : '';
-                var storageKey = 'tg_mexp_' + monthVal;
-
-            // Check local days BEFORE overwriting localStorage!
-            var localRaw = localStorage.getItem(storageKey);
-            var localBackupRaw = localStorage.getItem('tg_mexp_emergency_backup_' + monthVal);
-            var localData = null;
-            try { localData = JSON.parse(localBackupRaw || localRaw); } catch (e) { }
-            var localDays = empNormalizeDaysData(localData);
-
-            // If server returned 0 days but local has days and status is draft: PRESERVE local days!
-            var finalDays = serverDays;
-            if ((!serverDays || serverDays.length === 0) && localDays && localDays.length > 0 && (!data.status || data.status === 'draft')) {
-                finalDays = localDays;
-            } else if (data.status === 'approved' || data.status === 'submitted' || data.status === 'revision_requested') {
-                finalDays = serverDays.length > 0 ? serverDays : (localDays.length > 0 ? localDays : []);
-            }
-
-                try { localStorage.setItem(storageKey, JSON.stringify(data)); } catch (e) { }
-
-                empMexpUpdateSyncStatus(updatedBy, updatedAt, false);
-                empMexpRenderWorkflow(data);
-
-                var daysJsonStr = JSON.stringify(finalDays);
-                var curJsonStr = JSON.stringify(window._empMexpDaysData || []);
-                var hasChanged = (daysJsonStr !== curJsonStr);
-
-                if (window._empMexpModalOpen) {
-                    window._empMexpPendingRemoteDays = finalDays;
-                } else {
-                    window._empMexpDaysData = finalDays;
-                    var container = document.getElementById('emp-mexp-days-container');
-                    if (hasChanged || !container || container.children.length === 0) {
-                        empMexpRenderDays(finalDays);
-                    }
-                }
-
-                empMexpCheckLocalRecovery(serverDays, data);
-            } catch (err) {
-                console.error('empMexpHandleRemoteUpdate error:', err);
-                if (typeof tgShowToast === 'function') tgShowToast('⚠️ حصل خطأ أثناء عرض آخر تحديث — اضغط "تحديث" لإعادة المحاولة', 'warning');
-            }
-        }
-
-        function empMexpCheckLocalRecovery(serverDays, serverData) {
-            var mi = document.getElementById('emp-mexp-month');
-            var monthVal = mi && mi.value ? mi.value : '';
-            if (!monthVal) return;
-            var storageKey = 'tg_mexp_' + monthVal;
-            var localRaw = localStorage.getItem('tg_mexp_emergency_backup_' + monthVal) || localStorage.getItem(storageKey);
-            if (!localRaw) return;
-            var localData = null;
-            try { localData = JSON.parse(localRaw); } catch (e) { }
-            if (!localData) return;
-            var localDays = empNormalizeDaysData(localData);
-            if (!Array.isArray(localDays) || localDays.length === 0) return;
-
-            var serverItemsCount = 0;
-            (serverDays || []).forEach(function (d) { serverItemsCount += (d.items || []).length; });
-            var localItemsCount = 0;
-            (localDays || []).forEach(function (d) { localItemsCount += (d.items || []).length; });
-
-            if (localItemsCount > serverItemsCount) {
-                var banner = document.getElementById('empMexpRecoveryBanner');
-                if (!banner) {
-                    banner = document.createElement('div');
-                    banner.id = 'empMexpRecoveryBanner';
-                    banner.style.cssText = 'background:linear-gradient(135deg,#fef3c7,#fde68a);border:2px solid #f59e0b;padding:14px 18px;border-radius:12px;margin-bottom:14px;color:#92400e;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px;box-shadow:var(--sh-sm);';
-                    var container = document.getElementById('emp-mexp-days-container');
-                    if (container && container.parentNode) {
-                        container.parentNode.insertBefore(banner, container);
-                    }
-                }
-                banner.innerHTML = '<div>' +
-                    '<div style="font-size:14px;font-weight:900;">⚠️ تم العثور على ' + localItemsCount + ' بند مسجل على جهازك (السيرفر عليه ' + serverItemsCount + ' بند فقط)</div>' +
-                    '<div style="font-size:12px;margin-top:3px;opacity:0.9;">يبدو أن هناك بنوداً قمت بإضافتها سابقاً ولم تُرفع للسيرفر أو تم حفظ نسخة أقدم عليها. يمكنك مزامنتها مع الإدارة الآن بضغطة واحدة:</div>' +
-                    '</div>' +
-                    '<button type="button" class="bt bt-p" style="padding:8px 20px;font-size:13px;font-weight:900;background:#d97706;border-color:#b45309;box-shadow:0 2px 8px rgba(217,119,6,0.35);" onclick="empMexpRecoverAndSync()">' +
-                    '🚀 رفع ومزامنة كل بنود جهازي مع الإدارة فوراً' +
-                    '</button>';
-            }
-        }
-
-        window.empMexpRecoverAndSync = function () {
-            var mi = document.getElementById('emp-mexp-month');
-            var monthVal = mi && mi.value ? mi.value : '';
-            var storageKey = 'tg_mexp_' + monthVal;
-            var localRaw = localStorage.getItem('tg_mexp_emergency_backup_' + monthVal) || localStorage.getItem(storageKey);
-            if (!localRaw) return;
-            var localData = null;
-            try { localData = JSON.parse(localRaw); } catch (e) { }
-            if (!localData) return;
-            var localDays = empNormalizeDaysData(localData);
-            window._empMexpDaysData = localDays;
-            empMexpRenderDays(localDays);
-            empMexpSaveData(true);
-            var banner = document.getElementById('empMexpRecoveryBanner');
-            if (banner) banner.remove();
-            if (typeof tgToast === 'function') tgToast('✅ تم استرجاع ومزامنة جميع بنودك مع الإدارة بنجاح!', 'ok');
-            else if (typeof tgShowToast === 'function') tgShowToast('تم استرجاع ومزامنة جميع بنودك مع الإدارة بنجاح', 'success');
-        };
-
-        window.empMexpLoadData = function (showToastOrForce) {
-            var container = document.getElementById('emp-mexp-days-container');
-            if (!container) return;
-            var mi = document.getElementById('emp-mexp-month');
-            var monthVal = mi && mi.value ? mi.value : '';
-            if (!monthVal) {
-                var d = new Date();
-                monthVal = d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0');
-                if (mi) mi.value = monthVal;
-            }
-
-            window._empMexpLastRemoteTime = 0;
-
-            var storageKey = 'tg_mexp_' + monthVal;
-            var localRaw = localStorage.getItem(storageKey) || localStorage.getItem('tg_mexp_emergency_backup_' + monthVal);
-            var localData = null;
-            try { localData = localRaw ? JSON.parse(localRaw) : null; } catch (e) { }
-
-            if (localData) {
-                if (Array.isArray(localData.auditTrail)) window._empMexpAuditTrail = localData.auditTrail;
-                window._empMexpLastSheetData = localData;
-                var lDays = empNormalizeDaysData(localData);
-                window._empMexpDaysData = lDays;
-                empMexpRenderDays(lDays);
-                empMexpRenderWorkflow(localData);
-                    empMexpUpdateSyncStatus(localData.updatedBy, localData.updatedAt, false);
-                }
-
-            if (window._empMexpRealtimeUnsub) {
-                try { window._empMexpRealtimeUnsub(); } catch (e) { }
-                window._empMexpRealtimeUnsub = null;
-            }
-            if (window._empMexpRealtimeSfUnsub) {
-                try { window._empMexpRealtimeSfUnsub(); } catch (e) { }
-                window._empMexpRealtimeSfUnsub = null;
-            }
-            if (window._empMexpRealtimeAchUnsub) {
-                try { window._empMexpRealtimeAchUnsub(); } catch (e) { }
-                window._empMexpRealtimeAchUnsub = null;
-            }
-
-            if (typeof db !== 'undefined' && db) {
-                if (showToastOrForce === true) {
-                    empMexpUpdateSyncStatus(null, null, true);
-                }
-
-                // 1. Primary listener on mexp_sheets
-                window._empMexpRealtimeUnsub = db.collection('mexp_sheets').doc(monthVal).onSnapshot(function (doc) {
-                    if (doc.metadata && doc.metadata.hasPendingWrites) return;
-                    if (doc.exists) {
-                        empMexpHandleRemoteUpdate(doc.data(), 'mexp_sheets', showToastOrForce);
-                        if (showToastOrForce && typeof tgShowToast === 'function') tgShowToast('تمت مزامنة الشيت بنجاح من السيرفر', 'success');
-                    } else {
-                        db.collection('savedForms').doc('mexp_' + monthVal).get().then(function (sfDoc) {
-                            if (sfDoc.exists) {
-                                empMexpHandleRemoteUpdate(sfDoc.data(), 'savedForms', showToastOrForce);
-                            } else if (localData) {
-                                if (!window._empMexpModalOpen) {
-                                    var lDays = empNormalizeDaysData(localData);
-                                    window._empMexpDaysData = lDays;
-                                    empMexpRenderDays(lDays);
-                                    empMexpRenderWorkflow(localData);
-                                }
-                            } else {
-                                if (!window._empMexpModalOpen) {
-                                    window._empMexpDaysData = [];
-                                    empMexpRenderDays([]);
-                                    empMexpRenderWorkflow({ status: 'draft' });
-                                }
-                            }
-                        }).catch(function () { });
-                    }
-                }, function (err) {
-                    console.warn('emp mexp_sheets listener warning:', err);
-                    if (typeof tgShowToast === 'function') tgShowToast('⚠️ انقطعت المزامنة اللحظية مع السيرفر — اضغط "تحديث"', 'warning');
-                });
-
-                // 2. Dual listener on savedForms
-                window._empMexpRealtimeSfUnsub = db.collection('savedForms').doc('mexp_' + monthVal).onSnapshot(function (sfDoc) {
-                    if (sfDoc.metadata && sfDoc.metadata.hasPendingWrites) return;
-                    if (sfDoc.exists) {
-                        empMexpHandleRemoteUpdate(sfDoc.data(), 'savedForms', showToastOrForce);
-                    }
-                }, function (err) {
-                    console.warn('emp savedForms listener warning:', err);
-                });
-
-                // 3. Fallback listener on achievements (always permitted)
-                window._empMexpRealtimeAchUnsub = db.collection('achievements').doc('mexp_sync_' + monthVal).onSnapshot(function (achDoc) {
-                    if (achDoc.metadata && achDoc.metadata.hasPendingWrites) return;
-                    if (achDoc.exists) {
-                        empMexpHandleRemoteUpdate(achDoc.data(), 'achievements', showToastOrForce);
-                    }
-                }, function (err) {
-                    console.warn('emp achievements listener warning:', err);
-                });
-            } else {
-                empMexpRenderDays(empNormalizeDaysData(localData));
-                empMexpRenderWorkflow(localData);
-            }
-        };
-
-        function empNormalizeDaysData(raw) {
-            if (!raw) return [];
-            if (Array.isArray(raw.days)) return raw.days;
-            if (Array.isArray(raw)) {
-                if (raw.length > 0 && raw[0].items) return raw;
-                var map = {};
-                raw.forEach(function(r) {
-                    var dt = r.date || '';
-                    if (!map[dt]) map[dt] = [];
-                    map[dt].push({ spender: r.spender || '', cat: r.cat || '', qty: r.qty || '1', price: r.price || '' });
-                });
-                var days = [];
-                Object.keys(map).forEach(function(dt) {
-                    days.push({ date: dt, items: map[dt] });
-                });
-                return days;
-            }
-            if (Array.isArray(raw.rows)) {
-                var map = {};
-                raw.rows.forEach(function(r) {
-                    var dt = r.date || '';
-                    if (!map[dt]) map[dt] = [];
-                    map[dt].push({ spender: r.spender || '', cat: r.cat || '', qty: r.qty || '1', price: r.price || '' });
-                });
-                var days = [];
-                Object.keys(map).forEach(function(dt) {
-                    days.push({ date: dt, items: map[dt] });
-                });
-                return days;
-            }
-            return [];
-        }
-
-        function empMexpRenderDays(days) {
-            var container = document.getElementById('emp-mexp-days-container');
-            if (!container) return;
-            container.innerHTML = '';
-
-            window._empMexpDaysData = Array.isArray(days) ? days : [];
-
-            // Sort days chronologically
-            window._empMexpDaysData.sort(function (a, b) {
-                return (a.date || '').localeCompare(b.date || '');
-            });
-
-            var isLocked = (window._empMexpCurrentStatus === 'submitted' || window._empMexpCurrentStatus === 'approved');
-
-            if (window._empMexpDaysData.length === 0) {
-                var emptyCard = document.createElement('div');
-                emptyCard.className = 'mexp-add-day-card';
-                if (!isLocked) {
-                emptyCard.onclick = function () { empMexpOpenNewDayModal(); };
-                emptyCard.innerHTML =
-                    '<div class="mexp-add-day-icon">➕</div>' +
-                    '<div style="font-size:15px;font-weight:900;">تسجيل أول يوم في الشهر</div>' +
-                    '<span style="font-size:11.5px;opacity:0.8;">لا توجد أيام مسجلة بعد. اضغط هنا لتوثيق اليوم الأول ومصروفاته.</span>';
-                } else {
-                    emptyCard.innerHTML =
-                        '<div class="mexp-add-day-icon">🔒</div>' +
-                        '<div style="font-size:15px;font-weight:900;">الشيت قيد المراجعة والاعتماد</div>' +
-                        '<span style="font-size:11.5px;opacity:0.8;">لا يمكن إضافة أيام جديدة حالياً.</span>';
-                }
-                container.appendChild(emptyCard);
-            } else {
-                window._empMexpDaysData.forEach(function (d, idx) {
-                    var dDate = d.date || '';
-                    var dayName = (typeof mexpGetDayName === 'function') ? mexpGetDayName(dDate) : '';
-                    var items = (d.items || []).filter(function (it) {
-                        return (it.spender && it.spender.trim()) || (it.cat && it.cat.trim()) || (parseFloat(it.price || 0) > 0);
-                    });
-
-                    var dayTotal = 0;
-                    items.forEach(function (it) {
-                        var q = parseFloat(it.qty || '1') || 1;
-                        var p = parseFloat(it.price || '0') || 0;
-                        dayTotal += (q * p);
-                    });
-
-                    var snippetsHtml = '';
-                    if (items.length > 0) {
-                        // Show all items in the preview, not just the first 2
-                        snippetsHtml = items.map(function (it) {
-                            var sp = it.spender ? esc(it.spender) + ': ' : '';
-                            var ct = it.cat ? esc(it.cat) : 'مصروف';
-                            var q = parseFloat(it.qty || '1') || 1;
-                            var p = parseFloat(it.price || '0') || 0;
-                            var qtyText = q > 1 ? ' (×' + q + ')' : '';
-                            var priceText = p > 0 ? ' — ' + p.toFixed(2) + ' ج.م' : '';
-                            var subtotal = (q * p).toFixed(2);
-                            return '<div class="mexp-day-item-snippet" style="display:flex;justify-content:space-between;align-items:center;padding:4px 0;border-bottom:1px solid var(--bd);"><span>• ' + sp + ct + qtyText + priceText + '</span><strong style="color:#059669;">' + subtotal + ' ج.م</strong></div>';
-                        }).join('');
-                    } else {
-                        snippetsHtml = '<div style="font-size:11px;color:var(--tx3);font-style:italic;">لم يتم إدخال بنود بعد</div>';
-                    }
-
-                    var card = document.createElement('div');
-                    card.className = 'mexp-day-card';
-                    card.setAttribute('data-day-idx', idx);
-                    card.onclick = function (e) {
-                        if (e && e.target && e.target.closest && e.target.closest('.mexp-day-del-btn')) return;
-                        empMexpEditDayModal(idx);
-                    };
-
-                    var dAuthor = d.updatedBy ? '<span class="mexp-day-author-tag" title="آخر تعديل بواسطة: ' + esc(d.updatedBy) + '">👤 ' + esc(d.updatedBy) + '</span>' : '';
-                    var delBtn = isLocked ? '' : '  <button type="button" class="mexp-day-del-btn" onclick="event.stopPropagation(); empMexpRemoveDay(' + idx + ');" title="حذف هذا اليوم بالكامل">🗑</button>';
-
-                    card.innerHTML =
-                        '<div class="mexp-day-card-top">' +
-                        '  <div class="mexp-day-badge-wrap">' +
-                        '    <span class="mexp-day-name-tag">📅 ' + esc(dayName || 'اليوم') + '</span>' +
-                        '    <span class="mexp-day-date-str">' + esc(dDate) + '</span>' +
-                        (dAuthor ? '    ' + dAuthor : '') +
-                        '  </div>' +
-                        delBtn +
-                        '</div>' +
-                        '<div class="mexp-day-card-body">' +
-                        '  <div class="mexp-day-total-badge">' +
-                        '    <span style="font-size:11.5px;font-weight:700;opacity:0.85;">إجمالي اليوم:</span>' +
-                        '    <span>' + (typeof fmtMoney === 'function' ? fmtMoney(dayTotal) : dayTotal.toFixed(2) + ' ج.م') + '</span>' +
-                        '  </div>' +
-                        '  <div class="mexp-day-card-items-preview">' + snippetsHtml + '</div>' +
-                        '</div>' +
-                        '<div class="mexp-day-card-foot">' +
-                        '  <span class="mexp-day-count-tag">📋 ' + items.length + ' ' + (items.length === 1 ? 'بند مسجل' : (items.length === 2 ? 'بندان' : 'بنود')) + '</span>' +
-                        '  <span class="mexp-day-edit-hint">' + (isLocked ? '🔍 عرض البنود ↗' : '✏️ تعديل / إضافة ↗') + '</span>' +
-                        '</div>';
-
-                    container.appendChild(card);
-                });
-
-                if (!isLocked) {
-                var addCard = document.createElement('div');
-                addCard.className = 'mexp-add-day-card';
-                addCard.onclick = function () { empMexpOpenNewDayModal(); };
-                addCard.innerHTML =
-                    '<div class="mexp-add-day-icon">➕</div>' +
-                    '<div>تسجيل يوم جديد</div>' +
-                    '<span style="font-size:11px;opacity:0.75;font-weight:600;">انقر لفتح نافذة التوثيق</span>';
-                container.appendChild(addCard);
-            }
-            }
-
-            empMexpCalc();
-            empMexpUpdateSpenderSuggestions();
-            empMexpUpdatePrintContainer();
-        }
-
-        window.empMexpAddNewDay = function(dayData, dayIdx) {
-            window._empMexpDaysData = window._empMexpDaysData || [];
-            if (dayData && dayData.date) {
-                window._empMexpDaysData.push(dayData);
-            }
-            empMexpRenderDays(window._empMexpDaysData);
-        };
-
-        window.empMexpToggleDayCard = function(el, evt) {};
-        window.empMexpToggleAllDays = function(expand) {};
-        window.empMexpAddDayItem = function(btnOrTbody, itemData) {};
-        window.empMexpDelRow = function(btn) {};
-        window.empMexpUpdateDayHeader = function(dateInp) {};
-
-        window.empMexpRemoveDay = function(identifier) {
-            window._empMexpDaysData = window._empMexpDaysData || [];
-            var targetIdx = -1;
-            if (typeof identifier === 'number') {
-                targetIdx = identifier;
-            } else if (typeof identifier === 'string') {
-                targetIdx = window._empMexpDaysData.findIndex(function (d) { return d.date === identifier; });
-            }
-
-            if (targetIdx < 0 || targetIdx >= window._empMexpDaysData.length) return;
-            var dStr = window._empMexpDaysData[targetIdx].date;
-            if (confirm('هل أنت متأكد من حذف يوم (' + (dStr || '') + ') بكافة بنوده ومصروفاته؟')) {
-                window._empMexpDaysData.splice(targetIdx, 1);
-                empMexpRenderDays(window._empMexpDaysData);
-                empMexpSaveData(true);
-                if (typeof tgToast === 'function') tgToast('🗑 تم حذف اليوم بنجاح', 'ok');
-                else if (typeof tgShowToast === 'function') tgShowToast('🗑 تم حذف اليوم بنجاح');
-            }
-        };
-
-        window.empMexpCalc = function() {
-            var grandTotal = 0;
-            var daysCount = 0;
-            var itemsCount = 0;
-
-            (window._empMexpDaysData || []).forEach(function (d) {
-                var dayItems = (d.items || []).filter(function (it) {
-                    return (it.spender && it.spender.trim()) || (it.cat && it.cat.trim()) || (parseFloat(it.price || 0) > 0);
-                });
-
-                if (d.date || dayItems.length > 0) {
-                    daysCount++;
-                }
-
-                dayItems.forEach(function (it) {
-                    var q = parseFloat(it.qty || '1') || 1;
-                    var p = parseFloat(it.price || '0') || 0;
-                    grandTotal += (q * p);
-                    itemsCount++;
-                });
-            });
-
-            var gt = document.getElementById('emp-mexp-grand-total');
-            if (gt) gt.innerText = (typeof fmtMoney === 'function' ? fmtMoney(grandTotal) : grandTotal.toFixed(2) + ' ج.م');
-
-            var dc = document.getElementById('emp-mexp-days-count');
-            if (dc) dc.innerText = daysCount + ' يوم';
-
-            var ic = document.getElementById('emp-mexp-items-count');
-            if (ic) ic.innerText = itemsCount + ' بند';
-        };
-
-        window.empMexpUpdateSpenderSuggestions = function() {
-            var datalist = document.getElementById('emp-mexp-spenders-list');
-            if (!datalist) return;
-            var namesSet = new Set();
-
-            (window._empMexpDaysData || []).forEach(function (d) {
-                (d.items || []).forEach(function (it) {
-                    var v = (it.spender || '').trim();
-                    if (v && v.length >= 2) namesSet.add(v);
-                });
-            });
-
-            try {
-                var hist = JSON.parse(localStorage.getItem('tg_mexp_spenders_history') || '[]');
-                if (Array.isArray(hist)) {
-                    hist.forEach(function(n){ if (n) namesSet.add(n.trim()); });
-                }
-            } catch(e){}
-
-            var myName = (typeof TG_USER !== 'undefined' && TG_USER && TG_USER.name) ? TG_USER.name : '';
-            if (myName) namesSet.add(myName);
-
-            var html = '';
-            namesSet.forEach(function(name){
-                html += '<option value="' + esc(name) + '">';
-            });
-            datalist.innerHTML = html;
-        };
-
-        // ─── OFFICIAL PRINT ENGINE (EMPLOYEE) ───────────────────────────────
-        window.empMexpUpdatePrintContainer = function() {
-            var printContainer = document.getElementById('emp-mexp-print-container');
-            if (!printContainer) return;
-            var mi = document.getElementById('emp-mexp-month');
-            var monthVal = mi && mi.value ? mi.value : '';
-            var myName = (typeof TG_USER !== 'undefined' && TG_USER && TG_USER.name) ? TG_USER.name : 'الموظف المسؤول';
-
-            var days = window._empMexpDaysData || [];
-            var grandTotal = 0;
-            var totalItems = 0;
-            var rowsHtml = '';
-            var serial = 1;
-
-            days.forEach(function (d) {
-                var dDate = d.date || '';
-                var dName = (typeof mexpGetDayName === 'function') ? mexpGetDayName(dDate) : '';
-                var dayItems = (d.items || []).filter(function (it) {
-                    return (it.spender && it.spender.trim()) || (it.cat && it.cat.trim()) || (parseFloat(it.price || 0) > 0);
-                });
-
-                if (dayItems.length === 0) return;
-
-                var dayTotal = 0;
-                dayItems.forEach(function (it) {
-                    var q = parseFloat(it.qty || '1') || 1;
-                    var p = parseFloat(it.price || '0') || 0;
-                    var sub = q * p;
-                    dayTotal += sub;
-                    grandTotal += sub;
-                    totalItems++;
-
-                    rowsHtml += '<tr>' +
-                        '<td style="text-align:center;font-weight:bold;">' + (serial++) + '</td>' +
-                        '<td style="text-align:center;font-weight:800;white-space:nowrap;">' + esc(dDate) + (dName ? '<br><span style="font-size:10px;color:#475569;">' + esc(dName) + '</span>' : '') + '</td>' +
-                        '<td style="font-weight:700;">' + esc(it.spender || '-') + '</td>' +
-                        '<td>' + esc(it.cat || '-') + '</td>' +
-                        '<td style="text-align:center;font-weight:700;">' + q + '</td>' +
-                        '<td style="text-align:center;font-weight:700;">' + p.toFixed(2) + '</td>' +
-                        '<td style="text-align:center;font-weight:900;color:#0f172a;">' + sub.toFixed(2) + '</td>' +
-                        '</tr>';
-                });
-
-                if (dayItems.length > 1) {
-                    rowsHtml += '<tr style="background:#f1f5f9;font-weight:800;">' +
-                        '<td colspan="6" style="text-align:left;padding-left:14px;font-size:10.5px;color:#334155;">مجموع يوم ' + esc(dDate) + ' (' + esc(dName) + '):</td>' +
-                        '<td style="text-align:center;font-weight:900;color:#0f172a;">' + dayTotal.toFixed(2) + ' ج.م</td>' +
-                        '</tr>';
-                }
-            });
-
-            if (totalItems === 0) {
-                rowsHtml = '<tr><td colspan="7" style="text-align:center;padding:24px;color:#64748b;font-weight:700;">لا توجد مصروفات مسجلة لهذا الشهر حتى الآن.</td></tr>';
-            }
-
-            var h = '<div style="direction:rtl;padding:10px;font-family:\'Alexandria\',\'Inter\',sans-serif;">' +
-                '  <div style="display:flex;justify-content:space-between;align-items:center;border-bottom:2.5px solid #0f172a;padding-bottom:12px;margin-bottom:16px;">' +
-                '    <div>' +
-                '      <h2 style="margin:0;font-size:18px;font-weight:900;color:#0f172a;">شركة تيك جو للحلول التقنية والأنظمة الذكية</h2>' +
-                '      <div style="font-size:14px;font-weight:800;color:#334155;margin-top:3px;">كشف وحركة المصروفات النقدية الشهري الرسمي (MONTHLY EXPENSES)</div>' +
-                '      <div style="font-size:11px;color:#64748b;margin-top:2px;">شهر: <b>' + esc(monthVal) + '</b> | تاريخ الاستخراج: <b>' + new Date().toLocaleDateString('ar-EG') + '</b></div>' +
-                '    </div>' +
-                '    <div style="text-align:left;border:1.5px solid #cbd5e1;padding:8px 14px;border-radius:8px;background:#f8fafc;">' +
-                '      <div style="font-size:10.5px;color:#64748b;font-weight:700;">المسؤول عن الصرف:</div>' +
-                '      <div style="font-size:13px;font-weight:900;color:#0f172a;margin-top:2px;">' + esc(myName) + '</div>' +
-                '    </div>' +
-                '  </div>' +
-                '  <table class="mexp-print-table" style="width:100%;border-collapse:collapse;">' +
-                '    <thead>' +
-                '      <tr>' +
-                '        <th style="width:35px;text-align:center;">م</th>' +
-                '        <th style="width:115px;text-align:center;">التاريخ واليوم</th>' +
-                '        <th style="width:160px;text-align:right;">اسم الصارف</th>' +
-                '        <th style="text-align:right;">النوع / بيان المصروف</th>' +
-                '        <th style="width:65px;text-align:center;">العدد</th>' +
-                '        <th style="width:100px;text-align:center;">السعر (ج.م)</th>' +
-                '        <th style="width:115px;text-align:center;">الإجمالي (ج.م)</th>' +
-                '      </tr>' +
-                '    </thead>' +
-                '    <tbody>' + rowsHtml + '</tbody>' +
-                '    <tfoot>' +
-                '      <tr style="background:#f8fafc;border-top:2.5px solid #0f172a;font-weight:900;">' +
-                '        <td colspan="6" style="text-align:left;padding:10px 14px;font-size:13px;color:#0f172a;">💰 إجمالي مصروفات الشهر الكامل (' + totalItems + ' بند):</td>' +
-                '        <td style="text-align:center;font-size:14px;color:#0f172a;padding:10px 8px;font-weight:900;">' + (typeof fmtMoney === 'function' ? fmtMoney(grandTotal) : grandTotal.toFixed(2) + ' ج.م') + '</td>' +
-                '      </tr>' +
-                '    </tfoot>' +
-                '  </table>' +
-                '  <div style="margin-top:28px;display:flex;justify-content:space-between;text-align:center;page-break-inside:avoid;gap:16px;">' +
-                '    <div style="flex:1;border:1px solid #cbd5e1;border-radius:8px;padding:12px;background:#f8fafc;">' +
-                '      <div style="font-size:11.5px;font-weight:800;color:#334155;">المسؤول عن الصرف / العهدة</div>' +
-                '      <div style="font-size:11px;color:#64748b;margin-top:2px;">' + esc(myName) + '</div>' +
-                '      <div style="margin-top:35px;border-top:1px dashed #94a3b8;font-size:11px;color:#94a3b8;padding-top:4px;">التوقيع: .....................</div>' +
-                '    </div>' +
-                '    <div style="flex:1;border:1px solid #cbd5e1;border-radius:8px;padding:12px;background:#f8fafc;">' +
-                '      <div style="font-size:11.5px;font-weight:800;color:#334155;">المدير الإداري / المشروعات</div>' +
-                '      <div style="font-size:11px;color:#64748b;margin-top:2px;">مراجعة واعتماد التدقيق</div>' +
-                '      <div style="margin-top:35px;border-top:1px dashed #94a3b8;font-size:11px;color:#94a3b8;padding-top:4px;">التوقيع: .....................</div>' +
-                '    </div>' +
-                '    <div style="flex:1;border:1px solid #cbd5e1;border-radius:8px;padding:12px;background:#f8fafc;">' +
-                '      <div style="font-size:11.5px;font-weight:800;color:#334155;">المدير التنفيذي (CEO)</div>' +
-                '      <div style="font-size:11px;color:#64748b;margin-top:2px;">الاعتماد المالي النهائي</div>' +
-                '      <div style="margin-top:35px;border-top:1px dashed #94a3b8;font-size:11px;color:#94a3b8;padding-top:4px;">التوقيع: .....................</div>' +
-                '    </div>' +
-                '  </div>' +
-                '</div>';
-
-            printContainer.innerHTML = h;
-        };
-
-        window.empMexpPrint = function() {
-            if (typeof empMexpUpdatePrintContainer === 'function') empMexpUpdatePrintContainer();
-            window.print();
-        };
-
-        // ─── DAY POPUP MODAL (EMPLOYEE) ────────────────────────────────────
-        window._empMexpEditingDayIdx = null;
-        window._empMexpModalOpen = false;
-
-        window.empMexpOpenNewDayModal = function() {
-            window._empMexpEditingDayIdx = null;
-            var mi = document.getElementById('emp-mexp-month');
-            var monthVal = mi && mi.value ? mi.value : '';
-            var d = new Date();
-            var todayStr = d.toISOString().split('T')[0];
-            var defDate = todayStr;
-
-            var days = window._empMexpDaysData || [];
-            if (days.length > 0) {
-                var lastVal = days[days.length - 1].date;
-                if (lastVal) {
-                    var lastD = new Date(lastVal);
-                    lastD.setDate(lastD.getDate() + 1);
-                    defDate = lastD.toISOString().split('T')[0];
-                }
-            } else if (monthVal) {
-                defDate = monthVal + '-01';
-            }
-
-            var defSpender = (typeof TG_USER !== 'undefined' && TG_USER && TG_USER.name) ? TG_USER.name : '';
-            empMexpShowModalWithData(defDate, [{ spender: defSpender, cat: '', qty: '1', price: '' }], false, null);
-        };
-
-        window.empMexpEditDayModal = function(dayIdxOrBtn) {
-            var dayIdx = null;
-            if (typeof dayIdxOrBtn === 'number') {
-                dayIdx = dayIdxOrBtn;
-            } else if (dayIdxOrBtn && dayIdxOrBtn.closest) {
-                var card = dayIdxOrBtn.closest('.mexp-day-card');
-                if (card && card.getAttribute('data-day-idx')) {
-                    dayIdx = parseInt(card.getAttribute('data-day-idx'), 10);
-                }
-            }
-
-            if (dayIdx === null || dayIdx === undefined) return;
-            var day = (window._empMexpDaysData || [])[dayIdx];
-            if (!day) return;
-
-            window._empMexpEditingDayIdx = dayIdx;
-            var items = (day.items && day.items.length > 0) ? JSON.parse(JSON.stringify(day.items)) : [{ spender: '', cat: '', qty: '1', price: '' }];
-            empMexpShowModalWithData(day.date, items, true, dayIdx);
-        };
-
-        window.empMexpShowModalWithData = function(dateVal, items, isEdit, dayIdx) {
-            window._empMexpModalOpen = true;
-            window._empMexpEditingDayIdx = (dayIdx !== undefined) ? dayIdx : null;
-            var modal = document.getElementById('empMexpDayModal');
-            if (!modal) {
-                modal = document.createElement('div');
-                modal.id = 'empMexpDayModal';
-                modal.className = 'mexp-modal-overlay';
-                document.body.appendChild(modal);
-            }
-
-            var hist = [];
-            try { hist = JSON.parse(localStorage.getItem('tg_mexp_spenders_history') || '[]'); } catch(e){}
-            var myName = (typeof TG_USER !== 'undefined' && TG_USER && TG_USER.name) ? TG_USER.name : '';
-            if (myName && hist.indexOf(myName) === -1) hist.unshift(myName);
-
-            var dlOptions = '';
-            hist.forEach(function(s){ dlOptions += '<option value="' + esc(s) + '">'; });
-
-            var dayName = (typeof mexpGetDayName === 'function') ? mexpGetDayName(dateVal) : '';
-
-            var rowsHtml = '';
-            (items || []).forEach(function(item, idx){
-                rowsHtml += empMexpModalBuildRowHtml(idx + 1, item);
-            });
-
-            var isLocked = (window._empMexpCurrentStatus === 'submitted' || window._empMexpCurrentStatus === 'approved');
-
-            var h = '<div class="mexp-modal-card">' +
-                '<div class="mexp-modal-head">' +
-                '  <div style="display:flex;align-items:center;gap:12px;">' +
-                '    <div style="font-size:26px;background:rgba(255,255,255,0.12);width:44px;height:44px;border-radius:12px;display:flex;align-items:center;justify-content:center;">📅</div>' +
-                '    <div>' +
-                '      <div style="font-size:16px;font-weight:900;color:#fff;">' + (isLocked ? '🔍 عرض تفاصيل مصروفات اليوم (مغلق أثناء المراجعة/الاعتماد)' : (isEdit ? '✏️ تعديل مصروفات اليوم' : '➕ تسجيل وتوثيق مصروفات يوم جديد')) + '</div>' +
-                '      <div style="font-size:11.5px;opacity:0.85;margin-top:2px;">نافذة سريعة مع المزامنة اللحظية المباشرة مع الإدارة العامة</div>' +
-                '    </div>' +
-                '  </div>' +
-                '  <button type="button" onclick="empMexpCloseDayModal()" style="background:rgba(255,255,255,0.15);border:none;color:#fff;font-size:16px;cursor:pointer;width:34px;height:34px;border-radius:50%;display:flex;align-items:center;justify-content:center;transition:background 0.2s;" title="إغلاق النافذة">✕</button>' +
-                '</div>' +
-                '<div class="mexp-modal-body">' +
-                '  <div style="background:var(--bg2);border:1.5px solid var(--bd);border-radius:12px;padding:12px 16px;margin-bottom:16px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px;">' +
-                '    <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;">' +
-                '      <label style="font-size:13px;font-weight:900;color:var(--tx);white-space:nowrap;">📆 تاريخ اليوم:</label>' +
-                '      <input type="date" id="empMexpModalDate" class="inp" style="padding:7px 12px;font-weight:800;font-size:13px;border-radius:8px;border:1.5px solid var(--bd);' + (isLocked ? 'background:#f1f5f9;cursor:not-allowed;' : '') + '" value="' + esc(dateVal) + '" onchange="empMexpModalDateChanged()"' + (isLocked ? ' disabled' : '') + '>' +
-                '      <span id="empMexpModalDayName" class="mexp-day-name-tag" style="font-size:12.5px;padding:4px 14px;">' + esc(dayName || 'اليوم') + '</span>' +
-                '    </div>' +
-                (!isLocked ? '    <div style="display:flex;align-items:center;gap:6px;">' +
-                '      <button type="button" class="bt bt-o" style="padding:6px 12px;font-size:12px;font-weight:800;border-radius:8px;" onclick="empMexpModalSetQuickDate(0)">📅 اليوم</button>' +
-                '      <button type="button" class="bt bt-o" style="padding:6px 12px;font-size:12px;font-weight:800;border-radius:8px;" onclick="empMexpModalSetQuickDate(-1)">⏪ أمس</button>' +
-                '    </div>' : '') +
-                '  </div>' +
-                '  <datalist id="empMexpModalSpendersDatalist">' + dlOptions + '</datalist>' +
-                '  <div style="border:1.5px solid var(--bd);border-radius:14px;overflow:hidden;background:var(--w);box-shadow:0 1px 4px rgba(0,0,0,0.03);">' +
-                '    <div style="padding:12px 16px;background:var(--bg2);border-bottom:1.5px solid var(--bd);display:flex;align-items:center;justify-content:space-between;">' +
-                '      <strong style="font-size:13.5px;color:var(--tx);font-weight:900;">📋 بنود المصروفات المسجلة لهذا اليوم:</strong>' +
-                (!isLocked ? '      <button type="button" class="bt bt-p" style="padding:6px 16px;font-size:12px;font-weight:900;border-radius:8px;" onclick="empMexpModalAddRow()">➕ إضافة بند</button>' : '') +
-                '    </div>' +
-                '    <div style="overflow-x:auto;max-height:360px;overflow-y:auto;padding:8px;">' +
-                '      <table id="empMexpModalTable">' +
-                '        <thead>' +
-                '          <tr>' +
-                '            <th style="width:40px;text-align:center;">م</th>' +
-                '            <th style="width:28%;">اسم الصارف</th>' +
-                '            <th style="width:34%;">النوع / البيان</th>' +
-                '            <th style="width:80px;text-align:center;">العدد</th>' +
-                '            <th style="width:110px;text-align:center;">السعر (ج.م)</th>' +
-                '            <th style="width:105px;text-align:center;">الإجمالي</th>' +
-                '            <th style="width:40px;text-align:center;"></th>' +
-                '          </tr>' +
-                '        </thead>' +
-                '        <tbody id="empMexpModalTbody">' + rowsHtml + '</tbody>' +
-                '      </table>' +
-                '    </div>' +
-                '  </div>' +
-                '  <div style="margin-top:14px;display:flex;align-items:center;justify-content:space-between;background:linear-gradient(135deg,#0f172a,#1e293b);color:#fff;padding:12px 20px;border-radius:12px;box-shadow:var(--sh-sm);flex-wrap:wrap;gap:10px;">' +
-                '    <div style="font-size:13px;opacity:0.9;font-weight:700;">🔢 عدد البنود: <strong id="empMexpModalItemsCount" style="color:#fbbf24;font-size:15px;margin-right:4px;">0</strong></div>' +
-                '    <div style="font-size:13.5px;font-weight:700;">💰 إجمالي مصروفات اليوم: <strong id="empMexpModalGrandTotal" style="color:#34d399;font-size:17px;margin-right:6px;font-weight:900;">0.00 ج.م</strong></div>' +
-                '  </div>' +
-                '</div>' +
-                '<div class="mexp-modal-foot" style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;">' +
-                (!isLocked ? '  <button type="button" class="bt bt-p mexp-modal-save-btn" style="padding:10px 28px;font-size:13.5px;font-weight:900;background:linear-gradient(135deg, #059669, #047857);color:#fff;border-radius:10px;box-shadow:0 4px 14px rgba(5,150,105,0.35);" onclick="empMexpModalSaveDay()">💾 حفظ اليوم ومزامنة الشيت فوراً</button>' : '<span style="font-size:12px;font-weight:700;color:var(--tx2);">🔒 العرض فقط متاح حالياً</span>') +
-                '  <div class="mexp-modal-foot-actions" style="display:flex;align-items:center;gap:8px;">' +
-                '    <button type="button" class="bt bt-o" style="padding:9px 20px;font-size:12.5px;font-weight:800;border-radius:10px;" onclick="empMexpCloseDayModal()">إغلاق</button>' +
-                ((isEdit && !isLocked) ? '    <button type="button" class="bt bt-d" style="padding:9px 16px;font-size:12px;font-weight:800;border-radius:10px;background:rgba(239,68,68,0.15);color:#ef4444;border-color:rgba(239,68,68,0.3);" onclick="empMexpModalDeleteCurrentDay()">🗑 حذف هذا اليوم</button>' : '') +
-                '</div>' +
-                '</div>';
-
-            modal.innerHTML = h;
-            modal.style.display = 'flex';
-            empMexpModalCalc();
-        };
-
-        window.empMexpModalBuildRowHtml = function(idx, item) {
-            var spender = item && item.spender ? item.spender : '';
-            var cat = item && item.cat ? item.cat : '';
-            var qty = item && item.qty ? item.qty : '1';
-            var price = item && item.price ? item.price : '';
-            var subtotal = (parseFloat(qty || '1') * parseFloat(price || '0')) || 0;
-            return '<tr>' +
-                '<td class="mexp-modal-idx-td">' +
-                '  <div class="mexp-modal-card-mobile-top">' +
-                '    <span class="mexp-modal-idx-pill">بند رقم #<b class="mexp-modal-idx-num">' + idx + '</b></span>' +
-                '    <span class="mexp-modal-mobile-subtotal-badge">💰 الإجمالي: <strong class="mexp-modal-subtotal">' + subtotal.toFixed(2) + '</strong> ج.م</span>' +
-                '    <button type="button" class="mexp-modal-del-btn-mobile" onclick="empMexpModalDelRow(this)" title="حذف هذا البند">🗑 حذف</button>' +
-                '  </div>' +
-                '  <span class="mexp-modal-desktop-idx">' + idx + '</span>' +
-                '</td>' +
-                '<td class="mexp-modal-spender-td">' +
-                '  <label class="mexp-modal-field-lbl">👤 اسم الصارف:</label>' +
-                '  <input type="text" class="mexp-modal-spender" list="empMexpModalSpendersDatalist" placeholder="اكتب اسم الصارف..." value="' + esc(spender) + '">' +
-                '</td>' +
-                '<td class="mexp-modal-cat-td">' +
-                '  <label class="mexp-modal-field-lbl">📝 بيان المصروف / النوع:</label>' +
-                '  <input type="text" class="mexp-modal-cat" placeholder="مثلاً: بوفيه، مواصلات، صيانة، أدوات..." value="' + esc(cat) + '">' +
-                '</td>' +
-                '<td class="mexp-modal-qty-td">' +
-                '  <label class="mexp-modal-field-lbl">🔢 العدد / الكمية:</label>' +
-                '  <input type="number" min="1" step="1" class="mexp-modal-qty" value="' + esc(qty) + '" style="text-align:center;font-weight:700;" oninput="empMexpModalCalc()">' +
-                '</td>' +
-                '<td class="mexp-modal-price-td">' +
-                '  <label class="mexp-modal-field-lbl">💵 السعر للوحدة (ج.م):</label>' +
-                '  <input type="number" min="0" step="0.01" class="mexp-modal-price" value="' + esc(price) + '" style="text-align:center;font-weight:700;" oninput="empMexpModalCalc()">' +
-                '</td>' +
-                '<td class="mexp-modal-subtotal-td">' +
-                '  <span class="mexp-modal-subtotal-val"><strong class="mexp-modal-subtotal">' + subtotal.toFixed(2) + '</strong> ج.م</span>' +
-                '</td>' +
-                '<td class="mexp-modal-del-td" style="text-align:center;">' +
-                '  <button type="button" class="bt bt-d" style="padding:4px 8px;font-size:12px;border-radius:6px;background:rgba(239,68,68,0.12);color:#ef4444;border-color:rgba(239,68,68,0.25);" onclick="empMexpModalDelRow(this)" title="حذف هذا البند">✕</button>' +
-                '</td>' +
-                '</tr>';
-        };
-
-        window.empMexpModalAddRow = function() {
-            var tbody = document.getElementById('empMexpModalTbody');
-            if (!tbody) return;
-            var idx = tbody.children.length + 1;
-            var tr = document.createElement('tr');
-            var myName = (typeof TG_USER !== 'undefined' && TG_USER && TG_USER.name) ? TG_USER.name : '';
-            tr.innerHTML = empMexpModalBuildRowHtml(idx, { spender: myName, qty: '1' }).replace(/^<tr>/, '').replace(/<\/tr>$/, '');
-            tbody.appendChild(tr);
-            empMexpModalCalc();
-            var inp = tr.querySelector('.mexp-modal-spender');
-            if (inp) inp.focus();
-        };
-
-        window.empMexpModalDelRow = function(btn) {
-            var tr = btn ? btn.closest('tr') : null;
-            var tbody = document.getElementById('empMexpModalTbody');
-            if (tr) tr.remove();
-            if (tbody) {
-                tbody.querySelectorAll('tr').forEach(function(r, i){
-                    r.querySelectorAll('.mexp-modal-idx, .mexp-modal-desktop-idx, .mexp-modal-idx-num').forEach(function (idxEl) {
-                        idxEl.innerText = i + 1;
-                    });
-                });
-            }
-            empMexpModalCalc();
-        };
-
-        window.empMexpModalDateChanged = function() {
-            var dateInp = document.getElementById('empMexpModalDate');
-            var badge = document.getElementById('empMexpModalDayName');
-            if (dateInp && badge) {
-                badge.innerText = (typeof mexpGetDayName === 'function') ? (mexpGetDayName(dateInp.value) || 'اليوم') : 'اليوم';
-            }
-        };
-
-        window.empMexpModalSetQuickDate = function(offsetDays) {
-            var d = new Date();
-            if (offsetDays) d.setDate(d.getDate() + offsetDays);
-            var str = d.toISOString().split('T')[0];
-            var dateInp = document.getElementById('empMexpModalDate');
-            if (dateInp) {
-                dateInp.value = str;
-                empMexpModalDateChanged();
-            }
-        };
-
-        window.empMexpModalCalc = function() {
-            var total = 0;
-            var count = 0;
-            var tbody = document.getElementById('empMexpModalTbody');
-            if (tbody) {
-                tbody.querySelectorAll('tr').forEach(function(tr){
-                    var qInp = tr.querySelector('.mexp-modal-qty');
-                    var pInp = tr.querySelector('.mexp-modal-price');
-                    var q = parseFloat(qInp ? qInp.value : '1') || 1;
-                    var p = parseFloat(pInp ? pInp.value : '0') || 0;
-                    var sub = q * p;
-                    tr.querySelectorAll('.mexp-modal-subtotal').forEach(function(subEl) {
-                        subEl.innerText = sub.toFixed(2);
-                    });
-                    var spenderInp = tr.querySelector('.mexp-modal-spender');
-                    var catInp = tr.querySelector('.mexp-modal-cat');
-                    if ((spenderInp && spenderInp.value.trim()) || (catInp && catInp.value.trim()) || p > 0) {
-                        count++;
-                    }
-                    total += sub;
-                });
-            }
-            var cntEl = document.getElementById('empMexpModalItemsCount');
-            var totEl = document.getElementById('empMexpModalGrandTotal');
-            if (cntEl) cntEl.innerText = count;
-            if (totEl) totEl.innerText = (typeof fmtMoney === 'function' ? fmtMoney(total) : total.toFixed(2) + ' ج.م');
-        };
-
-        window.empMexpCloseDayModal = function() {
-            window._empMexpModalOpen = false;
-            window._empMexpEditingDayIdx = null;
-            var modal = document.getElementById('empMexpDayModal');
-            if (modal) modal.style.display = 'none';
-            if (window._empMexpPendingRemoteDays) {
-                window._empMexpDaysData = window._empMexpPendingRemoteDays;
-                window._empMexpPendingRemoteDays = null;
-                empMexpRenderDays(window._empMexpDaysData);
-            }
-        };
-
-        window.empMexpModalSaveDay = function() {
-            var dateInp = document.getElementById('empMexpModalDate');
-            var dateVal = dateInp ? dateInp.value.trim() : '';
-            if (!dateVal) {
-                alert('⚠️ يرجى تحديد تاريخ اليوم أولاً.');
-                return;
-            }
-
-            var mi = document.getElementById('emp-mexp-month');
-            if (mi && !mi.value && dateVal.length >= 7) {
-                mi.value = dateVal.substring(0, 7);
-            }
-
-            var items = [];
-            var tbody = document.getElementById('empMexpModalTbody');
-            var myName = (typeof TG_USER !== 'undefined' && TG_USER && TG_USER.name) ? TG_USER.name : 'الموظف المسؤول';
-
-            if (tbody) {
-                tbody.querySelectorAll('tr').forEach(function(tr){
-                    var spender = (tr.querySelector('.mexp-modal-spender') ? tr.querySelector('.mexp-modal-spender').value : '').trim();
-                    var cat = (tr.querySelector('.mexp-modal-cat') ? tr.querySelector('.mexp-modal-cat').value : '').trim();
-                    var qty = (tr.querySelector('.mexp-modal-qty') ? tr.querySelector('.mexp-modal-qty').value : '1').trim() || '1';
-                    var price = (tr.querySelector('.mexp-modal-price') ? tr.querySelector('.mexp-modal-price').value : '').trim();
-                    if (spender || cat || price) {
-                        items.push({ spender: spender, cat: cat, qty: qty, price: price, by: myName });
-                    }
-                });
-            }
-
-            if (items.length === 0) {
-                var defSpender = myName || '';
-                items.push({ spender: defSpender, cat: '', qty: '1', price: '', by: myName });
-            }
-
-            window._empMexpDaysData = window._empMexpDaysData || [];
-
-            var dayObj = {
-                date: dateVal,
-                items: items,
-                updatedBy: myName,
-                updatedAt: new Date().toISOString()
-            };
-
-            if (window._empMexpEditingDayIdx !== null && window._empMexpEditingDayIdx !== undefined && window._empMexpDaysData[window._empMexpEditingDayIdx]) {
-                window._empMexpDaysData[window._empMexpEditingDayIdx] = dayObj;
-            } else {
-                var existingIdx = window._empMexpDaysData.findIndex(function (d) { return d.date === dateVal; });
-                if (existingIdx !== -1) {
-                    window._empMexpDaysData[existingIdx] = dayObj;
-                } else {
-                    window._empMexpDaysData.push(dayObj);
-                }
-            }
-
-            window._empMexpDaysData.sort(function (a, b) {
-                return (a.date || '').localeCompare(b.date || '');
-            });
-
-            empMexpCloseDayModal();
-            empMexpRenderDays(window._empMexpDaysData);
-            empMexpSaveData(true);
-            if (typeof tgToast === 'function') tgToast('✅ تم حفظ يوم (' + dateVal + ') ومزامنة الشيت فوراً مع الإدارة!', 'ok');
-            else if (typeof tgShowToast === 'function') tgShowToast('✅ تم حفظ يوم (' + dateVal + ') ومزامنة الشيت فوراً مع الإدارة!', 'success');
-        };
-
-        window.empMexpModalDeleteCurrentDay = function() {
-            if (window._empMexpEditingDayIdx === null || window._empMexpEditingDayIdx === undefined) return;
-            var day = (window._empMexpDaysData || [])[window._empMexpEditingDayIdx];
-            var dStr = day ? day.date : '';
-            if (confirm('هل أنت متأكد من حذف يوم (' + (dStr || '') + ') بكافة بنوده ومصروفاته نهائياً؟')) {
-                var idx = window._empMexpEditingDayIdx;
-                empMexpCloseDayModal();
-                empMexpRemoveDay(idx);
-            }
-        };
-
-        window.empMexpSaveData = function(skipMerge) {
-            var mi = document.getElementById('emp-mexp-month');
-            var monthVal = mi && mi.value ? mi.value : '';
-            if (!monthVal && window._empMexpDaysData && window._empMexpDaysData.length > 0) {
-                monthVal = window._empMexpDaysData[0].date ? window._empMexpDaysData[0].date.substring(0, 7) : '';
-            }
-            if (!monthVal) {
-                var d = new Date();
-                monthVal = d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0');
-            }
-            if (mi && !mi.value) mi.value = monthVal;
-
-            var myName = (typeof TG_USER !== 'undefined' && TG_USER && TG_USER.name) ? TG_USER.name : 'الموظف المسؤول';
-
-            var days = (window._empMexpDaysData || []).map(function (d) {
-                return {
-                    date: d.date || '',
-                    updatedBy: d.updatedBy || myName,
-                    updatedAt: d.updatedAt || new Date().toISOString(),
-                    items: (d.items || []).filter(function (it) {
-                        return (it.spender && it.spender.trim()) || (it.cat && it.cat.trim()) || (parseFloat(it.price || 0) > 0);
-                    }).map(function (it) {
-                        return {
-                            spender: it.spender || '',
-                            cat: it.cat || '',
-                            qty: it.qty || '1',
-                            price: it.price || '',
-                            by: it.by || d.updatedBy || myName
-                        };
-                    })
-                };
-            }).filter(function (d) {
-                return d.date || d.items.length > 0;
-            });
-
-            var spendersSet = new Set();
-            var grandTotal = 0;
-
-            days.forEach(function(d){
-                (d.items || []).forEach(function(it){
-                    var p = parseFloat(it.price || '0') || 0;
-                    var q = parseFloat(it.qty || '1') || 1;
-                    grandTotal += (p * q);
-                    if (it.spender && it.spender.trim()) spendersSet.add(it.spender.trim());
-                });
-            });
-
-            var storageKey = 'tg_mexp_' + monthVal;
-            var currentStatus = (window._empMexpLastSheetData && window._empMexpLastSheetData.status) ? window._empMexpLastSheetData.status : (window._empMexpCurrentStatus || 'draft');
-
-            // Maintain audit trail
-            var audit = Array.isArray(window._empMexpAuditTrail) ? JSON.parse(JSON.stringify(window._empMexpAuditTrail)) : [];
-            audit.unshift({
-                by: myName,
-                role: 'employee',
-                at: new Date().toISOString(),
-                total: grandTotal,
-                daysCount: days.length,
-                action: 'تسجيل وتعديل بنود المصروفات بواسطة الموظف'
-            });
-            if (audit.length > 20) audit = audit.slice(0, 20);
-            window._empMexpAuditTrail = audit;
-
-            var sheetData = {
-                month: monthVal,
-                days: days,
-                grandTotal: grandTotal,
-                status: currentStatus,
-                updatedBy: myName,
-                updatedAt: new Date().toISOString(),
-                auditTrail: audit
-            };
-            try {
-            localStorage.setItem(storageKey, JSON.stringify(sheetData));
-                localStorage.setItem('tg_mexp_emergency_backup_' + monthVal, JSON.stringify(sheetData));
-            } catch (e) { }
-
-            try {
-                var hist = JSON.parse(localStorage.getItem('tg_mexp_spenders_history') || '[]');
-                spendersSet.forEach(function(s){ if (hist.indexOf(s) === -1) hist.push(s); });
-                localStorage.setItem('tg_mexp_spenders_history', JSON.stringify(hist));
-            } catch(e){}
-
-            if (typeof db !== 'undefined' && db) {
-                // تحقق مبكر من حالة تسجيل الدخول — انتهاء الجلسة من أكتر أسباب فشل الحفظ بصمت
-                var authOk = true;
-                try {
-                    authOk = !!(typeof auth !== 'undefined' && auth && auth.currentUser);
-                } catch (eAuth) { authOk = false; }
-
-                if (!authOk) {
-                    empMexpMarkUnsynced('انتهت جلسة الدخول');
-                    if (typeof tgToast === 'function') tgToast('⚠️ جلسة الدخول منتهية — البيانات محفوظة على جهازك فقط ولن يراها الأدمن. سجّل الدخول من جديد ثم اضغط "تحديث".', 'warn');
-                    else if (typeof tgShowToast === 'function') tgShowToast('⚠️ جلسة الدخول منتهية — البيانات لم تُرفع للسيرفر. سجّل الدخول من جديد.', 'warning');
-                    return;
-                }
-
-                var sheetDocData = {
-                    formId: 'mexp',
-                    month: monthVal,
-                    days: days,
-                    grandTotal: grandTotal,
-                    status: currentStatus,
-                    updatedBy: myName,
-                    updatedAt: firebase.firestore.FieldValue.serverTimestamp(),
-                    auditTrail: audit
-                };
-
-                var p1 = db.collection('mexp_sheets').doc(monthVal).set(sheetDocData, { merge: true });
-                var p2 = db.collection('savedForms').doc('mexp_' + monthVal).set(sheetDocData, { merge: true });
-                var p3 = db.collection('achievements').doc('mexp_sync_' + monthVal).set(sheetDocData, { merge: true });
-
-                Promise.allSettled([p1, p2, p3]).then(function(results) {
-                    var failures = results.filter(function (r) { return r.status === 'rejected'; });
-
-                    if (failures.length === 3) {
-                        // فشل حقيقي في الرفع عبر القنوات التلاتة
-                        var reason = (failures[0].reason && failures[0].reason.message) ? failures[0].reason.message : 'خطأ غير معروف';
-                        console.error('empMexpSaveData: real sync failure:', failures.map(function (f) { return f.reason; }));
-                        empMexpMarkUnsynced(reason);
-                        if (typeof tgToast === 'function') tgToast('⚠️ فشلت المزامنة مع السيرفر (' + reason + ') — البيانات محفوظة على جهازك فقط. اضغط "تحديث" لإعادة المحاولة.', 'warn');
-                        else if (typeof tgShowToast === 'function') tgShowToast('⚠️ فشلت المزامنة مع السيرفر — البيانات محفوظة محلياً فقط', 'warning');
-                        return;
-                    }
-                    empMexpUpdateSyncStatus(myName, new Date(), false);
-                    if (typeof tgToast === 'function') tgToast('✅ تم حفظ المسودة ومزامنتها بنجاح!', 'ok');
-                    else if (typeof tgShowToast === 'function') tgShowToast('تم حفظ المسودة ومزامنتها بنجاح', 'success');
-                }).catch(function(err) {
-                    // Promise.allSettled نفسها بالكاد بترفض، لكن سايبينها كخط دفاع أخير
-                    console.error('empMexpSaveData unexpected error:', err);
-                    empMexpMarkUnsynced(err && err.message ? err.message : 'خطأ غير متوقع');
-                    if (typeof tgShowToast === 'function') tgShowToast('⚠️ فشلت المزامنة — تم الحفظ محلياً فقط', 'warning');
-                });
-            } else {
-                empMexpMarkUnsynced('لا يوجد اتصال بقاعدة البيانات');
-                if (typeof tgShowToast === 'function') tgShowToast('⚠️ لا يوجد اتصال بالسيرفر — تم حفظ شيت المصروفات على جهازك فقط لشهر ' + monthVal, 'warning');
-            }
-        };
-
-        // يعرض حالة "غير متزامن" بوضوح للموظف بدل ما يفتكر إن كل حاجة تمام
-        function empMexpMarkUnsynced(reasonText) {
-            var syncInfo = document.getElementById('empMexpSyncInfo');
-            if (!syncInfo) return;
-            syncInfo.innerHTML = '<span class="mexp-sync-badge" style="background:#fef2f2;border-color:#fca5a5;color:#991b1b;">' +
-                '<span class="mexp-pulse-dot" style="background:#dc2626;"></span> ⚠️ لم تتم المزامنة مع السيرفر' +
-                (reasonText ? ' (' + esc(reasonText) + ')' : '') +
-                ' — البيانات محفوظة على جهازك فقط</span>' +
-                '<button type="button" class="bt bt-o" style="margin-right:6px;" onclick="empMexpSaveData(true)">🔄 إعادة المحاولة</button>';
-        }
-
-        function initEmpMexpAccessCheck() {
-            var tab = document.getElementById('empTabMexp');
-            var drawer = document.getElementById('empDrawerMexp');
+        window.initEmpPurchasesAccessCheck = function () {
+            var tab = document.getElementById('empTabPurchases') || document.getElementById('empTabMexp');
+            var drawer = document.getElementById('empDrawerPurchases') || document.getElementById('empDrawerMexp');
 
             function applyAccess(cfg) {
                 var user = (typeof TG_USER !== 'undefined' && TG_USER) ? TG_USER : null;
                 var currentUid = user ? (user.uid || '') : '';
                 var currentEmail = user ? (user.email || '').toLowerCase().trim() : '';
                 var currentName = user ? (user.name || '').trim() : '';
+                var currentEmpId = user ? String(user.empId || '') : '';
+                var currentJob = user ? (user.jobTitle || '').toLowerCase() : '';
 
                 var hasAccess = false;
-                var targetUid = (cfg && (cfg.mexpAssignedUid || cfg.assignedUid)) ? (cfg.mexpAssignedUid || cfg.assignedUid) : '';
-                var targetName = (cfg && (cfg.mexpAssignedName || cfg.assignedName)) ? (cfg.mexpAssignedName || cfg.assignedName).trim() : '';
-                var targetEmail = (cfg && (cfg.mexpAssignedEmail || cfg.assignedEmail)) ? (cfg.mexpAssignedEmail || cfg.assignedEmail).toLowerCase().trim() : '';
+                var targetUid = (cfg && (cfg.purchaseAssignedUid || cfg.mexpAssignedUid || cfg.assignedUid)) ? (cfg.purchaseAssignedUid || cfg.mexpAssignedUid || cfg.assignedUid) : '';
+                var targetName = (cfg && (cfg.purchaseAssignedName || cfg.mexpAssignedName || cfg.assignedName)) ? (cfg.purchaseAssignedName || cfg.mexpAssignedName || cfg.assignedName).trim() : '';
+                var targetEmail = (cfg && (cfg.purchaseAssignedEmail || cfg.mexpAssignedEmail || cfg.assignedEmail)) ? (cfg.purchaseAssignedEmail || cfg.mexpAssignedEmail || cfg.assignedEmail).toLowerCase().trim() : '';
 
                 if (user) {
                     if (user.role === 'admin' || user.isAdmin || user.role === 'tech_admin') {
@@ -5521,11 +2980,20 @@
                         hasAccess = true;
                     } else if (targetEmail && currentEmail && targetEmail === currentEmail) {
                         hasAccess = true;
+                    } else if (currentEmpId === '10' ||
+                               currentName.includes('كيرلس') ||
+                               currentName.includes('كيرلوس') ||
+                               currentEmail.includes('kirlos') ||
+                               currentEmail.includes('kerolos') ||
+                               currentJob.includes('مساعد مكتبي') ||
+                               currentJob.includes('office boy') ||
+                               currentJob.includes('مشتريات') ||
+                               currentJob.includes('أوفيس')) {
+                        hasAccess = true;
                     } else if (targetName && currentName && (
                         targetName === currentName ||
                         targetName.includes(currentName) ||
-                        currentName.includes(targetName) ||
-                        (targetName.includes('كيرلس') && (currentName.includes('كيرلس') || currentEmail.includes('kirlos') || currentEmail.includes('kerolos')))
+                        currentName.includes(targetName)
                     )) {
                         hasAccess = true;
                     }
@@ -5536,31 +3004,572 @@
             }
 
             try {
-                var cachedCfg = JSON.parse(localStorage.getItem('tg_mexp_config') || '{}');
+                var cachedCfg = JSON.parse(localStorage.getItem('tg_purchases_config') || localStorage.getItem('tg_mexp_config') || '{}');
                 applyAccess(cachedCfg);
-            } catch(e){}
+            } catch (e) {}
 
             if (window._appSettingsCache) {
                 applyAccess(window._appSettingsCache);
             }
 
-            if (!window._mexpAccessListenerInit && typeof db !== 'undefined' && db && db.collection) {
-                window._mexpAccessListenerInit = true;
-                db.collection('system').doc('appSettings').onSnapshot(function(doc) {
+            if (!window._empPurchasesAccessListenerInit && typeof db !== 'undefined' && db && db.collection) {
+                window._empPurchasesAccessListenerInit = true;
+                db.collection('system').doc('appSettings').onSnapshot(function (doc) {
                     if (doc.exists) {
                         var cfg = doc.data() || {};
-                        localStorage.setItem('tg_mexp_config', JSON.stringify(cfg));
+                        localStorage.setItem('tg_purchases_config', JSON.stringify(cfg));
                         window._appSettingsCache = Object.assign(window._appSettingsCache || {}, cfg);
                         applyAccess(cfg);
                     }
-                }, function(e){});
+                }, function (e) {});
             }
+        };
+
+        window.empLoadPurchasesPage = function (container) {
+            if (!container) container = document.getElementById('epg-purchases') || document.getElementById('epg-mexp');
+            if (!container) return;
+
+            var d = new Date();
+            var curMonth = d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0');
+
+            var h = '<div class="pch-container">' +
+                '  <div class="set-sec" style="background:var(--w);border:1px solid var(--bd);border-radius:14px;padding:14px 18px;margin-bottom:0;box-shadow:var(--sh-sm);">' +
+                '    <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:12px;">' +
+                '      <div>' +
+                '        <div style="font-size:16px;font-weight:900;color:var(--tx);display:flex;align-items:center;gap:8px;">' +
+                '          <span>🛒 مشتريات الشركة ونثريات الأوفيس</span>' +
+                '          <span style="font-size:11px;background:rgba(16,185,129,0.12);color:#10b981;padding:2px 10px;border-radius:20px;font-weight:800;">تسجيل فوري مباشر</span>' +
+                '        </div>' +
+                '        <div style="font-size:12px;color:var(--tx3);margin-top:2px;">تسجيل وحصر فواتير ومشتريات الأوفيس والشركة بمزامنة فورية مع الإدارة العامة</div>' +
+                '      </div>' +
+                '      <div style="display:flex;align-items:center;gap:8px;">' +
+                '        <label style="font-size:12.5px;font-weight:800;color:var(--tx);white-space:nowrap;">📅 الشهر:</label>' +
+                '        <input type="month" id="emp-pch-month" class="inp" style="padding:7px 14px;font-weight:800;border-radius:10px;" value="' + curMonth + '" onchange="empPurchasesLoadData()">' +
+                '      </div>' +
+                '    </div>' +
+                '    <div style="margin-top:10px;border-top:1px dashed var(--bd);padding-top:8px;font-size:12px;color:#059669;font-weight:700;display:flex;align-items:center;gap:6px;">' +
+                '      <span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:#10b981;box-shadow:0 0 6px #10b981;"></span>' +
+                '      <span>⚡ متزامن لحظياً مع الإدارة — أي مشترى يُسجل يصل للإدارة فوراً</span>' +
+                '    </div>' +
+                '  </div>' +
+
+                '  <div class="mexp-stats-grid">' +
+                '    <div class="mexp-stat-card primary">' +
+                '      <div class="mexp-stat-icon">💰</div>' +
+                '      <div class="mexp-stat-info">' +
+                '        <span class="mexp-stat-label">إجمالي مشتريات هذا الشهر</span>' +
+                '        <span id="emp-pch-grand-total" class="mexp-stat-value">0.00 ج.م</span>' +
+                '      </div>' +
+                '    </div>' +
+                '    <div class="mexp-stat-card secondary">' +
+                '      <div class="mexp-stat-icon">📅</div>' +
+                '      <div class="mexp-stat-info">' +
+                '        <span class="mexp-stat-label">مشتريات اليوم</span>' +
+                '        <span id="emp-pch-today-total" class="mexp-stat-value" style="color:#059669;">0.00 ج.م</span>' +
+                '      </div>' +
+                '    </div>' +
+                '    <div class="mexp-stat-card secondary">' +
+                '      <div class="mexp-stat-icon">📋</div>' +
+                '      <div class="mexp-stat-info">' +
+                '        <span class="mexp-stat-label">عدد الفواتير والعمليات</span>' +
+                '        <span id="emp-pch-items-count" class="mexp-stat-value" style="color:#0284c7;">0 مشترى</span>' +
+                '      </div>' +
+                '    </div>' +
+                '  </div>' +
+
+                '  <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;">' +
+                '    <button type="button" class="bt bt-p" style="padding:12px 26px;font-size:14px;font-weight:900;background:linear-gradient(135deg,#059669,#047857);color:#fff;border-radius:12px;box-shadow:0 4px 14px rgba(5,150,105,0.35);display:flex;align-items:center;gap:8px;cursor:pointer;" onclick="empOpenPurchaseModal()">' +
+                '      <span style="font-size:18px;">➕</span>' +
+                '      <span>تسجيل مشترى جديد</span>' +
+                '    </button>' +
+                '    <div style="display:flex;align-items:center;gap:8px;">' +
+                '      <button type="button" class="bt bt-g" style="padding:9px 18px;font-weight:800;font-size:12.5px;border-radius:10px;" onclick="empPrintPurchases()">🖨 طباعة الكشف الشهري</button>' +
+                '      <button type="button" class="bt bt-o" style="padding:9px 14px;font-weight:800;font-size:12.5px;border-radius:10px;" onclick="empPurchasesLoadData(true)" title="تحديث من السيرفر">🔄 تحديث</button>' +
+                '    </div>' +
+                '  </div>' +
+
+                '  <div class="pch-category-chips" id="empPchCategoryChips">' +
+                '    <div class="pch-chip active" onclick="empFilterPurchasesCategory(\'\', this)">الكل</div>' +
+                '    <div class="pch-chip" onclick="empFilterPurchasesCategory(\'بوفيه وضيافة\', this)">☕ بوفيه وضيافة</div>' +
+                '    <div class="pch-chip" onclick="empFilterPurchasesCategory(\'أدوات نظافة\', this)">🧼 أدوات نظافة</div>' +
+                '    <div class="pch-chip" onclick="empFilterPurchasesCategory(\'مستلزمات مكتبية\', this)">📄 مستلزمات مكتبية</div>' +
+                '    <div class="pch-chip" onclick="empFilterPurchasesCategory(\'صيانة ونثريات\', this)">🔧 صيانة ونثريات</div>' +
+                '    <div class="pch-chip" onclick="empFilterPurchasesCategory(\'أخرى\', this)">📦 أخرى</div>' +
+                '  </div>' +
+
+                '  <div id="emp-pch-list-container"></div>' +
+                '  <div id="emp-pch-modal-container"></div>' +
+                '  <div id="emp-pch-print-container" style="display:none;"></div>' +
+                '</div>';
+
+            container.innerHTML = h;
+            empPurchasesLoadData();
+        };
+
+        window.empPurchasesLoadData = function (force) {
+            var mInp = document.getElementById('emp-pch-month');
+            var d = new Date();
+            var monthVal = (mInp && mInp.value) ? mInp.value : (d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0'));
+
+            var listContainer = document.getElementById('emp-pch-list-container');
+            if (listContainer && (!window._empPurchasesList || window._empPurchasesList.length === 0)) {
+                listContainer.innerHTML = '<div style="text-align:center;padding:30px;color:var(--tx3);"><span style="font-size:24px;">⏳</span><div style="margin-top:8px;font-weight:700;">جاري تحميل مشتريات الشهر...</div></div>';
+            }
+
+            if (window._empPurchasesUnsubscribe) {
+                try { window._empPurchasesUnsubscribe(); } catch (e) {}
+                window._empPurchasesUnsubscribe = null;
+            }
+
+            if (typeof db === 'undefined' || !db || !db.collection) {
+                if (listContainer) listContainer.innerHTML = '<div class="empty-hint">قاعدة البيانات غير متصلة حالياً</div>';
+                return;
+            }
+
+            window._empPurchasesUnsubscribe = db.collection('company_purchases')
+                .where('month', '==', monthVal)
+                .onSnapshot(function (snapshot) {
+                    var items = [];
+                    snapshot.forEach(function (doc) {
+                        var data = doc.data() || {};
+                        data.id = doc.id;
+                        items.push(data);
+                    });
+
+                    // Sort by date descending, then createdAt descending
+                    items.sort(function (a, b) {
+                        if (a.date !== b.date) {
+                            return (b.date || '').localeCompare(a.date || '');
+                        }
+                        var ta = a.createdAt && a.createdAt.toMillis ? a.createdAt.toMillis() : (a.timestamp || 0);
+                        var tb = b.createdAt && b.createdAt.toMillis ? b.createdAt.toMillis() : (b.timestamp || 0);
+                        return tb - ta;
+                    });
+
+                    window._empPurchasesList = items;
+                    empPurchasesUpdateStats(items, monthVal);
+                    empRenderPurchasesList();
+                }, function (err) {
+                    console.error('empPurchasesLoadData error:', err);
+                    if (listContainer) {
+                        listContainer.innerHTML = '<div class="empty-hint" style="color:#ef4444;">تعذر تحميل المشتريات: ' + (err.message || 'خطأ غير معروف') + '</div>';
+                    }
+                });
+        };
+
+        function empPurchasesUpdateStats(items, monthVal) {
+            var grandTotal = 0;
+            var todayTotal = 0;
+            var d = new Date();
+            var todayStr = d.toISOString().split('T')[0];
+
+            items.forEach(function (it) {
+                var amt = parseFloat(it.amount) || 0;
+                grandTotal += amt;
+                if (it.date === todayStr) {
+                    todayTotal += amt;
+                }
+            });
+
+            var grandEl = document.getElementById('emp-pch-grand-total');
+            var todayEl = document.getElementById('emp-pch-today-total');
+            var countEl = document.getElementById('emp-pch-items-count');
+
+            if (grandEl) grandEl.textContent = grandTotal.toFixed(2) + ' ج.م';
+            if (todayEl) todayEl.textContent = todayTotal.toFixed(2) + ' ج.م';
+            if (countEl) countEl.textContent = items.length + ' مشترى';
         }
 
-        window.initEmpMexpAccessCheck = initEmpMexpAccessCheck;
+        window.empFilterPurchasesCategory = function (cat, el) {
+            window._empPurchasesFilterCat = cat || '';
+            var chips = document.querySelectorAll('#empPchCategoryChips .pch-chip');
+            chips.forEach(function (c) { c.classList.remove('active'); });
+            if (el) el.classList.add('active');
+            empRenderPurchasesList();
+        };
+
+        window.empRenderPurchasesList = function () {
+            var listContainer = document.getElementById('emp-pch-list-container');
+            if (!listContainer) return;
+
+            var items = window._empPurchasesList || [];
+            var selectedCat = window._empPurchasesFilterCat || '';
+
+            if (selectedCat) {
+                items = items.filter(function (it) { return (it.category || '') === selectedCat; });
+            }
+
+            if (items.length === 0) {
+                listContainer.innerHTML =
+                    '<div style="text-align:center;padding:40px 20px;background:var(--w);border:1.5px dashed var(--bd);border-radius:14px;margin-top:10px;">' +
+                    '  <div style="font-size:38px;margin-bottom:8px;">🛒</div>' +
+                    '  <div style="font-size:15px;font-weight:800;color:var(--tx);">لا توجد مشتريات مسجلة ' + (selectedCat ? 'في هذا التصنيف' : 'لهذا الشهر') + '</div>' +
+                    '  <div style="font-size:12px;color:var(--tx3);margin-top:4px;margin-bottom:16px;">اضغط على "تسجيل مشترى جديد" لإضافة أول مشترى وتوثيقه فوراً</div>' +
+                    '  <button type="button" class="bt bt-p" style="padding:9px 20px;font-weight:900;border-radius:10px;background:#059669;" onclick="empOpenPurchaseModal()">' +
+                    '    ➕ تسجيل مشترى الآن' +
+                    '  </button>' +
+                    '</div>';
+                return;
+            }
+
+            var h = '<div class="pch-items-wrap" style="display:flex;flex-direction:column;gap:10px;margin-top:10px;">';
+            items.forEach(function (it, idx) {
+                var dayName = empPchGetDayName(it.date);
+                var isApproved = (it.status === 'approved');
+                var statusHtml = isApproved
+                    ? '<span class="pch-status-badge approved">✅ معتمد ومصروف</span>'
+                    : '<span class="pch-status-badge pending">⏳ قيد المراجعة</span>';
+
+                var cat = it.category || 'نثريات عامة';
+                var amt = (parseFloat(it.amount) || 0).toFixed(2);
+
+                h += '<div class="pch-item-card">' +
+                    '  <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;">' +
+                    '    <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;">' +
+                    '      <span style="font-size:11.5px;font-weight:900;background:var(--bg2);color:var(--tx2);padding:3px 10px;border-radius:8px;border:1px solid var(--bd);">📅 ' + (dayName ? dayName + ' ' : '') + esc(it.date || '') + '</span>' +
+                    '      <span style="font-size:11px;font-weight:800;background:rgba(2,132,199,0.1);color:#0284c7;padding:3px 9px;border-radius:12px;">' + esc(cat) + '</span>' +
+                    '      ' + statusHtml +
+                    '    </div>' +
+                    '    <div style="font-size:17px;font-weight:900;color:#059669;direction:ltr;">' + amt + ' <small style="font-size:12px;font-weight:700;">ج.م</small></div>' +
+                    '  </div>' +
+                    '  <div style="font-size:14.5px;font-weight:800;color:var(--tx);margin:4px 0;">' + esc(it.item || '') + '</div>' +
+                    (it.notes ? '<div style="font-size:12px;color:var(--tx3);background:var(--bg2);padding:6px 10px;border-radius:8px;">📌 ' + esc(it.notes) + '</div>' : '') +
+                    '  <div style="display:flex;align-items:center;justify-content:space-between;margin-top:6px;border-top:1px solid var(--bd);padding-top:8px;font-size:11.5px;color:var(--tx3);flex-wrap:wrap;gap:8px;">' +
+                    '    <div>👤 مسجل بواسطة: <b style="color:var(--tx);">' + esc(it.createdBy || 'كيرلس وجيه') + '</b></div>' +
+                    '    <div style="display:flex;align-items:center;gap:6px;">' +
+                    '      <button type="button" class="bt bt-o" style="padding:4px 10px;font-size:11px;font-weight:800;border-radius:6px;" onclick="empOpenPurchaseModal(\'' + it.id + '\')">✏️ تعديل</button>' +
+                    '      <button type="button" class="bt bt-d" style="padding:4px 10px;font-size:11px;font-weight:800;border-radius:6px;background:rgba(239,68,68,0.1);color:#ef4444;border-color:rgba(239,68,68,0.25);" onclick="empDeletePurchase(\'' + it.id + '\')">🗑️ حذف</button>' +
+                    '    </div>' +
+                    '  </div>' +
+                    '</div>';
+            });
+            h += '</div>';
+
+            listContainer.innerHTML = h;
+        };
+
+        window.empOpenPurchaseModal = function (purchaseId) {
+            var modalContainer = document.getElementById('emp-pch-modal-container');
+            if (!modalContainer) return;
+
+            var existing = null;
+            if (purchaseId) {
+                existing = (window._empPurchasesList || []).find(function (x) { return x.id === purchaseId; });
+            }
+
+            var d = new Date();
+            var todayStr = d.toISOString().split('T')[0];
+
+            var itemVal = existing ? (existing.item || '') : '';
+            var amountVal = existing ? (existing.amount || '') : '';
+            var dateVal = existing ? (existing.date || todayStr) : todayStr;
+            var catVal = existing ? (existing.category || 'بوفيه وضيافة') : 'بوفيه وضيافة';
+            var notesVal = existing ? (existing.notes || '') : '';
+
+            var categories = ['بوفيه وضيافة', 'أدوات نظافة', 'مستلزمات مكتبية', 'صيانة ونثريات', 'أخرى'];
+            var chipsHtml = '';
+            categories.forEach(function (c) {
+                var isActive = (c === catVal);
+                chipsHtml += '<button type="button" class="pch-chip ' + (isActive ? 'active' : '') + '" onclick="empModalSelectCat(\'' + c + '\', this)">' + esc(c) + '</button>';
+            });
+
+            var h = '<div class="pch-quick-modal-overlay" id="empPchModalOverlay" onclick="if(event.target === this) empClosePurchaseModal();">' +
+                '  <div class="pch-quick-modal-card">' +
+                '    <div style="background:linear-gradient(135deg,#0f172a,#1e293b);color:#fff;padding:16px 20px;display:flex;align-items:center;justify-content:space-between;">' +
+                '      <div style="display:flex;align-items:center;gap:10px;">' +
+                '        <span style="font-size:24px;">🛒</span>' +
+                '        <div>' +
+                '          <div style="font-size:15px;font-weight:900;">' + (existing ? '✏️ تعديل بيانات المشترى' : '➕ تسجيل وتوثيق مشترى جديد') + '</div>' +
+                '          <div style="font-size:11.5px;opacity:0.8;margin-top:2px;">تسجيل فوري مباشر في كشف مشتريات الشركة</div>' +
+                '        </div>' +
+                '      </div>' +
+                '      <button type="button" onclick="empClosePurchaseModal()" style="background:rgba(255,255,255,0.15);border:none;color:#fff;font-size:16px;cursor:pointer;width:32px;height:32px;border-radius:50%;display:flex;align-items:center;justify-content:center;">✕</button>' +
+                '    </div>' +
+                '    <div style="padding:18px 20px;max-height:80vh;overflow-y:auto;">' +
+                '      <label style="font-size:12.5px;font-weight:800;color:var(--tx);display:block;margin-bottom:6px;">🏷️ اختر نوع المشترى (تصنيف سريع):</label>' +
+                '      <div class="pch-category-chips" id="empModalChipsWrap" style="margin-bottom:14px;">' + chipsHtml + '</div>' +
+                '      <input type="hidden" id="empPchModalCat" value="' + esc(catVal) + '">' +
+
+                '      <div style="margin-bottom:14px;">' +
+                '        <label style="font-size:12.5px;font-weight:800;color:var(--tx);display:block;margin-bottom:6px;">📝 بيان المشترى / ما تم شراؤه: <span style="color:#ef4444;">*</span></label>' +
+                '        <input type="text" id="empPchModalItem" class="inp" style="padding:11px 14px;font-size:14px;font-weight:700;width:100%;border-radius:10px;border:1.5px solid var(--bd);" placeholder="مثال: شاي وسكر للضيوف، أدوات نظافة، مناديل..." value="' + esc(itemVal) + '">' +
+                '      </div>' +
+
+                '      <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:14px;">' +
+                '        <div>' +
+                '          <label style="font-size:12.5px;font-weight:800;color:var(--tx);display:block;margin-bottom:6px;">💰 المبلغ (ج.م): <span style="color:#ef4444;">*</span></label>' +
+                '          <input type="number" step="0.5" id="empPchModalAmount" class="inp" style="padding:11px 14px;font-size:16px;font-weight:900;color:#059669;width:100%;border-radius:10px;border:1.5px solid var(--bd);direction:ltr;text-align:right;" placeholder="0.00" value="' + esc(amountVal) + '">' +
+                '        </div>' +
+                '        <div>' +
+                '          <label style="font-size:12.5px;font-weight:800;color:var(--tx);display:block;margin-bottom:6px;">📅 تاريخ الشراء:</label>' +
+                '          <input type="date" id="empPchModalDate" class="inp" style="padding:11px 14px;font-size:13px;font-weight:700;width:100%;border-radius:10px;border:1.5px solid var(--bd);" value="' + esc(dateVal) + '">' +
+                '        </div>' +
+                '      </div>' +
+
+                '      <div style="display:flex;align-items:center;gap:8px;margin-bottom:14px;">' +
+                '        <span style="font-size:12px;color:var(--tx3);font-weight:700;">تحديد سريع للتاريخ:</span>' +
+                '        <button type="button" class="bt bt-o" style="padding:4px 10px;font-size:11.5px;border-radius:8px;" onclick="empPchModalSetDate(0)">📅 اليوم</button>' +
+                '        <button type="button" class="bt bt-o" style="padding:4px 10px;font-size:11.5px;border-radius:8px;" onclick="empPchModalSetDate(-1)">⏪ أمس</button>' +
+                '      </div>' +
+
+                '      <div style="margin-bottom:14px;">' +
+                '        <label style="font-size:12.5px;font-weight:800;color:var(--tx);display:block;margin-bottom:6px;">📌 ملاحظات إضافية (اختياري):</label>' +
+                '        <input type="text" id="empPchModalNotes" class="inp" style="padding:9px 14px;font-size:13px;width:100%;border-radius:10px;border:1.5px solid var(--bd);" placeholder="رقم فاتورة، تفاصيل المكان، أو أية ملاحظات..." value="' + esc(notesVal) + '">' +
+                '      </div>' +
+
+                '      <div style="display:flex;align-items:center;justify-content:space-between;margin-top:20px;gap:10px;border-top:1px solid var(--bd);padding-top:14px;">' +
+                '        <button type="button" class="bt bt-p" id="empPchModalSaveBtn" style="padding:11px 24px;font-size:14px;font-weight:900;background:linear-gradient(135deg,#059669,#047857);color:#fff;border-radius:10px;box-shadow:0 4px 12px rgba(5,150,105,0.3);flex:1;" onclick="empSavePurchase(\'' + (purchaseId || '') + '\')">' +
+                '          💾 حفظ المشترى فوراً' +
+                '        </button>' +
+                '        <button type="button" class="bt bt-o" style="padding:11px 18px;font-size:13px;font-weight:800;border-radius:10px;" onclick="empClosePurchaseModal()">إلغاء</button>' +
+                (existing ? '        <button type="button" class="bt bt-d" style="padding:11px 14px;font-size:13px;font-weight:800;border-radius:10px;background:rgba(239,68,68,0.12);color:#ef4444;border-color:rgba(239,68,68,0.25);" onclick="empDeletePurchase(\'' + existing.id + '\')">🗑️ حذف</button>' : '') +
+                '      </div>' +
+                '    </div>' +
+                '  </div>' +
+                '</div>';
+
+            modalContainer.innerHTML = h;
+
+            setTimeout(function () {
+                var inp = document.getElementById('empPchModalItem');
+                if (inp) inp.focus();
+            }, 100);
+        };
+
+        window.empModalSelectCat = function (cat, el) {
+            var hiddenCat = document.getElementById('empPchModalCat');
+            if (hiddenCat) hiddenCat.value = cat;
+            var chips = document.querySelectorAll('#empModalChipsWrap .pch-chip');
+            chips.forEach(function (c) { c.classList.remove('active'); });
+            if (el) el.classList.add('active');
+        };
+
+        window.empPchModalSetDate = function (offsetDays) {
+            var d = new Date();
+            d.setDate(d.getDate() + offsetDays);
+            var str = d.toISOString().split('T')[0];
+            var inp = document.getElementById('empPchModalDate');
+            if (inp) inp.value = str;
+        };
+
+        window.empClosePurchaseModal = function () {
+            var modalContainer = document.getElementById('emp-pch-modal-container');
+            if (modalContainer) modalContainer.innerHTML = '';
+        };
+
+        window.empSavePurchase = function (purchaseId) {
+            var itemInp = document.getElementById('empPchModalItem');
+            var amtInp = document.getElementById('empPchModalAmount');
+            var dateInp = document.getElementById('empPchModalDate');
+            var catInp = document.getElementById('empPchModalCat');
+            var notesInp = document.getElementById('empPchModalNotes');
+            var saveBtn = document.getElementById('empPchModalSaveBtn');
+
+            var item = itemInp ? itemInp.value.trim() : '';
+            var amt = amtInp ? parseFloat(amtInp.value) : 0;
+            var dateVal = dateInp ? dateInp.value : '';
+            var cat = catInp ? catInp.value : 'بوفيه وضيافة';
+            var notes = notesInp ? notesInp.value.trim() : '';
+
+            if (!item) {
+                alert('⚠️ يرجى كتابة بيان المشترى أو ما تم شراؤه');
+                if (itemInp) itemInp.focus();
+                return;
+            }
+
+            if (isNaN(amt) || amt <= 0) {
+                alert('⚠️ يرجى إدخال مبلغ صحيح أكبر من الصفر');
+                if (amtInp) amtInp.focus();
+                return;
+            }
+
+            if (!dateVal) {
+                dateVal = new Date().toISOString().split('T')[0];
+            }
+
+            var monthVal = dateVal.substring(0, 7);
+
+            var user = (typeof TG_USER !== 'undefined' && TG_USER) ? TG_USER : {};
+            var userName = (user.name || localStorage.getItem('tg_user_name') || 'كيرلس وجيه (أوفيس)').trim();
+            var userUid = user.uid || '';
+
+            var record = {
+                item: item,
+                amount: amt,
+                category: cat,
+                date: dateVal,
+                month: monthVal,
+                notes: notes,
+                createdBy: userName,
+                creatorUid: userUid,
+                updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+            };
+
+            if (saveBtn) {
+                saveBtn.disabled = true;
+                saveBtn.textContent = '⏳ جاري الحفظ...';
+            }
+
+            var col = db.collection('company_purchases');
+            var opPromise = null;
+
+            if (purchaseId) {
+                opPromise = col.doc(purchaseId).update(record);
+            } else {
+                record.status = 'pending';
+                record.createdAt = firebase.firestore.FieldValue.serverTimestamp();
+                opPromise = col.add(record).then(function (docRef) {
+                    // Send admin notification
+                    try {
+                        db.collection('admin_notifications').add({
+                            title: '🛒 مشترى جديد من ' + userName,
+                            body: 'سجل مشترى جديد: [' + item + '] بقيمة ' + amt.toFixed(2) + ' ج.م',
+                            tag: 'mexp_' + monthVal,
+                            empUid: userUid,
+                            empName: userName,
+                            purchaseId: docRef.id,
+                            type: 'purchase',
+                            read: false,
+                            seen: false,
+                            createdAt: new Date()
+                        }).catch(function (e) {});
+                    } catch (e) {}
+                });
+            }
+
+            opPromise.then(function () {
+                empClosePurchaseModal();
+                if (typeof tgToast === 'function') {
+                    tgToast('✅ تم حفظ المشترى ومزامنته فوراً مع الإدارة!', 'ok');
+                } else if (typeof tgShowToast === 'function') {
+                    tgShowToast('✅ تم حفظ المشترى ومزامنته فوراً مع الإدارة!', 'success');
+                } else {
+                    alert('✅ تم حفظ المشترى بنجاح!');
+                }
+
+                // If user selected month matches, update input
+                var mInp = document.getElementById('emp-pch-month');
+                if (mInp && mInp.value !== monthVal) {
+                    mInp.value = monthVal;
+                    empPurchasesLoadData();
+                }
+            }).catch(function (err) {
+                console.error('empSavePurchase error:', err);
+                alert('⚠️ تعذر حفظ المشترى: ' + (err.message || 'خطأ في الاتصال'));
+                if (saveBtn) {
+                    saveBtn.disabled = false;
+                    saveBtn.textContent = '💾 حفظ المشترى فوراً';
+                }
+            });
+        };
+
+        window.empDeletePurchase = function (purchaseId) {
+            if (!purchaseId) return;
+            if (!confirm('هل أنت متأكد من رغبتك في حذف هذا المشترى نهائياً؟')) return;
+
+            db.collection('company_purchases').doc(purchaseId).delete().then(function () {
+                empClosePurchaseModal();
+                if (typeof tgToast === 'function') tgToast('🗑️ تم حذف المشترى بنجاح', 'info');
+                else if (typeof tgShowToast === 'function') tgShowToast('🗑️ تم حذف المشترى', 'info');
+            }).catch(function (err) {
+                alert('تعذر حذف المشترى: ' + err.message);
+            });
+        };
+
+        window.empPrintPurchases = function () {
+            var items = window._empPurchasesList || [];
+            var mInp = document.getElementById('emp-pch-month');
+            var monthVal = mInp ? mInp.value : '';
+
+            var grandTotal = 0;
+            var rowsHtml = '';
+            items.forEach(function (it, idx) {
+                var amt = parseFloat(it.amount) || 0;
+                grandTotal += amt;
+                var dayName = empPchGetDayName(it.date);
+                var isApp = (it.status === 'approved') ? 'معتمد' : 'قيد المراجعة';
+
+                rowsHtml += '<tr>' +
+                    '<td style="text-align:center;padding:6px;border:1px solid #333;">' + (idx + 1) + '</td>' +
+                    '<td style="text-align:center;padding:6px;border:1px solid #333;white-space:nowrap;">' + (dayName ? dayName + ' ' : '') + esc(it.date || '') + '</td>' +
+                    '<td style="padding:6px;border:1px solid #333;font-weight:bold;">' + esc(it.item || '') + '</td>' +
+                    '<td style="text-align:center;padding:6px;border:1px solid #333;">' + esc(it.category || '-') + '</td>' +
+                    '<td style="text-align:left;padding:6px;border:1px solid #333;font-weight:900;direction:ltr;">' + amt.toFixed(2) + ' ج.م</td>' +
+                    '<td style="text-align:center;padding:6px;border:1px solid #333;">' + isApp + '</td>' +
+                    '</tr>';
+            });
+
+            var printHtml =
+                '<div class="pch-print-sheet" style="padding:20px;font-family:Alexandria,sans-serif;direction:rtl;color:#000;background:#fff;">' +
+                '  <div style="display:flex;justify-content:space-between;align-items:center;border-bottom:2px solid #000;padding-bottom:12px;margin-bottom:16px;">' +
+                '    <div>' +
+                '      <h2 style="margin:0;font-size:20px;font-weight:900;">شركة تيك جو للحلول التقنية (Tech Go)</h2>' +
+                '      <div style="font-size:13px;margin-top:3px;font-weight:700;">كشف مشتريات ونثريات الأوفيس المعتمد</div>' +
+                '    </div>' +
+                '    <div style="text-align:left;font-size:12px;font-weight:700;">' +
+                '      <div>📅 الشهر: <b>' + esc(monthVal) + '</b></div>' +
+                '      <div>👤 المسؤول: <b>كيرلس وجيه (أوفيس)</b></div>' +
+                '    </div>' +
+                '  </div>' +
+
+                '  <table style="width:100%;border-collapse:collapse;margin-bottom:20px;font-size:12px;">' +
+                '    <thead>' +
+                '      <tr style="background:#f1f5f9;">' +
+                '        <th style="width:40px;border:1px solid #333;padding:6px;text-align:center;">م</th>' +
+                '        <th style="width:130px;border:1px solid #333;padding:6px;text-align:center;">التاريخ واليوم</th>' +
+                '        <th style="border:1px solid #333;padding:6px;text-align:right;">بيان المشترى / الصنف</th>' +
+                '        <th style="width:110px;border:1px solid #333;padding:6px;text-align:center;">التصنيف</th>' +
+                '        <th style="width:110px;border:1px solid #333;padding:6px;text-align:left;">المبلغ (ج.م)</th>' +
+                '        <th style="width:90px;border:1px solid #333;padding:6px;text-align:center;">الحالة</th>' +
+                '      </tr>' +
+                '    </thead>' +
+                '    <tbody>' + rowsHtml + '</tbody>' +
+                '    <tfoot>' +
+                '      <tr style="background:#f8fafc;font-weight:900;">' +
+                '        <td colspan="4" style="border:1px solid #333;padding:8px;text-align:right;font-size:13px;">💰 إجمالي مشتريات الشهر:</td>' +
+                '        <td colspan="2" style="border:1px solid #333;padding:8px;text-align:left;font-size:14px;direction:ltr;">' + grandTotal.toFixed(2) + ' ج.م</td>' +
+                '      </tr>' +
+                '    </tfoot>' +
+                '  </table>' +
+
+                '  <div style="margin-top:40px;display:flex;justify-content:space-between;align-items:flex-end;text-align:center;font-size:13px;font-weight:800;">' +
+                '    <div style="width:180px;">' +
+                '      <div>المسؤول عن المشتريات</div>' +
+                '      <div style="margin-top:6px;font-size:12px;color:#555;">كيرلس وجيه</div>' +
+                '      <div style="border-bottom:1.5px dashed #000;margin-top:35px;"></div>' +
+                '    </div>' +
+                '    <div style="width:180px;">' +
+                '      <div>المراجعة المالية والحسابات</div>' +
+                '      <div style="border-bottom:1.5px dashed #000;margin-top:55px;"></div>' +
+                '    </div>' +
+                '    <div style="width:180px;">' +
+                '      <div>اعتماد الإدارة العامة</div>' +
+                '      <div style="border-bottom:1.5px dashed #000;margin-top:55px;"></div>' +
+                '    </div>' +
+                '  </div>' +
+                '</div>';
+
+            var printContainer = document.getElementById('emp-pch-print-container');
+            if (printContainer) {
+                printContainer.innerHTML = printHtml;
+                printContainer.style.display = 'block';
+            }
+
+            window.print();
+            setTimeout(function () {
+                if (printContainer) printContainer.style.display = 'none';
+            }, 1000);
+        };
+
+        // Backward compatibility aliases
+        window.empLoadMexpPage = window.empLoadPurchasesPage;
+        window.empMexpLoadData = window.empPurchasesLoadData;
+        window.empMexpPrint = window.empPrintPurchases;
+        window.initEmpMexpAccessCheck = window.initEmpPurchasesAccessCheck;
+        window.initEmpPurchaseAccessCheck = window.initEmpPurchasesAccessCheck;
+
         // Initialize access check
-initEmpMexpAccessCheck();
-        initEmpPurchaseAccessCheck();
+        window.initEmpPurchasesAccessCheck();
 
         // ════════════════════════════════════════════════════════════════════════
         // ── نظام النماذج والتكليفات المحولة للموظف (Universal Assigned Docs)
@@ -6909,11 +4918,11 @@ initEmpMexpAccessCheck();
                         <div class="drawer-card-desc">مكالمات مرئية وصوتية</div>
                     </div>
                 </div>
-                <div class="drawer-card" id="empDrawerMexp" data-drawer="mexp" onclick="empGo('mexp'); tgToggleMobileNavDrawer(false);" style="display:none;">
-                    <div class="drawer-card-icon">💵</div>
+                <div class="drawer-card" id="empDrawerPurchases" data-drawer="purchases" onclick="empGo('purchases'); tgToggleMobileNavDrawer(false);" style="display:none;">
+                    <div class="drawer-card-icon">🛒</div>
                     <div>
-                        <div class="drawer-card-title">شيت المصروفات</div>
-                        <div class="drawer-card-desc">إدخال ومتابعة المصروفات</div>
+                        <div class="drawer-card-title">مشتريات الشركة</div>
+                        <div class="drawer-card-desc">تسجيل ومتابعة المشتريات والنثريات</div>
                     </div>
                 </div>
                 <div class="drawer-card" data-drawer="acct" onclick="empGo('acct'); tgToggleMobileNavDrawer(false);">
