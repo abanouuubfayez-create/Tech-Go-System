@@ -5691,7 +5691,12 @@ function mexpSavePurchase(purchaseId) {
         }
     }).catch(function (err) {
         console.error('mexpSavePurchase error:', err);
-        alert('⚠️ تعذر حفظ المشترى: ' + (err.message || 'خطأ في الاتصال'));
+        var msg = err.message || '';
+        if (msg.indexOf('permissions') !== -1 || msg.indexOf('permission-denied') !== -1) {
+            alert('⚠️ تنبيه أمان Firebase:\n\nمجموعة (company_purchases) تحتاج تفعيل في Firebase Console.\n\nيرجى فتح Firebase Console > Firestore Database > Rules ونشر القواعد من ملف firestore_for_console.txt.');
+        } else {
+            alert('⚠️ تعذر حفظ المشترى: ' + msg);
+        }
         if (saveBtn) {
             saveBtn.disabled = false;
             saveBtn.textContent = '💾 حفظ المشترى فوراً';
@@ -5739,7 +5744,13 @@ function mexpRecoverLegacy405() {
             alert('✅ تم استيراد المشتريات السابقة بنجاح!');
         }
     }).catch(function (err) {
-        alert('تعذر الاستيراد: ' + err.message);
+        console.error('mexpRecoverLegacy405 error:', err);
+        var msg = err.message || '';
+        if (msg.indexOf('permissions') !== -1 || msg.indexOf('permission-denied') !== -1) {
+            alert('⚠️ تنبيه أمان Firebase:\n\nمجموعة (company_purchases) تحتاج تفعيل ونشر في Firebase Console.\n\nالخطوات السريعة:\n1. افتح Firebase Console > Firestore Database > Rules\n2. انسخ محتوى الملف firestore_for_console.txt والصقه هناك\n3. اضغط زر Publish (نشر).\n\nبمجرد النشر ستعمل فوراً!');
+        } else {
+            alert('تعذر الاستيراد: ' + msg);
+        }
     });
 }
 
