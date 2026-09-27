@@ -992,10 +992,38 @@
                     </div>
                     <div>
                         <label style="display: block; font-size: 0.85rem; color: var(--text-muted); margin-bottom: 4px;">سماح التأخير (بالدقائق):</label>
-                        <input type="number" id="cfgGrace" value="30" style="width: 100%; padding: 8px 12px; border-radius: 8px; background: var(--bg); border: 1px solid var(--border); color: var(--text);">
+                        <input type="number" id="cfgGrace" value="15" style="width: 100%; padding: 8px 12px; border-radius: 8px; background: var(--bg); border: 1px solid var(--border); color: var(--text);">
                     </div>
                 </div>
+                <div style="background: var(--surface-2); border: 1px solid var(--border); border-radius: 8px; padding: 10px 14px; margin-bottom: 1rem; font-size: 0.8rem; color: var(--text-muted);">
+                    ⚖️ <strong>قرار إداري رقم (1) لسنة 2026</strong> — ساري اعتبارًا من <strong>1/10/2026</strong>: سماح تأخير 15 دقيقة (4 مرات شهريًا فقط)، 4 أذونات شهرية (حتى ساعتين للإذن الواحد)، خصم مضاعف للتأخير بعد السماح، عمل إضافي محتسب بالمضاعفة بتكليف إدارة فقط، والاعتماد الحصري على جهاز البصمة.
+                </div>
                 <button class="btn-action btn-primary-action" onclick="saveWorkSettings()">✓ حفظ وتطبيق السياسات</button>
+            </div>
+
+            <div class="card-table-wrap" style="padding: 1.5rem; margin-top: 1.5rem;">
+                <h3 style="font-size: 1.15rem; font-weight: 800; margin-bottom: 0.5rem; color: var(--primary-light);">
+                    💰 الرواتب الأساسية وإعدادات حساب الأجر
+                </h3>
+                <div style="background: var(--surface-2); border: 1px solid var(--border); border-radius: 8px; padding: 10px 14px; margin-bottom: 1.2rem; font-size: 0.8rem; color: var(--text-muted);">
+                    أدخل الراتب الأساسي الشهري لكل موظف مرة واحدة، والنظام سيحسب تلقائيًا: قيمة الساعة، خصم التأخير (بالمضاعفة)، خصم أيام الغياب، وقيمة العمل الإضافي (بالمضاعفة) — ثم صافي الراتب لكل شهر.
+                </div>
+                <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; margin-bottom: 1.2rem;">
+                    <div>
+                        <label style="display: block; font-size: 0.85rem; color: var(--text-muted); margin-bottom: 4px;">عدد أيام العمل الرسمية بالشهر:</label>
+                        <input type="number" id="cfgWorkingDaysPerMonth" value="26" min="1" max="31" style="width: 100%; padding: 8px 12px; border-radius: 8px; background: var(--bg); border: 1px solid var(--border); color: var(--text);">
+                    </div>
+                    <div>
+                        <label style="display: block; font-size: 0.85rem; color: var(--text-muted); margin-bottom: 4px;">عملة الرواتب:</label>
+                        <input type="text" id="cfgCurrency" value="ج.م" style="width: 100%; padding: 8px 12px; border-radius: 8px; background: var(--bg); border: 1px solid var(--border); color: var(--text);">
+                    </div>
+                    <div>
+                        <label style="display: block; font-size: 0.85rem; color: var(--text-muted); margin-bottom: 4px;">ساعات اليوم الرسمية (تُحسب تلقائيًا):</label>
+                        <input type="text" id="cfgDailyHoursDisplay" readonly disabled style="width: 100%; padding: 8px 12px; border-radius: 8px; background: var(--surface-2); border: 1px solid var(--border); color: var(--text-muted);">
+                    </div>
+                </div>
+                <div id="salariesListContainer" style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; margin-bottom: 1.2rem;"></div>
+                <button class="btn-action btn-primary-action" onclick="saveSalarySettings()">✓ حفظ الرواتب وإعادة احتساب الرواتب</button>
             </div>
         </section>
     </main>
@@ -1016,8 +1044,8 @@
             </div>
             <div style="margin-bottom: 16px;">
                 <label style="font-size: 0.82rem; color: var(--text-muted); display: block; margin-bottom: 4px;">سماح التأخير المعتمد (بالدقائق):</label>
-                <input type="number" id="modalCfgGrace" value="30" style="width: 100%; padding: 8px; border-radius: 8px; background: var(--surface-2); color: var(--text); border: 1px solid var(--border);">
-                <small style="color: var(--text-muted); font-size: 0.75rem; margin-top: 4px; display: block;">💡 مثال: 30 دقيقة تعني أن الوصول حتى 10:30 صباحاً يعتبر في الميعاد المحدد.</small>
+                <input type="number" id="modalCfgGrace" value="15" style="width: 100%; padding: 8px; border-radius: 8px; background: var(--surface-2); color: var(--text); border: 1px solid var(--border);">
+                <small style="color: var(--text-muted); font-size: 0.75rem; margin-top: 4px; display: block;">💡 طبقًا للقرار الإداري رقم (1) لسنة 2026: سماح 15 دقيقة كحد أقصى، بواقع 4 مرات فقط خلال الشهر — بعدها يُحتسب التأخير خصمًا بالمضاعفة.</small>
             </div>
             <div style="display: flex; justify-content: flex-end; gap: 8px;">
                 <button class="btn-action btn-ghost" onclick="closeWorkSettingsModal()">إلغاء</button>
@@ -1041,18 +1069,24 @@
                 </div>
                 <div>
                     <label style="font-size: 0.82rem; color: var(--text-muted); display: block; margin-bottom: 4px;">نوع الإذن:</label>
-                    <select id="modalPermType" style="width: 100%; padding: 8px; border-radius: 8px; background: var(--surface-2); color: var(--text); border: 1px solid var(--border);">
-                        <option value="late">⏰ إذن تأخير في الحضور</option>
-                        <option value="early">🚪 إذن انصراف مبكر</option>
-                        <option value="temp">🔄 إذن خروج مؤقت</option>
+                    <select id="modalPermType" onchange="onPermTypeChanged()" style="width: 100%; padding: 8px; border-radius: 8px; background: var(--surface-2); color: var(--text); border: 1px solid var(--border);">
+                        <option value="late">⏰ إذن تأخير في الحضور (يُحتسب من الأذونات الشهرية)</option>
+                        <option value="early">🚪 إذن انصراف مبكر (يُحتسب من الأذونات الشهرية)</option>
+                        <option value="temp">🔄 إذن خروج مؤقت (يُحتسب من الأذونات الشهرية)</option>
+                        <option value="overtime">🕒 تكليف عمل إضافي (Overtime) معتمد من الإدارة</option>
                         <option value="exempt">🌟 استثناء إداري معتمد (دوام كامل بدون خصم)</option>
                         <option value="mission">🏢 مأمورية عمل خارجية معتمدة (دوام كامل بدون خصم)</option>
                     </select>
                 </div>
             </div>
+            <div id="permHoursRow" style="margin-bottom: 10px;">
+                <label style="font-size: 0.82rem; color: var(--text-muted); display: block; margin-bottom: 4px;">عدد الساعات (الحد الأقصى ساعتان للإذن الشهري):</label>
+                <input type="number" id="modalPermHours" min="0" max="2" step="0.25" placeholder="مثال: 1 أو 1.5" style="width: 100%; padding: 8px; border-radius: 8px; background: var(--surface-2); color: var(--text); border: 1px solid var(--border);">
+                <small id="permHoursHint" style="color: var(--text-muted); font-size: 0.75rem; margin-top: 4px; display: block;">⚖️ طبقًا لقرار إداري رقم (1) لسنة 2026: يُسمح بـ4 أذونات شهريًا كحد أقصى، بشرط ألا تتجاوز مدة الإذن ساعتين في كل مرة.</small>
+            </div>
             <div style="margin-bottom: 14px;">
                 <label style="font-size: 0.82rem; color: var(--text-muted); display: block; margin-bottom: 4px;">السبب والملاحظات:</label>
-                <input type="text" id="modalPermNote" placeholder="ظرف طارئ، مأمورية عمل، استثناء إدارة..." style="width: 100%; padding: 8px; border-radius: 8px; background: var(--surface-2); color: var(--text); border: 1px solid var(--border);">
+                <input type="text" id="modalPermNote" placeholder="ظرف طارئ، مأمورية عمل، استثناء إدارة، تكليف إضافي..." style="width: 100%; padding: 8px; border-radius: 8px; background: var(--surface-2); color: var(--text); border: 1px solid var(--border);">
             </div>
             <div style="display: flex; justify-content: flex-end; gap: 8px;">
                 <button class="btn-action btn-ghost" onclick="closePermModal()">إلغاء</button>
@@ -1137,8 +1171,143 @@
         let employeeNames = Object.assign({}, _SAVED_DATA.empNames);
         let employeePermissions = Object.assign({}, _SAVED_DATA.employeePermissions);
         let employeeManualLeaves = {};
-        let workConfig = { start: '10:00', end: '18:00', grace: 30, workDays: [0,1,2,3,4] };
+        let employeeSalaries = {}; // { empId: baseMonthlySalary }
+        let workConfig = { start: '10:00', end: '18:00', grace: 15, workDays: [0,1,2,3,4], workingDaysPerMonth: 26, currency: 'ج.م' };
         let stats = null;
+
+        // ══════════════════════════════════════════
+        //  قرار إداري رقم (1) لسنة 2026 — سياسة الحضور والانصراف
+        //  ساري اعتبارًا من 1/10/2026
+        // ══════════════════════════════════════════
+        const ATTENDANCE_POLICY_2026 = {
+            effectiveDate: '2026-10-01',   // بداية سريان القرار
+            graceMinutes: 15,              // 1 | مدة السماح بالتأخير
+            maxGraceUsesPerMonth: 4,       // 1 | 4 مرات فقط خلال الشهر
+            maxMonthlyPermits: 4,          // 2 | الأذونات الشهرية
+            maxPermitHours: 2,             // 2 | ألا تتجاوز مدة الإذن ساعتين في كل مرة
+            overtimeMultiplier: 2          // 4 | العمل الإضافي يُحتسب بالمضاعفة
+        };
+
+        // خصم التأخير بعد استنفاد مدة/عدد مرات السماح (البند 3):
+        // كل ساعة تأخير (يُقرَّب لأعلى) تُحتسب مضاعفة لأول ساعة ثم بالتتابع:
+        // 1 ساعة تأخير → خصم 2 ساعة | 2 ساعة تأخير → خصم 3 ساعات | وهكذا (ساعة إضافية عن كل ساعة تأخير زيادة)
+        function computeLateDeductionHours(lateMinutes) {
+            if (!lateMinutes || lateMinutes <= 0) return 0;
+            const hoursLate = Math.ceil(lateMinutes / 60);
+            return hoursLate + 1;
+        }
+
+        function getMonthKeyFromDate(dateStr) {
+            return dateStr ? dateStr.slice(0, 7) : '';
+        }
+
+        // البند 2 | عدّاد الأذونات الشهرية (تأخير/انصراف مبكر/خروج مؤقت) لموظف في شهر معين
+        function countMonthlyTardyPermits(empId, monthKey, uptoDate) {
+            const list = employeePermissions[empId] || [];
+            return list.filter(p =>
+                ['late', 'early', 'temp'].includes(p.type) &&
+                getMonthKeyFromDate(p.date) === monthKey &&
+                (!uptoDate || p.date <= uptoDate)
+            ).length;
+        }
+
+        // البند 1 | يبني خريطة بالأيام التي استفادت من "سماح التأخير" (حتى 4 مرات/شهر) بترتيب زمني
+        // يُستخدم فقط على التواريخ الخاضعة للقرار (من 1/10/2026)
+        function buildGraceUsageMap(empId, sortedDates, entriesByDate) {
+            const usageCountByMonth = {};
+            const covered = new Set();
+            sortedDates.forEach(date => {
+                if (date < ATTENDANCE_POLICY_2026.effectiveDate) return;
+                const entry = entriesByDate[date];
+                if (!entry) return;
+                const perm = getPermissionForDate(empId, date);
+                if (perm && (perm.type === 'late' || perm.type === 'temp')) return; // مغطى بإذن رسمي، لا يُحتسب من السماح
+                const lateMin = timeToMins(entry) - timeToMins(workConfig.start);
+                if (lateMin > 0 && lateMin <= ATTENDANCE_POLICY_2026.graceMinutes) {
+                    const mk = getMonthKeyFromDate(date);
+                    usageCountByMonth[mk] = (usageCountByMonth[mk] || 0) + 1;
+                    if (usageCountByMonth[mk] <= ATTENDANCE_POLICY_2026.maxGraceUsesPerMonth) {
+                        covered.add(date);
+                    }
+                }
+            });
+            return covered;
+        }
+
+        // ══════════════════════════════════════════
+        //  حساب الرواتب التلقائي (راتب أساسي ← قيمة الساعة/اليوم ← خصومات وإضافي)
+        // ══════════════════════════════════════════
+        function getDailyHours() {
+            const mins = timeToMins(workConfig.end) - timeToMins(workConfig.start);
+            return mins > 0 ? mins / 60 : 8;
+        }
+
+        function getWorkingDaysPerMonth() {
+            const n = parseInt(workConfig.workingDaysPerMonth, 10);
+            return (!isNaN(n) && n > 0) ? n : 26;
+        }
+
+        function getCurrencyLabel() {
+            return workConfig.currency || 'ج.م';
+        }
+
+        // يرجع { hourlyRate, dailyRate } بناءً على الراتب الأساسي الشهري للموظف
+        function getPayRates(empId) {
+            const baseSalary = parseFloat(employeeSalaries[empId]) || 0;
+            const workingDays = getWorkingDaysPerMonth();
+            const dailyHours = getDailyHours();
+            const dailyRate = baseSalary > 0 ? baseSalary / workingDays : 0;
+            const hourlyRate = dailyRate > 0 ? dailyRate / dailyHours : 0;
+            return { baseSalary, dailyRate, hourlyRate, workingDays, dailyHours };
+        }
+
+        function fmtCurrency(amount) {
+            if (!amount || isNaN(amount)) return `0 ${getCurrencyLabel()}`;
+            return `${amount.toLocaleString('ar-EG', { maximumFractionDigits: 2 })} ${getCurrencyLabel()}`;
+        }
+
+        function renderSalarySettingsList() {
+            const container = document.getElementById('salariesListContainer');
+            if (!container) return;
+            container.innerHTML = Object.keys(employeeNames).filter(id => !inactiveEmployees.includes(id)).map(id => `
+                <div style="display:flex; align-items:center; gap:8px; background:var(--surface-2); border:1px solid var(--border); border-radius:8px; padding:8px 12px;">
+                    <label style="flex:1; font-size:0.85rem; color:var(--text); font-weight:700;">${employeeNames[id]} <span style="color:var(--text-muted); font-weight:400;">(كود ${id})</span></label>
+                    <input type="number" min="0" step="50" id="salaryInput-${id}" value="${employeeSalaries[id] || ''}" placeholder="الراتب الأساسي" style="width: 150px; padding: 6px 10px; border-radius: 6px; background: var(--bg); border: 1px solid var(--border); color: var(--text);">
+                </div>
+            `).join('');
+            const dailyHoursEl = document.getElementById('cfgDailyHoursDisplay');
+            if (dailyHoursEl) dailyHoursEl.value = `${getDailyHours()} ساعة/يوم`;
+            const wd = document.getElementById('cfgWorkingDaysPerMonth');
+            if (wd) wd.value = getWorkingDaysPerMonth();
+            const cur = document.getElementById('cfgCurrency');
+            if (cur) cur.value = getCurrencyLabel();
+        }
+
+        function saveSalarySettings() {
+            const wd = parseInt(document.getElementById('cfgWorkingDaysPerMonth').value, 10);
+            workConfig.workingDaysPerMonth = isNaN(wd) ? 26 : wd;
+            workConfig.currency = document.getElementById('cfgCurrency').value.trim() || 'ج.م';
+
+            Object.keys(employeeNames).filter(id => !inactiveEmployees.includes(id)).forEach(id => {
+                const el = document.getElementById(`salaryInput-${id}`);
+                if (!el) return;
+                const val = parseFloat(el.value);
+                if (!isNaN(val) && val > 0) employeeSalaries[id] = val;
+                else delete employeeSalaries[id];
+            });
+
+            try {
+                localStorage.setItem('techgo_work_config', JSON.stringify(workConfig));
+                localStorage.setItem('techgo_employee_salaries', JSON.stringify(employeeSalaries));
+            } catch(err){}
+
+            renderSalarySettingsList();
+            if (stats) {
+                renderExecutiveOverview();
+                renderTimesheets();
+            }
+            showNotification('✓ تم حفظ الرواتب الأساسية وإعادة احتساب الخصومات والإضافي تلقائيًا!', 'success');
+        }
 
         // ══════════════════════════════════════════
         //  TOAST NOTIFICATION ENGINE
@@ -1187,6 +1356,8 @@
             if (sml) employeeManualLeaves = JSON.parse(sml);
             const sw = localStorage.getItem('techgo_work_config');
             if (sw) Object.assign(workConfig, JSON.parse(sw));
+            const ss = localStorage.getItem('techgo_employee_salaries');
+            if (ss) Object.assign(employeeSalaries, JSON.parse(ss));
             const sa = localStorage.getItem('techgo_attendance_archive');
             if (sa) attendanceArchive = JSON.parse(sa);
         } catch(e){}
@@ -1659,6 +1830,9 @@
 
                 const rawType = (r.type || r.title || r.templateLabel || vals['نوع الإذن'] || vals['نوع الإجازة'] || vals['type'] || vals['النوع'] || '').toLowerCase();
                 const rawReason = r.reason || r.note || r.details || vals['السبب'] || vals['سبب الإذن'] || vals['سبب الإجازة'] || vals['reason'] || vals['note'] || 'معتمد من مركز طلبات الموظفين';
+                const rawHours = r.hours ?? vals['عدد الساعات'] ?? vals['hours'];
+                const parsedHours = rawHours !== undefined && rawHours !== '' ? parseFloat(String(rawHours).replace(',', '.')) : undefined;
+                const reqHours = (parsedHours !== undefined && !isNaN(parsedHours) && parsedHours > 0) ? parsedHours : undefined;
 
                 // 1. Permission (إذن حضور / انصراف / خروج مؤقت)
                 if (rawType.includes('إذن') || rawType.includes('perm') || rawType.includes('تأخير') || rawType.includes('انصراف') || rawType.includes('التماس') || rawType.includes('خروج')) {
@@ -1668,6 +1842,7 @@
                         employeePermissions[tId].push({
                             date: rDate,
                             type: pType,
+                            hours: reqHours,
                             note: rawReason,
                             source: 'employee_request',
                             sourceTag: '📱 طلب موظف معتمد'
@@ -2510,6 +2685,17 @@
                     ...allUniqueMonthDates.filter(d => !primaryYm || d.startsWith(primaryYm))
                 ])).sort();
 
+                // قرار إداري رقم (1) لسنة 2026: بناء خريطة أيام "سماح التأخير" المستهلكة (حتى 4 مرات/شهر)
+                const entriesByDateForPolicy = {};
+                empDatesAll.forEach(d => {
+                    const e = emp.entries.find(en => en.date === d);
+                    if (e) entriesByDateForPolicy[d] = e.time;
+                });
+                const graceUsageSet = buildGraceUsageMap(emp.employeeId, empDatesAll, entriesByDateForPolicy);
+                let deductionHoursTotal = 0;
+                let overtimePayHoursTotal = 0;
+                let deductionDaysTotal = 0; // أيام غياب كاملة تُخصم من الراتب
+
                 const rowsHtml = empDatesAll.map(date => {
                     const dObj = new Date(date + 'T12:00:00');
                     const dName = dayNames[dObj.getDay()];
@@ -2571,10 +2757,44 @@
                         if (hCalc.hours) { totalHours += hCalc.hours; completeDays++; }
                         hoursFormatted = `<strong>${(hCalc.hours).toFixed(2)} س</strong> <small style="color:var(--text-muted);">(${hCalc.formatted})</small>`;
 
-                        if (p === 'late') {
-                            const startMins = timeToMins(workConfig.start);
-                            const graceMins = parseInt(workConfig.grace || 30);
-                            const lateMin = timeToMins(entry.time) - (startMins + graceMins);
+                        const underPolicy2026 = date >= ATTENDANCE_POLICY_2026.effectiveDate;
+                        const startMins = timeToMins(workConfig.start);
+                        const graceMins = underPolicy2026 ? ATTENDANCE_POLICY_2026.graceMinutes : parseInt(workConfig.grace || 30);
+                        const lateMinRaw = timeToMins(entry.time) - startMins; // تأخير من بداية الدوام الرسمي مباشرة (البند 3)
+                        const lateMin = timeToMins(entry.time) - (startMins + graceMins); // للعرض فقط (كالسابق)
+
+                        if (underPolicy2026) {
+                            // ── منطق قرار إداري رقم (1) لسنة 2026 (من 1/10/2026) ──
+                            // يُحسب مباشرة من lateMinRaw (وليس من p القديمة) لأن السماح مقيّد بعدد مرات وليس فقط بالدقائق
+                            if (lateMinRaw <= 0) {
+                                okCount++;
+                                statusBadge = '<span class="status-badge badge-ok">✅ في معاده</span>';
+                            } else if (perm && (perm.type === 'late' || perm.type === 'temp')) {
+                                okCount++;
+                                const permHoursOk = perm.hours === undefined || (lateMinRaw / 60) <= perm.hours;
+                                if (!permHoursOk) {
+                                    // الإذن لا يغطي كامل مدة التأخير (تجاوز الحد الأقصى للإذن)
+                                    const excessMin = lateMinRaw - (perm.hours * 60);
+                                    const excessDeduction = computeLateDeductionHours(excessMin);
+                                    deductionHoursTotal += excessDeduction;
+                                    lateCount++;
+                                    statusBadge = `<span class="status-badge badge-danger" style="background:#fee2e2; color:#991b1b; border:1px solid #f87171;">⏰ متأخر +${lateMinRaw}د (إذن ${perm.hours}س + خصم ${excessDeduction}س على الزيادة)</span>`;
+                                } else {
+                                    statusBadge = `<span class="status-badge badge-perm" style="background:#eff6ff; color:#1d4ed8; border:1px solid #bfdbfe;">⏰ متأخر +${lateMinRaw}د (بإذن معتمد)</span>`;
+                                }
+                            } else if (lateMinRaw <= ATTENDANCE_POLICY_2026.graceMinutes && graceUsageSet.has(date)) {
+                                // البند 1: ضمن مدة/عدد مرات السماح الشهرية (15 دقيقة، حتى 4 مرات بالشهر)
+                                okCount++;
+                                statusBadge = `<span class="status-badge badge-ok" style="background:#f0fdf4; color:#166534; border:1px solid #bbf7d0;">🕐 تأخير +${lateMinRaw}د (ضمن سماح التأخير الشهري)</span>`;
+                            } else {
+                                // البند 3: تأخير بعد استنفاد مدة/عدد مرات السماح — خصم بالمضاعفة
+                                const ded = computeLateDeductionHours(lateMinRaw);
+                                deductionHoursTotal += ded;
+                                lateCount++;
+                                statusBadge = `<span class="status-badge badge-danger" style="background:#fee2e2; color:#991b1b; border:1.5px solid #f87171; font-weight:800;">🚨 متأخر +${lateMinRaw}د — خصم ${ded} ساعة (قرار إداري 1/2026)</span>`;
+                            }
+                        } else if (p === 'late') {
+                            // ── المنطق القديم (قبل 1/10/2026) — دون تغيير ──
                             if (perm && (perm.type === 'late' || perm.type === 'temp')) {
                                 okCount++;
                                 statusBadge = `<span class="status-badge badge-perm" style="background:#eff6ff; color:#1d4ed8; border:1px solid #bfdbfe;">⏰ متأخر +${lateMin > 0 ? lateMin : ''}د (بإذن معتمد)</span>`;
@@ -2585,6 +2805,20 @@
                         } else {
                             okCount++;
                             statusBadge = '<span class="status-badge badge-ok">✅ في معاده</span>';
+                        }
+
+                        // البند 4: العمل الإضافي (Overtime) بالمضاعفة — بتكليف/طلب إدارة معتمد فقط
+                        if (underPolicy2026) {
+                            const endMins = timeToMins(workConfig.end);
+                            const otRawMin = timeToMins(exit.time) - endMins;
+                            const otPerm = getPermissionForDate(emp.employeeId, date);
+                            if (otRawMin > 0 && otPerm && otPerm.type === 'overtime' && otPerm.hours) {
+                                const approvedMin = Math.min(otRawMin, otPerm.hours * 60);
+                                const otHours = approvedMin / 60;
+                                const otPayHours = otHours * ATTENDANCE_POLICY_2026.overtimeMultiplier;
+                                overtimePayHoursTotal += otPayHours;
+                                permNoteText += `🕒 إضافي معتمد ${otHours.toFixed(2)}س ← يُحتسب ${otPayHours.toFixed(2)}س بالمضاعفة `;
+                            }
                         }
                     } else {
                         // Day with zero punches
@@ -2603,6 +2837,7 @@
                             statusBadge = `<span class="status-badge badge-danger" style="background:#fee2e2; color:#991b1b; border:1.5px solid #f87171; font-weight:900;">🚨 غياب بدون رصيد (خصم يوم)</span>`;
                             hoursFormatted = `<span style="color:#991b1b; font-weight:900;">خصم 1 يوم</span>`;
                             if (!permNoteText) permNoteText = `🚨 غياب بعد استنفاد كامل الرصيد السنوي (يُخصم 1 يوم من الراتب)`;
+                            deductionDaysTotal += 1;
                         } else if (remaining > 0) {
                             statusBadge = '<span class="status-badge badge-perm" style="background:#eff6ff; color:#1d4ed8; border:1px solid #bfdbfe;">📌 إجازة (مسحوبة من الرصيد)</span>';
                             hoursFormatted = '<span style="color:#1d4ed8; font-weight:600;">مسحوب من الرصيد</span>';
@@ -2622,6 +2857,31 @@
 
                 const avgPerDay = completeDays > 0 ? (totalHours / completeDays).toFixed(2) + ' س/يوم' : '—';
 
+                // ── حساب الراتب التلقائي (البند: راتب أساسي ← خصم تأخير + خصم أيام غياب - إضافي محتسب) ──
+                const pay = getPayRates(emp.employeeId);
+                const lateDeductionAmount = deductionHoursTotal * pay.hourlyRate;
+                const absenceDeductionAmount = deductionDaysTotal * pay.dailyRate;
+                const overtimeAmount = overtimePayHoursTotal * pay.hourlyRate;
+                const totalDeductionAmount = lateDeductionAmount + absenceDeductionAmount;
+                const netSalary = pay.baseSalary > 0
+                    ? (pay.baseSalary - totalDeductionAmount + overtimeAmount)
+                    : 0;
+
+                const payrollBarHtml = pay.baseSalary > 0 ? `
+                    <div style="display:flex; flex-wrap:wrap; gap:14px; align-items:center; margin-bottom:10px; background:var(--surface-2); border:1px solid var(--border); border-radius:8px; padding:10px 14px; font-size:0.82rem;">
+                        <div><span style="color:var(--text-muted);">الراتب الأساسي:</span> <strong>${fmtCurrency(pay.baseSalary)}</strong></div>
+                        <div><span style="color:var(--text-muted);">قيمة الساعة:</span> <strong>${fmtCurrency(pay.hourlyRate)}</strong></div>
+                        <div style="color:#991b1b;"><span style="color:var(--text-muted);">خصم تأخير (${deductionHoursTotal} س):</span> <strong>-${fmtCurrency(lateDeductionAmount)}</strong></div>
+                        <div style="color:#991b1b;"><span style="color:var(--text-muted);">خصم غياب (${deductionDaysTotal} يوم):</span> <strong>-${fmtCurrency(absenceDeductionAmount)}</strong></div>
+                        <div style="color:#166534;"><span style="color:var(--text-muted);">إضافي محتسب (${overtimePayHoursTotal.toFixed(2)} س):</span> <strong>+${fmtCurrency(overtimeAmount)}</strong></div>
+                        <div style="margin-inline-start:auto; font-weight:900; font-size:0.95rem;">صافي الراتب المتوقع: <span style="color:var(--primary-light);">${fmtCurrency(netSalary)}</span></div>
+                    </div>
+                ` : `
+                    <div style="margin-bottom:10px; background:var(--surface-2); border:1px dashed var(--border); border-radius:8px; padding:8px 14px; font-size:0.78rem; color:var(--text-muted);">
+                        💡 لم يتم إدخال راتب أساسي لهذا الموظف بعد — أدخله من تبويب "⚙️ الإعدادات والسياسات" ليظهر هنا حساب الخصومات والإضافي بالجنيه تلقائيًا.
+                    </div>
+                `;
+
                 const card = document.createElement('div');
                 card.className = 'emp-sheet-card';
                 card.innerHTML = `
@@ -2633,14 +2893,16 @@
                                 <div class="emp-sub-text">كود: ${emp.employeeId} · ${completeDays} يوم دوام مكتمل · إجمالي: ${(totalHours).toFixed(2)} س · متوسط: ${avgPerDay}</div>
                             </div>
                         </div>
-                        <div style="display:flex;align-items:center;gap:8px;">
+                        <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
                             <span class="status-badge badge-ok">✅ ${okCount} في معاده</span>
                             <span class="status-badge badge-danger">⏰ ${lateCount} تأخير</span>
                             <span class="status-badge badge-perm">${(employeePermissions[emp.employeeId]||[]).length} أذونات</span>
+                            ${pay.baseSalary > 0 ? `<span class="status-badge" style="background:#eef2ff; color:#3730a3; border:1px solid #c7d2fe; font-weight:800;">💰 صافي: ${fmtCurrency(netSalary)}</span>` : ''}
                             <span style="font-size:1.2rem;color:var(--text-muted);">▾</span>
                         </div>
                     </div>
                     <div class="emp-sheet-body" id="tsBody-${emp.employeeId}">
+                        ${payrollBarHtml}
                         <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px; flex-wrap:wrap; gap:8px; background:var(--surface-2); padding:8px 12px; border-radius:8px; border:1px solid var(--border);">
                             <div style="font-size:0.85rem; font-weight:800; color:var(--text);">📋 سجل الحركات اليومية وساعات العمل</div>
                             <div style="display:flex; gap:6px; flex-wrap:wrap;">
@@ -2813,7 +3075,29 @@
             });
             document.getElementById('modalPermDate').value = new Date().toISOString().slice(0, 10);
             document.getElementById('modalPermNote').value = '';
+            if (document.getElementById('modalPermHours')) document.getElementById('modalPermHours').value = '';
             document.getElementById('permModal').classList.remove('hidden');
+            onPermTypeChanged();
+        }
+
+        // يُظهر/يُخفي حقل عدد الساعات ويُغيّر حده الأقصى حسب نوع الإذن (قرار إداري رقم 1 لسنة 2026)
+        function onPermTypeChanged() {
+            const type = document.getElementById('modalPermType').value;
+            const row = document.getElementById('permHoursRow');
+            const hoursInput = document.getElementById('modalPermHours');
+            const hint = document.getElementById('permHoursHint');
+            if (!row || !hoursInput || !hint) return;
+            if (type === 'exempt' || type === 'mission') {
+                row.style.display = 'none';
+            } else if (type === 'overtime') {
+                row.style.display = 'block';
+                hoursInput.removeAttribute('max');
+                hint.textContent = '🕒 يُحتسب العمل الإضافي بالمضاعفة (كل ساعة إضافية = ساعتان)، ويجب أن يكون بناءً على طلب أو تكليف من الإدارة فقط.';
+            } else {
+                row.style.display = 'block';
+                hoursInput.setAttribute('max', String(ATTENDANCE_POLICY_2026.maxPermitHours));
+                hint.textContent = `⚖️ طبقًا لقرار إداري رقم (1) لسنة 2026: يُسمح بـ${ATTENDANCE_POLICY_2026.maxMonthlyPermits} أذونات شهريًا كحد أقصى، بشرط ألا تتجاوز مدة الإذن ${ATTENDANCE_POLICY_2026.maxPermitHours} ساعتين في كل مرة.`;
+            }
         }
 
         function openNewExemptionDialog() {
@@ -2856,13 +3140,36 @@
             const date  = document.getElementById('modalPermDate').value;
             const type  = document.getElementById('modalPermType').value;
             const note  = document.getElementById('modalPermNote').value.trim();
+            const hoursRaw = document.getElementById('modalPermHours') ? document.getElementById('modalPermHours').value : '';
+            const hours = hoursRaw !== '' ? parseFloat(hoursRaw) : undefined;
 
             if (!empId || !date) { alert('يرجى اختيار الموظف والتاريخ'); return; }
+
+            // إنفاذ قرار إداري رقم (1) لسنة 2026 على التواريخ الخاضعة للقرار فقط (من 1/10/2026)
+            if (date >= ATTENDANCE_POLICY_2026.effectiveDate && empId !== 'all') {
+                if (['late', 'early', 'temp'].includes(type)) {
+                    if (hours !== undefined && hours > ATTENDANCE_POLICY_2026.maxPermitHours) {
+                        alert(`⚖️ طبقًا لقرار إداري رقم (1) لسنة 2026: مدة الإذن يجب ألا تتجاوز ${ATTENDANCE_POLICY_2026.maxPermitHours} ساعتين في المرة الواحدة.`);
+                        return;
+                    }
+                    const monthKey = getMonthKeyFromDate(date);
+                    const usedThisMonth = countMonthlyTardyPermits(empId, monthKey);
+                    if (usedThisMonth >= ATTENDANCE_POLICY_2026.maxMonthlyPermits) {
+                        if (!confirm(`⚠️ الموظف استنفد بالفعل الحد الأقصى (${ATTENDANCE_POLICY_2026.maxMonthlyPermits}) من الأذونات الشهرية لشهر ${monthKey} طبقًا لقرار إداري رقم (1) لسنة 2026.\nهل تريد المتابعة وتسجيل الإذن كاستثناء يدوي على الرغم من ذلك؟`)) {
+                            return;
+                        }
+                    }
+                } else if (type === 'overtime' && (hours === undefined || hours <= 0)) {
+                    alert('يرجى إدخال عدد ساعات العمل الإضافي المعتمدة من الإدارة.');
+                    return;
+                }
+            }
 
             if (!employeePermissions[empId]) employeePermissions[empId] = [];
             employeePermissions[empId].push({
                 date,
                 type,
+                hours: hours,
                 note: note || (empId === 'all' ? 'استثناء تأخير جماعي معتمد لكافة الموظفين' : ''),
                 source: 'manual',
                 sourceTag: (empId === 'all' ? 'استثناء جماعي للجميع' : 'تسجيل يدوي'),
@@ -4180,6 +4487,7 @@
 
         // Initialize UI & Monthly Archive on load
         updatePolicyLabels();
+        renderSalarySettingsList();
         syncApprovedEmployeeRequests();
         initAttendanceArchive();
     </script>

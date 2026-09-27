@@ -42,7 +42,7 @@
         { id: 'date', label: 'التاريخ', type: 'date' },
         { id: 'officialTime', label: 'الموعد الرسمي', type: 'time' },
         { id: 'actualTime', label: 'الحضور / الانصراف الفعلي', type: 'time' },
-        { id: 'diff', label: 'مدة الفارق', type: 'text' },
+        { id: 'hours', label: 'عدد الساعات (الحد الأقصى ساعتان للإذن الواحد)', type: 'number', min: 0.25, max: 2, step: 0.25, hint: 'مثال: 1 أو 1.5' },
         { id: 'reason', label: 'السبب', type: 'textarea' }
       ]
     },

@@ -2500,6 +2500,13 @@
             };
         }
 
+        // ⚖️ قرار إداري رقم (1) لسنة 2026: 4 أذونات شهريًا كحد أقصى، بشرط ألا تتجاوز مدة الإذن ساعتين في كل مرة
+        var EMP_PERM_POLICY_2026 = {
+            effectiveDate: '2026-10-01',
+            maxMonthlyPermits: 4,
+            maxPermitHours: 2
+        };
+
         function tgOnReqTypeChange(val) {
             var dynWrap = document.getElementById('reqDynamicFormWrap');
             var extWrap = document.getElementById('reqExtraFields');
@@ -2529,6 +2536,10 @@
                 var now = new Date();
                 var currentYear = now.getFullYear();
                 var currentMonth = now.getMonth();
+                var todayStr = now.toISOString().slice(0, 10);
+                var policyActive = todayStr >= EMP_PERM_POLICY_2026.effectiveDate;
+                var maxAllowed = policyActive ? EMP_PERM_POLICY_2026.maxMonthlyPermits : 5;
+                var unitLabel = policyActive ? 'إذن' : 'يوم';
 
                 if (Array.isArray(window._reqCache)) {
                     window._reqCache.forEach(function (r) {
@@ -2540,18 +2551,21 @@
                         }
                     });
                 }
-                var remCount = Math.max(0, 5 - usedCount);
+                var remCount = Math.max(0, maxAllowed - usedCount);
 
                 h += '<div style="background:var(--bg2); border:1px solid var(--bd); border-radius:10px; padding:12px 16px; margin-bottom:14px; display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px;">';
                 h += '  <div>';
-                h += '    <div style="font-size:12px; font-weight:bold; color:var(--tx)">📊 رصيد إذنات الشهر الحالي (الحد الأقصى 5 أيام شهرياً)</div>';
-                h += '    <div style="font-size:11px; color:var(--tx2); margin-top:2px;">المستغرق: <span style="font-weight:bold; color:#d97706">' + usedCount + '</span> من 5 أيام | المتبقي: <span style="font-weight:bold; color:#10b981">' + remCount + '</span> أيام</div>';
+                h += '    <div style="font-size:12px; font-weight:bold; color:var(--tx)">📊 رصيد إذنات الشهر الحالي (الحد الأقصى ' + maxAllowed + ' ' + unitLabel + ' شهرياً' + (policyActive ? '، بحد أقصى ساعتين للإذن الواحد' : '') + ')</div>';
+                h += '    <div style="font-size:11px; color:var(--tx2); margin-top:2px;">المستغرق: <span style="font-weight:bold; color:#d97706">' + usedCount + '</span> من ' + maxAllowed + ' ' + unitLabel + ' | المتبقي: <span style="font-weight:bold; color:#10b981">' + remCount + '</span> ' + unitLabel + '</div>';
+                if (policyActive) {
+                    h += '    <div style="font-size:10.5px; color:var(--tx3); margin-top:4px;">⚖️ طبقًا لقرار إداري رقم (1) لسنة 2026: ' + EMP_PERM_POLICY_2026.maxMonthlyPermits + ' أذونات شهريًا كحد أقصى، بشرط ألا تتجاوز مدة الإذن ' + EMP_PERM_POLICY_2026.maxPermitHours + ' ساعتين في كل مرة.</div>';
+                }
                 h += '  </div>';
                 h += '</div>';
 
-                if (usedCount >= 5) {
+                if (usedCount >= maxAllowed) {
                     h += '<div style="background:rgba(239,68,68,0.12); border:2px solid #ef4444; border-radius:12px; padding:18px 20px; margin-bottom:14px; text-align:center; font-size:13px; color:#ef4444; font-weight:bold;">';
-                    h += '  🔒 <strong>تم غلق تقديم الإذنات الإلكترونية لهذا الشهر:</strong> لقد استنفذت الحد الأقصى المسموح به للإذنات هذا الشهر (5/5 أيام). النموذج مغلق تماماً ولا يمكن تقديم طلبات جديدة، يرجى التواصل المباشر مع الإدارة.';
+                    h += '  🔒 <strong>تم غلق تقديم الإذنات الإلكترونية لهذا الشهر:</strong> لقد استنفذت الحد الأقصى المسموح به للإذنات هذا الشهر (' + maxAllowed + '/' + maxAllowed + ' ' + unitLabel + '). النموذج مغلق تماماً ولا يمكن تقديم طلبات جديدة، يرجى التواصل المباشر مع الإدارة.';
                     h += '</div>';
                     dynWrap.innerHTML = h;
                     return;
@@ -2598,7 +2612,13 @@
                         (f.options || []).forEach(function (opt) { h += '<option value="' + escH(opt) + '">' + escH(opt) + '</option>'; });
                         h += '</select>';
                     } else {
-                        h += '<input type="' + (f.type || 'text') + '" data-fid="' + f.id + '">';
+                        var extraAttrs = '';
+                        if (f.min !== undefined) extraAttrs += ' min="' + f.min + '"';
+                        if (f.max !== undefined) extraAttrs += ' max="' + f.max + '"';
+                        if (f.step !== undefined) extraAttrs += ' step="' + f.step + '"';
+                        if (f.hint) extraAttrs += ' placeholder="' + escH(f.hint) + '"';
+                        h += '<input type="' + (f.type || 'text') + '" data-fid="' + f.id + '"' + extraAttrs + '>';
+                        if (f.id === 'hours') h += '<small style="color:var(--tx3); font-size:11px; display:block; margin-top:3px;">⚖️ لا يجوز أن تتجاوز مدة الإذن الواحد ساعتين طبقًا لقرار إداري رقم (1) لسنة 2026.</small>';
                     }
                     h += '</div>';
                 });
@@ -2766,6 +2786,10 @@
                     var now = new Date();
                     var currentYear = now.getFullYear();
                     var currentMonth = now.getMonth();
+                    var todayStr = now.toISOString().slice(0, 10);
+                    var policyActive = todayStr >= EMP_PERM_POLICY_2026.effectiveDate;
+                    var maxAllowed = policyActive ? EMP_PERM_POLICY_2026.maxMonthlyPermits : 5;
+                    var unitLabel = policyActive ? 'إذن' : 'يوم';
                     if (window._reqCache) {
                         window._reqCache.forEach(function (r) {
                             if (r.formTemplateId === 'perm' || r.templateKey === 'perm' || (r.type && r.type.indexOf('إذن') !== -1)) {
@@ -2776,10 +2800,24 @@
                             }
                         });
                     }
-                    if (usedCount >= 5) {
+                    if (usedCount >= maxAllowed) {
                         msg.style.color = 'var(--no)';
-                        msg.textContent = '❌ عفواً: لقد استنفذت الحد الأقصى للإذنات هذا الشهر (5/5 أيام). يرجى مراجعة الإدارة.';
+                        msg.textContent = '❌ عفواً: لقد استنفذت الحد الأقصى للإذنات هذا الشهر (' + maxAllowed + '/' + maxAllowed + ' ' + unitLabel + '). يرجى مراجعة الإدارة.';
                         return;
+                    }
+                    if (policyActive) {
+                        var hoursEl = dynWrap.querySelector('[data-fid="hours"]');
+                        var hoursVal = hoursEl && hoursEl.value !== '' ? parseFloat(hoursEl.value) : NaN;
+                        if (isNaN(hoursVal) || hoursVal <= 0) {
+                            msg.style.color = 'var(--no)';
+                            msg.textContent = '⚠️ من فضلك أدخل عدد ساعات الإذن.';
+                            return;
+                        }
+                        if (hoursVal > EMP_PERM_POLICY_2026.maxPermitHours) {
+                            msg.style.color = 'var(--no)';
+                            msg.textContent = '⚖️ طبقًا لقرار إداري رقم (1) لسنة 2026: مدة الإذن يجب ألا تتجاوز ' + EMP_PERM_POLICY_2026.maxPermitHours + ' ساعتين في المرة الواحدة.';
+                            return;
+                        }
                     }
                 }
 
