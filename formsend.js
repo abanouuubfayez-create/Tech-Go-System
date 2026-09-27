@@ -176,13 +176,12 @@
     var off = offEl.value, act = actEl.value;
     if (!off || !act) { hoursEl.value = ''; return; }
     try {
-      var base = '2026-01-01';
-      var d1 = new Date(base + 'T' + off), d2 = new Date(base + 'T' + act);
-      var permTypeRadio = wrap.querySelector('input[name="fsPt"]:checked');
-      var isDeparture = permTypeRadio && permTypeRadio.value.indexOf('انصراف') > -1;
-      var from = isDeparture ? d2 : d1, to = isDeparture ? d1 : d2;
-      if (to < from) to.setDate(to.getDate() + 1);
-      var totalMinutes = Math.max(0, Math.round((to - from) / 60000));
+      var offParts = off.split(':'), actParts = act.split(':');
+      if (offParts.length < 2 || actParts.length < 2) { hoursEl.value = ''; return; }
+      var offMinutes = (parseInt(offParts[0], 10) * 60) + parseInt(offParts[1], 10);
+      var actMinutes = (parseInt(actParts[0], 10) * 60) + parseInt(actParts[1], 10);
+      // الفرق المطلق بين الوقتين فقط (بدون أي افتراض لعبور منتصف الليل) — دقيق بغض النظر عن اختيار نوع الإذن
+      var totalMinutes = Math.abs(actMinutes - offMinutes);
       hoursEl.value = fsFormatHM(totalMinutes);
     } catch (e) { hoursEl.value = ''; }
   };
