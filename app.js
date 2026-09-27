@@ -1688,6 +1688,7 @@ function openPendingRequestsModal() {
                     if (lbl === 'chk2') lbl = 'تسليم العهدة العينية';
                     if (lbl === 'chk3') lbl = 'تسليم المستندات والملفات';
                     if (lbl === 'chk4') lbl = 'إنهاء المهام المعلقة';
+                    if (lbl === 'diff') lbl = 'عدد الساعات (تسجيل قديم)';
                     dh += '<div style="margin-bottom:3px;"><span style="color:var(--tx3);display:inline-block;width:100px;">' + escH(lbl) + ':</span> <b style="white-space:pre-wrap;">' + escH(v) + '</b></div>';
                 }
                 dh += '</div>';
@@ -4790,6 +4791,7 @@ function printRequestDoc(u, r) {
             if (lbl === 'chk2') lbl = 'تسليم العهدة العينية';
             if (lbl === 'chk3') lbl = 'تسليم المستندات والملفات';
             if (lbl === 'chk4') lbl = 'إنهاء المهام المعلقة';
+            if (lbl === 'diff') lbl = 'عدد الساعات (تسجيل قديم)';
             h += tgLine(lbl, v);
         }
     } else {
@@ -7766,6 +7768,7 @@ function renderAllRequestsListHub() {
                 if (lbl === 'chk2') lbl = 'تسليم العهدة العينية';
                 if (lbl === 'chk3') lbl = 'تسليم المستندات والملفات';
                 if (lbl === 'chk4') lbl = 'إنهاء المهام المعلقة';
+                if (lbl === 'diff') lbl = 'عدد الساعات (تسجيل قديم)';
                 dh += '<div><span style="color:var(--tx3);display:inline-block;">' + escH(lbl) + ':</span> <b style="white-space:pre-wrap;">' + escH(v) + '</b></div>';
             });
             dh += '</div>';
@@ -8602,6 +8605,7 @@ function openAdminEmployeeDetail(idx) {
                                 if (lbl === 'chk2') lbl = 'تسليم العهدة العينية';
                                 if (lbl === 'chk3') lbl = 'تسليم المستندات والملفات';
                                 if (lbl === 'chk4') lbl = 'إنهاء المهام المعلقة';
+                                if (lbl === 'diff') lbl = 'عدد الساعات (تسجيل قديم)';
                                 dh += '<div style="margin-bottom:3px;"><span style="color:var(--tx3);display:inline-block;width:100px;">' + escH(lbl) + ':</span> <b style="white-space:pre-wrap;">' + escH(v) + '</b></div>';
                             }
                             dh += '</div>';

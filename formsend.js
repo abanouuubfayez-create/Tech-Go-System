@@ -42,8 +42,8 @@
         { id: 'date', label: 'التاريخ', type: 'date' },
         { id: 'officialTime', label: 'الموعد الرسمي', type: 'time' },
         { id: 'actualTime', label: 'الحضور / الانصراف الفعلي', type: 'time' },
-        { id: 'hours', label: 'عدد الساعات (الحد الأقصى ساعتان للإذن الواحد)', type: 'number', min: 0.25, max: 2, step: 0.25, hint: 'مثال: 1 أو 1.5' },
-        { id: 'reason', label: 'السبب', type: 'textarea' }
+        { id: 'hours', label: 'مدة الإذن (الحد الأقصى ساعتان للإذن الواحد)', type: 'text', hint: 'الساعة = 60 دقيقة. مثال: لكتابة ساعة ونص اكتب 1:30 (وليس 1.30)' },
+        { id: 'reason', label: 'سبب الإذن', type: 'textarea', requiredField: true }
       ]
     },
     delay: {
@@ -254,8 +254,9 @@
         h += F2(fgIn('اسم الموظف', 'name'), fgIn('الرقم الوظيفي', 'empId'));
         h += F2(fgIn('القسم / الإدارة', 'dept'), fgIn('التاريخ', 'date', 'date'));
         h += SC('٣', 'تفاصيل الإذن');
-        h += F3(fgIn('الموعد الرسمي', 'officialTime', 'time'), fgIn('الحضور/الانصراف الفعلي', 'actualTime', 'time'), fgIn('مدة الفارق', 'diff'));
-        h += '<div class="fg fg-full"><label>السبب</label><textarea rows="2" data-fid="reason"></textarea></div>';
+        h += F3(fgIn('الموعد الرسمي', 'officialTime', 'time'), fgIn('الحضور/الانصراف الفعلي', 'actualTime', 'time'), fgIn('مدة الإذن (مثال: 1:30 لساعة ونصف)', 'hours'));
+        h += '<div class="fg fg-full"><small style="color:var(--tx3); font-size:11px; display:block; margin:-6px 0 8px;">⚖️ الساعة = 60 دقيقة، ولا يجوز أن تتجاوز مدة الإذن الواحد ساعتين. اكتب المدة بصيغة ساعة:دقيقة، مثال 1:30.</small></div>';
+        h += '<div class="fg fg-full"><label>سبب الإذن</label><textarea rows="2" data-fid="reason" required></textarea></div>';
         return h;
       },
       print: function (v) {
@@ -267,8 +268,8 @@
         h += F2(fgOut('اسم الموظف', v.name), fgOut('الرقم الوظيفي', v.empId));
         h += F2(fgOut('القسم / الإدارة', v.dept), fgOut('التاريخ', v.date));
         h += SC('٣', 'تفاصيل الإذن');
-        h += F3(fgOut('الموعد الرسمي', v.officialTime), fgOut('الحضور/الانصراف الفعلي', v.actualTime), fgOut('مدة الفارق', v.diff));
-        h += fgOut('السبب', v.reason, true);
+        h += F3(fgOut('الموعد الرسمي', v.officialTime), fgOut('الحضور/الانصراف الفعلي', v.actualTime), fgOut('مدة الإذن', v.hours));
+        h += fgOut('سبب الإذن', v.reason, true);
         h += SC('٤', 'التوقيعات');
         h += SG3('توقيع الموظف', '', 'المدير الإداري', 'الموافقة', 'المدير التنفيذي', '', null, 'admin', 'exec');
         return h;

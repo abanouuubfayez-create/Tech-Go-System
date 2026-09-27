@@ -1080,9 +1080,9 @@
                 </div>
             </div>
             <div id="permHoursRow" style="margin-bottom: 10px;">
-                <label style="font-size: 0.82rem; color: var(--text-muted); display: block; margin-bottom: 4px;">عدد الساعات (الحد الأقصى ساعتان للإذن الشهري):</label>
-                <input type="number" id="modalPermHours" min="0" max="2" step="0.25" placeholder="مثال: 1 أو 1.5" style="width: 100%; padding: 8px; border-radius: 8px; background: var(--surface-2); color: var(--text); border: 1px solid var(--border);">
-                <small id="permHoursHint" style="color: var(--text-muted); font-size: 0.75rem; margin-top: 4px; display: block;">⚖️ طبقًا لقرار إداري رقم (1) لسنة 2026: يُسمح بـ4 أذونات شهريًا كحد أقصى، بشرط ألا تتجاوز مدة الإذن ساعتين في كل مرة.</small>
+                <label style="font-size: 0.82rem; color: var(--text-muted); display: block; margin-bottom: 4px;">مدة الإذن (الحد الأقصى ساعتان للإذن الشهري):</label>
+                <input type="text" id="modalPermHours" placeholder="مثال: 1:30 لساعة ونصف" style="width: 100%; padding: 8px; border-radius: 8px; background: var(--surface-2); color: var(--text); border: 1px solid var(--border);">
+                <small id="permHoursHint" style="color: var(--text-muted); font-size: 0.75rem; margin-top: 4px; display: block;">⚖️ الساعة = 60 دقيقة. اكتب المدة بصيغة ساعة:دقيقة (مثال 1:30). طبقًا لقرار إداري رقم (1) لسنة 2026: يُسمح بـ4 أذونات شهريًا كحد أقصى، بشرط ألا تتجاوز مدة الإذن ساعتين في كل مرة.</small>
             </div>
             <div style="margin-bottom: 14px;">
                 <label style="font-size: 0.82rem; color: var(--text-muted); display: block; margin-bottom: 4px;">السبب والملاحظات:</label>
@@ -1187,6 +1187,24 @@
             maxPermitHours: 2,             // 2 | ألا تتجاوز مدة الإذن ساعتين في كل مرة
             overtimeMultiplier: 2          // 4 | العمل الإضافي يُحتسب بالمضاعفة
         };
+
+        // 🕐 الساعة = 60 دقيقة: يحوّل نص المدة المكتوب بصيغة "ساعة:دقيقة" (مثال 1:30 = ساعة ونصف،
+        // كما يكتبها الموظف في نموذج طلب الإذن) إلى رقم عشري بالساعات (1.5)، مع دعم الصيغة العشرية القديمة.
+        function parseDurationToHours(str) {
+            if (str === undefined || str === null) return NaN;
+            str = String(str).trim();
+            if (str === '') return NaN;
+            if (str.indexOf(':') !== -1) {
+                var parts = str.split(':');
+                var h = parseInt(parts[0], 10);
+                var m = parts.length > 1 ? parseInt(parts[1], 10) : 0;
+                if (isNaN(h)) h = 0;
+                if (isNaN(m)) m = 0;
+                if (m >= 60) return NaN;
+                return h + (m / 60);
+            }
+            return parseFloat(str.replace(',', '.'));
+        }
 
         // خصم التأخير بعد استنفاد مدة/عدد مرات السماح (البند 3):
         // كل ساعة تأخير (يُقرَّب لأعلى) تُحتسب مضاعفة لأول ساعة ثم بالتتابع:
@@ -1830,8 +1848,8 @@
 
                 const rawType = (r.type || r.title || r.templateLabel || vals['نوع الإذن'] || vals['نوع الإجازة'] || vals['type'] || vals['النوع'] || '').toLowerCase();
                 const rawReason = r.reason || r.note || r.details || vals['السبب'] || vals['سبب الإذن'] || vals['سبب الإجازة'] || vals['reason'] || vals['note'] || 'معتمد من مركز طلبات الموظفين';
-                const rawHours = r.hours ?? vals['عدد الساعات'] ?? vals['hours'];
-                const parsedHours = rawHours !== undefined && rawHours !== '' ? parseFloat(String(rawHours).replace(',', '.')) : undefined;
+                const rawHours = r.hours ?? vals['عدد الساعات'] ?? vals['hours'] ?? vals['مدة الإذن'];
+                const parsedHours = rawHours !== undefined && rawHours !== '' ? parseDurationToHours(rawHours) : undefined;
                 const reqHours = (parsedHours !== undefined && !isNaN(parsedHours) && parsedHours > 0) ? parsedHours : undefined;
 
                 // 1. Permission (إذن حضور / انصراف / خروج مؤقت)
@@ -3091,12 +3109,10 @@
                 row.style.display = 'none';
             } else if (type === 'overtime') {
                 row.style.display = 'block';
-                hoursInput.removeAttribute('max');
-                hint.textContent = '🕒 يُحتسب العمل الإضافي بالمضاعفة (كل ساعة إضافية = ساعتان)، ويجب أن يكون بناءً على طلب أو تكليف من الإدارة فقط.';
+                hint.textContent = '🕒 الساعة = 60 دقيقة، اكتب المدة بصيغة ساعة:دقيقة (مثال 1:30). يُحتسب العمل الإضافي بالمضاعفة (كل ساعة إضافية = ساعتان)، ويجب أن يكون بناءً على طلب أو تكليف من الإدارة فقط.';
             } else {
                 row.style.display = 'block';
-                hoursInput.setAttribute('max', String(ATTENDANCE_POLICY_2026.maxPermitHours));
-                hint.textContent = `⚖️ طبقًا لقرار إداري رقم (1) لسنة 2026: يُسمح بـ${ATTENDANCE_POLICY_2026.maxMonthlyPermits} أذونات شهريًا كحد أقصى، بشرط ألا تتجاوز مدة الإذن ${ATTENDANCE_POLICY_2026.maxPermitHours} ساعتين في كل مرة.`;
+                hint.textContent = `⚖️ الساعة = 60 دقيقة، اكتب المدة بصيغة ساعة:دقيقة (مثال 1:30). طبقًا لقرار إداري رقم (1) لسنة 2026: يُسمح بـ${ATTENDANCE_POLICY_2026.maxMonthlyPermits} أذونات شهريًا كحد أقصى، بشرط ألا تتجاوز مدة الإذن ${ATTENDANCE_POLICY_2026.maxPermitHours} ساعتين في كل مرة.`;
             }
         }
 
@@ -3140,8 +3156,13 @@
             const date  = document.getElementById('modalPermDate').value;
             const type  = document.getElementById('modalPermType').value;
             const note  = document.getElementById('modalPermNote').value.trim();
-            const hoursRaw = document.getElementById('modalPermHours') ? document.getElementById('modalPermHours').value : '';
-            const hours = hoursRaw !== '' ? parseFloat(hoursRaw) : undefined;
+            const hoursRaw = document.getElementById('modalPermHours') ? document.getElementById('modalPermHours').value.trim() : '';
+            const hoursParsed = hoursRaw !== '' ? parseDurationToHours(hoursRaw) : undefined;
+            if (hoursRaw !== '' && (hoursParsed === undefined || isNaN(hoursParsed))) {
+                alert('⚠️ صيغة المدة غير صحيحة. اكتبها بصيغة ساعة:دقيقة، مثال: 1:30 لساعة ونصف.');
+                return;
+            }
+            const hours = hoursParsed;
 
             if (!empId || !date) { alert('يرجى اختيار الموظف والتاريخ'); return; }
 
@@ -4491,7 +4512,7 @@
         syncApprovedEmployeeRequests();
         initAttendanceArchive();
     </script>
-    <script src="theme.js?v=1789045245"></script>
-    <script src="pwa-install.js?v=1789045245"></script>
+    <script src="theme.js?v=1790515977"></script>
+    <script src="pwa-install.js?v=1790515977"></script>
 </body>
 </html>
