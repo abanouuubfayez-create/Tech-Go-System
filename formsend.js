@@ -144,16 +144,48 @@
   // النموذج اللي يملأه الموظف، والنسخة اللي يطبعها الأدمن، هو نفس تصميم
   // النموذج الرسمي الموجود في مكتبة الأوراق (مش نموذج شبيه مبني بشكل عام).
   // ─────────────────────────────────────────────────────────────────────
-  function fgIn(label, fid, type) {
-    return '<div class="fg"><label>' + escH(label) + '</label><input type="' + (type || 'text') + '" data-fid="' + fid + '" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"></div>';
+  function fgIn(label, fid, type, extraAttrs) {
+    return '<div class="fg"><label>' + escH(label) + '</label><input type="' + (type || 'text') + '" data-fid="' + fid + '"' + (extraAttrs || '') + ' autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"></div>';
   }
   function fgOut(label, value, full) {
     return '<div class="fg' + (full ? ' fg-full' : '') + '"><label>' + escH(label) + '</label>' +
       '<input type="text" value="' + escH(value || '—') + '" readonly></div>';
   }
-  function fsRadioIn(fid, name, value, label) {
-    return '<label><input type="radio" name="' + name + '" data-fid="' + fid + '" value="' + escH(value) + '"> ' + label + '</label>';
+  function fsRadioIn(fid, name, value, label, onchange) {
+    return '<label><input type="radio" name="' + name + '" data-fid="' + fid + '" value="' + escH(value) + '"' + (onchange ? ' onchange="' + onchange + '"' : '') + '> ' + label + '</label>';
   }
+  // ── إذن حضور/انصراف: الموعد الرسمي الافتراضي (مواعيد العمل المعتمدة) + حساب مدة الإذن تلقائياً ──
+  function fsFormatHM(totalMinutes) {
+    var h = Math.floor(totalMinutes / 60), m = totalMinutes % 60;
+    return h + ':' + (m < 10 ? '0' + m : m);
+  }
+  window.fsPermTypeChanged = function (radio) {
+    var wrap = radio.closest('[id^="fsForm_"]');
+    if (!wrap) return;
+    var offEl = wrap.querySelector('[data-fid="officialTime"]');
+    if (offEl) offEl.value = (radio.value.indexOf('انصراف') > -1) ? '18:00' : '10:00';
+    window.fsCalcPermDiff(offEl);
+  };
+  window.fsCalcPermDiff = function (el) {
+    var wrap = el && el.closest('[id^="fsForm_"]');
+    if (!wrap) return;
+    var offEl = wrap.querySelector('[data-fid="officialTime"]');
+    var actEl = wrap.querySelector('[data-fid="actualTime"]');
+    var hoursEl = wrap.querySelector('[data-fid="hours"]');
+    if (!offEl || !actEl || !hoursEl) return;
+    var off = offEl.value, act = actEl.value;
+    if (!off || !act) { hoursEl.value = ''; return; }
+    try {
+      var base = '2026-01-01';
+      var d1 = new Date(base + 'T' + off), d2 = new Date(base + 'T' + act);
+      var permTypeRadio = wrap.querySelector('input[name="fsPt"]:checked');
+      var isDeparture = permTypeRadio && permTypeRadio.value.indexOf('انصراف') > -1;
+      var from = isDeparture ? d2 : d1, to = isDeparture ? d1 : d2;
+      if (to < from) to.setDate(to.getDate() + 1);
+      var totalMinutes = Math.max(0, Math.round((to - from) / 60000));
+      hoursEl.value = fsFormatHM(totalMinutes);
+    } catch (e) { hoursEl.value = ''; }
+  };
   function fsRadioOut(value, checkedValue, label) {
     return '<label><input type="radio" disabled' + (value === checkedValue ? ' checked' : '') + '> ' + label + '</label>';
   }
@@ -248,13 +280,17 @@
       fill: function () {
         var h = SC('١', 'نوع الإذن');
         h += '<div class="chk-grid">' +
-          fsRadioIn('permType', 'fsPt', 'حضور بعد مواعيد العمل', '<strong>حضور</strong> بعد مواعيد العمل') +
-          fsRadioIn('permType', 'fsPt', 'انصراف قبل مواعيد العمل', '<strong>انصراف</strong> قبل مواعيد العمل') + '</div>';
+          fsRadioIn('permType', 'fsPt', 'حضور بعد مواعيد العمل', '<strong>حضور</strong> بعد مواعيد العمل', 'fsPermTypeChanged(this)') +
+          fsRadioIn('permType', 'fsPt', 'انصراف قبل مواعيد العمل', '<strong>انصراف</strong> قبل مواعيد العمل', 'fsPermTypeChanged(this)') + '</div>';
         h += SC('٢', 'بيانات الموظف');
         h += F2(fgIn('اسم الموظف', 'name'), fgIn('الرقم الوظيفي', 'empId'));
         h += F2(fgIn('القسم / الإدارة', 'dept'), fgIn('التاريخ', 'date', 'date'));
         h += SC('٣', 'تفاصيل الإذن');
-        h += F3(fgIn('الموعد الرسمي', 'officialTime', 'time'), fgIn('الحضور/الانصراف الفعلي', 'actualTime', 'time'), fgIn('مدة الإذن (مثال: 1:30 لساعة ونصف)', 'hours'));
+        h += F3(
+          fgIn('الموعد الرسمي', 'officialTime', 'time', ' value="10:00" oninput="fsCalcPermDiff(this)"'),
+          fgIn('الحضور/الانصراف الفعلي', 'actualTime', 'time', ' oninput="fsCalcPermDiff(this)"'),
+          fgIn('مدة الإذن (تُحسب تلقائياً)', 'hours', 'text', ' readonly placeholder="تُحسب تلقائياً"')
+        );
         h += '<div class="fg fg-full"><small style="color:var(--tx3); font-size:11px; display:block; margin:-6px 0 8px;">⚖️ الساعة = 60 دقيقة، ولا يجوز أن تتجاوز مدة الإذن الواحد ساعتين. اكتب المدة بصيغة ساعة:دقيقة، مثال 1:30.</small></div>';
         h += '<div class="fg fg-full"><label>سبب الإذن</label><textarea rows="2" data-fid="reason" required></textarea></div>';
         return h;
