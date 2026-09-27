@@ -160,14 +160,14 @@
     return h + ':' + (m < 10 ? '0' + m : m);
   }
   window.fsPermTypeChanged = function (radio) {
-    var wrap = radio.closest('[id^="fsForm_"]');
+    var wrap = radio.closest('[id^="fsForm_"], #reqDynamicFormWrap');
     if (!wrap) return;
     var offEl = wrap.querySelector('[data-fid="officialTime"]');
     if (offEl) offEl.value = (radio.value.indexOf('انصراف') > -1) ? '18:00' : '10:00';
     window.fsCalcPermDiff(offEl);
   };
   window.fsCalcPermDiff = function (el) {
-    var wrap = el && el.closest('[id^="fsForm_"]');
+    var wrap = el && el.closest('[id^="fsForm_"], #reqDynamicFormWrap');
     if (!wrap) return;
     var offEl = wrap.querySelector('[data-fid="officialTime"]');
     var actEl = wrap.querySelector('[data-fid="actualTime"]');

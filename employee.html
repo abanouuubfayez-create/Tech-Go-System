@@ -2745,6 +2745,7 @@
                 try {
                     var draft = JSON.parse(rawDraft);
                     dynWrap.querySelectorAll('[data-fid], input, select, textarea').forEach(function (el) {
+                        if (el.readOnly) return; // لا تستعيد بيانات قديمة داخل حقل للقراءة فقط (بيتحسب تلقائيًا)
                         var fid = el.getAttribute('data-fid') || el.name || el.id;
                         if (!fid || !(fid in draft)) return;
                         var v = draft[fid];
@@ -2765,6 +2766,12 @@
                 if (emailEl && !emailEl.value && TG_USER.email) emailEl.value = TG_USER.email;
                 var deptEl = dynWrap.querySelector('[data-fid="dept"]');
                 if (deptEl && !deptEl.value && TG_USER.dept) deptEl.value = TG_USER.dept;
+            }
+
+            // إعادة حساب مدة الإذن بعد الاستعادة، ضمانًا لعدم بقاء قيمة قديمة في حقل "مدة الإذن" للقراءة فقط
+            if (val === 'perm' && typeof window.fsCalcPermDiff === 'function') {
+                var actualEl = dynWrap.querySelector('[data-fid="actualTime"]');
+                if (actualEl) window.fsCalcPermDiff(actualEl);
             }
         }
 
