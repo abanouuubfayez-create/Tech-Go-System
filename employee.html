@@ -2635,6 +2635,7 @@
                         if (f.max !== undefined) extraAttrs += ' max="' + f.max + '"';
                         if (f.step !== undefined) extraAttrs += ' step="' + f.step + '"';
                         if (f.hint) extraAttrs += ' placeholder="' + escH(f.hint) + '"';
+                        extraAttrs += ' autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"';
                         h += '<input type="' + (f.type || 'text') + '" data-fid="' + f.id + '"' + extraAttrs + '>';
                         if (f.id === 'hours') h += '<small style="color:var(--tx3); font-size:11px; display:block; margin-top:3px;">⚖️ الساعة = 60 دقيقة، ولا يجوز أن تتجاوز مدة الإذن الواحد ساعتين طبقًا لقرار إداري رقم (1) لسنة 2026. اكتب المدة بصيغة ساعة:دقيقة، مثال: 1:30 لساعة ونصف.</small>';
                     }

@@ -145,7 +145,7 @@
   // النموذج الرسمي الموجود في مكتبة الأوراق (مش نموذج شبيه مبني بشكل عام).
   // ─────────────────────────────────────────────────────────────────────
   function fgIn(label, fid, type) {
-    return '<div class="fg"><label>' + escH(label) + '</label><input type="' + (type || 'text') + '" data-fid="' + fid + '"></div>';
+    return '<div class="fg"><label>' + escH(label) + '</label><input type="' + (type || 'text') + '" data-fid="' + fid + '" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"></div>';
   }
   function fgOut(label, value, full) {
     return '<div class="fg' + (full ? ' fg-full' : '') + '"><label>' + escH(label) + '</label>' +

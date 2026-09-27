@@ -3710,6 +3710,28 @@ function FGE(l) { return '<div class="fg"><label>' + l + '</label><input type="t
 function FGA(l, r, p) { return '<div class="fg fg-full"><label>' + l + '</label><textarea rows="' + (r || 3) + '"' + (p ? ' placeholder="' + p + '"' : '') + '></textarea></div>' }
 function FGS(l, opts) { var o = '<option value="" selected></option>'; for (var i = 0; i < opts.length; i++)o += '<option>' + opts[i] + '</option>'; return '<div class="fg"><label>' + l + '</label><select>' + o + '</select></div>' }
 
+// ── إذن حضور/انصراف: الموعد الرسمي الافتراضي (من نظام البصمة) + حساب الفرق تلقائياً ──
+// عند تغيير نوع الإذن (حضور/انصراف) يتم ضبط "الموعد الرسمي" تلقائياً على مواعيد العمل الرسمية (10:00 ص للحضور / 06:00 م للانصراف)
+window.tgPermTypeChanged = function (radio) {
+    var offEl = document.getElementById('tgPermOfficial');
+    if (offEl) offEl.value = (radio.value === 'out') ? '18:00' : '10:00';
+    window.tgCalcPermDiff();
+};
+// يحسب "مدة الفارق" تلقائياً بمجرد إدخال/تغيير الموعد الرسمي أو الموعد الفعلي
+window.tgCalcPermDiff = function () {
+    var offEl = document.getElementById('tgPermOfficial');
+    var actEl = document.getElementById('tgPermActual');
+    var diffEl = document.getElementById('tgPermDiff');
+    if (!offEl || !actEl || !diffEl) return;
+    var off = offEl.value, act = actEl.value;
+    if (!off || !act) { diffEl.value = ''; return; }
+    var isDeparture = document.querySelector('input[name="pt"][value="out"]') && document.querySelector('input[name="pt"][value="out"]').checked;
+    // إذن حضور: الفارق = الفعلي - الرسمي (تأخير) | إذن انصراف: الفارق = الرسمي - الفعلي (خروج مبكر)
+    var from = isDeparture ? act : off;
+    var to = isDeparture ? off : act;
+    diffEl.value = window.tgFormatWorkHours(from, to);
+};
+
 // ─── طباعة موحدة لمستندات الموظف (تُستخدم من لوحة الأدمن وبوابة الموظف معاً) ──
 // تبحث عن إطار طباعة مخفي بمعرّف tgPrintFrame في الصفحة الحالية (موجود في index.html و employee.html)
 function tgLine(lbl, val) {
@@ -6270,12 +6292,16 @@ function load(id, c) {
         h += '</div>';
 
         h += SC('١', 'نوع الإذن');
-        h += '<div class="chk-grid" style="grid-template-columns:1fr 1fr"><label><input type="radio" name="pt"> <strong>حضور</strong> بعد مواعيد العمل</label><label><input type="radio" name="pt"> <strong>انصراف</strong> قبل مواعيد العمل</label></div>';
+        h += '<div class="chk-grid" style="grid-template-columns:1fr 1fr"><label><input type="radio" name="pt" value="in" checked onchange="tgPermTypeChanged(this)"> <strong>حضور</strong> بعد مواعيد العمل</label><label><input type="radio" name="pt" value="out" onchange="tgPermTypeChanged(this)"> <strong>انصراف</strong> قبل مواعيد العمل</label></div>';
         h += SC('٢', 'بيانات الموظف');
         h += F2(FGE('اسم الموظف'), FG('الرقم الوظيفي'));
         h += F2(FG('القسم / الإدارة'), FG('التاريخ', 'date'));
         h += SC('٣', 'تفاصيل الإذن');
-        h += F3(FG('الموعد الرسمي', 'time'), FG('الحضور/الانصراف الفعلي', 'time'), FG('مدة الفارق'));
+        h += '<div class="fr fr3">'
+            + '<div class="fg"><label>الموعد الرسمي</label><input type="time" id="tgPermOfficial" value="10:00" oninput="tgCalcPermDiff()"></div>'
+            + '<div class="fg"><label>الحضور/الانصراف الفعلي</label><input type="time" id="tgPermActual" oninput="tgCalcPermDiff()"></div>'
+            + '<div class="fg"><label>مدة الفارق</label><input type="text" id="tgPermDiff" readonly placeholder="تُحسب تلقائياً"></div>'
+            + '</div>';
         h += FGA('السبب', 2);
         h += SC('٤', 'التوقيعات');
         h += SG3('توقيع الموظف', '', 'المدير الإداري', 'الموافقة', 'المدير التنفيذي', '', null, 'admin', 'exec');
