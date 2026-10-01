@@ -708,6 +708,10 @@
             <button class="btn-action btn-ghost" onclick="openWorkSettingsModal()" title="إعدادات مواعيد وسماح الدوام">
                 ⚙️ إعدادات الدوام
             </button>
+            <div style="position:relative; display:inline-block;">
+                <button class="btn-action btn-ghost" type="button" onclick="togglePdfEmpPanel(event)" title="اختيار الموظفين اللي يظهروا في تقرير PDF">👥 الموظفون في PDF</button>
+                <div id="pdfEmpPanel" style="display:none; position:absolute; top:110%; inset-inline-start:0; z-index:500; min-width:230px; background:var(--surface, #fff); color:var(--text); border:1px solid var(--border); border-radius:10px; box-shadow:0 8px 24px rgba(0,0,0,0.25); padding:10px 12px;" onclick="event.stopPropagation()"></div>
+            </div>
             <label style="display:inline-flex; align-items:center; gap:5px; font-size:0.8rem; font-weight:700; color:var(--text); cursor:pointer; padding:0 8px;" title="إظهار أو إخفاء الرواتب والعمولات في التقرير">
                 <input type="checkbox" id="printShowPayroll" checked onchange="try{localStorage.setItem('techgo_pdf_show_payroll', this.checked ? '1' : '0')}catch(e){}"> 💰 إظهار الرواتب في PDF
             </label>
@@ -1829,12 +1833,13 @@
                 return inactiveEmployees.includes(str) ? null : str;
             }
             const s = str.toLowerCase();
-            if (s.includes('tgb') || s.includes('مرقس') || s.includes('markos') || s.includes('مدحت')) return '8';
-            if (s.includes('tgd') || s.includes('ابتهال') || s.includes('ebthal') || s.includes('إبتهال')) return '3';
-            if (s.includes('tgf') || s.includes('باسل') || s.includes('basel')) return '7';
-            if (s.includes('tgl') || s.includes('أبانوب') || s.includes('ابانوب') || s.includes('فايز') || s.includes('abanob')) return '4';
-            if (s.includes('tgg') || s.includes('يوستينا') || s.includes('yostina')) return '6';
-            if (s.includes('tgs') || s.includes('كيرلس') || s.includes('kirlos') || s.includes('kyrollos')) return '10';
+            const has = (...ks) => ks.some(k => s.includes(k));
+            if (has('tgb', 'مرقس', 'markos', 'marcos', 'markus', 'مدحت', 'medhat', 'midhat')) return '8';
+            if (has('tgd', 'ابتهال', 'إبتهال', 'ebthal', 'ebtehal', 'ebtihal', 'ibtihal', 'ibtehal')) return '3';
+            if (has('tgf', 'باسل', 'basel', 'basil', 'bassel')) return '7';
+            if (has('tgl', 'أبانوب', 'ابانوب', 'فايز', 'abanob', 'abanoub', 'fayez', 'fayiz')) return '4';
+            if (has('tgg', 'يوستينا', 'yostina', 'yustina', 'justina')) return '6';
+            if (has('tgs', 'كيرلس', 'kirlos', 'kyrollos', 'kerolos', 'kyrillos', 'kirollos')) return '10';
 
             for (const id in employeeNames) {
                 if (inactiveEmployees.includes(id)) continue;
@@ -2471,8 +2476,24 @@
                 employeeDays.get(k).push(r);
             });
 
-            employeeDays.forEach(function(dayRecords) {
+            // دمج الضغطات المتكررة: أي بصمتين لنفس الموظف في أقل من 5 دقايق بتتحسب بصمة واحدة (ضغطة مزدوجة أو سجل مكرر)
+            var DOUBLE_PUNCH_MIN = 5;
+            var dedupedRecords = [];
+            employeeDays.forEach(function(dayRecords, key) {
                 dayRecords.sort(function(a,b){ return a.datetime - b.datetime; });
+                var kept = [];
+                dayRecords.forEach(function(r) {
+                    var last = kept[kept.length - 1];
+                    if (last && (r.datetime - last.datetime) < DOUBLE_PUNCH_MIN * 60000) return;
+                    kept.push(r);
+                });
+                employeeDays.set(key, kept);
+                kept.forEach(function(r) { dedupedRecords.push(r); });
+            });
+            records = dedupedRecords;
+            currentRecords = records;
+
+            employeeDays.forEach(function(dayRecords) {
                 if (dayRecords.length === 1) {
                     var h = dayRecords[0].datetime.getHours();
                     dayRecords[0].type = h < 14 ? 'دخول' : 'خروج';
@@ -3559,6 +3580,47 @@
             '10': { name: 'Kirlos', balance: 15, total: 15, priorUsed: 0, used: 0, casual: 0, wfh: 0, leaves: [] }
         };
 
+        // ── اختيار الموظفين اللي يظهروا في تقرير الـPDF ──
+        function getPdfHiddenEmps() {
+            try { const a = JSON.parse(localStorage.getItem('techgo_pdf_hidden_emps') || '[]'); return Array.isArray(a) ? a.map(String) : []; } catch(e) { return []; }
+        }
+
+        function togglePdfEmpPanel(ev) {
+            if (ev) ev.stopPropagation();
+            const p = document.getElementById('pdfEmpPanel');
+            if (!p) return;
+            if (p.style.display === 'block') { p.style.display = 'none'; return; }
+            const hidden = getPdfHiddenEmps();
+            const ids = Object.keys(employeeNames).filter(id => !inactiveEmployees.includes(id));
+            p.innerHTML = `
+                <div style="font-weight:800; font-size:0.85rem; margin-bottom:6px;">👥 الموظفون اللي هيظهروا في التقرير:</div>
+                ${ids.map(id => `
+                    <label style="display:flex; align-items:center; gap:6px; padding:3px 0; font-size:0.85rem; cursor:pointer;">
+                        <input type="checkbox" data-pdf-emp="${id}" ${hidden.includes(id) ? '' : 'checked'} onchange="savePdfEmpSelection()"> ${employeeNames[id]}
+                    </label>`).join('')}
+                <div style="display:flex; gap:6px; margin-top:8px;">
+                    <button type="button" class="btn-action btn-ghost" style="font-size:0.75rem; padding:3px 8px;" onclick="setAllPdfEmps(true)">إظهار الكل</button>
+                    <button type="button" class="btn-action btn-ghost" style="font-size:0.75rem; padding:3px 8px;" onclick="setAllPdfEmps(false)">إخفاء الكل</button>
+                </div>`;
+            p.style.display = 'block';
+        }
+
+        function savePdfEmpSelection() {
+            const hidden = Array.from(document.querySelectorAll('#pdfEmpPanel input[data-pdf-emp]'))
+                .filter(c => !c.checked).map(c => c.getAttribute('data-pdf-emp'));
+            try { localStorage.setItem('techgo_pdf_hidden_emps', JSON.stringify(hidden)); } catch(e){}
+        }
+
+        function setAllPdfEmps(show) {
+            document.querySelectorAll('#pdfEmpPanel input[data-pdf-emp]').forEach(c => { c.checked = show; });
+            savePdfEmpSelection();
+        }
+
+        document.addEventListener('click', function() {
+            const p = document.getElementById('pdfEmpPanel');
+            if (p) p.style.display = 'none';
+        });
+
         function buildOfficialPrintReport() {
             // 1. If stats is not loaded, attempt to load latest or active month from archive
             if (!stats || !stats.employeeDetails || !stats.employeeDetails.length) {
@@ -3581,7 +3643,12 @@
             syncApprovedEmployeeRequests();
             renderTimesheets(); // يحدّث ملخص الرواتب والخصومات والعمولات اللي هتتطبع في التقرير
 
-            const activeEmpDetails = stats.employeeDetails.filter(e => !inactiveEmployees.includes(String(e.employeeId)));
+            const _pdfHidden = getPdfHiddenEmps();
+            const activeEmpDetails = stats.employeeDetails.filter(e => !inactiveEmployees.includes(String(e.employeeId)) && !_pdfHidden.includes(String(e.employeeId)));
+            if (!activeEmpDetails.length) {
+                alert('⚠️ كل الموظفين مخفيين من التقرير. اختار موظف واحد على الأقل من زر "👥 الموظفون في PDF".');
+                return;
+            }
             const allDates = Array.from(new Set(activeEmpDetails.flatMap(e => e.dates))).sort();
             const minDate = allDates[0] || '';
             const maxDate = allDates[allDates.length - 1] || minDate;

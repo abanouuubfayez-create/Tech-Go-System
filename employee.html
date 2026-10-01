@@ -2746,6 +2746,7 @@
                     var draft = JSON.parse(rawDraft);
                     dynWrap.querySelectorAll('[data-fid], input, select, textarea').forEach(function (el) {
                         if (el.readOnly) return; // لا تستعيد بيانات قديمة داخل حقل للقراءة فقط (بيتحسب تلقائيًا)
+                        if (el.type === 'date' || el.type === 'time') return; // التاريخ/الوقت لازم يتدخلوا من جديد كل مرة (استعادة تاريخ قديم كانت بتسجّل الإذن في يوم غلط)
                         var fid = el.getAttribute('data-fid') || el.name || el.id;
                         if (!fid || !(fid in draft)) return;
                         var v = draft[fid];
