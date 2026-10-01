@@ -1203,7 +1203,8 @@
             maxGraceUsesPerMonth: 4,       // 1 | 4 مرات فقط خلال الشهر
             maxMonthlyPermits: 4,          // 2 | الأذونات الشهرية
             maxPermitHours: 2,             // 2 | ألا تتجاوز مدة الإذن ساعتين في كل مرة
-            overtimeMultiplier: 2          // 4 | العمل الإضافي يُحتسب بالمضاعفة
+            overtimeMultiplier: 2,         // 4 | العمل الإضافي يُحتسب بالمضاعفة
+            creditWindowMinutes: 30        // الحضور من 9:30 لـ10:00 يُكسب رصيد تبكير بالدقايق يعوّض تأخير باقي أيام الشهر
         };
 
         // 🕐 الساعة = 60 دقيقة: يحوّل نص المدة المكتوب بصيغة "ساعة:دقيقة" (مثال 1:30 = ساعة ونصف،
@@ -1235,16 +1236,66 @@
 
         // تصنيف يوم الدخول وفق القرار الإداري 1/2026 (نفس منطق شاشة الجدول) — يُستخدم في تقرير الـPDF
         // يرجع: { kind: 'ok' | 'perm' | 'permExcess' | 'grace' | 'ded', lateMin, ded }
-        function classifyPolicyDay(empId, date, entryTime, graceSet) {
+        function classifyPolicyDay(empId, date, entryTime, ctx) {
+            const graceSet = ctx && ctx.graceSet ? ctx.graceSet : (ctx instanceof Set ? ctx : null);
+            const credit = ctx && ctx.credit ? ctx.credit : null;
             const lateMin = timeToMins(entryTime) - timeToMins(workConfig.start);
-            if (lateMin <= 0) return { kind: 'ok', lateMin: 0, ded: 0 };
+            if (lateMin <= 0) {
+                // الحضور من 9:30 لـ10:00 بيكسب رصيد تبكير بالدقايق (بيعوّض التأخير بعد السماح في نفس الشهر)
+                const early = -lateMin;
+                return { kind: 'ok', lateMin: 0, ded: 0, creditEarned: (early > 0 && early <= ATTENDANCE_POLICY_2026.creditWindowMinutes) ? early : 0 };
+            }
             const perm = getPermissionForDate(empId, date, ['late', 'temp']);
+            let need, base, permHours;
             if (perm && (perm.type === 'late' || perm.type === 'temp')) {
                 if (perm.hours === undefined || (lateMin / 60) <= perm.hours) return { kind: 'perm', lateMin, ded: 0, permHours: perm.hours };
-                return { kind: 'permExcess', lateMin, ded: computeLateDeductionHours(lateMin - perm.hours * 60), permHours: perm.hours };
+                need = lateMin - perm.hours * 60; base = 'permExcess'; permHours = perm.hours;
+            } else if (lateMin <= ATTENDANCE_POLICY_2026.graceMinutes && graceSet && graceSet.has(date)) {
+                return { kind: 'grace', lateMin, ded: 0 };
+            } else {
+                need = lateMin; base = 'ded';
             }
-            if (lateMin <= ATTENDANCE_POLICY_2026.graceMinutes && graceSet && graceSet.has(date)) return { kind: 'grace', lateMin, ded: 0 };
-            return { kind: 'ded', lateMin, ded: computeLateDeductionHours(lateMin) };
+            const cu = (credit && credit.used[date]) || 0;
+            if (cu > 0) {
+                const rem = need - cu;
+                if (rem <= 0) return { kind: 'credit', lateMin, ded: 0, creditUsed: cu };
+                return { kind: base, lateMin, ded: computeLateDeductionHours(rem), creditUsed: cu, permHours };
+            }
+            return { kind: base, lateMin, ded: computeLateDeductionHours(need), permHours };
+        }
+
+        // سياق الحساب الشهري للموظف: السماح الشهري + رصيد التبكير (دقايق بتتكسب من الحضور 9:30–10:00 وتتخصم من التأخير بعد السماح في نفس الشهر)
+        function buildPolicyCtx(empId, sortedDates, entriesByDate, exitsByDate) {
+            const graceSet = buildGraceUsageMap(empId, sortedDates, entriesByDate);
+            const pools = {};
+            const used = {};
+            const earnedByDate = {};
+            const dates = [...sortedDates].sort();
+            dates.forEach(date => {
+                if (date < ATTENDANCE_POLICY_2026.effectiveDate) return;
+                const e = entriesByDate[date];
+                if (!e) return;
+                const r = classifyPolicyDay(empId, date, e, { graceSet });
+                if (r.creditEarned > 0) {
+                    const ym = getMonthKeyFromDate(date);
+                    if (!pools[ym]) pools[ym] = { earned: 0, used: 0 };
+                    pools[ym].earned += r.creditEarned;
+                    earnedByDate[date] = r.creditEarned;
+                }
+            });
+            dates.forEach(date => {
+                if (date < ATTENDANCE_POLICY_2026.effectiveDate) return;
+                const e = entriesByDate[date];
+                if (!e || (exitsByDate && !exitsByDate[date])) return; // الخصم بيتحسب بس للأيام اللي فيها دخول وخروج
+                const r = classifyPolicyDay(empId, date, e, { graceSet });
+                if (r.kind !== 'ded' && r.kind !== 'permExcess') return;
+                const pool = pools[getMonthKeyFromDate(date)];
+                if (!pool) return;
+                const need = r.kind === 'ded' ? r.lateMin : r.lateMin - r.permHours * 60;
+                const use = Math.min(need, pool.earned - pool.used);
+                if (use > 0) { used[date] = use; pool.used += use; }
+            });
+            return { graceSet, credit: { used, earnedByDate, pools } };
         }
 
         // الانصراف المبكر (قبل نهاية الدوام): يُغطى بإذن انصراف/خروج مؤقت بحدود مدته، والزيادة (أو بدون إذن) تُخصم بنفس طريقة التأخير
@@ -2859,7 +2910,9 @@
                 let ok = 0, lateNoPerm = 0, latePerm = 0, singlePunch = 0, totalHours = 0, completeDays = 0;
                 const ovEntries = {};
                 emp.entries.forEach(en => { ovEntries[en.date] = en.time; });
-                const ovGraceSet = buildGraceUsageMap(emp.employeeId, [...emp.dates].sort(), ovEntries);
+                const ovExits = {};
+                emp.exits.forEach(ex => { ovExits[ex.date] = ex.time; });
+                const ovGraceSet = buildPolicyCtx(emp.employeeId, [...emp.dates].sort(), ovEntries, ovExits);
 
                 emp.dates.forEach(date => {
                     const entry = emp.entries.find(e => e.date === date);
@@ -2937,7 +2990,9 @@
                     const e = emp.entries.find(en => en.date === d);
                     if (e) entriesByDateForPolicy[d] = e.time;
                 });
-                const graceUsageSet = buildGraceUsageMap(emp.employeeId, empDatesAll, entriesByDateForPolicy);
+                const exitsByDateForPolicy = {};
+                emp.exits.forEach(ex => { exitsByDateForPolicy[ex.date] = ex.time; });
+                const policyCtx = buildPolicyCtx(emp.employeeId, empDatesAll, entriesByDateForPolicy, exitsByDateForPolicy);
                 let deductionHoursTotal = 0;
                 let overtimePayHoursTotal = 0;
                 let overtimeRawHoursTotal = 0; // ساعات الإضافي الفعلية قبل المضاعفة
@@ -3012,33 +3067,26 @@
 
                         if (underPolicy2026) {
                             // ── منطق قرار إداري رقم (1) لسنة 2026 (من 1/10/2026) ──
-                            // يُحسب مباشرة من lateMinRaw (وليس من p القديمة) لأن السماح مقيّد بعدد مرات وليس فقط بالدقائق
-                            if (lateMinRaw <= 0) {
+                            const pc = classifyPolicyDay(emp.employeeId, date, entry.time, policyCtx);
+                            if (pc.creditEarned > 0) permNoteText += `⏳ رصيد تبكير +${pc.creditEarned}د `;
+                            if (pc.kind === 'ok') {
                                 okCount++;
                                 statusBadge = '<span class="status-badge badge-ok">✅ في معاده</span>';
-                            } else if (perm && (perm.type === 'late' || perm.type === 'temp')) {
+                            } else if (pc.kind === 'perm') {
                                 okCount++;
-                                const permHoursOk = perm.hours === undefined || (lateMinRaw / 60) <= perm.hours;
-                                if (!permHoursOk) {
-                                    // الإذن لا يغطي كامل مدة التأخير (تجاوز الحد الأقصى للإذن)
-                                    const excessMin = lateMinRaw - (perm.hours * 60);
-                                    const excessDeduction = computeLateDeductionHours(excessMin);
-                                    deductionHoursTotal += excessDeduction;
-                                    lateCount++;
-                                    statusBadge = `<span class="status-badge badge-danger" style="background:#fee2e2; color:#991b1b; border:1px solid #f87171;">⏰ متأخر +${lateMinRaw}د (إذن ${fmtHM(perm.hours)} + خصم ${fmtHM(excessDeduction)} على الزيادة)</span>`;
-                                } else {
-                                    statusBadge = `<span class="status-badge badge-perm" style="background:#eff6ff; color:#1d4ed8; border:1px solid #bfdbfe;">⏰ متأخر +${lateMinRaw}د (بإذن معتمد)</span>`;
-                                }
-                            } else if (lateMinRaw <= ATTENDANCE_POLICY_2026.graceMinutes && graceUsageSet.has(date)) {
-                                // البند 1: ضمن مدة/عدد مرات السماح الشهرية (15 دقيقة، حتى 4 مرات بالشهر)
+                                statusBadge = `<span class="status-badge badge-perm" style="background:#eff6ff; color:#1d4ed8; border:1px solid #bfdbfe;">⏰ متأخر +${pc.lateMin}د (بإذن معتمد)</span>`;
+                            } else if (pc.kind === 'grace') {
                                 okCount++;
-                                statusBadge = `<span class="status-badge badge-ok" style="background:#f0fdf4; color:#166534; border:1px solid #bbf7d0;">🕐 تأخير +${lateMinRaw}د (ضمن سماح التأخير الشهري)</span>`;
+                                statusBadge = `<span class="status-badge badge-ok" style="background:#f0fdf4; color:#166534; border:1px solid #bbf7d0;">🕐 تأخير +${pc.lateMin}د (ضمن سماح التأخير الشهري)</span>`;
+                            } else if (pc.kind === 'credit') {
+                                okCount++;
+                                statusBadge = `<span class="status-badge badge-ok" style="background:#fefce8; color:#854d0e; border:1px solid #fde68a;">⏳ تأخير +${pc.lateMin}د — اتعوّض من رصيد التبكير (-${pc.creditUsed}د)</span>`;
                             } else {
-                                // البند 3: تأخير بعد استنفاد مدة/عدد مرات السماح — خصم بالمضاعفة
-                                const ded = computeLateDeductionHours(lateMinRaw);
-                                deductionHoursTotal += ded;
+                                deductionHoursTotal += pc.ded;
                                 lateCount++;
-                                statusBadge = `<span class="status-badge badge-danger" style="background:#fee2e2; color:#991b1b; border:1.5px solid #f87171; font-weight:800;">🚨 متأخر +${lateMinRaw}د — خصم ${fmtHM(ded)}اعة (قرار إداري 1/2026)</span>`;
+                                const credTxt = pc.creditUsed ? ` (بعد تعويض ${pc.creditUsed}د من رصيد التبكير)` : '';
+                                const permTxt = pc.kind === 'permExcess' ? `إذن ${fmtHM(pc.permHours)} + ` : '';
+                                statusBadge = `<span class="status-badge badge-danger" style="background:#fee2e2; color:#991b1b; border:1.5px solid #f87171; font-weight:800;">🚨 متأخر +${pc.lateMin}د${credTxt} — ${permTxt}خصم ${fmtHM(pc.ded)} (قرار إداري 1/2026)</span>`;
                             }
                         } else if (p === 'late') {
                             // ── المنطق القديم (قبل 1/10/2026) — دون تغيير ──
@@ -3951,7 +3999,9 @@
 
                 const emEntries = {};
                 emp.entries.forEach(en => { emEntries[en.date] = en.time; });
-                const emGraceSet = buildGraceUsageMap(emp.employeeId, [...emp.dates].sort(), emEntries);
+                const emExits = {};
+                emp.exits.forEach(ex => { emExits[ex.date] = ex.time; });
+                const emGraceSet = buildPolicyCtx(emp.employeeId, [...emp.dates].sort(), emEntries, emExits);
 
                 emp.dates.forEach(date => {
                     const entry = emp.entries.find(e => e.date === date);
@@ -4177,7 +4227,9 @@
 
                 const printEntriesByDate = {};
                 emp.entries.forEach(en => { printEntriesByDate[en.date] = en.time; });
-                const printGraceSet = buildGraceUsageMap(emp.employeeId, empFullDatesList, printEntriesByDate);
+                const printExits = {};
+                emp.exits.forEach(ex => { printExits[ex.date] = ex.time; });
+                const printGraceSet = buildPolicyCtx(emp.employeeId, empFullDatesList, printEntriesByDate, printExits);
 
                 let dailyRows = '';
                 empFullDatesList.forEach(date => {
@@ -4249,6 +4301,7 @@
                         if (date >= ATTENDANCE_POLICY_2026.effectiveDate) {
                             // ── قرار إداري 1/2026: نفس منطق شاشة الجدول ──
                             const pc = classifyPolicyDay(emp.employeeId, date, entry.time, printGraceSet);
+                            if (pc.creditEarned > 0) notesText += (notesText ? ' | ' : '') + `<span style="color:#854d0e; font-weight:bold;">⏳ رصيد تبكير +${pc.creditEarned}د</span>`;
                             if (pc.kind === 'ok') {
                                 okCount++;
                                 statusBadge = '<span class="badge-ok">✅ في معاده</span>';
@@ -4258,6 +4311,9 @@
                             } else if (pc.kind === 'grace') {
                                 okCount++;
                                 statusBadge = `<span class="badge-ok">🕐 +${pc.lateMin}د (ضمن السماح الشهري)</span>`;
+                            } else if (pc.kind === 'credit') {
+                                okCount++;
+                                statusBadge = `<span class="badge-ok">⏳ +${pc.lateMin}د — تعويض من رصيد التبكير (-${pc.creditUsed}د)</span>`;
                             } else if (pc.kind === 'permExcess') {
                                 lateCount++;
                                 statusBadge = `<span class="badge-danger">⏰ +${pc.lateMin}د (إذن ${fmtHM(pc.permHours)} + خصم ${fmtHM(pc.ded)})</span>`;
