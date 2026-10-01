@@ -708,6 +708,9 @@
             <button class="btn-action btn-ghost" onclick="openWorkSettingsModal()" title="إعدادات مواعيد وسماح الدوام">
                 ⚙️ إعدادات الدوام
             </button>
+            <label style="display:inline-flex; align-items:center; gap:5px; font-size:0.8rem; font-weight:700; color:var(--text); cursor:pointer; padding:0 8px;" title="إظهار أو إخفاء الرواتب والعمولات في التقرير">
+                <input type="checkbox" id="printShowPayroll" checked onchange="try{localStorage.setItem('techgo_pdf_show_payroll', this.checked ? '1' : '0')}catch(e){}"> 💰 إظهار الرواتب في PDF
+            </label>
             <button class="btn-action btn-pdf-action" id="exportPdfBtn" onclick="buildOfficialPrintReport()" title="تصدير كشف رسمي A4">
                 🖨️ طباعة / تصدير PDF
             </button>
@@ -4266,7 +4269,7 @@
                     const mny = v => (v || 0).toLocaleString('en-US', { maximumFractionDigits: 2 });
                     const cell = (lbl, val, color) => `<div style="background:#fff; border:1px solid #e2e8f0; border-radius:4px; padding:3px 6px; text-align:center;"><div style="font-size:6pt; color:#64748b; font-weight:700;">${lbl}</div><div style="font-size:8pt; font-weight:900; color:${color};">${val}</div></div>`;
                     payBoxHtml = _pr.base > 0 ? `
-                        <div style="background:#f0fdfa; border:1.5px solid #5eead4; border-radius:6px; padding:5px 8px; margin-top:5px;">
+                        <div class="pay-sec" style="background:#f0fdfa; border:1.5px solid #5eead4; border-radius:6px; padding:5px 8px; margin-top:5px;">
                             <div style="font-size:7.8pt; font-weight:900; color:#0f766e; margin-bottom:3px;">💰 الراتب الشهري — ${monthNameAr} ${pYear} (${getCurrencyLabel()})</div>
                             <div style="display:grid; grid-template-columns: repeat(${_pr.isCommEmp ? 6 : 5}, 1fr); gap:4px;">
                                 ${cell('الراتب الأساسي', mny(_pr.base), '#0f172a')}
@@ -4277,7 +4280,7 @@
                                 ${cell('صافي الراتب', mny(_pr.net), '#0f6e64')}
                             </div>
                         </div>` : `
-                        <div style="background:#f8fafc; border:1px dashed #cbd5e1; border-radius:6px; padding:4px 8px; margin-top:5px; font-size:7pt; color:#64748b;">
+                        <div class="pay-sec" style="background:#f8fafc; border:1px dashed #cbd5e1; border-radius:6px; padding:4px 8px; margin-top:5px; font-size:7pt; color:#64748b;">
                             💰 الراتب الأساسي غير مُدخل لهذا الموظف.${_pr.isCommEmp && _pr.commission > 0 ? ' عمولة الشهر: <strong>+' + mny(_pr.commission) + '</strong> (مبيعات ' + mny(_pr.sales) + ' × ' + commissionRate + '%)' : ''}
                         </div>`;
                 }
@@ -4349,6 +4352,9 @@
                 `;
             });
 
+            const _payChk = document.getElementById('printShowPayroll');
+            const showPayrollInPdf = _payChk ? _payChk.checked : true;
+
             // كشف الرواتب والعمولات (يظهر فقط لو فيه رواتب أساسية أو عمولات مدخلة)
             let payrollHtml = '';
             const _ps = (window._payrollSummary && window._payrollSummary.byEmp) || {};
@@ -4377,7 +4383,7 @@
                         </tr>`;
                 }).join('');
                 payrollHtml = `
-                    <div class="emp-print-section" style="margin-top:8px; padding:6px 8px; page-break-inside:avoid; break-inside:avoid;">
+                    <div class="emp-print-section pay-sec" style="margin-top:8px; padding:6px 8px; page-break-inside:avoid; break-inside:avoid;">
                         <div class="table-hdr-title">💰 كشف الرواتب والخصومات والعمولات — ${monthNameAr} ${pYear} (${cur})</div>
                         <table class="print-table" style="margin-bottom:3px;">
                             <thead>
@@ -4603,6 +4609,7 @@
         .badge-danger  { display: inline-block; padding: 1px 5px; border-radius: 6px; font-size: 6pt; font-weight: 700; background: #fee2e2; color: #b91c1c; border: 1px solid #fca5a5; }
 
         /* Signatures */
+        .hide-pay .pay-sec { display: none !important; }
         .sig-grid {
             display: grid;
             grid-template-columns: 1fr 1fr 1fr;
@@ -4624,9 +4631,10 @@
         .sig-sub { font-size: 6.5pt; color: #64748b; border-top: 1px dotted #94a3b8; padding-top: 2px; }
     </style>
 </head>
-<body>
+<body class="${showPayrollInPdf ? '' : 'hide-pay'}">
     <!-- Top Action Bar (Screen View Only) -->
     <div class="no-print" style="position:fixed; top:12px; left:12px; z-index:99999; display:flex; gap:10px; background:rgba(255,255,255,0.95); padding:8px 12px; border-radius:10px; box-shadow:0 4px 15px rgba(0,0,0,0.25); border:1px solid #cbd5e1;">
+        <button id="togglePayBtn" onclick="var h=document.body.classList.toggle('hide-pay'); this.textContent = h ? '👁️ إظهار الرواتب' : '🙈 إخفاء الرواتب';" style="background:#1e40af; color:#fff; font-family:'Cairo',sans-serif; font-weight:800; font-size:13px; padding:6px 14px; border-radius:6px; border:none; cursor:pointer;">${showPayrollInPdf ? '🙈 إخفاء الرواتب' : '👁️ إظهار الرواتب'}</button>
         <button onclick="window.print()" style="background:#0f766e; color:#fff; font-family:'Cairo',sans-serif; font-weight:800; font-size:13px; padding:6px 16px; border-radius:6px; border:none; cursor:pointer;">🖨️ طباعة الآن (Print / Save PDF)</button>
         <button onclick="window.close()" style="background:#ef4444; color:#fff; font-family:'Cairo',sans-serif; font-weight:700; font-size:13px; padding:6px 12px; border-radius:6px; border:none; cursor:pointer;">✖ إغلاق</button>
     </div>
@@ -4807,6 +4815,7 @@
         });
 
         // Initialize UI & Monthly Archive on load
+        try { const _sp = localStorage.getItem('techgo_pdf_show_payroll'); const _cb = document.getElementById('printShowPayroll'); if (_cb && _sp === '0') _cb.checked = false; } catch(e){}
         updatePolicyLabels();
         renderSalarySettingsList();
         syncApprovedEmployeeRequests();
