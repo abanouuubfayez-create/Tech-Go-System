@@ -1018,6 +1018,10 @@
                         <input type="text" id="cfgCurrency" value="ج.م" style="width: 100%; padding: 8px 12px; border-radius: 8px; background: var(--bg); border: 1px solid var(--border); color: var(--text);">
                     </div>
                     <div>
+                        <label style="display: block; font-size: 0.85rem; color: var(--text-muted); margin-bottom: 4px;">نسبة عمولة المبيعات (%):</label>
+                        <input type="number" id="cfgCommissionRate" value="10" min="0" max="100" step="any" style="width: 100%; padding: 8px 12px; border-radius: 8px; background: var(--bg); border: 1px solid var(--border); color: var(--text);">
+                    </div>
+                    <div>
                         <label style="display: block; font-size: 0.85rem; color: var(--text-muted); margin-bottom: 4px;">ساعات اليوم الرسمية (تُحسب تلقائيًا):</label>
                         <input type="text" id="cfgDailyHoursDisplay" readonly disabled style="width: 100%; padding: 8px 12px; border-radius: 8px; background: var(--surface-2); border: 1px solid var(--border); color: var(--text-muted);">
                     </div>
@@ -1172,7 +1176,8 @@
         let employeePermissions = Object.assign({}, _SAVED_DATA.employeePermissions);
         let employeeManualLeaves = {};
         let employeeSalaries = {}; // { empId: baseMonthlySalary }
-        let employeeCommissions = {}; // { 'YYYY-MM': { empId: amount } } — عمولة شهرية يدوية على نسبة التارجت
+        let employeeCommissions = {}; // { 'YYYY-MM': { empId: إجمالي المبيعات } } — بيتدخل يدوي والعمولة بتتحسب منه
+        let commissionRate = 10; // نسبة العمولة % من إجمالي المبيعات
         let commissionEmployees = ['7']; // الموظفون اللي بياخدوا عمولة (باسل - المبيعات) ويمكن تغييرهم من الإعدادات
         let workConfig = { start: '10:00', end: '18:00', grace: 15, workDays: [0,1,2,3,4], workingDaysPerMonth: 26, currency: 'ج.م' };
         let stats = null;
@@ -1286,9 +1291,14 @@
             return `${amount.toLocaleString('ar-EG', { maximumFractionDigits: 2 })} ${getCurrencyLabel()}`;
         }
 
-        function getCommission(empId, ym) {
+        function getSalesTotal(empId, ym) {
             const v = parseFloat(((employeeCommissions[ym] || {})[empId]));
             return isNaN(v) || v < 0 ? 0 : v;
+        }
+
+        // العمولة = إجمالي المبيعات × النسبة (افتراضي 10%)
+        function getCommission(empId, ym) {
+            return getSalesTotal(empId, ym) * commissionRate / 100;
         }
 
         function setCommission(empId, ym, rawValue) {
@@ -1302,7 +1312,7 @@
                 const body = document.getElementById('tsBody-' + empId);
                 if (body) body.classList.add('open');
             }
-            showNotification('✓ تم حفظ العمولة وتحديث صافي الراتب', 'success');
+            showNotification('✓ تم حفظ إجمالي المبيعات وحساب العمولة (' + commissionRate + '%)', 'success');
         }
 
         function renderSalarySettingsList() {
@@ -1323,6 +1333,8 @@
             if (wd) wd.value = getWorkingDaysPerMonth();
             const cur = document.getElementById('cfgCurrency');
             if (cur) cur.value = getCurrencyLabel();
+            const cr = document.getElementById('cfgCommissionRate');
+            if (cr) cr.value = commissionRate;
         }
 
         function saveSalarySettings() {
@@ -1337,6 +1349,10 @@
                 if (!isNaN(val) && val > 0) employeeSalaries[id] = val;
                 else delete employeeSalaries[id];
             });
+
+            const crv = parseFloat((document.getElementById('cfgCommissionRate') || {}).value);
+            commissionRate = (!isNaN(crv) && crv >= 0) ? crv : 10;
+            try { localStorage.setItem('techgo_commission_rate', String(commissionRate)); } catch(err){}
 
             commissionEmployees = Object.keys(employeeNames)
                 .filter(id => !inactiveEmployees.includes(id))
@@ -1409,6 +1425,7 @@
             const scm = localStorage.getItem('techgo_employee_commissions');
             if (scm) employeeCommissions = JSON.parse(scm) || {};
             const sce = localStorage.getItem('techgo_commission_employees');
+            const scr = parseFloat(localStorage.getItem('techgo_commission_rate')); if (!isNaN(scr) && scr >= 0) commissionRate = scr;
             if (sce) { const arr = JSON.parse(sce); if (Array.isArray(arr)) commissionEmployees = arr.map(String); }
             const sa = localStorage.getItem('techgo_attendance_archive');
             if (sa) attendanceArchive = JSON.parse(sa);
@@ -2952,6 +2969,7 @@
                 const overtimeAmount = overtimePayHoursTotal * pay.hourlyRate;
                 const totalDeductionAmount = lateDeductionAmount + absenceDeductionAmount;
                 const isCommEmp = commissionEmployees.includes(String(emp.employeeId));
+                const salesTotal = isCommEmp ? getSalesTotal(String(emp.employeeId), primaryYm) : 0;
                 const commissionAmount = isCommEmp ? getCommission(String(emp.employeeId), primaryYm) : 0;
                 const netSalary = pay.baseSalary > 0
                     ? (pay.baseSalary - totalDeductionAmount + overtimeAmount + commissionAmount)
@@ -2961,16 +2979,16 @@
                     base: pay.baseSalary, lateHours: deductionHoursTotal, lateAmount: lateDeductionAmount,
                     absenceDays: deductionDaysTotal, absenceAmount: absenceDeductionAmount,
                     otHours: overtimePayHoursTotal, otAmount: overtimeAmount,
-                    isCommEmp, commission: commissionAmount, net: netSalary
+                    isCommEmp, sales: salesTotal, commission: commissionAmount, net: netSalary
                 };
 
                 const commissionInputHtml = isCommEmp ? `
                     <div style="display:flex; align-items:center; gap:6px; background:#fefce8; border:1px solid #fde68a; border-radius:6px; padding:4px 8px;">
-                        <span style="color:#854d0e; font-weight:800;">🎯 عمولة التارجت (يدوي):</span>
-                        <input type="number" min="0" step="50" value="${commissionAmount || ''}" placeholder="0" onclick="event.stopPropagation()"
+                        <span style="color:#854d0e; font-weight:800;">🎯 إجمالي المبيعات:</span>
+                        <input type="number" min="0" step="any" value="${salesTotal || ''}" placeholder="0" onclick="event.stopPropagation()"
                             onchange="setCommission('${emp.employeeId}', '${primaryYm}', this.value)"
-                            style="width:110px; padding:3px 8px; border-radius:6px; border:1px solid #fcd34d; background:#fff; color:#0f172a; font-weight:800;">
-                        <span style="color:#854d0e;">${getCurrencyLabel()}</span>
+                            style="width:120px; padding:3px 8px; border-radius:6px; border:1px solid #fcd34d; background:#fff; color:#0f172a; font-weight:800;">
+                        <span style="color:#854d0e;">${getCurrencyLabel()} × ${commissionRate}% = <strong>${fmtCurrency(commissionAmount)}</strong> عمولة</span>
                     </div>` : '';
 
                 const payrollBarHtml = pay.baseSalary > 0 ? `
@@ -4227,7 +4245,7 @@
                             <td style="text-align:center; color:${r.lateAmount > 0 ? '#b91c1c' : '#64748b'};">${r.lateAmount > 0 ? '-' + money(r.lateAmount) + ' <small>(' + r.lateHours + ' س)</small>' : '—'}</td>
                             <td style="text-align:center; color:${r.absenceAmount > 0 ? '#b91c1c' : '#64748b'};">${r.absenceAmount > 0 ? '-' + money(r.absenceAmount) + ' <small>(' + r.absenceDays + ' ي)</small>' : '—'}</td>
                             <td style="text-align:center; color:${r.otAmount > 0 ? '#15803d' : '#64748b'};">${r.otAmount > 0 ? '+' + money(r.otAmount) + ' <small>(' + r.otHours.toFixed(1) + ' س)</small>' : '—'}</td>
-                            <td style="text-align:center; color:#854d0e; font-weight:800;">${r.isCommEmp ? (r.commission > 0 ? '+' + money(r.commission) : '<small>لم تُدخل</small>') : '—'}</td>
+                            <td style="text-align:center; color:#854d0e; font-weight:800;">${r.isCommEmp ? (r.commission > 0 ? '+' + money(r.commission) + '<br><small style="color:#64748b; font-weight:600;">مبيعات ' + money(r.sales) + ' × ' + commissionRate + '%</small>' : '<small>لم تُدخل المبيعات</small>') : '—'}</td>
                             <td style="text-align:center; font-weight:900; color:#0f6e64; background:#f0fdfa;">${r.base > 0 ? money(r.net) : '—'}</td>
                         </tr>`;
                 }).join('');
@@ -4243,7 +4261,7 @@
                                     <th style="width:14%;">خصم التأخير</th>
                                     <th style="width:14%;">خصم الغياب</th>
                                     <th style="width:12%;">إضافي معتمد</th>
-                                    <th style="width:12%;">🎯 عمولة التارجت</th>
+                                    <th style="width:12%;">🎯 العمولة (${commissionRate}%)</th>
                                     <th style="width:14%;">صافي الراتب</th>
                                 </tr>
                             </thead>
@@ -4262,7 +4280,7 @@
                         </table>
                         <div style="font-size:6.3pt; color:#64748b; line-height:1.5;">
                             * قيمة الساعة = الراتب ÷ ${getWorkingDaysPerMonth()} يوم ÷ ${getDailyHours()} ساعات. خصم التأخير بالمضاعفة وفق القرار الإداري 1/2026 (يسري من 1/10/2026).
-                            العمولة تُدخل يدويًا شهريًا حسب نسبة تحقيق التارجت.
+                            العمولة = إجمالي المبيعات الشهري (يُدخل يدويًا) × ${commissionRate}%.
                         </div>
                     </div>`;
             }
