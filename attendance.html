@@ -1855,7 +1855,7 @@
                 window._permCleanupDone = true;
                 Object.keys(employeePermissions).forEach(k => {
                     if (!Array.isArray(employeePermissions[k])) return;
-                    employeePermissions[k] = employeePermissions[k].filter(p => !(p.source === 'employee_request' && !p.reqSynced));
+                    employeePermissions[k] = employeePermissions[k].filter(p => !(p.source === 'employee_request' && p.reqSynced !== 2));
                 });
             }
 
@@ -1961,6 +1961,19 @@
                 // 1. Permission (إذن حضور / انصراف / خروج مؤقت)
                 if (rawType.includes('إذن') || rawType.includes('perm') || rawType.includes('تأخير') || rawType.includes('انصراف') || rawType.includes('التماس') || rawType.includes('خروج')) {
                     if (!employeePermissions[tId]) employeePermissions[tId] = [];
+                    // تصحيح التاريخ: لو تاريخ الإذن في النموذج أقدم من تاريخ إرسال الطلب بأكتر من 30 يوم (تاريخ قديم متخزن غلط)
+                    // نستخدم تاريخ إرسال الطلب، والإذن بيتسجل في اليوم الصح.
+                    let dateFixed = false;
+                    try {
+                        const ca = r.createdAt || r.timestamp || r.dateTime;
+                        let cd = null;
+                        if (ca) cd = ca.toDate ? ca.toDate() : (ca.seconds ? new Date(ca.seconds * 1000) : new Date(ca));
+                        if (cd && !isNaN(cd.getTime())) {
+                            const cStr = cd.getFullYear() + '-' + String(cd.getMonth() + 1).padStart(2, '0') + '-' + String(cd.getDate()).padStart(2, '0');
+                            const gapDays = (new Date(cStr + 'T12:00:00') - new Date(rDate + 'T12:00:00')) / 86400000;
+                            if (gapDays > 30) { rDate = cStr; dateFixed = true; }
+                        }
+                    } catch(e){}
                     // نوع الإذن الفعلي من حقل "نوع الإذن" (عنوان النموذج "إذن حضور / انصراف" فيه الكلمتين فمينفعش نعتمد عليه)
                     const selPermType = String(vals['permType'] || vals['نوع الإذن'] || '');
                     let pType;
@@ -1972,8 +1985,8 @@
                             date: rDate,
                             type: pType,
                             hours: reqHours,
-                            note: rawReason,
-                            reqSynced: true,
+                            note: rawReason + (dateFixed ? ' (التاريخ مصحّح من تاريخ إرسال الطلب)' : ''),
+                            reqSynced: 2,
                             source: 'employee_request',
                             sourceTag: '📱 طلب موظف معتمد'
                         });
