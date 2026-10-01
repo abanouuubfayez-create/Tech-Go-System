@@ -1222,6 +1222,20 @@
             return hoursLate + 1;
         }
 
+        // تصنيف يوم الدخول وفق القرار الإداري 1/2026 (نفس منطق شاشة الجدول) — يُستخدم في تقرير الـPDF
+        // يرجع: { kind: 'ok' | 'perm' | 'permExcess' | 'grace' | 'ded', lateMin, ded }
+        function classifyPolicyDay(empId, date, entryTime, graceSet) {
+            const lateMin = timeToMins(entryTime) - timeToMins(workConfig.start);
+            if (lateMin <= 0) return { kind: 'ok', lateMin: 0, ded: 0 };
+            const perm = getPermissionForDate(empId, date);
+            if (perm && (perm.type === 'late' || perm.type === 'temp')) {
+                if (perm.hours === undefined || (lateMin / 60) <= perm.hours) return { kind: 'perm', lateMin, ded: 0, permHours: perm.hours };
+                return { kind: 'permExcess', lateMin, ded: computeLateDeductionHours(lateMin - perm.hours * 60), permHours: perm.hours };
+            }
+            if (lateMin <= ATTENDANCE_POLICY_2026.graceMinutes && graceSet && graceSet.has(date)) return { kind: 'grace', lateMin, ded: 0 };
+            return { kind: 'ded', lateMin, ded: computeLateDeductionHours(lateMin) };
+        }
+
         function getMonthKeyFromDate(dateStr) {
             return dateStr ? dateStr.slice(0, 7) : '';
         }
@@ -3754,6 +3768,10 @@
 
                 let ok = 0, late = 0, early = 0, empHours = 0;
 
+                const emEntries = {};
+                emp.entries.forEach(en => { emEntries[en.date] = en.time; });
+                const emGraceSet = buildGraceUsageMap(emp.employeeId, [...emp.dates].sort(), emEntries);
+
                 emp.dates.forEach(date => {
                     const entry = emp.entries.find(e => e.date === date);
                     const exit  = emp.exits.find(e => e.date === date);
@@ -3763,7 +3781,11 @@
                     if (entry && exit) {
                         const h = calcDayWorkHours(entry.time, exit.time).hours;
                         if (h > 0 && h < 24) empHours += h;
-                        if (p === 'late') {
+                        if (date >= ATTENDANCE_POLICY_2026.effectiveDate) {
+                            const pc = classifyPolicyDay(emp.employeeId, date, entry.time, emGraceSet);
+                            if (pc.kind === 'permExcess' || pc.kind === 'ded') late++;
+                            else ok++;
+                        } else if (p === 'late') {
                             if (perm && (perm.type === 'late' || perm.type === 'temp')) ok++;
                             else late++;
                         }
@@ -3970,6 +3992,10 @@
                 const dynamicMonthLeaves = [];
                 const dynamicDeductions = [];
 
+                const printEntriesByDate = {};
+                emp.entries.forEach(en => { printEntriesByDate[en.date] = en.time; });
+                const printGraceSet = buildGraceUsageMap(emp.employeeId, empFullDatesList, printEntriesByDate);
+
                 let dailyRows = '';
                 empFullDatesList.forEach(date => {
                     const entry = emp.entries.find(e => e.date === date);
@@ -4037,7 +4063,26 @@
                         totalWorkHrs += hCalc.hours;
                         hoursDecimal = `${(hCalc.hours).toFixed(2)} س`;
 
-                        if (p === 'late') {
+                        if (date >= ATTENDANCE_POLICY_2026.effectiveDate) {
+                            // ── قرار إداري 1/2026: نفس منطق شاشة الجدول ──
+                            const pc = classifyPolicyDay(emp.employeeId, date, entry.time, printGraceSet);
+                            if (pc.kind === 'ok') {
+                                okCount++;
+                                statusBadge = '<span class="badge-ok">✅ في معاده</span>';
+                            } else if (pc.kind === 'perm') {
+                                okCount++;
+                                statusBadge = `<span class="badge-perm">⏰ متأخر +${pc.lateMin}د (بإذن معتمد)</span>`;
+                            } else if (pc.kind === 'grace') {
+                                okCount++;
+                                statusBadge = `<span class="badge-ok">🕐 +${pc.lateMin}د (ضمن السماح الشهري)</span>`;
+                            } else if (pc.kind === 'permExcess') {
+                                lateCount++;
+                                statusBadge = `<span class="badge-danger">⏰ +${pc.lateMin}د (إذن ${pc.permHours}س + خصم ${pc.ded}س)</span>`;
+                            } else {
+                                lateCount++;
+                                statusBadge = `<span class="badge-danger">🚨 متأخر +${pc.lateMin}د — خصم ${pc.ded}س</span>`;
+                            }
+                        } else if (p === 'late') {
                             lateCount++;
                             const startMins = timeToMins(workConfig.start);
                             const graceMins = parseInt(workConfig.grace || 30);
@@ -4156,6 +4201,29 @@
                     `;
                 }
 
+                // صندوق الراتب والخصومات والعمولة للموظف
+                let payBoxHtml = '';
+                const _pr = (window._payrollSummary && window._payrollSummary.byEmp || {})[String(emp.employeeId)];
+                if (_pr) {
+                    const mny = v => (v || 0).toLocaleString('en-US', { maximumFractionDigits: 2 });
+                    const cell = (lbl, val, color) => `<div style="background:#fff; border:1px solid #e2e8f0; border-radius:4px; padding:3px 6px; text-align:center;"><div style="font-size:6pt; color:#64748b; font-weight:700;">${lbl}</div><div style="font-size:8pt; font-weight:900; color:${color};">${val}</div></div>`;
+                    payBoxHtml = _pr.base > 0 ? `
+                        <div style="background:#f0fdfa; border:1.5px solid #5eead4; border-radius:6px; padding:5px 8px; margin-top:5px;">
+                            <div style="font-size:7.8pt; font-weight:900; color:#0f766e; margin-bottom:3px;">💰 الراتب الشهري — ${monthNameAr} ${pYear} (${getCurrencyLabel()})</div>
+                            <div style="display:grid; grid-template-columns: repeat(${_pr.isCommEmp ? 6 : 5}, 1fr); gap:4px;">
+                                ${cell('الراتب الأساسي', mny(_pr.base), '#0f172a')}
+                                ${cell('خصم التأخير (' + _pr.lateHours + ' س)', _pr.lateAmount > 0 ? '-' + mny(_pr.lateAmount) : '0', _pr.lateAmount > 0 ? '#b91c1c' : '#64748b')}
+                                ${cell('خصم الغياب (' + _pr.absenceDays + ' ي)', _pr.absenceAmount > 0 ? '-' + mny(_pr.absenceAmount) : '0', _pr.absenceAmount > 0 ? '#b91c1c' : '#64748b')}
+                                ${cell('إضافي (' + _pr.otHours.toFixed(1) + ' س)', _pr.otAmount > 0 ? '+' + mny(_pr.otAmount) : '0', _pr.otAmount > 0 ? '#15803d' : '#64748b')}
+                                ${_pr.isCommEmp ? cell('عمولة ' + commissionRate + '% من مبيعات ' + mny(_pr.sales), _pr.commission > 0 ? '+' + mny(_pr.commission) : '0', '#854d0e') : ''}
+                                ${cell('صافي الراتب', mny(_pr.net), '#0f6e64')}
+                            </div>
+                        </div>` : `
+                        <div style="background:#f8fafc; border:1px dashed #cbd5e1; border-radius:6px; padding:4px 8px; margin-top:5px; font-size:7pt; color:#64748b;">
+                            💰 الراتب الأساسي غير مُدخل لهذا الموظف.${_pr.isCommEmp && _pr.commission > 0 ? ' عمولة الشهر: <strong>+' + mny(_pr.commission) + '</strong> (مبيعات ' + mny(_pr.sales) + ' × ' + commissionRate + '%)' : ''}
+                        </div>`;
+                }
+
                 const empPunctRate = (okCount + lateCount + earlyCount) > 0
                     ? ((okCount / (okCount + lateCount + earlyCount)) * 100).toFixed(1)
                     : '100.0';
@@ -4218,6 +4286,7 @@
                             </div>
                         </div>
                         ${deductionsBoxHtml}
+                        ${payBoxHtml}
                     </div>
                 `;
             });
@@ -4228,7 +4297,7 @@
             const _psYm = (window._payrollSummary && window._payrollSummary.ym) || primaryYm;
             const payRows = employeeMetrics.filter(em => {
                 const r = _ps[String(em.emp.employeeId)];
-                return r && (r.base > 0 || r.commission > 0);
+                return !!r;
             });
             if (payRows.length) {
                 const cur = getCurrencyLabel();
