@@ -4232,7 +4232,7 @@
                         </tr>`;
                 }).join('');
                 payrollHtml = `
-                    <div class="emp-print-section" style="margin-top:8px; padding:6px 8px;">
+                    <div class="emp-print-section" style="margin-top:8px; padding:6px 8px; page-break-inside:avoid; break-inside:avoid;">
                         <div class="table-hdr-title">💰 كشف الرواتب والخصومات والعمولات — ${monthNameAr} ${pYear} (${cur})</div>
                         <table class="print-table" style="margin-bottom:3px;">
                             <thead>
@@ -4293,7 +4293,9 @@
             * { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
             .no-print { display: none !important; }
             .page-break { page-break-before: always !important; break-before: page !important; }
-            .emp-print-section { page-break-inside: avoid !important; break-inside: avoid !important; }
+            .print-table tr { page-break-inside: avoid !important; break-inside: avoid !important; }
+            .print-table thead { display: table-header-group; }
+            .emp-print-banner { page-break-after: avoid; break-after: avoid; }
             .sig-grid { page-break-inside: avoid !important; break-inside: avoid !important; }
         }
 
@@ -4418,8 +4420,6 @@
             border-radius: 8px;
             overflow: hidden;
             margin-bottom: 12px;
-            page-break-inside: avoid;
-            break-inside: avoid;
             background: #ffffff;
         }
         .emp-print-banner {
