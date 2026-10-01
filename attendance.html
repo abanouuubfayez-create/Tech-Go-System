@@ -2114,6 +2114,15 @@
             return h * 60 + m;
         }
 
+        // عرض الساعات كساعات ودقايق (مثلاً 1.38 ← 1س 23د) بدل الأرقام العشرية
+        function fmtHM(h) {
+            if (h === undefined || h === null || isNaN(h) || h <= 0) return '0د';
+            const t = Math.round(h * 60);
+            const hh = Math.floor(t / 60), mm = t % 60;
+            if (!hh) return mm + 'د';
+            return mm ? hh + 'س ' + mm + 'د' : hh + 'س';
+        }
+
         function fmtHoursAndMins(decimalHours) {
             if (!decimalHours || isNaN(decimalHours)) return '—';
             const totalMin = Math.round(decimalHours * 60);
@@ -2893,7 +2902,7 @@
                     <td style="text-align:center;">${latePerm > 0 ? `<span class="status-badge badge-perm">🎫 ${latePerm} بإذن</span>` : '<span style="color:var(--text-muted);">0</span>'}</td>
                     <td style="text-align:center;">${deductionBadge}</td>
                     <td style="text-align:center;"><span class="status-badge badge-perm">${permsCount} إذن</span></td>
-                    <td style="font-weight:bold; color:var(--primary-light); text-align:center;">${(totalHours).toFixed(2)} س <small style="display:block; font-size:10px; color:var(--text-muted);">(${fmtHoursAndMins(totalHours)})</small></td>
+                    <td style="font-weight:bold; color:var(--primary-light); text-align:center;">${fmtHM(totalHours)} <small style="display:block; font-size:10px; color:var(--text-muted);">(${fmtHoursAndMins(totalHours)})</small></td>
                 `;
                 tbody.appendChild(tr);
             });
@@ -2992,7 +3001,7 @@
                     } else if (entry && exit) {
                         const hCalc = calcDayWorkHours(entry.time, exit.time);
                         if (hCalc.hours) { totalHours += hCalc.hours; completeDays++; }
-                        hoursFormatted = `<strong>${(hCalc.hours).toFixed(2)} س</strong> <small style="color:var(--text-muted);">(${hCalc.formatted})</small>`;
+                        hoursFormatted = `<strong>${fmtHM(hCalc.hours)}</strong>`;
 
                         const underPolicy2026 = date >= ATTENDANCE_POLICY_2026.effectiveDate;
                         const startMins = timeToMins(workConfig.start);
@@ -3015,7 +3024,7 @@
                                     const excessDeduction = computeLateDeductionHours(excessMin);
                                     deductionHoursTotal += excessDeduction;
                                     lateCount++;
-                                    statusBadge = `<span class="status-badge badge-danger" style="background:#fee2e2; color:#991b1b; border:1px solid #f87171;">⏰ متأخر +${lateMinRaw}د (إذن ${perm.hours}س + خصم ${excessDeduction}س على الزيادة)</span>`;
+                                    statusBadge = `<span class="status-badge badge-danger" style="background:#fee2e2; color:#991b1b; border:1px solid #f87171;">⏰ متأخر +${lateMinRaw}د (إذن ${fmtHM(perm.hours)} + خصم ${fmtHM(excessDeduction)} على الزيادة)</span>`;
                                 } else {
                                     statusBadge = `<span class="status-badge badge-perm" style="background:#eff6ff; color:#1d4ed8; border:1px solid #bfdbfe;">⏰ متأخر +${lateMinRaw}د (بإذن معتمد)</span>`;
                                 }
@@ -3028,7 +3037,7 @@
                                 const ded = computeLateDeductionHours(lateMinRaw);
                                 deductionHoursTotal += ded;
                                 lateCount++;
-                                statusBadge = `<span class="status-badge badge-danger" style="background:#fee2e2; color:#991b1b; border:1.5px solid #f87171; font-weight:800;">🚨 متأخر +${lateMinRaw}د — خصم ${ded} ساعة (قرار إداري 1/2026)</span>`;
+                                statusBadge = `<span class="status-badge badge-danger" style="background:#fee2e2; color:#991b1b; border:1.5px solid #f87171; font-weight:800;">🚨 متأخر +${lateMinRaw}د — خصم ${fmtHM(ded)}اعة (قرار إداري 1/2026)</span>`;
                             }
                         } else if (p === 'late') {
                             // ── المنطق القديم (قبل 1/10/2026) — دون تغيير ──
@@ -3052,7 +3061,7 @@
                             } else if (ec.kind === 'permExcess' || ec.kind === 'ded') {
                                 deductionHoursTotal += ec.ded;
                                 lateCount++;
-                                statusBadge += ` <span class="status-badge badge-danger" style="background:#fee2e2; color:#991b1b; border:1px solid #f87171;">🚪 انصراف مبكر -${ec.earlyMin}د — خصم ${ec.ded}س</span>`;
+                                statusBadge += ` <span class="status-badge badge-danger" style="background:#fee2e2; color:#991b1b; border:1px solid #f87171;">🚪 انصراف مبكر -${ec.earlyMin}د — خصم ${fmtHM(ec.ded)}</span>`;
                             }
                         }
 
@@ -3061,7 +3070,7 @@
                         const otDay = calcOvertimeForDay(emp.employeeId, date, exit.time);
                         if (otDay) {
                             overtimePayHoursTotal += otDay.payHours;
-                            permNoteText += `🕒 إضافي ${otDay.auto ? '(من البصمة)' : 'معتمد'} ${otDay.hours.toFixed(2)}س ← يُحتسب ${otDay.payHours.toFixed(2)}س بالمضاعفة `;
+                            permNoteText += `🕒 إضافي ${otDay.auto ? '(من البصمة)' : 'معتمد'} ${fmtHM(otDay.hours)} ← يُحتسب ${fmtHM(otDay.payHours)} بالمضاعفة `;
                         }
                     } else {
                         // Day with zero punches
@@ -3133,9 +3142,9 @@
                     <div style="display:flex; flex-wrap:wrap; gap:14px; align-items:center; margin-bottom:10px; background:var(--surface-2); border:1px solid var(--border); border-radius:8px; padding:10px 14px; font-size:0.82rem;">
                         <div><span style="color:var(--text-muted);">الراتب الأساسي:</span> <strong>${fmtCurrency(pay.baseSalary)}</strong></div>
                         <div><span style="color:var(--text-muted);">قيمة الساعة:</span> <strong>${fmtCurrency(pay.hourlyRate)}</strong></div>
-                        <div style="color:#991b1b;"><span style="color:var(--text-muted);">خصم تأخير (${deductionHoursTotal} س):</span> <strong>-${fmtCurrency(lateDeductionAmount)}</strong></div>
+                        <div style="color:#991b1b;"><span style="color:var(--text-muted);">خصم تأخير (${fmtHM(deductionHoursTotal)}):</span> <strong>-${fmtCurrency(lateDeductionAmount)}</strong></div>
                         <div style="color:#991b1b;"><span style="color:var(--text-muted);">خصم غياب (${deductionDaysTotal} يوم):</span> <strong>-${fmtCurrency(absenceDeductionAmount)}</strong></div>
-                        <div style="color:#166534;"><span style="color:var(--text-muted);">إضافي محتسب (${overtimePayHoursTotal.toFixed(2)} س):</span> <strong>+${fmtCurrency(overtimeAmount)}</strong></div>
+                        <div style="color:#166534;"><span style="color:var(--text-muted);">إضافي محتسب (${fmtHM(overtimePayHoursTotal)}):</span> <strong>+${fmtCurrency(overtimeAmount)}</strong></div>
                         ${commissionInputHtml}
                         ${commissionAmount > 0 ? `<div style="color:#166534;"><span style="color:var(--text-muted);">عمولة:</span> <strong>+${fmtCurrency(commissionAmount)}</strong></div>` : ''}
                         <div style="margin-inline-start:auto; font-weight:900; font-size:0.95rem;">صافي الراتب المتوقع: <span style="color:var(--primary-light);">${fmtCurrency(netSalary)}</span></div>
@@ -3155,7 +3164,7 @@
                             <div class="emp-avatar">${name.charAt(0)}</div>
                             <div>
                                 <div class="emp-title-text">${name}</div>
-                                <div class="emp-sub-text">كود: ${emp.employeeId} · ${completeDays} يوم دوام مكتمل · إجمالي: ${(totalHours).toFixed(2)} س · متوسط: ${avgPerDay}</div>
+                                <div class="emp-sub-text">كود: ${emp.employeeId} · ${completeDays} يوم دوام مكتمل · إجمالي: ${fmtHM(totalHours)} · متوسط: ${avgPerDay}</div>
                             </div>
                         </div>
                         <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
@@ -4041,7 +4050,7 @@
                         <td style="text-align:center; font-weight:700;">${permsStr}</td>
                         <td style="text-align:center; font-weight:700;">${monthLeavesStr}</td>
                         <td style="text-align:center; font-weight:600; color:#0f766e;">${wfhStr}</td>
-                        <td style="text-align:center; font-weight:800; color:#0f766e;">${(em.empHours).toFixed(1)} س</td>
+                        <td style="text-align:center; font-weight:800; color:#0f766e;">${fmtHM(em.empHours)}</td>
                         <td style="text-align:center; font-weight:900; color:${rateColor};">${em.punctualityRate}%</td>
                         <td style="text-align:center; padding:2px 3px;">
                             <div style="font-weight:900; color:${em.calculatedBalance === 0 ? '#b91c1c' : '#0f766e'}; font-size:7.5pt;">${em.calculatedBalance === 0 ? '0 / ' + em.baseTotal + ' يوم (مستنفد)' : em.calculatedBalance + ' / ' + em.baseTotal + ' يوم متبقي'}</div>
@@ -4064,9 +4073,9 @@
                     <td style="text-align:center; color:#0284c7;">${sumPerms} إذن</td>
                     <td style="text-align:center; color:#0369a1;">${sumLeaves} ي</td>
                     <td style="text-align:center; color:#0f766e;">${sumWfh} ي</td>
-                    <td style="text-align:center; color:#0f766e;">${sumHours.toFixed(1)} س</td>
+                    <td style="text-align:center; color:#0f766e;">${fmtHM(sumHours)}</td>
                     <td style="text-align:center; color:#0f6e64; font-size:8.5pt;">${overallPunctuality}%</td>
-                    <td style="text-align:center; color:#64748b; font-size:6.5pt;">معدل: ${avgDailyHours} س/يوم</td>
+                    <td style="text-align:center; color:#64748b; font-size:6.5pt;">معدل: ${fmtHM(parseFloat(avgDailyHours))}/يوم</td>
                 </tr>
             `;
 
@@ -4233,7 +4242,7 @@
                     } else if (entry && exit) {
                         const hCalc = calcDayWorkHours(entry.time, exit.time);
                         totalWorkHrs += hCalc.hours;
-                        hoursDecimal = `${(hCalc.hours).toFixed(2)} س`;
+                        hoursDecimal = fmtHM(hCalc.hours);
 
                         if (date >= ATTENDANCE_POLICY_2026.effectiveDate) {
                             // ── قرار إداري 1/2026: نفس منطق شاشة الجدول ──
@@ -4249,17 +4258,17 @@
                                 statusBadge = `<span class="badge-ok">🕐 +${pc.lateMin}د (ضمن السماح الشهري)</span>`;
                             } else if (pc.kind === 'permExcess') {
                                 lateCount++;
-                                statusBadge = `<span class="badge-danger">⏰ +${pc.lateMin}د (إذن ${pc.permHours}س + خصم ${pc.ded}س)</span>`;
+                                statusBadge = `<span class="badge-danger">⏰ +${pc.lateMin}د (إذن ${fmtHM(pc.permHours)} + خصم ${fmtHM(pc.ded)})</span>`;
                             } else {
                                 lateCount++;
-                                statusBadge = `<span class="badge-danger">🚨 متأخر +${pc.lateMin}د — خصم ${pc.ded}س</span>`;
+                                statusBadge = `<span class="badge-danger">🚨 متأخر +${pc.lateMin}د — خصم ${fmtHM(pc.ded)}</span>`;
                             }
                             const ecp = classifyEarlyLeave(emp.employeeId, date, exit.time);
                             if (ecp.kind === 'perm') {
                                 notesText += (notesText ? ' | ' : '') + `<span style="color:#0284c7; font-weight:bold;">🚪 انصراف مبكر -${ecp.earlyMin}د (بإذن)</span>`;
                             } else if (ecp.kind === 'permExcess' || ecp.kind === 'ded') {
                                 earlyCount++;
-                                statusBadge += ` <span class="badge-danger">🚪 انصراف مبكر -${ecp.earlyMin}د — خصم ${ecp.ded}س</span>`;
+                                statusBadge += ` <span class="badge-danger">🚪 انصراف مبكر -${ecp.earlyMin}د — خصم ${fmtHM(ecp.ded)}</span>`;
                             }
                         } else if (p === 'late') {
                             lateCount++;
@@ -4277,7 +4286,7 @@
                         }
                         const otPrint = calcOvertimeForDay(emp.employeeId, date, exit.time);
                         if (otPrint) {
-                            notesText += (notesText ? ' | ' : '') + `<span style="color:#15803d; font-weight:bold;">🕒 إضافي ${otPrint.auto ? '(من البصمة)' : 'معتمد'} ${otPrint.hours.toFixed(2)}س ← يُحتسب ${otPrint.payHours.toFixed(2)}س</span>`;
+                            notesText += (notesText ? ' | ' : '') + `<span style="color:#15803d; font-weight:bold;">🕒 إضافي ${otPrint.auto ? '(من البصمة)' : 'معتمد'} ${fmtHM(otPrint.hours)} ← يُحتسب ${fmtHM(otPrint.payHours)}</span>`;
                         }
                     } else {
                         // Zero punches on this day
@@ -4395,9 +4404,9 @@
                             <div style="font-size:7.8pt; font-weight:900; color:#0f766e; margin-bottom:3px;">💰 الراتب الشهري — ${monthNameAr} ${pYear} (${getCurrencyLabel()})</div>
                             <div style="display:grid; grid-template-columns: repeat(${_pr.isCommEmp ? 6 : 5}, 1fr); gap:4px;">
                                 ${cell('الراتب الأساسي', mny(_pr.base), '#0f172a')}
-                                ${cell('خصم التأخير (' + _pr.lateHours + ' س)', _pr.lateAmount > 0 ? '-' + mny(_pr.lateAmount) : '0', _pr.lateAmount > 0 ? '#b91c1c' : '#64748b')}
+                                ${cell('خصم التأخير (' + fmtHM(_pr.lateHours) + ')', _pr.lateAmount > 0 ? '-' + mny(_pr.lateAmount) : '0', _pr.lateAmount > 0 ? '#b91c1c' : '#64748b')}
                                 ${cell('خصم الغياب (' + _pr.absenceDays + ' ي)', _pr.absenceAmount > 0 ? '-' + mny(_pr.absenceAmount) : '0', _pr.absenceAmount > 0 ? '#b91c1c' : '#64748b')}
-                                ${cell('إضافي (' + _pr.otHours.toFixed(1) + ' س)', _pr.otAmount > 0 ? '+' + mny(_pr.otAmount) : '0', _pr.otAmount > 0 ? '#15803d' : '#64748b')}
+                                ${cell('إضافي (' + fmtHM(_pr.otHours) + ')', _pr.otAmount > 0 ? '+' + mny(_pr.otAmount) : '0', _pr.otAmount > 0 ? '#15803d' : '#64748b')}
                                 ${_pr.isCommEmp ? cell('عمولة ' + commissionRate + '% من مبيعات ' + mny(_pr.sales), _pr.commission > 0 ? '+' + mny(_pr.commission) : '0', '#854d0e') : ''}
                                 ${cell('صافي الراتب', mny(_pr.net), '#0f6e64')}
                             </div>
@@ -4418,7 +4427,7 @@
                                 <span class="emp-num-pill">${em.idx}</span>
                                 <div>
                                     <div style="font-size:11pt; font-weight:900; color:#ffffff;">${name}</div>
-                                    <div style="font-size:7pt; color:#ccfbf1;">كود #${emp.employeeId} | الدوام: ${workConfig.start} → ${workConfig.end} (سماح ${workConfig.grace || 30}د) | إجمالي الساعات: <strong>${totalWorkHrs.toFixed(1)} س</strong></div>
+                                    <div style="font-size:7pt; color:#ccfbf1;">كود #${emp.employeeId} | الدوام: ${workConfig.start} → ${workConfig.end} (سماح ${workConfig.grace || 30}د) | إجمالي الساعات: <strong>${fmtHM(totalWorkHrs)}</strong></div>
                                 </div>
                             </div>
                             <div style="display:flex; gap:4px; align-items:center;">
@@ -4497,9 +4506,9 @@
                             <td style="text-align:center; color:#64748b; font-weight:700;">${i + 1}</td>
                             <td style="font-weight:800; text-align:right;">${em.name}</td>
                             <td style="text-align:center;">${r.base > 0 ? money(r.base) : '—'}</td>
-                            <td style="text-align:center; color:${r.lateAmount > 0 ? '#b91c1c' : '#64748b'};">${r.lateAmount > 0 ? '-' + money(r.lateAmount) + ' <small>(' + r.lateHours + ' س)</small>' : '—'}</td>
+                            <td style="text-align:center; color:${r.lateAmount > 0 ? '#b91c1c' : '#64748b'};">${r.lateAmount > 0 ? '-' + money(r.lateAmount) + ' <small>(' + fmtHM(r.lateHours) + ')</small>' : '—'}</td>
                             <td style="text-align:center; color:${r.absenceAmount > 0 ? '#b91c1c' : '#64748b'};">${r.absenceAmount > 0 ? '-' + money(r.absenceAmount) + ' <small>(' + r.absenceDays + ' ي)</small>' : '—'}</td>
-                            <td style="text-align:center; color:${r.otAmount > 0 ? '#15803d' : '#64748b'};">${r.otAmount > 0 ? '+' + money(r.otAmount) + ' <small>(' + r.otHours.toFixed(1) + ' س)</small>' : '—'}</td>
+                            <td style="text-align:center; color:${r.otAmount > 0 ? '#15803d' : '#64748b'};">${r.otAmount > 0 ? '+' + money(r.otAmount) + ' <small>(' + fmtHM(r.otHours) + ')</small>' : '—'}</td>
                             <td style="text-align:center; color:#854d0e; font-weight:800;">${r.isCommEmp ? (r.commission > 0 ? '+' + money(r.commission) + '<br><small style="color:#64748b; font-weight:600;">مبيعات ' + money(r.sales) + ' × ' + commissionRate + '%</small>' : '<small>لم تُدخل المبيعات</small>') : '—'}</td>
                             <td style="text-align:center; font-weight:900; color:#0f6e64; background:#f0fdfa;">${r.base > 0 ? money(r.net) : '—'}</td>
                         </tr>`;
@@ -4793,7 +4802,7 @@
             <div class="kpi-lbl">أيام الدوام</div>
         </div>
         <div class="kpi-card kpi-teal">
-            <div class="kpi-val">${sumHours.toFixed(1)} س</div>
+            <div class="kpi-val">${fmtHM(sumHours)}</div>
             <div class="kpi-lbl">ساعات العمل</div>
         </div>
         <div class="kpi-card kpi-green">
