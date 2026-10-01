@@ -1213,13 +1213,13 @@
             return parseFloat(str.replace(',', '.'));
         }
 
-        // خصم التأخير بعد استنفاد مدة/عدد مرات السماح (البند 3):
-        // كل ساعة تأخير (يُقرَّب لأعلى) تُحتسب مضاعفة لأول ساعة ثم بالتتابع:
-        // 1 ساعة تأخير → خصم 2 ساعة | 2 ساعة تأخير → خصم 3 ساعات | وهكذا (ساعة إضافية عن كل ساعة تأخير زيادة)
+        // خصم التأخير/الانصراف المبكر بالمضاعفة (قرار إداري 1/2026 - بند 3):
+        // أول 60 دقيقة تُحتسب مضاعفة، وما زاد عن الساعة يُحتسب بالدقيقة.
+        // 20 دقيقة ← 40 دقيقة | ساعة ← ساعتين | ساعتين ← 3 ساعات | ساعتين ونص ← 3.5 ساعات
         function computeLateDeductionHours(lateMinutes) {
             if (!lateMinutes || lateMinutes <= 0) return 0;
-            const hoursLate = Math.ceil(lateMinutes / 60);
-            return hoursLate + 1;
+            const dedMinutes = Math.min(lateMinutes, 60) * 2 + Math.max(lateMinutes - 60, 0);
+            return Math.round((dedMinutes / 60) * 100) / 100;
         }
 
         // تصنيف يوم الدخول وفق القرار الإداري 1/2026 (نفس منطق شاشة الجدول) — يُستخدم في تقرير الـPDF
@@ -1227,13 +1227,26 @@
         function classifyPolicyDay(empId, date, entryTime, graceSet) {
             const lateMin = timeToMins(entryTime) - timeToMins(workConfig.start);
             if (lateMin <= 0) return { kind: 'ok', lateMin: 0, ded: 0 };
-            const perm = getPermissionForDate(empId, date);
+            const perm = getPermissionForDate(empId, date, ['late', 'temp']);
             if (perm && (perm.type === 'late' || perm.type === 'temp')) {
                 if (perm.hours === undefined || (lateMin / 60) <= perm.hours) return { kind: 'perm', lateMin, ded: 0, permHours: perm.hours };
                 return { kind: 'permExcess', lateMin, ded: computeLateDeductionHours(lateMin - perm.hours * 60), permHours: perm.hours };
             }
             if (lateMin <= ATTENDANCE_POLICY_2026.graceMinutes && graceSet && graceSet.has(date)) return { kind: 'grace', lateMin, ded: 0 };
             return { kind: 'ded', lateMin, ded: computeLateDeductionHours(lateMin) };
+        }
+
+        // الانصراف المبكر (قبل نهاية الدوام): يُغطى بإذن انصراف/خروج مؤقت بحدود مدته، والزيادة (أو بدون إذن) تُخصم بنفس طريقة التأخير
+        // يرجع: { kind: 'none' | 'perm' | 'permExcess' | 'ded', earlyMin, ded }
+        function classifyEarlyLeave(empId, date, exitTime) {
+            const earlyMin = timeToMins(workConfig.end) - timeToMins(exitTime);
+            if (earlyMin <= 0) return { kind: 'none', earlyMin: 0, ded: 0 };
+            const perm = getPermissionForDate(empId, date, ['early', 'temp']);
+            if (perm && (perm.type === 'early' || perm.type === 'temp')) {
+                if (perm.hours === undefined || (earlyMin / 60) <= perm.hours) return { kind: 'perm', earlyMin, ded: 0, permHours: perm.hours };
+                return { kind: 'permExcess', earlyMin, ded: computeLateDeductionHours(earlyMin - perm.hours * 60), permHours: perm.hours };
+            }
+            return { kind: 'ded', earlyMin, ded: computeLateDeductionHours(earlyMin) };
         }
 
         function getMonthKeyFromDate(dateStr) {
@@ -2122,7 +2135,7 @@
             return null;
         }
 
-        function getPermissionForDate(empId, dateStr) {
+        function getPermissionForDate(empId, dateStr, types) {
             // 1. Check general/group late exemption for all employees on this date
             const allList = employeePermissions['all'] || [];
             const allPerm = allList.find(p => p.date === dateStr);
@@ -2137,7 +2150,7 @@
 
             // 2. Check individual employee permission
             const list = employeePermissions[empId] || [];
-            const found = list.find(p => p.date === dateStr);
+            const found = list.find(p => p.date === dateStr && (!types || types.includes(p.type)));
             if (!found) return null;
             const isManual = (found.source !== 'employee_request');
             const result = {
@@ -2947,6 +2960,18 @@
                         } else {
                             okCount++;
                             statusBadge = '<span class="status-badge badge-ok">✅ في معاده</span>';
+                        }
+
+                        // الانصراف المبكر (قرار 1/2026): بإذن ضمن مدته ← بدون خصم، وغير كده ← خصم بالمضاعفة
+                        if (underPolicy2026) {
+                            const ec = classifyEarlyLeave(emp.employeeId, date, exit.time);
+                            if (ec.kind === 'perm') {
+                                permNoteText += `🚪 انصراف مبكر -${ec.earlyMin}د (بإذن معتمد) `;
+                            } else if (ec.kind === 'permExcess' || ec.kind === 'ded') {
+                                deductionHoursTotal += ec.ded;
+                                lateCount++;
+                                statusBadge += ` <span class="status-badge badge-danger" style="background:#fee2e2; color:#991b1b; border:1px solid #f87171;">🚪 انصراف مبكر -${ec.earlyMin}د — خصم ${ec.ded}س</span>`;
+                            }
                         }
 
                         // البند 4: العمل الإضافي (Overtime) بالمضاعفة — بتكليف/طلب إدارة معتمد فقط
@@ -3808,6 +3833,8 @@
                             const pc = classifyPolicyDay(emp.employeeId, date, entry.time, emGraceSet);
                             if (pc.kind === 'permExcess' || pc.kind === 'ded') late++;
                             else ok++;
+                            const ecm = classifyEarlyLeave(emp.employeeId, date, exit.time);
+                            if (ecm.kind === 'permExcess' || ecm.kind === 'ded') early++;
                         } else if (p === 'late') {
                             if (perm && (perm.type === 'late' || perm.type === 'temp')) ok++;
                             else late++;
@@ -4104,6 +4131,13 @@
                             } else {
                                 lateCount++;
                                 statusBadge = `<span class="badge-danger">🚨 متأخر +${pc.lateMin}د — خصم ${pc.ded}س</span>`;
+                            }
+                            const ecp = classifyEarlyLeave(emp.employeeId, date, exit.time);
+                            if (ecp.kind === 'perm') {
+                                notesText += (notesText ? ' | ' : '') + `<span style="color:#0284c7; font-weight:bold;">🚪 انصراف مبكر -${ecp.earlyMin}د (بإذن)</span>`;
+                            } else if (ecp.kind === 'permExcess' || ecp.kind === 'ded') {
+                                earlyCount++;
+                                statusBadge += ` <span class="badge-danger">🚪 انصراف مبكر -${ecp.earlyMin}د — خصم ${ecp.ded}س</span>`;
                             }
                         } else if (p === 'late') {
                             lateCount++;
