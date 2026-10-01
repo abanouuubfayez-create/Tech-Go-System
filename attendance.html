@@ -1234,6 +1234,19 @@
             return Math.round((dedMinutes / 60) * 100) / 100;
         }
 
+        // حساب خصم التجاوز لإذن: minutes = دقايق التأخير/الانصراف المبكر، perm.hours = مدة الإذن المحتسبة (حد أقصى ساعتين)
+        //  - داخل مدة الإذن ← بدون خصم
+        //  - زيادة معتمدة فوق الساعتين (perm.approvedHours) ← تتخصم بدون مضاعفة (ساعة بساعة)
+        //  - زيادة غير معتمدة ← تتخصم بالمضاعفة
+        function permitExcessDeduction(minutes, perm) {
+            const capMin = perm.hours * 60;
+            const approvedMin = perm.approvedHours ? perm.approvedHours * 60 : capMin;
+            const singleMin = Math.max(0, Math.min(minutes, approvedMin) - capMin);
+            const doubledMin = Math.max(0, minutes - Math.max(approvedMin, capMin));
+            const ded = Math.round((singleMin / 60 + computeLateDeductionHours(doubledMin)) * 100) / 100;
+            return { ded, singleMin, doubledMin };
+        }
+
         // تصنيف يوم الدخول وفق القرار الإداري 1/2026 (نفس منطق شاشة الجدول) — يُستخدم في تقرير الـPDF
         // يرجع: { kind: 'ok' | 'perm' | 'permExcess' | 'grace' | 'ded', lateMin, ded }
         function classifyPolicyDay(empId, date, entryTime, ctx) {
@@ -1246,22 +1259,26 @@
                 return { kind: 'ok', lateMin: 0, ded: 0, creditEarned: (early > 0 && early <= ATTENDANCE_POLICY_2026.creditWindowMinutes) ? early : 0 };
             }
             const perm = getPermissionForDate(empId, date, ['late', 'temp']);
-            let need, base, permHours;
+            let need, base, permHours, singleMin = 0;
             if (perm && (perm.type === 'late' || perm.type === 'temp')) {
                 if (perm.hours === undefined || (lateMin / 60) <= perm.hours) return { kind: 'perm', lateMin, ded: 0, permHours: perm.hours };
-                need = lateMin - perm.hours * 60; base = 'permExcess'; permHours = perm.hours;
+                const pe = permitExcessDeduction(lateMin, perm);
+                singleMin = pe.singleMin; need = pe.doubledMin; base = 'permExcess'; permHours = perm.hours;
             } else if (lateMin <= ATTENDANCE_POLICY_2026.graceMinutes && graceSet && graceSet.has(date)) {
                 return { kind: 'grace', lateMin, ded: 0 };
             } else {
                 need = lateMin; base = 'ded';
             }
             const cu = (credit && credit.used[date]) || 0;
+            const singleHours = singleMin / 60;
             if (cu > 0) {
                 const rem = need - cu;
-                if (rem <= 0) return { kind: 'credit', lateMin, ded: 0, creditUsed: cu };
-                return { kind: base, lateMin, ded: computeLateDeductionHours(rem), creditUsed: cu, permHours };
+                if (rem <= 0 && singleMin <= 0) return { kind: 'credit', lateMin, ded: 0, creditUsed: cu };
+                const dedTotal = Math.round((singleHours + computeLateDeductionHours(Math.max(rem, 0))) * 100) / 100;
+                return { kind: base, lateMin, ded: dedTotal, creditUsed: cu, permHours, singleMin, doubledNeed: need };
             }
-            return { kind: base, lateMin, ded: computeLateDeductionHours(need), permHours };
+            const dedTotal0 = Math.round((singleHours + computeLateDeductionHours(need)) * 100) / 100;
+            return { kind: base, lateMin, ded: dedTotal0, permHours, singleMin, doubledNeed: need };
         }
 
         // سياق الحساب الشهري للموظف: السماح الشهري + رصيد التبكير (دقايق بتتكسب من الحضور 9:30–10:00 وتتخصم من التأخير بعد السماح في نفس الشهر)
@@ -1291,7 +1308,7 @@
                 if (r.kind !== 'ded' && r.kind !== 'permExcess') return;
                 const pool = pools[getMonthKeyFromDate(date)];
                 if (!pool) return;
-                const need = r.kind === 'ded' ? r.lateMin : r.lateMin - r.permHours * 60;
+                const need = r.doubledNeed;
                 const use = Math.min(need, pool.earned - pool.used);
                 if (use > 0) { used[date] = use; pool.used += use; }
             });
@@ -1306,7 +1323,8 @@
             const perm = getPermissionForDate(empId, date, ['early', 'temp']);
             if (perm && (perm.type === 'early' || perm.type === 'temp')) {
                 if (perm.hours === undefined || (earlyMin / 60) <= perm.hours) return { kind: 'perm', earlyMin, ded: 0, permHours: perm.hours };
-                return { kind: 'permExcess', earlyMin, ded: computeLateDeductionHours(earlyMin - perm.hours * 60), permHours: perm.hours };
+                const pe = permitExcessDeduction(earlyMin, perm);
+                return { kind: 'permExcess', earlyMin, ded: pe.ded, permHours: perm.hours, singleMin: pe.singleMin };
             }
             return { kind: 'ded', earlyMin, ded: computeLateDeductionHours(earlyMin) };
         }
@@ -2294,6 +2312,8 @@
                     result.type = 'overquota';
                     result.note = (found.note ? found.note + ' — ' : '') + `تجاوز حد ${ATTENDANCE_POLICY_2026.maxMonthlyPermits} أذونات شهريًا (غير محتسب)`;
                 } else if (found.hours === undefined || found.hours > ATTENDANCE_POLICY_2026.maxPermitHours) {
+                    // إذن معتمد لأكتر من ساعتين (استثنائي): أول ساعتين مغطيين، والزيادة المعتمدة تتخصم بدون مضاعفة
+                    if (found.hours !== undefined) result.approvedHours = found.hours;
                     // إذن بدون مدة أو أكبر من الحد ← يُحتسب بحد أقصى ساعتين (ينطبق على الحضور والانصراف والخروج المؤقت)
                     result.hours = ATTENDANCE_POLICY_2026.maxPermitHours;
                 }
@@ -3085,7 +3105,7 @@
                                 deductionHoursTotal += pc.ded;
                                 lateCount++;
                                 const credTxt = pc.creditUsed ? ` (بعد تعويض ${pc.creditUsed}د من رصيد التبكير)` : '';
-                                const permTxt = pc.kind === 'permExcess' ? `إذن ${fmtHM(pc.permHours)} + ` : '';
+                                const permTxt = pc.kind === 'permExcess' ? `إذن ${fmtHM(pc.permHours)}${pc.singleMin ? ' + ' + fmtHM(pc.singleMin / 60) + ' بدون مضاعفة' : ''} + ` : '';
                                 statusBadge = `<span class="status-badge badge-danger" style="background:#fee2e2; color:#991b1b; border:1.5px solid #f87171; font-weight:800;">🚨 متأخر +${pc.lateMin}د${credTxt} — ${permTxt}خصم ${fmtHM(pc.ded)} (قرار إداري 1/2026)</span>`;
                             }
                         } else if (p === 'late') {
@@ -3476,8 +3496,9 @@
             if (date >= ATTENDANCE_POLICY_2026.effectiveDate && empId !== 'all') {
                 if (['late', 'early', 'temp'].includes(type)) {
                     if (hours !== undefined && hours > ATTENDANCE_POLICY_2026.maxPermitHours) {
-                        alert(`⚖️ طبقًا لقرار إداري رقم (1) لسنة 2026: مدة الإذن يجب ألا تتجاوز ${ATTENDANCE_POLICY_2026.maxPermitHours} ساعتين في المرة الواحدة.`);
-                        return;
+                        if (!confirm(`⚖️ المدة (${fmtHM(hours)}) أكبر من الحد الأقصى للإذن (ساعتين) طبقًا للقرار الإداري 1/2026.\n\nلو اعتمدته: أول ساعتين بدون خصم، والزيادة (${fmtHM(hours - ATTENDANCE_POLICY_2026.maxPermitHours)}) تتخصم بدون مضاعفة.\n\nتأكيد الاعتماد؟`)) {
+                            return;
+                        }
                     }
                     const monthKey = getMonthKeyFromDate(date);
                     const usedThisMonth = countMonthlyTardyPermits(empId, monthKey);
