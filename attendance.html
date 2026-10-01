@@ -1172,6 +1172,8 @@
         let employeePermissions = Object.assign({}, _SAVED_DATA.employeePermissions);
         let employeeManualLeaves = {};
         let employeeSalaries = {}; // { empId: baseMonthlySalary }
+        let employeeCommissions = {}; // { 'YYYY-MM': { empId: amount } } — عمولة شهرية يدوية على نسبة التارجت
+        let commissionEmployees = ['7']; // الموظفون اللي بياخدوا عمولة (باسل - المبيعات) ويمكن تغييرهم من الإعدادات
         let workConfig = { start: '10:00', end: '18:00', grace: 15, workDays: [0,1,2,3,4], workingDaysPerMonth: 26, currency: 'ج.م' };
         let stats = null;
 
@@ -1284,6 +1286,25 @@
             return `${amount.toLocaleString('ar-EG', { maximumFractionDigits: 2 })} ${getCurrencyLabel()}`;
         }
 
+        function getCommission(empId, ym) {
+            const v = parseFloat(((employeeCommissions[ym] || {})[empId]));
+            return isNaN(v) || v < 0 ? 0 : v;
+        }
+
+        function setCommission(empId, ym, rawValue) {
+            const v = parseFloat(rawValue);
+            if (!employeeCommissions[ym]) employeeCommissions[ym] = {};
+            if (isNaN(v) || v <= 0) delete employeeCommissions[ym][empId];
+            else employeeCommissions[ym][empId] = v;
+            try { localStorage.setItem('techgo_employee_commissions', JSON.stringify(employeeCommissions)); } catch(e){}
+            if (stats) {
+                renderTimesheets();
+                const body = document.getElementById('tsBody-' + empId);
+                if (body) body.classList.add('open');
+            }
+            showNotification('✓ تم حفظ العمولة وتحديث صافي الراتب', 'success');
+        }
+
         function renderSalarySettingsList() {
             const container = document.getElementById('salariesListContainer');
             if (!container) return;
@@ -1291,6 +1312,9 @@
                 <div style="display:flex; align-items:center; gap:8px; background:var(--surface-2); border:1px solid var(--border); border-radius:8px; padding:8px 12px;">
                     <label style="flex:1; font-size:0.85rem; color:var(--text); font-weight:700;">${employeeNames[id]} <span style="color:var(--text-muted); font-weight:400;">(كود ${id})</span></label>
                     <input type="number" min="0" step="50" id="salaryInput-${id}" value="${employeeSalaries[id] || ''}" placeholder="الراتب الأساسي" style="width: 150px; padding: 6px 10px; border-radius: 6px; background: var(--bg); border: 1px solid var(--border); color: var(--text);">
+                    <label style="display:flex; align-items:center; gap:4px; font-size:0.75rem; color:var(--text-muted); white-space:nowrap; cursor:pointer;" title="يظهر له خانة عمولة شهرية يدوية على نسبة التارجت">
+                        <input type="checkbox" id="commInput-${id}" ${commissionEmployees.includes(String(id)) ? 'checked' : ''}> عمولة
+                    </label>
                 </div>
             `).join('');
             const dailyHoursEl = document.getElementById('cfgDailyHoursDisplay');
@@ -1313,6 +1337,12 @@
                 if (!isNaN(val) && val > 0) employeeSalaries[id] = val;
                 else delete employeeSalaries[id];
             });
+
+            commissionEmployees = Object.keys(employeeNames)
+                .filter(id => !inactiveEmployees.includes(id))
+                .filter(id => { const c = document.getElementById(`commInput-${id}`); return c && c.checked; })
+                .map(String);
+            try { localStorage.setItem('techgo_commission_employees', JSON.stringify(commissionEmployees)); } catch(err){}
 
             try {
                 localStorage.setItem('techgo_work_config', JSON.stringify(workConfig));
@@ -1376,6 +1406,10 @@
             if (sw) Object.assign(workConfig, JSON.parse(sw));
             const ss = localStorage.getItem('techgo_employee_salaries');
             if (ss) Object.assign(employeeSalaries, JSON.parse(ss));
+            const scm = localStorage.getItem('techgo_employee_commissions');
+            if (scm) employeeCommissions = JSON.parse(scm) || {};
+            const sce = localStorage.getItem('techgo_commission_employees');
+            if (sce) { const arr = JSON.parse(sce); if (Array.isArray(arr)) commissionEmployees = arr.map(String); }
             const sa = localStorage.getItem('techgo_attendance_archive');
             if (sa) attendanceArchive = JSON.parse(sa);
         } catch(e){}
@@ -1764,6 +1798,15 @@
         }
 
         function syncApprovedEmployeeRequests() {
+            // تنظيف أذونات الطلبات اللي اتسجلت قبل إصلاح القراءة (بتاريخ/نوع غلط) — هتتعاد من الطلبات المعتمدة بشكل صحيح
+            if (!window._permCleanupDone) {
+                window._permCleanupDone = true;
+                Object.keys(employeePermissions).forEach(k => {
+                    if (!Array.isArray(employeePermissions[k])) return;
+                    employeePermissions[k] = employeePermissions[k].filter(p => !(p.source === 'employee_request' && !p.reqSynced));
+                });
+            }
+
             // 1. Markos (كود 8) Approved Permissions from Requests Center
             if (!employeePermissions['8']) employeePermissions['8'] = [];
             if (!employeePermissions['8'].some(p => p.date === '2026-08-04')) {
@@ -1829,10 +1872,21 @@
                 const status = (r.status || '').toLowerCase();
                 if (status !== 'approved' && status !== 'مقبول' && status !== 'معتمد' && status !== 'active' && status !== 'submitted' && status !== 'answered' && status !== 'completed') return false;
 
-                const vals = r.values || {};
-                const rawEmp = r.empId || r.employeeId || r.uid || r.userName || r.targetName || r.senderName ||
-                               vals['الرقم الوظيفي'] || vals['empCode'] || vals['اسم الموظف'] || vals['name'] || '';
-                const tId = resolveEmployeeId(rawEmp);
+                // النماذج الديناميكية (employee.html) بتخزن الحقول في dynamicData بمفاتيح إنجليزية (permType, date, hours...)
+                // والنماذج المرسلة من الإدارة بتخزنها في values — ندمج الاتنين.
+                const vals = Object.assign({}, r.dynamicData || {}, r.values || {});
+
+                // نجرب الأسماء الأول (الرقم الوظيفي في النموذج غير كود البصمة)، وبعدها الأكواد، وتجاهل uid بتاع Firebase
+                const empCandidates = [
+                    r.userName, r.employeeName, r.targetName, r.senderName, vals['name'], vals['اسم الموظف'],
+                    r.empId, r.employeeId, vals['الرقم الوظيفي'], vals['empCode']
+                ];
+                let tId = null;
+                for (const cand of empCandidates) {
+                    if (!cand) continue;
+                    tId = resolveEmployeeId(cand);
+                    if (tId) break;
+                }
                 if (!tId) return false;
 
                 let rDate = r.fromDate || r.date || r.startDate || vals['التاريخ'] || vals['date'] || vals['تاريخ'] || vals['من تاريخ'] || vals['fromDate'] || '';
@@ -1855,13 +1909,19 @@
                 // 1. Permission (إذن حضور / انصراف / خروج مؤقت)
                 if (rawType.includes('إذن') || rawType.includes('perm') || rawType.includes('تأخير') || rawType.includes('انصراف') || rawType.includes('التماس') || rawType.includes('خروج')) {
                     if (!employeePermissions[tId]) employeePermissions[tId] = [];
-                    const pType = (rawType.includes('انصراف') || rawType.includes('early')) ? 'early' : ((rawType.includes('تأخير') || rawType.includes('late') || rawType.includes('التماس')) ? 'late' : 'temp');
+                    // نوع الإذن الفعلي من حقل "نوع الإذن" (عنوان النموذج "إذن حضور / انصراف" فيه الكلمتين فمينفعش نعتمد عليه)
+                    const selPermType = String(vals['permType'] || vals['نوع الإذن'] || '');
+                    let pType;
+                    if (selPermType.includes('انصراف')) pType = 'early';
+                    else if (selPermType.includes('حضور')) pType = 'late';
+                    else pType = (rawType.includes('انصراف') || rawType.includes('early')) ? 'early' : ((rawType.includes('تأخير') || rawType.includes('late') || rawType.includes('التماس')) ? 'late' : 'temp');
                     if (!employeePermissions[tId].some(p => p.date === rDate && p.type === pType)) {
                         employeePermissions[tId].push({
                             date: rDate,
                             type: pType,
                             hours: reqHours,
                             note: rawReason,
+                            reqSynced: true,
                             source: 'employee_request',
                             sourceTag: '📱 طلب موظف معتمد'
                         });
@@ -1872,7 +1932,8 @@
                 // 2. Leave (إجازة سنوية / عارضة)
                 if (rawType.includes('إجازة') || rawType.includes('leave') || rawType.includes('عارضة') || rawType.includes('سنوية')) {
                     if (!employeeManualLeaves[tId]) employeeManualLeaves[tId] = [];
-                    const lType = (rawType.includes('عارضة') || rawType.includes('casual')) ? 'casual' : 'annual';
+                    const leaveSel = String(vals['leaveType'] || '').toLowerCase();
+                    const lType = (rawType.includes('عارضة') || rawType.includes('casual') || leaveSel.includes('عارضة')) ? 'casual' : 'annual';
                     const lTypeLabel = lType === 'casual' ? 'إجازة عارضة (م.١٢٨)' : 'إجازة سنوية (م.١٢٤)';
                     const lDays = parseInt(r.days || vals['عدد الأيام'] || vals['days'] || 1, 10) || 1;
                     const lToDate = r.toDate || vals['إلى تاريخ'] || vals['toDate'] || rDate;
@@ -2559,9 +2620,12 @@
         function calculateAndRenderStats(records, autoArchive, fileName) {
             currentRecords = records;
             var employeeMap = new Map();
+            var unnamedIds = new Set();
             records.forEach(function(r) {
                 // Filter out deactivated / inactive employees
                 if (inactiveEmployees.includes(String(r.employeeId))) return;
+                // أكواد بصمة غير مسجّلة بأسماء (مثلاً "موظف 11") تُستبعد من الكشوفات والتقرير بدل ما تظهر باسم مبهم
+                if (!employeeNames[String(r.employeeId)]) { unnamedIds.add(String(r.employeeId)); return; }
                 if (!employeeMap.has(r.employeeId)) {
                     employeeMap.set(r.employeeId, { entries: [], exits: [], dates: new Set() });
                 }
@@ -2603,6 +2667,11 @@
                     };
                 })
             };
+
+            if (unnamedIds.size) {
+                console.warn('أكواد بصمة غير مسجلة تم استبعادها:', Array.from(unnamedIds));
+                setTimeout(function(){ showNotification('ℹ️ تم استبعاد أكواد بصمة غير مسجلة بأسماء: ' + Array.from(unnamedIds).join('، '), 'info', 6000); }, 300);
+            }
 
             document.getElementById('uploadSection').classList.add('hidden');
             document.getElementById('resultsSection').classList.remove('hidden');
@@ -2688,6 +2757,7 @@
 
             const allUniqueMonthDates = Array.from(new Set(stats.employeeDetails.flatMap(e => e.dates))).sort();
             const primaryYm = allUniqueMonthDates[0] ? allUniqueMonthDates[0].slice(0, 7) : '2026-08';
+            window._payrollSummary = { ym: primaryYm, byEmp: {} };
 
             const explicitDeductionsMap = {
                 '6': ['2026-08-20', '2026-08-23']
@@ -2881,9 +2951,27 @@
                 const absenceDeductionAmount = deductionDaysTotal * pay.dailyRate;
                 const overtimeAmount = overtimePayHoursTotal * pay.hourlyRate;
                 const totalDeductionAmount = lateDeductionAmount + absenceDeductionAmount;
+                const isCommEmp = commissionEmployees.includes(String(emp.employeeId));
+                const commissionAmount = isCommEmp ? getCommission(String(emp.employeeId), primaryYm) : 0;
                 const netSalary = pay.baseSalary > 0
-                    ? (pay.baseSalary - totalDeductionAmount + overtimeAmount)
+                    ? (pay.baseSalary - totalDeductionAmount + overtimeAmount + commissionAmount)
                     : 0;
+
+                window._payrollSummary.byEmp[String(emp.employeeId)] = {
+                    base: pay.baseSalary, lateHours: deductionHoursTotal, lateAmount: lateDeductionAmount,
+                    absenceDays: deductionDaysTotal, absenceAmount: absenceDeductionAmount,
+                    otHours: overtimePayHoursTotal, otAmount: overtimeAmount,
+                    isCommEmp, commission: commissionAmount, net: netSalary
+                };
+
+                const commissionInputHtml = isCommEmp ? `
+                    <div style="display:flex; align-items:center; gap:6px; background:#fefce8; border:1px solid #fde68a; border-radius:6px; padding:4px 8px;">
+                        <span style="color:#854d0e; font-weight:800;">🎯 عمولة التارجت (يدوي):</span>
+                        <input type="number" min="0" step="50" value="${commissionAmount || ''}" placeholder="0" onclick="event.stopPropagation()"
+                            onchange="setCommission('${emp.employeeId}', '${primaryYm}', this.value)"
+                            style="width:110px; padding:3px 8px; border-radius:6px; border:1px solid #fcd34d; background:#fff; color:#0f172a; font-weight:800;">
+                        <span style="color:#854d0e;">${getCurrencyLabel()}</span>
+                    </div>` : '';
 
                 const payrollBarHtml = pay.baseSalary > 0 ? `
                     <div style="display:flex; flex-wrap:wrap; gap:14px; align-items:center; margin-bottom:10px; background:var(--surface-2); border:1px solid var(--border); border-radius:8px; padding:10px 14px; font-size:0.82rem;">
@@ -2892,9 +2980,12 @@
                         <div style="color:#991b1b;"><span style="color:var(--text-muted);">خصم تأخير (${deductionHoursTotal} س):</span> <strong>-${fmtCurrency(lateDeductionAmount)}</strong></div>
                         <div style="color:#991b1b;"><span style="color:var(--text-muted);">خصم غياب (${deductionDaysTotal} يوم):</span> <strong>-${fmtCurrency(absenceDeductionAmount)}</strong></div>
                         <div style="color:#166534;"><span style="color:var(--text-muted);">إضافي محتسب (${overtimePayHoursTotal.toFixed(2)} س):</span> <strong>+${fmtCurrency(overtimeAmount)}</strong></div>
+                        ${commissionInputHtml}
+                        ${commissionAmount > 0 ? `<div style="color:#166534;"><span style="color:var(--text-muted);">عمولة:</span> <strong>+${fmtCurrency(commissionAmount)}</strong></div>` : ''}
                         <div style="margin-inline-start:auto; font-weight:900; font-size:0.95rem;">صافي الراتب المتوقع: <span style="color:var(--primary-light);">${fmtCurrency(netSalary)}</span></div>
                     </div>
                 ` : `
+                    ${commissionInputHtml ? `<div style="display:flex; margin-bottom:10px;">${commissionInputHtml}</div>` : ''}
                     <div style="margin-bottom:10px; background:var(--surface-2); border:1px dashed var(--border); border-radius:8px; padding:8px 14px; font-size:0.78rem; color:var(--text-muted);">
                         💡 لم يتم إدخال راتب أساسي لهذا الموظف بعد — أدخله من تبويب "⚙️ الإعدادات والسياسات" ليظهر هنا حساب الخصومات والإضافي بالجنيه تلقائيًا.
                     </div>
@@ -3404,6 +3495,7 @@
             }
 
             syncApprovedEmployeeRequests();
+            renderTimesheets(); // يحدّث ملخص الرواتب والخصومات والعمولات اللي هتتطبع في التقرير
 
             const activeEmpDetails = stats.employeeDetails.filter(e => !inactiveEmployees.includes(String(e.employeeId)));
             const allDates = Array.from(new Set(activeEmpDetails.flatMap(e => e.dates))).sort();
@@ -3673,8 +3765,6 @@
                 const totalAttDays = ok + late + early;
                 const punctualityRate = totalAttDays > 0 ? ((ok / totalAttDays) * 100).toFixed(1) : '100.0';
 
-                sumOk += ok;
-                sumLate += late;
                 const personalPerms = allEmpPerms.filter(p => !p.isAll && p.empId !== 'all');
                 const groupPerms = allEmpPerms.filter(p => p.isAll || p.empId === 'all');
 
@@ -4059,7 +4149,7 @@
                                 <span class="emp-num-pill">${em.idx}</span>
                                 <div>
                                     <div style="font-size:11pt; font-weight:900; color:#ffffff;">${name}</div>
-                                    <div style="font-size:7pt; color:#ccfbf1;">كود #${emp.employeeId} | الدوام: 10:00 ص → 06:00 م (سماح ${workConfig.grace || 30}د) | إجمالي الساعات: <strong>${totalWorkHrs.toFixed(1)} س</strong></div>
+                                    <div style="font-size:7pt; color:#ccfbf1;">كود #${emp.employeeId} | الدوام: ${workConfig.start} → ${workConfig.end} (سماح ${workConfig.grace || 30}د) | إجمالي الساعات: <strong>${totalWorkHrs.toFixed(1)} س</strong></div>
                                 </div>
                             </div>
                             <div style="display:flex; gap:4px; align-items:center;">
@@ -4113,6 +4203,69 @@
                     </div>
                 `;
             });
+
+            // كشف الرواتب والعمولات (يظهر فقط لو فيه رواتب أساسية أو عمولات مدخلة)
+            let payrollHtml = '';
+            const _ps = (window._payrollSummary && window._payrollSummary.byEmp) || {};
+            const _psYm = (window._payrollSummary && window._payrollSummary.ym) || primaryYm;
+            const payRows = employeeMetrics.filter(em => {
+                const r = _ps[String(em.emp.employeeId)];
+                return r && (r.base > 0 || r.commission > 0);
+            });
+            if (payRows.length) {
+                const cur = getCurrencyLabel();
+                const money = v => (v || 0).toLocaleString('en-US', { maximumFractionDigits: 2 });
+                let tBase = 0, tLate = 0, tAbs = 0, tOt = 0, tComm = 0, tNet = 0;
+                const rowsPay = payRows.map((em, i) => {
+                    const r = _ps[String(em.emp.employeeId)];
+                    tBase += r.base; tLate += r.lateAmount; tAbs += r.absenceAmount; tOt += r.otAmount; tComm += r.commission; tNet += r.net;
+                    return `
+                        <tr>
+                            <td style="text-align:center; color:#64748b; font-weight:700;">${i + 1}</td>
+                            <td style="font-weight:800; text-align:right;">${em.name}</td>
+                            <td style="text-align:center;">${r.base > 0 ? money(r.base) : '—'}</td>
+                            <td style="text-align:center; color:${r.lateAmount > 0 ? '#b91c1c' : '#64748b'};">${r.lateAmount > 0 ? '-' + money(r.lateAmount) + ' <small>(' + r.lateHours + ' س)</small>' : '—'}</td>
+                            <td style="text-align:center; color:${r.absenceAmount > 0 ? '#b91c1c' : '#64748b'};">${r.absenceAmount > 0 ? '-' + money(r.absenceAmount) + ' <small>(' + r.absenceDays + ' ي)</small>' : '—'}</td>
+                            <td style="text-align:center; color:${r.otAmount > 0 ? '#15803d' : '#64748b'};">${r.otAmount > 0 ? '+' + money(r.otAmount) + ' <small>(' + r.otHours.toFixed(1) + ' س)</small>' : '—'}</td>
+                            <td style="text-align:center; color:#854d0e; font-weight:800;">${r.isCommEmp ? (r.commission > 0 ? '+' + money(r.commission) : '<small>لم تُدخل</small>') : '—'}</td>
+                            <td style="text-align:center; font-weight:900; color:#0f6e64; background:#f0fdfa;">${r.base > 0 ? money(r.net) : '—'}</td>
+                        </tr>`;
+                }).join('');
+                payrollHtml = `
+                    <div class="emp-print-section" style="margin-top:8px; padding:6px 8px;">
+                        <div class="table-hdr-title">💰 كشف الرواتب والخصومات والعمولات — ${monthNameAr} ${pYear} (${cur})</div>
+                        <table class="print-table" style="margin-bottom:3px;">
+                            <thead>
+                                <tr>
+                                    <th style="width:4%;">#</th>
+                                    <th style="width:18%;">الموظف</th>
+                                    <th style="width:12%;">الراتب الأساسي</th>
+                                    <th style="width:14%;">خصم التأخير</th>
+                                    <th style="width:14%;">خصم الغياب</th>
+                                    <th style="width:12%;">إضافي معتمد</th>
+                                    <th style="width:12%;">🎯 عمولة التارجت</th>
+                                    <th style="width:14%;">صافي الراتب</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                ${rowsPay}
+                                <tr style="background:#f1f5f9; border-top:2px solid #0f6e64; font-weight:900;">
+                                    <td colspan="2" style="text-align:center; color:#0f6e64;">📌 الإجمالي</td>
+                                    <td style="text-align:center;">${money(tBase)}</td>
+                                    <td style="text-align:center; color:#b91c1c;">${tLate > 0 ? '-' + money(tLate) : '—'}</td>
+                                    <td style="text-align:center; color:#b91c1c;">${tAbs > 0 ? '-' + money(tAbs) : '—'}</td>
+                                    <td style="text-align:center; color:#15803d;">${tOt > 0 ? '+' + money(tOt) : '—'}</td>
+                                    <td style="text-align:center; color:#854d0e;">${tComm > 0 ? '+' + money(tComm) : '—'}</td>
+                                    <td style="text-align:center; color:#0f6e64;">${money(tNet)}</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                        <div style="font-size:6.3pt; color:#64748b; line-height:1.5;">
+                            * قيمة الساعة = الراتب ÷ ${getWorkingDaysPerMonth()} يوم ÷ ${getDailyHours()} ساعات. خصم التأخير بالمضاعفة وفق القرار الإداري 1/2026 (يسري من 1/10/2026).
+                            العمولة تُدخل يدويًا شهريًا حسب نسبة تحقيق التارجت.
+                        </div>
+                    </div>`;
+            }
 
             // Full Printable HTML Document with Rich Executive Styling & Perfect Page Breaking
             const htmlContent = `
@@ -4429,6 +4582,8 @@
         ${monthHolidaysHtml}
         ${monthExtraDaysHtml}
     </div>
+
+    ${payrollHtml}
 
     <!-- ════════════ PAGES 2+: DETAILED EMPLOYEE TIMESHEETS ════════════ -->
     <div class="page-break"></div>
