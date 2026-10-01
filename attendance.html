@@ -1305,7 +1305,8 @@
                 const e = entriesByDate[date];
                 if (!e || (exitsByDate && !exitsByDate[date])) return; // الخصم بيتحسب بس للأيام اللي فيها دخول وخروج
                 const r = classifyPolicyDay(empId, date, e, { graceSet });
-                if (r.kind !== 'ded' && r.kind !== 'permExcess') return;
+                // الرصيد بيغطي أيام التأخير العادية فقط، مش الأيام اللي فيها إذن (حتى الزيادة عن مدة الإذن)
+                if (r.kind !== 'ded') return;
                 const pool = pools[getMonthKeyFromDate(date)];
                 if (!pool) return;
                 const need = r.doubledNeed;
