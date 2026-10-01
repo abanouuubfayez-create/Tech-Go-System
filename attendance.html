@@ -2140,11 +2140,26 @@
             const found = list.find(p => p.date === dateStr);
             if (!found) return null;
             const isManual = (found.source !== 'employee_request');
-            return {
+            const result = {
                 ...found,
                 source: found.source || 'manual',
                 sourceTag: isManual ? 'تسجيل يدوي' : 'طلب موظف معتمد'
             };
+
+            // قرار إداري 1/2026 (من 1/10/2026): 4 أذونات شهريًا كحد أقصى، وبحد أقصى ساعتين للإذن الواحد
+            if (dateStr >= ATTENDANCE_POLICY_2026.effectiveDate && ['late', 'early', 'temp'].includes(found.type)) {
+                const mk = getMonthKeyFromDate(dateStr);
+                const monthPerms = list.filter(p => ['late', 'early', 'temp'].includes(p.type) && getMonthKeyFromDate(p.date) === mk)
+                    .sort((a, b) => a.date.localeCompare(b.date));
+                const rank = monthPerms.findIndex(p => p === found) + 1;
+                if (rank > ATTENDANCE_POLICY_2026.maxMonthlyPermits) {
+                    result.type = 'overquota';
+                    result.note = (found.note ? found.note + ' — ' : '') + `تجاوز حد ${ATTENDANCE_POLICY_2026.maxMonthlyPermits} أذونات شهريًا (غير محتسب)`;
+                } else if (found.hours !== undefined && found.hours > ATTENDANCE_POLICY_2026.maxPermitHours) {
+                    result.hours = ATTENDANCE_POLICY_2026.maxPermitHours;
+                }
+            }
+            return result;
         }
 
         function normalizeDigits(str) {
@@ -2738,6 +2753,9 @@
                 if (inactiveEmployees.includes(String(emp.employeeId))) return;
                 const name = getDisplayName(emp.employeeId);
                 let ok = 0, lateNoPerm = 0, latePerm = 0, singlePunch = 0, totalHours = 0, completeDays = 0;
+                const ovEntries = {};
+                emp.entries.forEach(en => { ovEntries[en.date] = en.time; });
+                const ovGraceSet = buildGraceUsageMap(emp.employeeId, [...emp.dates].sort(), ovEntries);
 
                 emp.dates.forEach(date => {
                     const entry = emp.entries.find(e => e.date === date);
@@ -2748,7 +2766,12 @@
                     if (entry && exit) {
                         const h = calcDayWorkHours(entry.time, exit.time).hours;
                         if (h > 0) { totalHours += h; completeDays++; }
-                        if (p === 'late') {
+                        if (date >= ATTENDANCE_POLICY_2026.effectiveDate) {
+                            const pc = classifyPolicyDay(emp.employeeId, date, entry.time, ovGraceSet);
+                            if (pc.kind === 'perm') latePerm++;
+                            else if (pc.kind === 'permExcess' || pc.kind === 'ded') lateNoPerm++;
+                            else ok++;
+                        } else if (p === 'late') {
                             if (perm && (perm.type === 'late' || perm.type === 'temp')) latePerm++;
                             else lateNoPerm++;
                         } else {
