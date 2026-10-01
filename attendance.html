@@ -2168,7 +2168,8 @@
                 if (rank > ATTENDANCE_POLICY_2026.maxMonthlyPermits) {
                     result.type = 'overquota';
                     result.note = (found.note ? found.note + ' — ' : '') + `تجاوز حد ${ATTENDANCE_POLICY_2026.maxMonthlyPermits} أذونات شهريًا (غير محتسب)`;
-                } else if (found.hours !== undefined && found.hours > ATTENDANCE_POLICY_2026.maxPermitHours) {
+                } else if (found.hours === undefined || found.hours > ATTENDANCE_POLICY_2026.maxPermitHours) {
+                    // إذن بدون مدة أو أكبر من الحد ← يُحتسب بحد أقصى ساعتين (ينطبق على الحضور والانصراف والخروج المؤقت)
                     result.hours = ATTENDANCE_POLICY_2026.maxPermitHours;
                 }
             }
