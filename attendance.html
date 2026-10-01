@@ -1025,6 +1025,10 @@
                         <input type="text" id="cfgCurrency" value="ج.م" style="width: 100%; padding: 8px 12px; border-radius: 8px; background: var(--bg); border: 1px solid var(--border); color: var(--text);">
                     </div>
                     <div>
+                        <label style="display: block; font-size: 0.85rem; color: var(--text-muted); margin-bottom: 4px;">حد أدنى للأوفر تايم الأوتوماتيك (دقيقة) — قبل 1/10:</label>
+                        <input type="number" id="cfgOtMinMinutes" value="30" min="0" step="5" style="width: 100%; padding: 8px 12px; border-radius: 8px; background: var(--bg); border: 1px solid var(--border); color: var(--text);">
+                    </div>
+                    <div>
                         <label style="display: block; font-size: 0.85rem; color: var(--text-muted); margin-bottom: 4px;">نسبة عمولة المبيعات (%):</label>
                         <input type="number" id="cfgCommissionRate" value="10" min="0" max="100" step="any" style="width: 100%; padding: 8px 12px; border-radius: 8px; background: var(--bg); border: 1px solid var(--border); color: var(--text);">
                     </div>
@@ -1256,6 +1260,26 @@
             return { kind: 'ded', earlyMin, ded: computeLateDeductionHours(earlyMin) };
         }
 
+        // العمل الإضافي ليوم: يرجع { hours (ساعات فعلية معتمدة), payHours (بعد المضاعفة), auto } أو null
+        //  - من 1/10/2026 (القرار 1/2026): بتكليف معتمد من الإدارة فقط وبحد الساعات المعتمدة
+        //  - قبل 1/10/2026: أوتوماتيك من البصمة (الخروج بعد نهاية الدوام) بشرط حد أدنى (افتراضي 30 دقيقة)، والساعة بساعتين
+        function calcOvertimeForDay(empId, date, exitTime) {
+            const rawMin = timeToMins(exitTime) - timeToMins(workConfig.end);
+            if (rawMin <= 0) return null;
+            const otPerm = getPermissionForDate(empId, date, ['overtime']);
+            const mult = ATTENDANCE_POLICY_2026.overtimeMultiplier;
+            if (date >= ATTENDANCE_POLICY_2026.effectiveDate) {
+                if (!otPerm || !otPerm.hours) return null;
+                const h = Math.min(rawMin, otPerm.hours * 60) / 60;
+                return { hours: h, payHours: h * mult, auto: false };
+            }
+            const minOt = parseInt(workConfig.otMinMinutes, 10);
+            if (rawMin < (isNaN(minOt) ? 30 : minOt)) return null;
+            const capMin = (otPerm && otPerm.hours) ? Math.min(rawMin, otPerm.hours * 60) : rawMin;
+            const h = capMin / 60;
+            return { hours: h, payHours: h * mult, auto: !(otPerm && otPerm.hours) };
+        }
+
         function getMonthKeyFromDate(dateStr) {
             return dateStr ? dateStr.slice(0, 7) : '';
         }
@@ -1367,6 +1391,8 @@
             if (wd) wd.value = getWorkingDaysPerMonth();
             const cur = document.getElementById('cfgCurrency');
             if (cur) cur.value = getCurrencyLabel();
+            const otm = document.getElementById('cfgOtMinMinutes');
+            if (otm) otm.value = (workConfig.otMinMinutes !== undefined ? workConfig.otMinMinutes : 30);
             const cr = document.getElementById('cfgCommissionRate');
             if (cr) cr.value = commissionRate;
         }
@@ -1384,6 +1410,9 @@
                 else delete employeeSalaries[id];
             });
 
+            const otmv = parseInt((document.getElementById('cfgOtMinMinutes') || {}).value, 10);
+            workConfig.otMinMinutes = (!isNaN(otmv) && otmv >= 0) ? otmv : 30;
+            try { localStorage.setItem('techgo_work_config', JSON.stringify(workConfig)); } catch(err){}
             const crv = parseFloat((document.getElementById('cfgCommissionRate') || {}).value);
             commissionRate = (!isNaN(crv) && crv >= 0) ? crv : 10;
             try { localStorage.setItem('techgo_commission_rate', String(commissionRate)); } catch(err){}
@@ -1900,6 +1929,21 @@
                 }
             });
 
+            // 2b. Ebtehal (كود 3): إذني انصراف معتمدين من مركز الطلبات (النموذج متسجل فيه تاريخ 2026-08-25 بالغلط، والصح 27/9 و29/9)
+            if (!employeePermissions['3']) employeePermissions['3'] = [];
+            ['2026-09-27', '2026-09-29'].forEach(d => {
+                if (!employeePermissions['3'].some(p => p.date === d && p.type === 'early')) {
+                    employeePermissions['3'].push({
+                        date: d,
+                        type: 'early',
+                        hours: 1.5,
+                        note: 'انصراف قبل مواعيد العمل (1:30) - معتمد من مركز الطلبات',
+                        source: 'employee_request',
+                        sourceTag: '📱 طلب موظف معتمد'
+                    });
+                }
+            });
+
             // 3. Group Late Exemption for 2026-08-26 for All Employees
             if (!employeePermissions['all']) employeePermissions['all'] = [];
             if (!employeePermissions['all'].some(p => p.date === '2026-08-26')) {
@@ -2159,7 +2203,7 @@
         function getPermissionForDate(empId, dateStr, types) {
             // 1. Check general/group late exemption for all employees on this date
             const allList = employeePermissions['all'] || [];
-            const allPerm = allList.find(p => p.date === dateStr);
+            const allPerm = allList.find(p => p.date === dateStr && (!types || types.includes(p.type)));
             if (allPerm) {
                 return {
                     ...allPerm,
@@ -3012,18 +3056,12 @@
                             }
                         }
 
-                        // البند 4: العمل الإضافي (Overtime) بالمضاعفة — بتكليف/طلب إدارة معتمد فقط
-                        if (underPolicy2026) {
-                            const endMins = timeToMins(workConfig.end);
-                            const otRawMin = timeToMins(exit.time) - endMins;
-                            const otPerm = getPermissionForDate(emp.employeeId, date);
-                            if (otRawMin > 0 && otPerm && otPerm.type === 'overtime' && otPerm.hours) {
-                                const approvedMin = Math.min(otRawMin, otPerm.hours * 60);
-                                const otHours = approvedMin / 60;
-                                const otPayHours = otHours * ATTENDANCE_POLICY_2026.overtimeMultiplier;
-                                overtimePayHoursTotal += otPayHours;
-                                permNoteText += `🕒 إضافي معتمد ${otHours.toFixed(2)}س ← يُحتسب ${otPayHours.toFixed(2)}س بالمضاعفة `;
-                            }
+                        // العمل الإضافي (Overtime) بالمضاعفة: الساعة بساعتين
+                        // قبل 1/10/2026 أوتوماتيك من البصمة (بحد أدنى)، ومن 1/10/2026 بتكليف معتمد من الإدارة فقط
+                        const otDay = calcOvertimeForDay(emp.employeeId, date, exit.time);
+                        if (otDay) {
+                            overtimePayHoursTotal += otDay.payHours;
+                            permNoteText += `🕒 إضافي ${otDay.auto ? '(من البصمة)' : 'معتمد'} ${otDay.hours.toFixed(2)}س ← يُحتسب ${otDay.payHours.toFixed(2)}س بالمضاعفة `;
                         }
                     } else {
                         // Day with zero punches
@@ -4236,6 +4274,10 @@
                         } else {
                             okCount++;
                             statusBadge = '<span class="badge-ok">✅ في معاده</span>';
+                        }
+                        const otPrint = calcOvertimeForDay(emp.employeeId, date, exit.time);
+                        if (otPrint) {
+                            notesText += (notesText ? ' | ' : '') + `<span style="color:#15803d; font-weight:bold;">🕒 إضافي ${otPrint.auto ? '(من البصمة)' : 'معتمد'} ${otPrint.hours.toFixed(2)}س ← يُحتسب ${otPrint.payHours.toFixed(2)}س</span>`;
                         }
                     } else {
                         // Zero punches on this day
