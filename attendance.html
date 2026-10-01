@@ -1026,7 +1026,7 @@
                     </div>
                     <div>
                         <label style="display: block; font-size: 0.85rem; color: var(--text-muted); margin-bottom: 4px;">حد أدنى للأوفر تايم الأوتوماتيك (دقيقة) — قبل 1/10:</label>
-                        <input type="number" id="cfgOtMinMinutes" value="30" min="0" step="5" style="width: 100%; padding: 8px 12px; border-radius: 8px; background: var(--bg); border: 1px solid var(--border); color: var(--text);">
+                        <input type="number" id="cfgOtMinMinutes" value="5" min="0" step="5" style="width: 100%; padding: 8px 12px; border-radius: 8px; background: var(--bg); border: 1px solid var(--border); color: var(--text);">
                     </div>
                     <div>
                         <label style="display: block; font-size: 0.85rem; color: var(--text-muted); margin-bottom: 4px;">نسبة عمولة المبيعات (%):</label>
@@ -1262,7 +1262,7 @@
 
         // العمل الإضافي ليوم: يرجع { hours (ساعات فعلية معتمدة), payHours (بعد المضاعفة), auto } أو null
         //  - من 1/10/2026 (القرار 1/2026): بتكليف معتمد من الإدارة فقط وبحد الساعات المعتمدة
-        //  - قبل 1/10/2026: أوتوماتيك من البصمة (الخروج بعد نهاية الدوام) بشرط حد أدنى (افتراضي 30 دقيقة)، والساعة بساعتين
+        //  - قبل 1/10/2026: أوتوماتيك من البصمة (الخروج بعد نهاية الدوام) بشرط حد أدنى (افتراضي 5 دقايق)، والساعة بساعتين
         function calcOvertimeForDay(empId, date, exitTime) {
             const rawMin = timeToMins(exitTime) - timeToMins(workConfig.end);
             if (rawMin <= 0) return null;
@@ -1274,7 +1274,7 @@
                 return { hours: h, payHours: h * mult, auto: false };
             }
             const minOt = parseInt(workConfig.otMinMinutes, 10);
-            if (rawMin < (isNaN(minOt) ? 30 : minOt)) return null;
+            if (rawMin < (isNaN(minOt) ? 5 : minOt)) return null;
             const capMin = (otPerm && otPerm.hours) ? Math.min(rawMin, otPerm.hours * 60) : rawMin;
             const h = capMin / 60;
             return { hours: h, payHours: h * mult, auto: !(otPerm && otPerm.hours) };
@@ -1392,7 +1392,7 @@
             const cur = document.getElementById('cfgCurrency');
             if (cur) cur.value = getCurrencyLabel();
             const otm = document.getElementById('cfgOtMinMinutes');
-            if (otm) otm.value = (workConfig.otMinMinutes !== undefined ? workConfig.otMinMinutes : 30);
+            if (otm) otm.value = (workConfig.otMinMinutes !== undefined ? workConfig.otMinMinutes : 5);
             const cr = document.getElementById('cfgCommissionRate');
             if (cr) cr.value = commissionRate;
         }
@@ -1411,7 +1411,7 @@
             });
 
             const otmv = parseInt((document.getElementById('cfgOtMinMinutes') || {}).value, 10);
-            workConfig.otMinMinutes = (!isNaN(otmv) && otmv >= 0) ? otmv : 30;
+            workConfig.otMinMinutes = (!isNaN(otmv) && otmv >= 0) ? otmv : 5;
             try { localStorage.setItem('techgo_work_config', JSON.stringify(workConfig)); } catch(err){}
             const crv = parseFloat((document.getElementById('cfgCommissionRate') || {}).value);
             commissionRate = (!isNaN(crv) && crv >= 0) ? crv : 10;
@@ -2940,6 +2940,7 @@
                 const graceUsageSet = buildGraceUsageMap(emp.employeeId, empDatesAll, entriesByDateForPolicy);
                 let deductionHoursTotal = 0;
                 let overtimePayHoursTotal = 0;
+                let overtimeRawHoursTotal = 0; // ساعات الإضافي الفعلية قبل المضاعفة
                 let deductionDaysTotal = 0; // أيام غياب كاملة تُخصم من الراتب
 
                 const rowsHtml = empDatesAll.map(date => {
@@ -3070,6 +3071,7 @@
                         const otDay = calcOvertimeForDay(emp.employeeId, date, exit.time);
                         if (otDay) {
                             overtimePayHoursTotal += otDay.payHours;
+                            overtimeRawHoursTotal += otDay.hours;
                             permNoteText += `🕒 إضافي ${otDay.auto ? '(من البصمة)' : 'معتمد'} ${fmtHM(otDay.hours)} ← يُحتسب ${fmtHM(otDay.payHours)} بالمضاعفة `;
                         }
                     } else {
@@ -3123,9 +3125,9 @@
                     : 0;
 
                 window._payrollSummary.byEmp[String(emp.employeeId)] = {
-                    base: pay.baseSalary, lateHours: deductionHoursTotal, lateAmount: lateDeductionAmount,
+                    base: pay.baseSalary, hourlyRate: pay.hourlyRate, dailyRate: pay.dailyRate, lateHours: deductionHoursTotal, lateAmount: lateDeductionAmount,
                     absenceDays: deductionDaysTotal, absenceAmount: absenceDeductionAmount,
-                    otHours: overtimePayHoursTotal, otAmount: overtimeAmount,
+                    otHours: overtimePayHoursTotal, otRawHours: overtimeRawHoursTotal, otAmount: overtimeAmount,
                     isCommEmp, sales: salesTotal, commission: commissionAmount, net: netSalary
                 };
 
@@ -3144,7 +3146,7 @@
                         <div><span style="color:var(--text-muted);">قيمة الساعة:</span> <strong>${fmtCurrency(pay.hourlyRate)}</strong></div>
                         <div style="color:#991b1b;"><span style="color:var(--text-muted);">خصم تأخير (${fmtHM(deductionHoursTotal)}):</span> <strong>-${fmtCurrency(lateDeductionAmount)}</strong></div>
                         <div style="color:#991b1b;"><span style="color:var(--text-muted);">خصم غياب (${deductionDaysTotal} يوم):</span> <strong>-${fmtCurrency(absenceDeductionAmount)}</strong></div>
-                        <div style="color:#166534;"><span style="color:var(--text-muted);">إضافي محتسب (${fmtHM(overtimePayHoursTotal)}):</span> <strong>+${fmtCurrency(overtimeAmount)}</strong></div>
+                        <div style="color:#166534;"><span style="color:var(--text-muted);">إضافي (${fmtHM(overtimeRawHoursTotal)} × 2 = ${fmtHM(overtimePayHoursTotal)}):</span> <strong>+${fmtCurrency(overtimeAmount)}</strong></div>
                         ${commissionInputHtml}
                         ${commissionAmount > 0 ? `<div style="color:#166534;"><span style="color:var(--text-muted);">عمولة:</span> <strong>+${fmtCurrency(commissionAmount)}</strong></div>` : ''}
                         <div style="margin-inline-start:auto; font-weight:900; font-size:0.95rem;">صافي الراتب المتوقع: <span style="color:var(--primary-light);">${fmtCurrency(netSalary)}</span></div>
@@ -4406,13 +4408,26 @@
                                 ${cell('الراتب الأساسي', mny(_pr.base), '#0f172a')}
                                 ${cell('خصم التأخير (' + fmtHM(_pr.lateHours) + ')', _pr.lateAmount > 0 ? '-' + mny(_pr.lateAmount) : '0', _pr.lateAmount > 0 ? '#b91c1c' : '#64748b')}
                                 ${cell('خصم الغياب (' + _pr.absenceDays + ' ي)', _pr.absenceAmount > 0 ? '-' + mny(_pr.absenceAmount) : '0', _pr.absenceAmount > 0 ? '#b91c1c' : '#64748b')}
-                                ${cell('إضافي (' + fmtHM(_pr.otHours) + ')', _pr.otAmount > 0 ? '+' + mny(_pr.otAmount) : '0', _pr.otAmount > 0 ? '#15803d' : '#64748b')}
+                                ${cell('إضافي (' + fmtHM(_pr.otRawHours) + ' × 2 = ' + fmtHM(_pr.otHours) + ')', _pr.otAmount > 0 ? '+' + mny(_pr.otAmount) : '0', _pr.otAmount > 0 ? '#15803d' : '#64748b')}
                                 ${_pr.isCommEmp ? cell('عمولة ' + commissionRate + '% من مبيعات ' + mny(_pr.sales), _pr.commission > 0 ? '+' + mny(_pr.commission) : '0', '#854d0e') : ''}
                                 ${cell('صافي الراتب', mny(_pr.net), '#0f6e64')}
                             </div>
+                            <table class="print-table" style="margin:4px 0 0; font-size:6.8pt;">
+                                <thead><tr><th style="width:20%;">البند</th><th>طريقة الحساب</th><th style="width:20%;">المبلغ (${getCurrencyLabel()})</th></tr></thead>
+                                <tbody>
+                                    <tr><td style="text-align:right; font-weight:800;">قيمة الساعة</td><td style="text-align:right;"><bdi>${mny(_pr.base)}</bdi> ÷ <bdi>${getWorkingDaysPerMonth()}</bdi> يوم ÷ <bdi>${getDailyHours()}</bdi> ساعات (قيمة اليوم <bdi>${mny(_pr.dailyRate)}</bdi>)</td><td style="font-weight:800;"><bdi>${mny(_pr.hourlyRate)}</bdi></td></tr>
+                                    <tr><td style="text-align:right; font-weight:800;">الراتب الأساسي</td><td style="text-align:right;">—</td><td style="font-weight:800;"><bdi>${mny(_pr.base)}</bdi></td></tr>
+                                    ${_pr.otAmount > 0 ? `<tr><td style="text-align:right; font-weight:800; color:#15803d;">+ قيمة الإضافي</td><td style="text-align:right;">إضافي فعلي <bdi>${fmtHM(_pr.otRawHours)}</bdi> × 2 (المضاعفة) = <bdi>${fmtHM(_pr.otHours)}</bdi> محتسبة × قيمة الساعة <bdi>${mny(_pr.hourlyRate)}</bdi></td><td style="font-weight:900; color:#15803d;"><bdi>${mny(_pr.otAmount)}</bdi></td></tr>` : ''}
+                                    ${_pr.isCommEmp && _pr.commission > 0 ? `<tr><td style="text-align:right; font-weight:800; color:#854d0e;">+ العمولة</td><td style="text-align:right;">إجمالي المبيعات <bdi>${mny(_pr.sales)}</bdi> × <bdi>${commissionRate}%</bdi></td><td style="font-weight:900; color:#854d0e;"><bdi>${mny(_pr.commission)}</bdi></td></tr>` : ''}
+                                    ${_pr.lateAmount > 0 ? `<tr><td style="text-align:right; font-weight:800; color:#b91c1c;">− خصم التأخير / الانصراف</td><td style="text-align:right;">خصم <bdi>${fmtHM(_pr.lateHours)}</bdi> × قيمة الساعة <bdi>${mny(_pr.hourlyRate)}</bdi></td><td style="font-weight:900; color:#b91c1c;"><bdi>${mny(_pr.lateAmount)}</bdi></td></tr>` : ''}
+                                    ${_pr.absenceAmount > 0 ? `<tr><td style="text-align:right; font-weight:800; color:#b91c1c;">− خصم الغياب</td><td style="text-align:right;"><bdi>${_pr.absenceDays}</bdi> يوم × قيمة اليوم <bdi>${mny(_pr.dailyRate)}</bdi></td><td style="font-weight:900; color:#b91c1c;"><bdi>${mny(_pr.absenceAmount)}</bdi></td></tr>` : ''}
+                                    <tr style="background:#ecfdf5;"><td style="text-align:right; font-weight:900; color:#0f6e64;">= صافي الراتب</td><td style="text-align:right;">الأساسي + الإضافي${_pr.isCommEmp ? ' + العمولة' : ''} − الخصومات</td><td style="font-weight:900; color:#0f6e64; font-size:8pt;"><bdi>${mny(_pr.net)}</bdi></td></tr>
+                                </tbody>
+                            </table>
                         </div>` : `
                         <div class="pay-sec" style="background:#f8fafc; border:1px dashed #cbd5e1; border-radius:6px; padding:4px 8px; margin-top:5px; font-size:7pt; color:#64748b;">
                             💰 الراتب الأساسي غير مُدخل لهذا الموظف.${_pr.isCommEmp && _pr.commission > 0 ? ' عمولة الشهر: <strong>+' + mny(_pr.commission) + '</strong> (مبيعات ' + mny(_pr.sales) + ' × ' + commissionRate + '%)' : ''}
+                            <div style="margin-top:2px;">⏱ ملخص الساعات: إضافي فعلي <bdi>${fmtHM(_pr.otRawHours)}</bdi> × 2 = <bdi>${fmtHM(_pr.otHours)}</bdi> محتسبة | خصم تأخير/انصراف <bdi>${fmtHM(_pr.lateHours)}</bdi> | خصم غياب <bdi>${_pr.absenceDays}</bdi> يوم — <b>أدخل الراتب الأساسي من الإعدادات ليظهر المبلغ بالجنيه.</b></div>
                         </div>`;
                 }
 
@@ -4508,7 +4523,7 @@
                             <td style="text-align:center;">${r.base > 0 ? money(r.base) : '—'}</td>
                             <td style="text-align:center; color:${r.lateAmount > 0 ? '#b91c1c' : '#64748b'};">${r.lateAmount > 0 ? '-' + money(r.lateAmount) + ' <small>(' + fmtHM(r.lateHours) + ')</small>' : '—'}</td>
                             <td style="text-align:center; color:${r.absenceAmount > 0 ? '#b91c1c' : '#64748b'};">${r.absenceAmount > 0 ? '-' + money(r.absenceAmount) + ' <small>(' + r.absenceDays + ' ي)</small>' : '—'}</td>
-                            <td style="text-align:center; color:${r.otAmount > 0 ? '#15803d' : '#64748b'};">${r.otAmount > 0 ? '+' + money(r.otAmount) + ' <small>(' + fmtHM(r.otHours) + ')</small>' : '—'}</td>
+                            <td style="text-align:center; color:${r.otAmount > 0 ? '#15803d' : '#64748b'};">${r.otAmount > 0 ? '+' + money(r.otAmount) + ' <small>(' + fmtHM(r.otRawHours) + ' × 2 = ' + fmtHM(r.otHours) + ')</small>' : '—'}</td>
                             <td style="text-align:center; color:#854d0e; font-weight:800;">${r.isCommEmp ? (r.commission > 0 ? '+' + money(r.commission) + '<br><small style="color:#64748b; font-weight:600;">مبيعات ' + money(r.sales) + ' × ' + commissionRate + '%</small>' : '<small>لم تُدخل المبيعات</small>') : '—'}</td>
                             <td style="text-align:center; font-weight:900; color:#0f6e64; background:#f0fdfa;">${r.base > 0 ? money(r.net) : '—'}</td>
                         </tr>`;
